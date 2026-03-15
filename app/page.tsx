@@ -14,37 +14,55 @@ const competitions = [
     id: 1,
     title: "Mega Competition 2026",
     status: "In Progress",
-    timeLeft: "3h 27m",
+    timeRemaining: "3h 27m",
     description: "This is an example competition for WineLore mega system demonstrating all abilities.",
     category: "Mega Competition",
     creator: "likespro",
   },
   {
     id: 2,
-    title: "Mega Competition 2026",
-    status: "In Progress",
-    timeLeft: "3h 27m",
-    description: "This is an example competition for WineLore mega system demonstrating all abilities.",
-    category: "Mega Competition",
-    creator: "likespro",
+    title: "Summer Wine Tasting",
+    status: "Upcoming",
+    timeRemaining: "Starts in 2d",
+    description: "Join us for an exciting summer wine tasting event featuring selections from top vineyards.",
+    category: "Seasonal Event",
+    creator: "winelover42",
   },
   {
     id: 3,
-    title: "Mega Competition 2026",
-    status: "In Progress",
-    timeLeft: "3h 27m",
-    description: "This is an example competition for WineLore mega system demonstrating all abilities.",
-    category: "Mega Competition",
-    creator: "likespro",
+    title: "Bordeaux Championship",
+    status: "Finished",
+    timeRemaining: "Ended",
+    description: "The annual Bordeaux championship showcasing the finest French wines from the region.",
+    category: "Regional",
+    creator: "sommeliermax",
   },
   {
     id: 4,
-    title: "Mega Competition 2026",
+    title: "Blind Tasting Challenge",
     status: "In Progress",
-    timeLeft: "3h 27m",
-    description: "This is an example competition for WineLore mega system demonstrating all abilities.",
-    category: "Mega Competition",
-    creator: "likespro",
+    timeRemaining: "1d 5h",
+    description: "Test your palate in this exciting blind tasting competition with mystery wines.",
+    category: "Challenge",
+    creator: "tastemaster",
+  },
+  {
+    id: 5,
+    title: "New World Wines 2026",
+    status: "Upcoming",
+    timeRemaining: "Starts in 5d",
+    description: "Explore exceptional wines from emerging regions in Australia, Chile, and South Africa.",
+    category: "Discovery",
+    creator: "globalwines",
+  },
+  {
+    id: 6,
+    title: "Vintage Collectors Cup",
+    status: "Finished",
+    timeRemaining: "Ended",
+    description: "A prestigious competition for rare and vintage wine collectors and enthusiasts.",
+    category: "Premium",
+    creator: "vintagevault",
   },
 ]
 
@@ -56,17 +74,30 @@ function AvatarPlaceholder({ className }: { className?: string }) {
   )
 }
 
+function getStatusColor(status: string) {
+  switch (status) {
+    case "In Progress":
+      return "text-emerald-500"
+    case "Upcoming":
+      return "text-blue-500"
+    case "Finished":
+      return "text-muted-foreground"
+    default:
+      return "text-muted-foreground"
+  }
+}
+
 function CompetitionCard({
   title,
   status,
-  timeLeft,
+  timeRemaining,
   description,
   category,
   creator,
 }: {
   title: string
   status: string
-  timeLeft: string
+  timeRemaining: string
   description: string
   category: string
   creator: string
@@ -78,8 +109,8 @@ function CompetitionCard({
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold text-card-foreground">{title}</h3>
           <p className="text-sm">
-            <span className="font-medium text-emerald-500">{status}</span>
-            <span className="text-muted-foreground"> | {timeLeft}</span>
+            <span className={`font-medium ${getStatusColor(status)}`}>{status}</span>
+            <span className="text-muted-foreground"> | {timeRemaining}</span>
           </p>
         </div>
       </div>
@@ -144,7 +175,7 @@ export default function WineLoreDashboard() {
               key={competition.id}
               title={competition.title}
               status={competition.status}
-              timeLeft={competition.timeLeft}
+              timeRemaining={competition.timeRemaining}
               description={competition.description}
               category={competition.category}
               creator={competition.creator}
