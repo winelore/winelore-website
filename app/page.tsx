@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { FileText, Trophy, Wine, BadgeCheck, User } from "lucide-react"
 
 const tabs = [
@@ -8,111 +8,6 @@ const tabs = [
   { id: "competitions", label: "Competitions", icon: Trophy },
   { id: "wines", label: "Wines", icon: Wine },
 ]
-
-function GooeyNav({
-  activeTab,
-  setActiveTab,
-}: {
-  activeTab: string
-  setActiveTab: (tab: string) => void
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
-
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const activeButton = container.querySelector(
-      `[data-tab-id="${activeTab}"]`
-    ) as HTMLElement
-    if (!activeButton) return
-
-    const containerRect = container.getBoundingClientRect()
-    const buttonRect = activeButton.getBoundingClientRect()
-
-    setIndicatorStyle({
-      left: buttonRect.left - containerRect.left,
-      width: buttonRect.width,
-    })
-  }, [activeTab])
-
-  return (
-    <nav className="relative flex items-center rounded-full border border-border bg-muted/50 p-1">
-      {/* SVG Filter for Gooey Effect */}
-      <svg className="absolute h-0 w-0" aria-hidden="true">
-        <defs>
-          <filter id="gooey">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-            <feColorMatrix
-              in="blur"
-              mode="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"
-              result="gooey"
-            />
-            <feComposite in="SourceGraphic" in2="gooey" operator="atop" />
-          </filter>
-        </defs>
-      </svg>
-
-      {/* Gooey Background Layer */}
-      <div
-        ref={containerRef}
-        className="absolute inset-1 overflow-hidden rounded-full"
-        style={{ filter: "url(#gooey)" }}
-      >
-        {/* Moving Indicator Blob */}
-        <div
-          className="absolute top-0 h-full rounded-full bg-card shadow-sm transition-all duration-500 ease-out"
-          style={{
-            left: indicatorStyle.left,
-            width: indicatorStyle.width,
-          }}
-        />
-        {/* Static blobs at each tab position for gooey connection */}
-        {tabs.map((tab) => (
-          <div
-            key={tab.id}
-            data-tab-id={tab.id}
-            className={`inline-flex items-center gap-2 px-4 py-2 ${
-              activeTab === tab.id ? "opacity-0" : "opacity-0"
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            <span className="text-sm font-medium">{tab.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Text Layer (stays sharp, above the gooey filter) */}
-      <div className="relative z-10 flex items-center">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              data-tab-id={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-300 ${
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-card-foreground"
-              }`}
-            >
-              <Icon
-                className={`h-4 w-4 transition-colors duration-300 ${
-                  isActive ? "text-blue-500" : ""
-                }`}
-              />
-              <span>{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
-    </nav>
-  )
-}
 
 const competitions = [
   {
@@ -243,8 +138,27 @@ export default function WineLoreDashboard() {
           {/* Logo */}
           <h1 className="text-2xl font-bold text-card-foreground">WineLore</h1>
 
-          {/* Navigation Tabs with Gooey Effect */}
-          <GooeyNav activeTab={activeTab} setActiveTab={setActiveTab} />
+          {/* Navigation Tabs */}
+          <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-card text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-card-foreground"
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
+                  <span>{tab.label}</span>
+                </button>
+              )
+            })}
+          </nav>
 
           {/* User Profile */}
           <div className="flex items-center gap-2">
