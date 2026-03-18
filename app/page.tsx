@@ -131,45 +131,45 @@ export default function WineLoreDashboard() {
   const [activeTab, setActiveTab] = useState("competitions")
 
   return (
-    <div className="min-h-screen bg-muted/50 p-4 md:p-8">
-      <div className="mx-auto max-w-5xl rounded-2xl bg-card p-6 shadow-lg md:p-8">
-        {/* Header */}
-        <header className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          {/* Logo */}
-          <h1 className="text-2xl font-bold text-card-foreground">WineLore</h1>
+    <div className="flex h-screen flex-col bg-background">
+      {/* Header */}
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
+        {/* Logo */}
+        <h1 className="text-2xl font-bold text-card-foreground">WineLore</h1>
 
-          {/* Navigation Tabs */}
-          <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-card text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-card-foreground"
-                  }`}
-                >
-                  <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
-                  <span>{tab.label}</span>
-                </button>
-              )
-            })}
-          </nav>
+        {/* Navigation Tabs */}
+        <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-card text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-card-foreground"
+                }`}
+              >
+                <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
+        </nav>
 
-          {/* User Profile */}
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-card-foreground">likespro</span>
-            <BadgeCheck className="h-5 w-5 text-blue-500" />
-            <AvatarPlaceholder className="h-9 w-9" />
-          </div>
-        </header>
+        {/* User Profile */}
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-card-foreground">likespro</span>
+          <BadgeCheck className="h-5 w-5 text-blue-500" />
+          <AvatarPlaceholder className="h-9 w-9" />
+        </div>
+      </header>
 
-        {/* Competition Cards Grid */}
-        <main className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Competition Cards Grid */}
+      <main className="flex-1 overflow-auto p-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {competitions.map((competition) => (
             <CompetitionCard
               key={competition.id}
@@ -181,8 +181,8 @@ export default function WineLoreDashboard() {
               creator={competition.creator}
             />
           ))}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }
