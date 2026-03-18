@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Trophy, Wine, BadgeCheck, User } from "lucide-react"
+import { FileText, Trophy, Wine, BadgeCheck, User, Layers } from "lucide-react"
 
 const tabs = [
   { id: "feed", label: "Feed", icon: FileText },
@@ -26,6 +26,8 @@ interface Competition {
   holder: number[]
   plannedStartAt: string | null
   plannedEndAt?: string | null
+  startedAt: string | null
+  endedAt: string | null
   series: CompetitionSeries
 }
 
@@ -38,6 +40,8 @@ const MOCK_COMPETITIONS: Competition[] = [
     holder: [101, 102],
     plannedStartAt: "2026-03-18T12:00:00Z",
     plannedEndAt: "2026-03-18T20:00:00Z",
+    startedAt: "2026-03-18T12:05:00Z",
+    endedAt: null,
     series: {
       id: "s1",
       name: "Mega Series",
@@ -53,6 +57,8 @@ const MOCK_COMPETITIONS: Competition[] = [
     holder: [103],
     plannedStartAt: "2026-03-20T14:00:00Z",
     plannedEndAt: "2026-03-20T20:00:00Z",
+    startedAt: null,
+    endedAt: null,
     series: {
       id: "s2",
       name: "Seasonal Event",
@@ -68,6 +74,8 @@ const MOCK_COMPETITIONS: Competition[] = [
     holder: [104, 105, 106],
     plannedStartAt: "2026-03-01T09:00:00Z",
     plannedEndAt: "2026-03-01T17:00:00Z",
+    startedAt: "2026-03-01T09:10:00Z",
+    endedAt: "2026-03-01T16:45:00Z",
     series: {
       id: "s3",
       name: "Regional",
@@ -83,6 +91,8 @@ const MOCK_COMPETITIONS: Competition[] = [
     holder: [107],
     plannedStartAt: "2026-03-17T12:00:00Z",
     plannedEndAt: "2026-03-18T18:00:00Z",
+    startedAt: "2026-03-17T12:00:00Z",
+    endedAt: null,
     series: {
       id: "s4",
       name: "Challenge",
@@ -98,6 +108,8 @@ const MOCK_COMPETITIONS: Competition[] = [
     holder: [108, 109],
     plannedStartAt: "2026-03-23T10:00:00Z",
     plannedEndAt: "2026-03-23T19:00:00Z",
+    startedAt: null,
+    endedAt: null,
     series: {
       id: "s5",
       name: "Discovery",
@@ -113,6 +125,8 @@ const MOCK_COMPETITIONS: Competition[] = [
     holder: [110],
     plannedStartAt: "2026-02-20T11:00:00Z",
     plannedEndAt: "2026-02-20T18:00:00Z",
+    startedAt: "2026-02-20T11:15:00Z",
+    endedAt: "2026-02-20T17:30:00Z",
     series: {
       id: "s6",
       name: "Premium",
@@ -210,9 +224,15 @@ function CompetitionCard({ competition }: { competition: Competition }) {
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
         {competition.description}
       </p>
-      <div className="mt-4 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <User className="h-4 w-4" />
-        <span>{competition.series.name}</span>
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <Layers className="h-4 w-4" />
+          <span>{competition.series.name}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <User className="h-4 w-4" />
+          <span>Holder ID: {competition.holder.join(", ")}</span>
+        </div>
       </div>
     </div>
   )
