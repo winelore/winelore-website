@@ -9,60 +9,95 @@ const tabs = [
   { id: "wines", label: "Wines", icon: Wine },
 ]
 
-const competitions = [
+type CompetitionSeriesStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED"
+
+interface CompetitionSeries {
+  id: string
+  name: string
+  status: CompetitionSeriesStatus
+}
+
+interface Competition {
+  id: string
+  series: CompetitionSeries
+  status: string
+  name: string
+  plannedStartAt: string | null
+  plannedEndAt: string | null
+}
+
+const MOCK_COMPETITIONS: Competition[] = [
   {
-    id: 1,
-    title: "Mega Competition 2026",
-    status: "In Progress",
-    timeRemaining: "3h 27m",
-    description: "This is an example competition for WineLore mega system demonstrating all abilities.",
-    category: "Mega Competition",
-    creator: "likespro",
+    id: "comp-1",
+    name: "Mega Competition 2026",
+    status: "IN_PROGRESS",
+    plannedStartAt: "2026-03-15T10:00:00Z",
+    plannedEndAt: "2026-03-15T18:00:00Z",
+    series: {
+      id: "series-1",
+      name: "Mega Competition",
+      status: "ACTIVE",
+    },
   },
   {
-    id: 2,
-    title: "Summer Wine Tasting",
-    status: "Upcoming",
-    timeRemaining: "Starts in 2d",
-    description: "Join us for an exciting summer wine tasting event featuring selections from top vineyards.",
-    category: "Seasonal Event",
-    creator: "winelover42",
+    id: "comp-2",
+    name: "Summer Wine Tasting",
+    status: "READY",
+    plannedStartAt: "2026-03-20T14:00:00Z",
+    plannedEndAt: "2026-03-20T20:00:00Z",
+    series: {
+      id: "series-2",
+      name: "Seasonal Event",
+      status: "ACTIVE",
+    },
   },
   {
-    id: 3,
-    title: "Bordeaux Championship",
-    status: "Finished",
-    timeRemaining: "Ended",
-    description: "The annual Bordeaux championship showcasing the finest French wines from the region.",
-    category: "Regional",
-    creator: "sommeliermax",
+    id: "comp-3",
+    name: "Bordeaux Championship",
+    status: "FINISHED",
+    plannedStartAt: "2026-03-01T09:00:00Z",
+    plannedEndAt: "2026-03-01T17:00:00Z",
+    series: {
+      id: "series-3",
+      name: "Regional",
+      status: "ACTIVE",
+    },
   },
   {
-    id: 4,
-    title: "Blind Tasting Challenge",
-    status: "In Progress",
-    timeRemaining: "1d 5h",
-    description: "Test your palate in this exciting blind tasting competition with mystery wines.",
-    category: "Challenge",
-    creator: "tastemaster",
+    id: "comp-4",
+    name: "Blind Tasting Challenge",
+    status: "IN_PROGRESS",
+    plannedStartAt: "2026-03-17T12:00:00Z",
+    plannedEndAt: "2026-03-18T18:00:00Z",
+    series: {
+      id: "series-4",
+      name: "Challenge",
+      status: "ACTIVE",
+    },
   },
   {
-    id: 5,
-    title: "New World Wines 2026",
-    status: "Upcoming",
-    timeRemaining: "Starts in 5d",
-    description: "Explore exceptional wines from emerging regions in Australia, Chile, and South Africa.",
-    category: "Discovery",
-    creator: "globalwines",
+    id: "comp-5",
+    name: "New World Wines 2026",
+    status: "READY",
+    plannedStartAt: "2026-03-23T10:00:00Z",
+    plannedEndAt: "2026-03-23T19:00:00Z",
+    series: {
+      id: "series-5",
+      name: "Discovery",
+      status: "ACTIVE",
+    },
   },
   {
-    id: 6,
-    title: "Vintage Collectors Cup",
-    status: "Finished",
-    timeRemaining: "Ended",
-    description: "A prestigious competition for rare and vintage wine collectors and enthusiasts.",
-    category: "Premium",
-    creator: "vintagevault",
+    id: "comp-6",
+    name: "Vintage Collectors Cup",
+    status: "FINISHED",
+    plannedStartAt: "2026-02-20T11:00:00Z",
+    plannedEndAt: "2026-02-20T18:00:00Z",
+    series: {
+      id: "series-6",
+      name: "Premium",
+      status: "ARCHIVED",
+    },
   },
 ]
 
@@ -76,52 +111,84 @@ function AvatarPlaceholder({ className }: { className?: string }) {
 
 function getStatusColor(status: string) {
   switch (status) {
-    case "In Progress":
+    case "IN_PROGRESS":
       return "text-emerald-500"
-    case "Upcoming":
+    case "READY":
       return "text-blue-500"
-    case "Finished":
+    case "FINISHED":
       return "text-muted-foreground"
     default:
       return "text-muted-foreground"
   }
 }
 
-function CompetitionCard({
-  title,
-  status,
-  timeRemaining,
-  description,
-  category,
-  creator,
-}: {
-  title: string
-  status: string
-  timeRemaining: string
-  description: string
-  category: string
-  creator: string
-}) {
+function formatStatus(status: string) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return "In Progress"
+    case "READY":
+      return "Ready"
+    case "FINISHED":
+      return "Finished"
+    default:
+      return status
+  }
+}
+
+function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string | null, status: string) {
+  if (status === "FINISHED") return "Ended"
+  if (!plannedStartAt) return ""
+  
+  const now = new Date()
+  const startDate = new Date(plannedStartAt)
+  const endDate = plannedEndAt ? new Date(plannedEndAt) : null
+  
+  if (status === "READY") {
+    const diff = startDate.getTime() - now.getTime()
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    if (days > 0) return `Starts in ${days}d`
+    if (hours > 0) return `Starts in ${hours}h`
+    return "Starting soon"
+  }
+  
+  if (status === "IN_PROGRESS" && endDate) {
+    const diff = endDate.getTime() - now.getTime()
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    if (days > 0) return `${days}d ${hours}h`
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
+  }
+  
+  return ""
+}
+
+function CompetitionCard({ competition }: { competition: Competition }) {
+  const timeRemaining = formatTimeRemaining(
+    competition.plannedStartAt,
+    competition.plannedEndAt,
+    competition.status
+  )
+
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start gap-3">
         <AvatarPlaceholder className="h-10 w-10 shrink-0" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-card-foreground">{title}</h3>
+          <h3 className="text-base font-semibold text-card-foreground">{competition.name}</h3>
           <p className="text-sm">
-            <span className={`font-medium ${getStatusColor(status)}`}>{status}</span>
-            <span className="text-muted-foreground"> | {timeRemaining}</span>
+            <span className={`font-medium ${getStatusColor(competition.status)}`}>
+              {formatStatus(competition.status)}
+            </span>
+            {timeRemaining && <span className="text-muted-foreground"> | {timeRemaining}</span>}
           </p>
         </div>
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
       <div className="mt-4 flex items-center gap-1.5 text-sm text-muted-foreground">
         <User className="h-4 w-4" />
-        <span>{category}</span>
-        <span className="mx-1">|</span>
-        <span>by</span>
-        <User className="h-4 w-4" />
-        <span>{creator}</span>
+        <span>{competition.series.name}</span>
       </div>
     </div>
   )
@@ -170,16 +237,8 @@ export default function WineLoreDashboard() {
       {/* Competition Cards Grid */}
       <main className="flex-1 overflow-auto p-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {competitions.map((competition) => (
-            <CompetitionCard
-              key={competition.id}
-              title={competition.title}
-              status={competition.status}
-              timeRemaining={competition.timeRemaining}
-              description={competition.description}
-              category={competition.category}
-              creator={competition.creator}
-            />
+          {MOCK_COMPETITIONS.map((competition) => (
+            <CompetitionCard key={competition.id} competition={competition} />
           ))}
         </div>
       </main>
