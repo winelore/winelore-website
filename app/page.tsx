@@ -14,88 +14,109 @@ type CompetitionSeriesStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED"
 interface CompetitionSeries {
   id: string
   name: string
+  owner: number[]
   status: CompetitionSeriesStatus
 }
 
 interface Competition {
   id: string
-  series: CompetitionSeries
-  status: string
   name: string
+  status: string
+  description: string
+  holder: number[]
   plannedStartAt: string | null
-  plannedEndAt: string | null
+  plannedEndAt?: string | null
+  series: CompetitionSeries
 }
 
 const MOCK_COMPETITIONS: Competition[] = [
   {
-    id: "comp-1",
+    id: "1",
     name: "Mega Competition 2026",
     status: "IN_PROGRESS",
-    plannedStartAt: "2026-03-15T10:00:00Z",
-    plannedEndAt: "2026-03-15T18:00:00Z",
+    description: "This is a high-stakes wine tasting competition showcasing the best sommeliers from around the world.",
+    holder: [101, 102],
+    plannedStartAt: "2026-03-18T12:00:00Z",
+    plannedEndAt: "2026-03-18T20:00:00Z",
     series: {
-      id: "series-1",
-      name: "Mega Competition",
+      id: "s1",
+      name: "Mega Series",
+      owner: [201],
       status: "ACTIVE",
     },
   },
   {
-    id: "comp-2",
+    id: "2",
     name: "Summer Wine Tasting",
     status: "READY",
+    description: "Join us for an exciting summer wine tasting event featuring selections from top vineyards.",
+    holder: [103],
     plannedStartAt: "2026-03-20T14:00:00Z",
     plannedEndAt: "2026-03-20T20:00:00Z",
     series: {
-      id: "series-2",
+      id: "s2",
       name: "Seasonal Event",
+      owner: [202, 203],
       status: "ACTIVE",
     },
   },
   {
-    id: "comp-3",
+    id: "3",
     name: "Bordeaux Championship",
     status: "FINISHED",
+    description: "The annual Bordeaux championship showcasing the finest French wines from the region.",
+    holder: [104, 105, 106],
     plannedStartAt: "2026-03-01T09:00:00Z",
     plannedEndAt: "2026-03-01T17:00:00Z",
     series: {
-      id: "series-3",
+      id: "s3",
       name: "Regional",
+      owner: [204],
       status: "ACTIVE",
     },
   },
   {
-    id: "comp-4",
+    id: "4",
     name: "Blind Tasting Challenge",
     status: "IN_PROGRESS",
+    description: "Test your palate in this exciting blind tasting competition with mystery wines from unknown origins.",
+    holder: [107],
     plannedStartAt: "2026-03-17T12:00:00Z",
     plannedEndAt: "2026-03-18T18:00:00Z",
     series: {
-      id: "series-4",
+      id: "s4",
       name: "Challenge",
+      owner: [205, 206],
       status: "ACTIVE",
     },
   },
   {
-    id: "comp-5",
+    id: "5",
     name: "New World Wines 2026",
     status: "READY",
+    description: "Explore exceptional wines from emerging regions in Australia, Chile, and South Africa.",
+    holder: [108, 109],
     plannedStartAt: "2026-03-23T10:00:00Z",
     plannedEndAt: "2026-03-23T19:00:00Z",
     series: {
-      id: "series-5",
+      id: "s5",
       name: "Discovery",
+      owner: [207],
       status: "ACTIVE",
     },
   },
   {
-    id: "comp-6",
+    id: "6",
     name: "Vintage Collectors Cup",
     status: "FINISHED",
+    description: "A prestigious competition for rare and vintage wine collectors and enthusiasts.",
+    holder: [110],
     plannedStartAt: "2026-02-20T11:00:00Z",
     plannedEndAt: "2026-02-20T18:00:00Z",
     series: {
-      id: "series-6",
+      id: "s6",
       name: "Premium",
+      owner: [208, 209],
       status: "ARCHIVED",
     },
   },
@@ -168,7 +189,7 @@ function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string
 function CompetitionCard({ competition }: { competition: Competition }) {
   const timeRemaining = formatTimeRemaining(
     competition.plannedStartAt,
-    competition.plannedEndAt,
+    competition.plannedEndAt ?? null,
     competition.status
   )
 
@@ -186,6 +207,9 @@ function CompetitionCard({ competition }: { competition: Competition }) {
           </p>
         </div>
       </div>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+        {competition.description}
+      </p>
       <div className="mt-4 flex items-center gap-1.5 text-sm text-muted-foreground">
         <User className="h-4 w-4" />
         <span>{competition.series.name}</span>
