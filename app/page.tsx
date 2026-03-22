@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Trophy, Wine, BadgeCheck, User, Layers } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers } from "lucide-react"
+import { ProfileMenu } from "@/components/profile-menu"
 
 const tabs = [
   { id: "feed", label: "Feed", icon: FileText },
@@ -271,11 +272,7 @@ export default function WineLoreDashboard() {
         </nav>
 
         {/* User Profile */}
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-card-foreground">likespro</span>
-          <BadgeCheck className="h-5 w-5 text-blue-500" />
-          <AvatarPlaceholder className="h-9 w-9" />
-        </div>
+        <ProfileMenu username="likespro" />
       </header>
 
       {/* Competition Cards Grid */}
