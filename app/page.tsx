@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { FileText, Trophy, Wine, User, Layers } from "lucide-react"
-import { ProfileMenu } from "@/components/profile-menu"
+import { ProfileMenu } from "@/components/wine-lore-main"
 
 const tabs = [
   { id: "feed", label: "Feed", icon: FileText },
@@ -174,11 +174,11 @@ function formatStatus(status: string) {
 function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string | null, status: string) {
   if (status === "FINISHED") return "Ended"
   if (!plannedStartAt) return ""
-  
+
   const now = new Date()
   const startDate = new Date(plannedStartAt)
   const endDate = plannedEndAt ? new Date(plannedEndAt) : null
-  
+
   if (status === "READY") {
     const diff = startDate.getTime() - now.getTime()
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -187,7 +187,7 @@ function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string
     if (hours > 0) return `Starts in ${hours}h`
     return "Starting soon"
   }
-  
+
   if (status === "IN_PROGRESS" && endDate) {
     const diff = endDate.getTime() - now.getTime()
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -197,7 +197,7 @@ function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string
     if (hours > 0) return `${hours}h ${minutes}m`
     return `${minutes}m`
   }
-  
+
   return ""
 }
 
@@ -247,14 +247,9 @@ export default function WineLoreDashboard() {
       {/* Header */}
       <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-  <img 
-    src="/axus-logo.png" 
-    alt="AXUS Logo" 
-    className="h-14 w-auto object-contain" 
-  />
-  <h1 className="text-2xl font-bold text-card-foreground">WineLore</h1>
-</div>
+        <div className="flex items-center">
+          <h1 className="text-2xl font-bold text-card-foreground tracking-tight">WineLore</h1>
+        </div>
 
         {/* Navigation Tabs */}
         <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
@@ -265,11 +260,10 @@ export default function WineLoreDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  isActive
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
                     ? "bg-card text-primary shadow-sm"
                     : "text-muted-foreground hover:text-card-foreground"
-                }`}
+                  }`}
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
                 <span>{tab.label}</span>
