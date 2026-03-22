@@ -247,7 +247,14 @@ export default function WineLoreDashboard() {
       {/* Header */}
       <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
         {/* Logo */}
-        <h1 className="text-2xl font-bold text-card-foreground">WineLore</h1>
+        <div className="flex items-center gap-2">
+  <img 
+    src="/axus-logo.png" 
+    alt="AXUS Logo" 
+    className="h-14 w-auto object-contain" 
+  />
+  <h1 className="text-2xl font-bold text-card-foreground">WineLore</h1>
+</div>
 
         {/* Navigation Tabs */}
         <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
