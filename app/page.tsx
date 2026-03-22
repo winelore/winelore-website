@@ -1,4 +1,4 @@
-import { ProfileMenu } from "@/app/components/profile-menu"
+import { ProfileMenu } from "./components/profile-menu"
 import { User, Newspaper, Trophy, Wine, Check } from "lucide-react"
 
 function CompetitionCard() {
