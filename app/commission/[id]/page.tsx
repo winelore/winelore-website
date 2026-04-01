@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+    import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
@@ -62,7 +62,7 @@ const MOCK_COMMISSION: CommissionDetails = {
     status: "IN_PROGRESS",
     startedAt: "2026-03-29T17:00:00Z",
     candidateCount: 49,
-    processedCandidateCount: 20,
+    processedCandidateCount: 0,
     creatorUsername: "likespro",
     timeElapsed: "3h 27m",
 };
