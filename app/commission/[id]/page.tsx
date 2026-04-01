@@ -62,7 +62,7 @@ const MOCK_COMMISSION: CommissionDetails = {
     status: "IN_PROGRESS",
     startedAt: "2026-03-29T17:00:00Z",
     candidateCount: 49,
-    processedCandidateCount: 0,
+    processedCandidateCount: 20,
     creatorUsername: "likespro",
     timeElapsed: "3h 27m",
 };
