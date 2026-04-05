@@ -1,6 +1,6 @@
 "use client"
 
-    import React, { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
@@ -158,75 +158,83 @@ export default function CommissionStartPage() {
 
     return (
         <div className="flex h-screen flex-col bg-background">
-            {/* Header (ідентичний до WineLoreDashboard) */}
-            <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
-                <div className="flex items-center">
-                    <h1
-                        className="text-2xl font-bold text-card-foreground tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => router.push('/')}
-                    >
+            {/* Header */}
+            <header className="flex shrink-0 items-center border-b border-border bg-card px-6 py-4">
+                {/* Logo */}
+                <div className="flex-1 flex items-center justify-start">
+                    <h1 className="text-2xl font-bold text-card-foreground tracking-tight">
                         WineLore
                     </h1>
                 </div>
 
-                <nav className="hidden md:flex items-center rounded-full border border-border bg-muted/50 p-1">
-                    {tabs.map((tab) => {
-                        const Icon = tab.icon
-                        const isActive = activeTab === tab.id
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                                    isActive
+                {/* Navigation Tabs */}
+                <div className="flex-none">
+                    <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon
+                            const isActive = activeTab === tab.id
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
                                         ? "bg-card text-primary shadow-sm"
                                         : "text-muted-foreground hover:text-card-foreground"
-                                }`}
-                            >
-                                <Icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
-                                <span>{tab.label}</span>
-                            </button>
-                        )
-                    })}
-                </nav>
+                                    }`}
+                                >
+                                    <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
+                                    <span>{tab.label}</span>
+                                </button>
+                            )
+                        })}
+                    </nav>
+                </div>
 
-                <ProfileMenu username="likespro" />
+                {/* User Profile */}
+                <div className="flex-1 flex justify-end">
+                    <ProfileMenu username="likespro" />
+                </div>
             </header>
 
+
             {/* Main Content Area */}
-            <main className="flex-1 overflow-auto p-6">
-                <div className="mx-auto max-w-7xl flex flex-col lg:flex-row gap-8 lg:gap-12">
+            <main className="flex-1 overflow-auto p-6 flex flex-col items-center">
+                <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start">
 
                     {/* Left Column: Participants List */}
-                    <div className="w-full lg:w-5/12 grid grid-cols-1 sm:grid-cols-2 gap-4 h-fit">
-                        {commissionMembers.map((p) => (
-                            <div key={p.auid} className="rounded-xl border border-border bg-card p-4 shadow-sm flex items-center gap-3 transition-shadow hover:shadow-md">
-                                <AvatarPlaceholder className="h-10 w-10 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <p className="text-sm font-semibold text-card-foreground truncate">{p.username}</p>
-                                        {p.role === "HEAD_OF_COMMISSION" && (
-                                            <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                                                <Crown className="w-3 h-3" /> Head
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex text-xs mt-1 font-medium">
-                    <span className={p.isReady ? "text-emerald-500" : "text-destructive"}>
-                      {p.isReady ? "Ready" : "Not Ready"}
-                    </span>
-                                        <span className="mx-1.5 text-muted-foreground/50">|</span>
-                                        <span className={p.isOnPage ? "text-emerald-500" : "text-destructive"}>
-                      {p.isOnPage ? "On the page" : "Not On the page"}
-                    </span>
+                    <div className="w-full lg:w-1/2 flex flex-col lg:items-end lg:pr-7">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-fit w-fit">
+                            {commissionMembers.map((p) => (
+                                <div key={p.auid}
+                                     className="rounded-xl border border-border bg-card p-4 shadow-sm flex items-center gap-3 transition-shadow hover:shadow-md">
+                                    <AvatarPlaceholder className="h-10 w-10 shrink-0"/>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm font-semibold text-card-foreground truncate">{p.username}</p>
+                                            {p.role === "HEAD_OF_COMMISSION" && (
+                                                <span
+                                                    className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+                                                        <Crown className="w-3 h-3"/> Head
+                                                    </span>
+                                            )}
+                                        </div>
+                                        <div className="flex text-xs mt-1 font-medium">
+                            <span className={p.isReady ? "text-emerald-500" : "text-destructive"}>
+                              {p.isReady ? "Ready" : "Not Ready"}
+                            </span>
+                                            <span className="mx-1.5 text-muted-foreground/50">|</span>
+                                            <span className={p.isOnPage ? "text-emerald-500" : "text-destructive"}>
+                              {p.isOnPage ? "On the page" : "Not On the page"}
+                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
 
                     {/* Right Column: Commission Details */}
-                    <div className="w-full lg:w-7/12 flex flex-col pt-2">
+                    <div className="w-full lg:w-1/2 flex flex-col lg:items-start lg:pl-7 pt-1">
                         <div className="flex items-start gap-4 mb-6">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                 <Wine className="h-8 w-8" />
