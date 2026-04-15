@@ -90,39 +90,42 @@ export default function CompetitionStartPage() {
 
     return (
         <div className="flex h-screen flex-col bg-background">
-            {/* Header (ідентичний до WineLoreDashboard) */}
-            <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
-                <div className="flex items-center">
-                    <h1
-                        className="text-2xl font-bold text-card-foreground tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => router.push('/')}
-                    >
+            {/* Header */}
+            <header className="flex shrink-0 items-center border-b border-border bg-card px-6 py-4">
+                {/* Logo */}
+                <div className="flex-1 flex items-center justify-start">
+                    <h1 className="text-2xl font-bold text-card-foreground tracking-tight">
                         WineLore
                     </h1>
                 </div>
 
-                <nav className="hidden md:flex items-center rounded-full border border-border bg-muted/50 p-1">
-                    {tabs.map((tab) => {
-                        const Icon = tab.icon
-                        const isActive = activeTab === tab.id
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                                    isActive
+                {/* Navigation Tabs */}
+                <div className="flex-none">
+                    <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon
+                            const isActive = activeTab === tab.id
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
                                         ? "bg-card text-primary shadow-sm"
                                         : "text-muted-foreground hover:text-card-foreground"
-                                }`}
-                            >
-                                <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
-                                <span>{tab.label}</span>
-                            </button>
-                        )
-                    })}
-                </nav>
+                                    }`}
+                                >
+                                    <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
+                                    <span>{tab.label}</span>
+                                </button>
+                            )
+                        })}
+                    </nav>
+                </div>
 
-                <ProfileMenu username="likespro" />
+                {/* User Profile */}
+                <div className="flex-1 flex justify-end">
+                    <ProfileMenu username="likespro" />
+                </div>
             </header>
 
             {/* Main Content */}
