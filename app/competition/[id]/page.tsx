@@ -21,6 +21,7 @@ type CompetitionStatus = "DRAFT" | "IN_REVIEW" | "READY" | "IN_PROGRESS" | "FINI
 type CommissionStatus = "READY" | "IN_PROGRESS" | "NOT READY"
 
 interface Commission {
+    id: string
     commissionName: string
     commissionStatus: CommissionStatus
     timeElapsed: string
@@ -40,9 +41,9 @@ interface CompetitionDetails {
 }
 
 const MOCK_COMMISSIONS: Commission[] = [
-    {commissionName: "Red Commission", commissionStatus: "IN_PROGRESS", timeElapsed: "3h 27m"},
-    {commissionName: "White Commission", commissionStatus: "NOT READY", timeElapsed: "3h 27m"},
-    {commissionName: "Blue Commission", commissionStatus: "READY", timeElapsed: "3h 27m"},
+    {id: "1", commissionName: "Red Commission", commissionStatus: "IN_PROGRESS", timeElapsed: "3h 27m"},
+    {id: "2", commissionName: "White Commission", commissionStatus: "NOT READY", timeElapsed: "3h 27m"},
+    {id: "3", commissionName: "Blue Commission", commissionStatus: "READY", timeElapsed: "3h 27m"},
 ];
 
 const MOCK_COMPETITION: CompetitionDetails = {
@@ -188,28 +189,34 @@ export default function CompetitionStartPage() {
                             {/* Section 3: Commissions Grid */}
                             <section className="space-y-6">
                                 <h3 className="text-2xl font-bold text-slate-900">Commissions</h3>
+
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    {commissions.map((comm, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="group flex items-center gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40 transition-all hover:scale-[1.02] hover:shadow-xl cursor-pointer"
-                                        >
-                                            <AvatarPlaceholder className="h-14 w-14 flex-shrink-0" />
-                                            <div className="flex flex-col">
-                                                <span className="text-lg font-bold text-slate-900">{comm.commissionName}</span>
-                                                <div className="flex items-center gap-2 text-xs">
-                                                    <span className={`font-bold ${
-                                                        comm.commissionStatus === 'IN_PROGRESS' ? 'text-emerald-600' :
-                                                            comm.commissionStatus === 'READY' ? 'text-blue-600' : 'text-amber-500'
-                                                    }`}>
-                                                        {comm.commissionStatus.replace('_', ' ')}
-                                                    </span>
-                                                    <span className="text-slate-300">|</span>
-                                                    <span className="text-slate-500">{comm.timeElapsed}</span>
+                                    {commissions.map((comm) => {
+                                        const link_commission = `/commission/${comm.id}`;
+
+                                        return (
+                                            <a
+                                                href={link_commission}
+                                                key={comm.id} // 3. Key goes on the outermost element
+                                                className="group flex items-center gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40 transition-all hover:scale-[1.02] hover:shadow-xl cursor-pointer"
+                                            >
+                                                <AvatarPlaceholder className="h-14 w-14 flex-shrink-0" />
+                                                <div className="flex flex-col">
+                                                    <span className="text-lg font-bold text-slate-900">{comm.commissionName}</span>
+                                                    <div className="flex items-center gap-2 text-xs">
+                                                <span className={`font-bold ${
+                                                    comm.commissionStatus === 'IN_PROGRESS' ? 'text-emerald-600' :
+                                                        comm.commissionStatus === 'READY' ? 'text-blue-600' : 'text-amber-500'
+                                                }`}>
+                                                    {comm.commissionStatus.replace('_', ' ')}
+                                                </span>
+                                                        <span className="text-slate-300">|</span>
+                                                        <span className="text-slate-500">{comm.timeElapsed}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                            </a>
+                                        );
+                                    })}
                                 </div>
                             </section>
 
