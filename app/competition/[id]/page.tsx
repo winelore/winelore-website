@@ -1,12 +1,57 @@
 "use client"
 
-import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown } from "lucide-react"
-import {ProfileMenu} from "@/components/wine-lore-main";
-import React, {useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
+import { FileText, Trophy, Wine, User } from "lucide-react"
+import { ProfileMenu } from "@/components/wine-lore-main";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+
+
+const UI_ONLY_FIELDS = {
+    subtitleText: "This is a system generated competition view.",
+    descriptionText: "Detailed description is not available in the current database schema. This area is reserved for future updates when descriptions are added to the Competition model."
+}
+
+const calculateTimeElapsed = (startedAt: string | null): string => {
+    if (!startedAt) return "Not started"
+    const start = new Date(startedAt).getTime()
+    const now = new Date().getTime()
+    const diffMs = now - start
+    if (diffMs < 0) return "Starts in future"
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+    return `${diffHrs}h ${diffMins}m`
+}
+
+const formatEnumStatus = (status: string | undefined): string => {
+    if (!status) return ""
+    return status.toLowerCase().split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+}
 
 // ====================================================================
-// TABS CONFIGURATION (з головної сторінки)
+// INTERFACES
+// ====================================================================
+type CompetitionStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PLANNED" | "STARTED" | "COMPLETED" | "CANCELLED"
+type CommissionStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PLANNED" | "STARTED" | "COMPLETED" | "CANCELLED"
+
+interface Commission {
+    id: string
+    name: string
+    status: CommissionStatus
+    startedAt: string | null
+}
+
+interface CompetitionDetails {
+    id: string
+    name: string
+    seriesId: string
+    status: CompetitionStatus
+    startedAt: string | null
+    plannedStartAt: string | null
+    holders: number[][]
+}
+
+// ====================================================================
+// COMPONENTS
 // ====================================================================
 const tabs = [
     { id: "feed", label: "Feed", icon: FileText },
@@ -14,59 +59,6 @@ const tabs = [
     { id: "wines", label: "Wines", icon: Wine },
 ]
 
-const formatEnumStatus = (status: string | undefined): string => {
-    if (!status) return ""
-    return status
-        .toLowerCase()
-        .split("_")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
-}
-
-// INTERFACES
-
-type CompetitionStatus = "DRAFT" | "IN_REVIEW" | "READY" | "IN_PROGRESS" | "FINISHED" | "CANCELED" | "SUSPENDED" | "DELETED"
-type CommissionStatus = "DRAFT" | "IN_REVIEW" | "READY" | "IN_PROGRESS" | "FINISHED" | "CANCELED" | "SUSPENDED" | "DELETED"
-
-interface Commission {
-    id: string
-    commissionName: string
-    commissionStatus: CommissionStatus
-    timeElapsed: string
-}
-
-interface CompetitionDetails {
-    id: string
-    competitionName: string
-    status: CompetitionStatus
-    startedAt: string | null
-    subtitleText: string
-    descriptionText: string
-
-    MainCompetitionName: string
-    creatorUsername: string;
-    timeElapsed: string;
-}
-
-const MOCK_COMMISSIONS: Commission[] = [
-    {id: "comm_1", commissionName: "Red Commission", commissionStatus: "IN_PROGRESS", timeElapsed: "3h 27m"},
-    {id: "comm_2", commissionName: "White Commission", commissionStatus: "IN_REVIEW", timeElapsed: "3h 27m"},
-    {id: "comm_3", commissionName: "Blue Commission", commissionStatus: "READY", timeElapsed: "3h 27m"},
-];
-
-const MOCK_COMPETITION: CompetitionDetails = {
-    id: "123",
-    competitionName: "Mega Competition 2026",
-    status: "READY",
-    startedAt: "2026-03-29T17:00:00Z",
-    subtitleText: "This is an example competition for WineLore mega system demonstrating all abilities.",
-    descriptionText: "PENISPENISPENISPENISm demonstrating all abilities. This can be a longer description with more characters and so on very loooooooooooooooooooooooooooooooooooooooooodadwa dwadnawdawdawj dj jd wjad jaw djawkjd wkl jawkj awkldj awld jwal aw djawk djkawj dwj jaw jdkawj dkwa jwlaj dwak jawl jw ala.",
-    MainCompetitionName: "Mega Competition 2026",
-    creatorUsername: "likespro",
-    timeElapsed: "3h 27m",
-}
-
-// Components
 function AvatarPlaceholder({ className }: { className?: string }) {
     return (
         <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-200 via-purple-100 to-pink-100 ${className}`}>
@@ -75,31 +67,61 @@ function AvatarPlaceholder({ className }: { className?: string }) {
     )
 }
 
-
-
-export default function CompetitionStartPage() {
-    const router = useRouter()
+export default function CompetitionStartPage({ params }: { params: { id: string } }) {
     const [activeTab, setActiveTab] = useState("competitions")
     const [loadingData, setLoadingData] = useState<boolean>(true)
     const [commissions, setCommissions] = useState<Commission[]>([])
     const [competitionDetails, setCompetitionDetails] = useState<CompetitionDetails | null>(null)
 
-    const [isStarting, setIsStarting] = useState(false)
-
     useEffect(() => {
-        const loadMockData = () => {
-            setTimeout(() => {
-                setCommissions(MOCK_COMMISSIONS)
-                setCompetitionDetails(MOCK_COMPETITION)
-                setLoadingData(false)
-            }, 800)
-        }
-        loadMockData()
-    }, [])
+        const fetchCompetitionData = async () => {
+            try {
+                const response = await fetch('http://switchback.proxy.rlwy.net:43233', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: `
+                            query GetCompetitionPage($id: ID!) {
+                                competition(id: $id) {
+                                    id
+                                    name
+                                    seriesId
+                                    status
+                                    startedAt
+                                    plannedStartAt
+                                    holders
+                                }
+                                commissionsByCompetition(competitionId: $id, limit: 50) {
+                                    items {
+                                        id
+                                        name
+                                        status
+                                        startedAt
+                                    }
+                                }
+                            }
+                        `,
+                        variables: { id: params.id }
+                    })
+                })
 
-    const handleCommissionClick = (id: string) => {
-        router.push(`/commission/${id}`);
-    };
+                const json = await response.json()
+
+                if (json.data) {
+                    setCompetitionDetails(json.data.competition)
+                    setCommissions(json.data.commissionsByCompetition?.items || [])
+                }
+            } catch (error) {
+                console.error("Failed to fetch competition data:", error)
+            } finally {
+                setLoadingData(false)
+            }
+        }
+
+        if (params.id) {
+            fetchCompetitionData()
+        }
+    }, [params.id])
 
     if (loadingData) {
         return (
@@ -111,16 +133,10 @@ export default function CompetitionStartPage() {
 
     return (
         <div className="flex h-screen flex-col bg-background">
-            {/* Header */}
             <header className="flex shrink-0 items-center border-b border-border bg-card px-6 py-4">
-                {/* Logo */}
                 <div className="flex-1 flex items-center justify-start">
-                    <h1 className="text-2xl font-bold text-card-foreground tracking-tight">
-                        WineLore
-                    </h1>
+                    <h1 className="text-2xl font-bold text-card-foreground tracking-tight">WineLore</h1>
                 </div>
-
-                {/* Navigation Tabs */}
                 <div className="flex-none">
                     <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
                         {tabs.map((tab) => {
@@ -130,10 +146,7 @@ export default function CompetitionStartPage() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
-                                        ? "bg-card text-primary shadow-sm"
-                                        : "text-muted-foreground hover:text-card-foreground"
-                                    }`}
+                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-card-foreground"}`}
                                 >
                                     <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
                                     <span>{tab.label}</span>
@@ -142,105 +155,99 @@ export default function CompetitionStartPage() {
                         })}
                     </nav>
                 </div>
-
-                {/* User Profile */}
                 <div className="flex-1 flex justify-end">
                     <ProfileMenu username="likespro" />
                 </div>
             </header>
 
-            {/* Main Content */}
             <main className="flex-1 overflow-y-auto p-8 lg:p-10">
                 <div className="mx-auto max-w-7xl">
                     <div className="grid grid-cols-1 gap-16 lg:grid-cols-[600px_1fr] items-stretch">
-
-                        {/* LEFT COLUMN: Large Card Image */}
                         <div className="hidden lg:flex flex-col h-full">
                             <div className="sticky top-28 w-full h-[calc(100vh-200px)] min-h-[600px] rounded-[40px] bg-white shadow-2xl shadow-slate-200/50 border border-slate-100 p-8 flex flex-col items-center justify-center">
-                                <div className="w-full h-full rounded-[30px] bg-gradient-to-br from-slate-50 to-slate-100 border border-dashed border-slate-200 flex items-center justify-center">
-                                </div>
+                                <div className="w-full h-full rounded-[30px] bg-gradient-to-br from-slate-50 to-slate-100 border border-dashed border-slate-200 flex items-center justify-center"></div>
                             </div>
                         </div>
-                        {/* RIGHT COLUMN: Info & Commissions */}
+
                         <div className="flex flex-col gap-10">
-                            {/* Section 1: Title & Description */}
                             <section className="space-y-6">
                                 <div className="flex items-start gap-6">
                                     <AvatarPlaceholder className="h-20 w-20 flex-shrink-0" />
                                     <div className="space-y-1">
                                         <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                                            {competitionDetails?.competitionName}
+                                            {competitionDetails?.name}
                                         </h2>
                                         <div className="flex items-center gap-2 text-sm">
                                             <span className={`font-bold ${
-                                                competitionDetails?.status === 'IN_PROGRESS' ? 'text-emerald-600' :
-                                                    competitionDetails?.status === 'READY' ? 'text-blue-600' : 'text-amber-500'
+                                                competitionDetails?.status === 'STARTED' ? 'text-emerald-600' :
+                                                    competitionDetails?.status === 'APPROVED' ? 'text-blue-600' : 'text-amber-500'
                                             }`}>
                                                 {formatEnumStatus(competitionDetails?.status)}
                                             </span>
                                             <span className="text-slate-300">|</span>
-                                            <span className="text-slate-500">{competitionDetails?.timeElapsed}</span>
+                                            <span className="text-slate-500">{calculateTimeElapsed(competitionDetails?.startedAt ?? null)}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
                                     <p className="text-lg text-slate-500 leading-relaxed">
-                                        {competitionDetails?.subtitleText}
+                                        {UI_ONLY_FIELDS.subtitleText}
                                     </p>
                                     <p className="text-slate-600 leading-relaxed">
-                                        {competitionDetails?.descriptionText}
+                                        {UI_ONLY_FIELDS.descriptionText}
                                     </p>
                                 </div>
                             </section>
 
-                            {/* Section 2: Creator Footer */}
                             <section className="flex items-center gap-3 border-t border-slate-100 pt-8">
                                 <AvatarPlaceholder className="h-8 w-8" />
                                 <div className="flex items-center gap-2 text-sm font-medium">
-                                    <span className="text-slate-900">{competitionDetails?.MainCompetitionName}</span>
-                                    <span className="text-slate-300">| by</span>
+                                    <span className="text-slate-900">Series ID: {competitionDetails?.seriesId}</span>
+                                    <span className="text-slate-300">| by Holder AUID:</span>
                                     <span className="text-indigo-600 cursor-pointer hover:underline">
-                                        {competitionDetails?.creatorUsername}
+                                        {competitionDetails?.holders?.[0]?.[0] ?? 'Unknown'}
                                     </span>
                                 </div>
                             </section>
 
-                            {/* Section 3: Commissions Grid */}
                             <section className="space-y-6">
                                 <h3 className="text-2xl font-bold text-slate-900">Commissions</h3>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     {commissions.map((comm) => (
-                                        <div
+                                        <Link
+                                            href={`/commission/${comm.id}`}
                                             key={comm.id}
-                                            onClick={() => handleCommissionClick(comm.id)}
-                                            className="group flex items-center gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40 transition-all hover:scale-[1.02] hover:shadow-xl cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-xl active:scale-95"
+                                            className="group flex items-center gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl active:scale-95"
                                         >
                                             <AvatarPlaceholder className="h-14 w-14 flex-shrink-0" />
                                             <div className="flex flex-col">
-                                                <span className="text-lg font-bold text-slate-900">{comm.commissionName}</span>
+                                                <span className="text-lg font-bold text-slate-900">{comm.name}</span>
                                                 <div className="flex items-center gap-2 text-xs">
                                                     <span className={`font-bold ${
-                                                        comm.commissionStatus === 'IN_PROGRESS' ? 'text-emerald-600' :
-                                                            comm.commissionStatus === 'READY' ? 'text-blue-600' : 'text-amber-500'
+                                                        comm.status === 'STARTED' ? 'text-emerald-600' :
+                                                            comm.status === 'APPROVED' ? 'text-blue-600' : 'text-amber-500'
                                                     }`}>
-                                                        {formatEnumStatus(comm.commissionStatus)}
+                                                        {formatEnumStatus(comm.status)}
                                                     </span>
                                                     <span className="text-slate-300">|</span>
-                                                    <span className="text-slate-500">{comm.timeElapsed}</span>
+                                                    <span className="text-slate-500">{calculateTimeElapsed(comm.startedAt)}</span>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                     ))}
+
+                                    {commissions.length === 0 && (
+                                        <div className="col-span-1 md:col-span-2 text-slate-500 text-sm">
+                                            No commissions found for this competition.
+                                        </div>
+                                    )}
                                 </div>
                             </section>
-
                         </div>
                     </div>
                 </div>
             </main>
-
         </div>
-
     )
 }
