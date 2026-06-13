@@ -118,8 +118,10 @@ export default function CompetitionStartPage({ params }: { params: { id: string 
             }
         }
 
-        if (params.id) {
+        if (params?.id) {
             fetchCompetitionData()
+        } else {
+            setLoadingData(false)
         }
     }, [params.id])
 
