@@ -1,5 +1,5 @@
 import { fetchGraphQL } from '../../../lib/apiClient';
-import { GET_COMMISSION, GET_COMPETITION } from './queries';
+import { GET_COMMISSION, GET_CANDIDATE_COUNT } from './queries';
 import CommissionClientView from './CommissionClientView';
 
 interface PageProps {
@@ -12,54 +12,50 @@ export default async function CommissionStartPage({ params }: PageProps) {
     const resolvedParams = await params;
     const commissionId = resolvedParams.id;
 
-    let commission;
+    let commission = null;
+    let candidateCount = 0;
 
     try {
-        const commissionData = await fetchGraphQL(GET_COMMISSION, { id: commissionId });
+        const [commissionData, countData] = await Promise.all([
+            fetchGraphQL(GET_COMMISSION, { id: commissionId }),
+            fetchGraphQL(GET_CANDIDATE_COUNT, { commissionId })
+        ]);
         commission = commissionData.commission;
+        candidateCount = countData.commissionCandidateCount ?? 0;
     } catch (error) {
-        console.error("Помилка завантаження:", error);
+        console.error("Error loading initial data:", error);
         commission = null;
     }
 
     if (!commission) {
         return (
-            <div className="flex h-screen items-center justify-center bg-background">
+            <div className="flex h-screen items-center justify-center bg-background text-white">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-card-foreground mb-2">
-                        Комісію не знайдено
-                    </h2>
-                    <p className="text-muted-foreground">
-                        Перевірте правильність посилання або зверніться до адміністратора.
-                    </p>
+                    <h2 className="text-3xl font-bold mb-2">Commission not found</h2>
+                    <p className="text-muted-foreground">Please check the link or contact your administrator.</p>
                 </div>
             </div>
         );
-    }
-
-    let competitionName = "Невідоме змагання";
-    try {
-        const competitionData = await fetchGraphQL(GET_COMPETITION, { id: commission.competitionId });
-        if (competitionData.competition?.name) {
-            competitionName = competitionData.competition.name;
-        }
-    } catch (error) {
-        console.log(error);
     }
 
     const initialData = {
         id: commission.id,
         name: commission.name,
         status: commission.status,
-        competitionName: competitionName,
-        candidateCount: commission.registeredCandidates?.length || 0,
-        creatorUsername: "Система",
-        timeElapsed: commission.startedAt ? "В процесі" : "Очікує старту",
-        members: commission.members.map((m: any) => ({
+        plannedStartAt: commission.plannedStartAt || null,
+        startedAt: commission.startedAt || null,
+        endedAt: commission.endedAt || null,
+        competition: {
+            id: commission.competition.id,
+            name: commission.competition.name,
+            holders: commission.competition.holders.flat(),
+        },
+        candidateCount: candidateCount,
+        members: commission.members.map((m) => ({
             id: m.id,
-            auid: m.auid,
+            auid: m.auid.flat(),
             role: m.role,
-            username: `Експерт [ID: ${m.auid.join('-')}]`,
+            isReady: m.isReady,
         }))
     };
 
