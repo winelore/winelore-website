@@ -218,7 +218,9 @@ function CompetitionCard({ competition }: { competition: Competition }) {
             <span className={`font-medium ${getStatusColor(competition.status)}`}>
               {formatStatus(competition.status)}
             </span>
-            {timeRemaining && <span className="text-muted-foreground"> | {timeRemaining}</span>}
+              {timeRemaining && (
+                  <span suppressHydrationWarning className="text-muted-foreground"> {' '}| {timeRemaining}</span>
+              )}
           </p>
         </div>
       </div>
