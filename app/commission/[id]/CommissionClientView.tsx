@@ -61,8 +61,8 @@ function MemberAvatar({ auid, role, className }: { auid: number[]; role: string;
 
 function StatusSteps({ status }: { status: string }) {
     const steps = [
-        { id: "readying", label: "Readying", description: "Waiting for readiness" },
-        { id: "tasting", label: "Tasting", description: "Evaluating wines" },
+        { id: "readying", label: "Readying Members", description: "Waiting for readiness" },
+        { id: "tasting", label: "Tasting In Progress", description: "Evaluating wines" },
         { id: "completed", label: "Completed", description: "Results ready" }
     ]
 
@@ -74,38 +74,37 @@ function StatusSteps({ status }: { status: string }) {
     }
 
     return (
-        <div className="w-full bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/40 dark:border-zinc-800/40 rounded-2xl p-4 shadow-xs">
-            <div className="flex flex-row items-center justify-between gap-1">
+        <div className="w-full bg-card/40 border border-border/60 rounded-2xl p-5 mb-2 shadow-xs backdrop-blur-xs">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {steps.map((step, idx) => {
                     const isCompleted = idx < currentStepIdx
                     const isActive = idx === currentStepIdx
 
                     return (
                         <React.Fragment key={step.id}>
-                            <div className="flex items-center gap-2">
-                                <div className={`flex items-center justify-center w-5 h-5 rounded-full border text-[10px] font-bold transition-all duration-300 ${
+                            <div className="flex items-center gap-3 flex-1">
+                                <div className={`flex items-center justify-center w-8 h-8 rounded-full border text-xs font-semibold transition-all duration-350 ${
                                     isCompleted 
-                                        ? "bg-[#34C759] border-[#34C759] text-white" 
+                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-emerald-500/20" 
                                         : isActive 
-                                            ? "bg-[#007AFF] border-[#007AFF] text-white shadow-xs" 
-                                            : "bg-transparent border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-650"
+                                            ? "bg-primary border-primary text-primary-foreground shadow-md ring-4 ring-primary/10" 
+                                            : "bg-muted/30 border-border/85 text-muted-foreground"
                                 }`}>
                                     {isCompleted ? (
-                                        <Check className="w-3 h-3 stroke-[2.5]" />
+                                        <CheckCircle className="w-4 h-4" />
                                     ) : (
                                         <span>{idx + 1}</span>
                                     )}
                                 </div>
-                                <div className="text-left">
-                                    <h4 className={`text-xs font-semibold tracking-tight ${
-                                        isActive ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-500"
-                                    }`}>{step.label}</h4>
+                                <div>
+                                    <h4 className={`text-xs font-semibold ${isActive ? "text-foreground" : "text-muted-foreground"}`}>{step.label}</h4>
+                                    <p className="text-[10px] text-muted-foreground/60">{step.description}</p>
                                 </div>
                             </div>
                             {idx < steps.length - 1 && (
-                                <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800 mx-2 relative overflow-hidden">
-                                    {isCompleted && <div className="absolute inset-0 bg-[#34C759]" />}
-                                    {isActive && <div className="absolute inset-0 bg-gradient-to-r from-[#34C759] to-[#007AFF]/30 animate-pulse" />}
+                                <div className="hidden sm:block h-[2px] flex-1 bg-border/60 mx-4 relative overflow-hidden">
+                                    {isCompleted && <div className="absolute inset-0 bg-emerald-500 transition-all duration-500" />}
+                                    {isActive && <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-primary/45 animate-pulse" />}
                                 </div>
                             )}
                         </React.Fragment>
@@ -300,17 +299,16 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
     const nonReadyCount = localMembers.filter(m => !m.isReady).length
 
     return (
-        <div className="flex h-screen flex-col bg-[#F2F2F7] dark:bg-black text-zinc-900 dark:text-zinc-100">
-            {/* Header */}
-            <header className="flex shrink-0 items-center border-b border-zinc-200/50 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md px-6 py-4">
+        <div className="flex h-screen flex-col bg-background">
+            <header className="flex shrink-0 items-center border-b border-border bg-card px-6 py-4">
                 <div className="flex-1 flex items-center justify-start">
-                    <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    <h1 className="text-2xl font-bold text-card-foreground tracking-tight">
                         WineLore
                     </h1>
                 </div>
 
                 <div className="flex-none">
-                    <nav className="flex items-center rounded-full border border-zinc-200/50 dark:border-zinc-800/60 bg-zinc-200/40 dark:bg-zinc-900/60 p-0.5">
+                    <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
                         {tabs.map((tab) => {
                             const Icon = tab.icon
                             const isActive = activeTab === tab.id
@@ -318,12 +316,12 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${isActive
-                                        ? "bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white shadow-xs"
-                                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
+                                        ? "bg-card text-primary shadow-sm"
+                                        : "text-muted-foreground hover:text-card-foreground"
                                     }`}
                                 >
-                                    <Icon className={`h-3.5 w-3.5 ${isActive ? "text-[#007AFF]" : ""}`} />
+                                    <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
                                     <span>{tab.label}</span>
                                 </button>
                             )
@@ -336,74 +334,78 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center bg-radial from-background via-background to-muted/20">
                 <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
 
-                    {/* Left Column: Tasting Panel / Participants List */}
-                    <div className="w-full lg:w-[45%] flex flex-col gap-5">
+                    <div className="w-full lg:w-[45%] flex flex-col gap-4">
                         <StatusSteps status={initialData.status} />
 
-                        <div>
-                            <div className="flex items-center justify-between px-1 mb-2">
-                                <h3 className="text-xs uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">
-                                    Tasting Panel
-                                </h3>
-                                <span className="text-xs font-medium text-zinc-550 dark:text-zinc-400">
-                                    {localMembers.filter(m => m.isReady).length} of {localMembers.length} Ready
+                        <div className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-primary/70" />
+                                        Tasting Panel
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Members evaluating this competition
+                                    </p>
+                                </div>
+                                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border/50">
+                                    {localMembers.filter(m => m.isReady).length} / {localMembers.length} Ready
                                 </span>
                             </div>
 
-                            <div className="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/40 dark:border-zinc-850/40 rounded-2xl shadow-xs divide-y divide-zinc-100 dark:divide-zinc-800/60 overflow-hidden">
+                            <div className="flex flex-col gap-3">
                                 {localMembers.map((p) => {
                                     const isMe = p.auid.includes(currentAuid)
                                     return (
-                                        <div key={p.id} className={`flex items-center gap-3 p-4 transition-colors duration-200 ${
+                                        <div key={p.id} className={`relative rounded-xl border p-4 shadow-sm flex items-center gap-3 transition-all duration-300 hover:shadow-md w-full ${
                                             isMe 
-                                                ? "bg-[#007AFF]/5 dark:bg-[#007AFF]/8" 
-                                                : "hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30"
+                                                ? "border-primary bg-primary/5 shadow-primary/5 ring-1 ring-primary/20" 
+                                                : "border-border bg-card hover:border-border/80"
                                         }`}>
-                                            <MemberAvatar auid={p.auid} role={p.role} className="h-9 w-9 shrink-0" />
+                                            <MemberAvatar auid={p.auid} role={p.role} className="h-10 w-10 shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
+                                                    <p className="text-sm font-semibold text-card-foreground truncate flex items-center gap-1.5">
                                                         <span>AUID: {p.auid.join(", ")}</span>
                                                         {isMe && (
-                                                            <span className="text-[9px] bg-[#007AFF]/10 text-[#007AFF] dark:bg-[#007AFF]/20 dark:text-blue-400 font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wide">
+                                                            <span className="text-[9px] bg-primary text-primary-foreground font-bold px-1.5 py-0.2 rounded-xs uppercase tracking-wider">
                                                                 You
                                                             </span>
                                                         )}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-1.5">
+                                                <div className="flex items-center justify-between mt-2">
                                                     <div className="flex items-center">
                                                         {p.role === "HEAD" && (
-                                                            <span className="bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
+                                                            <span className="bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                                                                 <Crown className="w-3 h-3"/> Head
                                                             </span>
                                                         )}
                                                         {p.role === "TRAINEE_EXPERT" && (
-                                                            <span className="bg-[#34C759]/10 text-[#34C759] text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
+                                                            <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                                                                 <GraduationCap className="w-3 h-3"/> Trainee
                                                             </span>
                                                         )}
                                                         {p.role === "EXPERT" && (
-                                                            <span className="bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
+                                                            <span className="bg-blue-500/10 text-blue-600 dark:text-blue-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                                                                 Expert
                                                             </span>
                                                         )}
                                                     </div>
                                                     <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider shrink-0 ${
-                                                        p.isReady ? "text-[#34C759]" : "text-zinc-400 dark:text-zinc-500"
+                                                        p.isReady ? "text-emerald-500" : "text-muted-foreground/60"
                                                     }`}>
                                                         {p.isReady ? (
                                                             <>
-                                                                <CheckCircle className="w-3.5 h-3.5 fill-[#34C759]/10 stroke-[#34C759]" />
+                                                                <CheckCircle className="w-3.5 h-3.5 fill-emerald-500/10" />
                                                                 <span>Ready</span>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <div className="w-3 h-3 rounded-full border-1.5 border-dashed border-zinc-400 dark:border-zinc-500 animate-spin" style={{ animationDuration: '3s' }} />
+                                                                <div className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-muted-foreground/40 animate-spin" style={{ animationDuration: '3s' }} />
                                                                 <span>Waiting</span>
                                                             </>
                                                         )}
@@ -417,30 +419,28 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                         </div>
                     </div>
 
-                    {/* Right Column: Commission Details & Controls */}
                     <div className="w-full lg:w-[55%] flex flex-col gap-6">
-                        {/* Details Card */}
-                        <div className="relative overflow-hidden bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/40 dark:border-zinc-850/40 rounded-2xl p-6 shadow-xs">
+                        <div className="relative overflow-hidden bg-card/60 backdrop-blur-md border border-border/80 rounded-3xl p-6 shadow-md">
                             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
 
                             <div className="flex items-start gap-4 mb-6">
-                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 text-[#007AFF] border border-zinc-200/50 dark:border-zinc-800/50 shadow-inner">
-                                    <Wine className="h-8 w-8 text-[#007AFF]" />
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-inner">
+                                    <Wine className="h-8 w-8" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">
+                                    <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground/60">
                                         Commission Session
                                     </span>
-                                    <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight mt-0.5 truncate">
+                                    <h2 className="text-2xl md:text-3xl font-extrabold text-card-foreground tracking-tight mt-0.5 truncate">
                                         {initialData.name}
                                     </h2>
                                     <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                                             initialData.status === "STARTED" 
-                                                ? "bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20" 
+                                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
                                                 : initialData.status === "COMPLETED"
-                                                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200/50 dark:border-zinc-700/50"
-                                                    : "bg-amber-500/10 text-amber-550 border border-amber-550/20"
+                                                    ? "bg-muted text-muted-foreground border border-border"
+                                                    : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
                                         }`}>
                                             {initialData.status === "STARTED" && (
                                                 <span className="relative flex h-2 w-2 mr-1">
@@ -452,8 +452,8 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                                         </span>
                                         {timeDisplay && (
                                             <>
-                                                <span className="text-zinc-300 dark:text-zinc-700">|</span>
-                                                <span className="text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1 text-xs">
+                                                <span className="text-muted-foreground/30">|</span>
+                                                <span className="text-muted-foreground font-medium flex items-center gap-1 text-xs">
                                                     <Timer className="w-3.5 h-3.5" />
                                                     {timeDisplay}
                                                 </span>
@@ -463,76 +463,75 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-zinc-200/50 dark:border-zinc-800/40 pt-6">
-                                <div className="flex items-start gap-3 bg-zinc-50/50 dark:bg-zinc-800/20 border border-zinc-200/20 dark:border-zinc-800/30 rounded-xl p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border/60 pt-6">
+                                <div className="flex items-start gap-3 bg-muted/30 border border-border/50 rounded-2xl p-4">
                                     <Trophy className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-zinc-450 dark:text-zinc-500">
+                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
                                             Competition
                                         </h4>
-                                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5 truncate">
+                                        <p className="text-sm font-semibold text-foreground mt-0.5 truncate">
                                             {initialData.competition.name}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start gap-3 bg-zinc-50/50 dark:bg-zinc-800/20 border border-zinc-200/20 dark:border-zinc-800/30 rounded-xl p-4">
+                                <div className="flex items-start gap-3 bg-muted/30 border border-border/50 rounded-2xl p-4">
                                     <User className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-zinc-450 dark:text-zinc-500">
+                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
                                             Holders
                                         </h4>
-                                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5 truncate" title={creatorNames}>
+                                        <p className="text-sm font-semibold text-foreground mt-0.5 truncate" title={creatorNames}>
                                             {creatorNames}
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 bg-[#007AFF]/5 border border-[#007AFF]/10 rounded-xl p-4 mt-4">
-                                <Layers className="h-5 w-5 text-[#007AFF]/70 shrink-0" />
-                                <span className="text-sm text-zinc-650 dark:text-zinc-400 font-medium">
-                                    Featuring <strong className="text-zinc-900 dark:text-white font-bold">{initialData.candidateCount}</strong> selected beverages for tasting
+                            <div className="flex items-center gap-3 bg-primary/5 border border-primary/10 rounded-2xl p-4 mt-4">
+                                <Layers className="h-5 w-5 text-primary/70 shrink-0" />
+                                <span className="text-sm text-muted-foreground font-medium">
+                                    Featuring <strong className="text-foreground font-bold">{initialData.candidateCount}</strong> selected beverages for tasting
                                 </span>
                             </div>
                         </div>
 
-                        {/* Actions Card */}
-                        <div className="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/40 dark:border-zinc-850/40 rounded-2xl p-6 shadow-xs">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-4">
+                        <div className="bg-card border border-border/60 rounded-3xl p-6 shadow-sm">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
                                 Actions & Controls
                             </h3>
                             
                             <div className="flex flex-col gap-6">
                                 {isPreStart && currentUserRole && (
-                                    <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/20 border border-zinc-200/20 dark:border-zinc-800/30 flex-wrap sm:flex-nowrap">
+                                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-muted/20 border border-border/40 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
-                                            <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                            <h4 className="text-sm font-semibold text-foreground">
                                                 Your Readiness
                                             </h4>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                            <p className="text-xs text-muted-foreground mt-0.5">
                                                 Mark yourself as ready when you are prepared to start tasting
                                             </p>
                                         </div>
                                         <button
                                             onClick={() => handleToggleReady(!amIReady)}
                                             disabled={isMutating}
-                                            className={`group flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0 ${
+                                            className={`group flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-xs cursor-pointer shrink-0 ${
                                                 amIReady
-                                                    ? "bg-[#34C759] hover:bg-[#34C759]/90 text-white shadow-xs"
-                                                    : "bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF]/15"
+                                                    ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/10"
+                                                    : "bg-primary text-primary-foreground hover:bg-primary/90"
                                             }`}
                                         >
                                             {isMutating ? (
-                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                                             ) : amIReady ? (
                                                 <>
-                                                    <CheckCircle className="h-3.5 w-3.5 stroke-[2.5]" />
+                                                    <CheckCircle className="h-4 w-4" />
                                                     <span>Ready!</span>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <PlayCircle className="h-3.5 w-3.5" />
+                                                    <PlayCircle className="h-4 w-4" />
                                                     <span>Mark Ready</span>
                                                 </>
                                             )}
@@ -540,10 +539,9 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                                     </div>
                                 )}
 
-                                {/* Admin Action section */}
                                 {currentUserRole === "HEAD" && (
-                                    <div className="border-t border-zinc-200/50 dark:border-zinc-800/40 pt-6">
-                                        <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">
+                                    <div className="border-t border-border/60 pt-6">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
                                             Head of Commission Tools
                                         </h4>
                                         
@@ -553,28 +551,28 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                                                     <button
                                                         onClick={handleStartCommission}
                                                         disabled={!isEveryoneReady || isMutating}
-                                                        className={`group flex items-center gap-2 rounded-full px-6 py-2.5 text-xs font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-45 disabled:pointer-events-none cursor-pointer ${
+                                                        className={`group flex items-center gap-2.5 rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-45 disabled:pointer-events-none cursor-pointer ${
                                                             isEveryoneReady 
-                                                                ? "bg-[#007AFF] hover:bg-[#007AFF]/90 text-white shadow-xs" 
-                                                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-550 border border-zinc-200/50 dark:border-zinc-800/40"
+                                                                ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30" 
+                                                                : "bg-muted text-muted-foreground/60 border border-border"
                                                         }`}
                                                     >
                                                         {isMutating ? (
-                                                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                                                         ) : (
-                                                            <PlayCircle className="h-4 w-4" />
+                                                            <PlayCircle className="h-5 w-5" />
                                                         )}
                                                         <span>Start Commission</span>
                                                     </button>
                                                     
                                                     {!isEveryoneReady && (
-                                                        <span className="text-xs text-zinc-450 dark:text-zinc-500 font-medium animate-fade-in-slide">
+                                                        <span className="text-xs text-muted-foreground font-medium animate-fade-in-slide">
                                                             Waiting for {nonReadyCount} member{nonReadyCount > 1 ? 's' : ''} to be ready.
                                                         </span>
                                                     )}
                                                     {isEveryoneReady && (
-                                                        <span className="text-xs text-[#34C759] font-semibold flex items-center gap-1.5 animate-pulse">
-                                                            <Check className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                                                        <span className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 animate-pulse">
+                                                            <Check className="w-4 h-4 shrink-0" />
                                                             Everyone is ready! Start session.
                                                         </span>
                                                     )}
@@ -584,18 +582,18 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
 
                                         {initialData.status === "STARTED" && (
                                             <div className="flex flex-col gap-2.5">
-                                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+                                                <p className="text-xs text-muted-foreground mb-1">
                                                     As the Head of Commission, you can end the evaluation once all members have finished their tasting assessments.
                                                 </p>
                                                 <button
                                                     onClick={handleCompleteCommission}
                                                     disabled={isMutating}
-                                                    className="group flex items-center justify-center gap-2 rounded-full bg-[#FF3B30] hover:bg-[#FF3B30]/90 px-6 py-2.5 text-xs font-semibold text-white shadow-xs transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
+                                                    className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-red-500/10 transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
                                                 >
                                                     {isMutating ? (
-                                                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                                                     ) : (
-                                                        <StopCircle className="h-4 w-4" />
+                                                        <StopCircle className="h-5 w-5" />
                                                     )}
                                                     <span>Complete Commission</span>
                                                 </button>
@@ -604,48 +602,45 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                                     </div>
                                 )}
 
-                                {/* Informational notice when commission is completed */}
                                 {initialData.status === "COMPLETED" && (
-                                    <div className="p-4 rounded-xl bg-[#34C759]/5 border border-[#34C759]/10 flex items-start gap-3">
-                                        <CheckCircle className="w-5 h-5 text-[#34C759] shrink-0 mt-0.5" />
+                                    <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-start gap-3">
+                                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                                         <div>
-                                            <h4 className="text-sm font-semibold text-zinc-900 dark:text-[#34C759]">
+                                            <h4 className="text-sm font-semibold text-emerald-950 dark:text-emerald-400">
                                                 Commission Session Completed
                                             </h4>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                            <p className="text-xs text-emerald-800/80 dark:text-emerald-500/80 mt-1">
                                                 All tasting sessions have concluded. The evaluation data has been locked and archived for scoring.
                                             </p>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Informational notice when tasting is in progress and user is not HEAD */}
                                 {initialData.status === "STARTED" && currentUserRole !== "HEAD" && (
-                                    <div className="p-4 rounded-xl bg-[#007AFF]/5 border border-[#007AFF]/10 flex items-start gap-3">
-                                        <div className="relative flex h-2.5 w-2.5 mt-1.5 shrink-0">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#007AFF]"></span>
+                                    <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-3">
+                                        <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-semibold text-zinc-900 dark:text-blue-400">
+                                            <h4 className="text-sm font-semibold text-indigo-950 dark:text-indigo-400">
                                                 Tasting is Active
                                             </h4>
-                                            <p className="text-xs text-zinc-550 dark:text-zinc-450 mt-1">
+                                            <p className="text-xs text-indigo-800/80 dark:text-indigo-500/80 mt-1">
                                                 The commission has started. Please proceed with assessing your assigned wines and submitting scores.
                                             </p>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Informational notice when waiting for HEAD to start */}
                                 {isPreStart && currentUserRole !== "HEAD" && (
-                                    <div className="p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/20 border border-zinc-250/20 dark:border-zinc-800/30 flex items-start gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse mt-2 shrink-0" />
+                                    <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 flex items-start gap-3">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mt-1.5 shrink-0" />
                                         <div>
-                                            <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-150">
+                                            <h4 className="text-sm font-semibold text-foreground">
                                                 Waiting for Session Start
                                             </h4>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                            <p className="text-xs text-muted-foreground mt-1">
                                                 Once all members are ready, the Head of Commission will initiate the tasting session.
                                             </p>
                                         </div>
