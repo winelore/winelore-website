@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { FileText, Trophy, Wine, User, Layers } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
 
@@ -202,41 +202,48 @@ function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string
 }
 
 function CompetitionCard({ competition }: { competition: Competition }) {
-  const timeRemaining = formatTimeRemaining(
-    competition.plannedStartAt,
-    competition.plannedEndAt ?? null,
-    competition.status
-  )
+    const [isMounted, setIsMounted] = useState(false)
 
-  return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-start gap-3">
-        <AvatarPlaceholder className="h-10 w-10 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-card-foreground">{competition.name}</h3>
-          <p className="text-sm">
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
+
+    const timeRemaining = formatTimeRemaining(
+        competition.plannedStartAt,
+        competition.plannedEndAt ?? null,
+        competition.status
+    )
+
+    return (
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div className="flex items-start gap-3">
+                <AvatarPlaceholder className="h-10 w-10 shrink-0" />
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-semibold text-card-foreground">{competition.name}</h3>
+                    <p className="text-sm">
             <span className={`font-medium ${getStatusColor(competition.status)}`}>
               {formatStatus(competition.status)}
             </span>
-            {timeRemaining && <span className="text-muted-foreground"> | {timeRemaining}</span>}
-          </p>
+                        {/* Рендеримо час тільки після монтування клієнта */}
+                        {isMounted && timeRemaining && <span className="text-muted-foreground"> | {timeRemaining}</span>}
+                    </p>
+                </div>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+                {competition.description}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                    <Layers className="h-4 w-4" />
+                    <span>{competition.series.name}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <User className="h-4 w-4" />
+                    <span>Holder ID: {competition.holder.join(", ")}</span>
+                </div>
+            </div>
         </div>
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
-        {competition.description}
-      </p>
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Layers className="h-4 w-4" />
-          <span>{competition.series.name}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <User className="h-4 w-4" />
-          <span>Holder ID: {competition.holder.join(", ")}</span>
-        </div>
-      </div>
-    </div>
-  )
+    )
 }
 
 export default function WineLoreDashboard() {
