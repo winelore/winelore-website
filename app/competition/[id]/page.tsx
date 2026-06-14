@@ -14,8 +14,8 @@ export default async function CompetitionStartPage({ params }: PageProps) {
     const resolvedParams = await params;
     const competitionId = resolvedParams.id;
 
-    let competition = null;
-    let commissions = [];
+    let competition: any = null;
+    let commissions: any[] = [];
 
     try {
         const data = await fetchGraphQL(GET_COMPETITION_PAGE, { id: competitionId });
@@ -50,17 +50,23 @@ export default async function CompetitionStartPage({ params }: PageProps) {
     const initialData = {
         id: competition.id,
         name: competition.name,
-        // Тимчасова заглушка, поки бекенд не оновить схему на сервері:
-        seriesId: competition.seriesId || "Очікує бекенд (N/A)",
         status: competition.status,
-        startedAt: competition.startedAt,
-        plannedStartAt: competition.plannedStartAt,
-        holders: competition.holders,
+        startedAt: competition.startedAt || null,
+        plannedStartAt: competition.plannedStartAt || null,
+        plannedEndAt: competition.plannedEndAt || null,
+        endedAt: competition.endedAt || null,
+        series: {
+            id: competition.series.id,
+            name: competition.series.name,
+            status: competition.series.status
+        },
+        holders: competition.holders.flat(),
         commissions: commissions.map((comm: any) => ({
             id: comm.id,
             name: comm.name,
             status: comm.status,
-            startedAt: comm.startedAt
+            startedAt: comm.startedAt || null,
+            endedAt: comm.endedAt || null
         }))
     };
 

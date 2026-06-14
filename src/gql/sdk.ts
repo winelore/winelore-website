@@ -20,6 +20,23 @@ export type CommissionStatus =
   | 'PLANNED'
   | 'STARTED';
 
+export type CompetitionSeriesStatus =
+  | 'APPROVED'
+  | 'ARCHIVED'
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'PUBLISHED'
+  | 'SUSPENDED';
+
+export type CompetitionStatus =
+  | 'APPROVED'
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'PLANNED'
+  | 'STARTED';
+
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -63,6 +80,13 @@ export type CompleteCommissionMutationVariables = Exact<{
 
 
 export type CompleteCommissionMutation = { completeCommission: { id: string, status: Types.CommissionStatus, endedAt: string | null } };
+
+export type GetCompetitionPageQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type GetCompetitionPageQuery = { competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, plannedStartAt: string | null, plannedEndAt: string | null, endedAt: string | null, holders: Array<Array<number>>, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } } | null, commissionsByCompetition: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null }> } };
 
 
 export const GetCommissionDocument = gql`
@@ -134,6 +158,34 @@ export const CompleteCommissionDocument = gql`
   }
 }
     `;
+export const GetCompetitionPageDocument = gql`
+    query GetCompetitionPage($id: ID!) {
+  competition(id: $id) {
+    id
+    name
+    status
+    startedAt
+    plannedStartAt
+    plannedEndAt
+    endedAt
+    holders
+    series {
+      id
+      name
+      status
+    }
+  }
+  commissionsByCompetition(competitionId: $id, limit: 50) {
+    items {
+      id
+      name
+      status
+      startedAt
+      endedAt
+    }
+  }
+}
+    `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
@@ -154,6 +206,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     CompleteCommission(variables: Types.CompleteCommissionMutationVariables, options?: C): Promise<Types.CompleteCommissionMutation> {
       return requester<Types.CompleteCommissionMutation, Types.CompleteCommissionMutationVariables>(CompleteCommissionDocument, variables, options) as Promise<Types.CompleteCommissionMutation>;
+    },
+    GetCompetitionPage(variables: Types.GetCompetitionPageQueryVariables, options?: C): Promise<Types.GetCompetitionPageQuery> {
+      return requester<Types.GetCompetitionPageQuery, Types.GetCompetitionPageQueryVariables>(GetCompetitionPageDocument, variables, options) as Promise<Types.GetCompetitionPageQuery>;
     }
   };
 }

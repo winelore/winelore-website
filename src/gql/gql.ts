@@ -20,6 +20,7 @@ type Documents = {
     "\n  mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": typeof types.MarkMemberNotReadyDocument,
     "\n  mutation StartCommission($id: ID!) {\n    startCommission(id: $id) {\n      id\n      status\n      startedAt\n    }\n  }\n": typeof types.StartCommissionDocument,
     "\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n": typeof types.CompleteCommissionDocument,
+    "\n  query GetCompetitionPage($id: ID!) {\n      competition(id: $id) {\n          id\n          name\n          status\n          startedAt\n          plannedStartAt\n          plannedEndAt\n          endedAt\n          holders\n          series {\n              id\n              name\n              status\n          }\n      }\n      commissionsByCompetition(competitionId: $id, limit: 50) {\n          items {\n              id\n              name\n              status\n              startedAt\n              endedAt\n          }\n      }\n  }\n": typeof types.GetCompetitionPageDocument,
 };
 const documents: Documents = {
     "\n  query GetCommission($id: ID!) {\n    commission(id: $id) {\n      id\n      name\n      status\n      plannedStartAt\n      startedAt\n      endedAt\n      createdAt\n      competition {\n        id\n        name\n        holders\n      }\n      members {\n        id\n        auid\n        role\n        isReady\n      }\n    }\n  }\n": types.GetCommissionDocument,
@@ -28,6 +29,7 @@ const documents: Documents = {
     "\n  mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": types.MarkMemberNotReadyDocument,
     "\n  mutation StartCommission($id: ID!) {\n    startCommission(id: $id) {\n      id\n      status\n      startedAt\n    }\n  }\n": types.StartCommissionDocument,
     "\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n": types.CompleteCommissionDocument,
+    "\n  query GetCompetitionPage($id: ID!) {\n      competition(id: $id) {\n          id\n          name\n          status\n          startedAt\n          plannedStartAt\n          plannedEndAt\n          endedAt\n          holders\n          series {\n              id\n              name\n              status\n          }\n      }\n      commissionsByCompetition(competitionId: $id, limit: 50) {\n          items {\n              id\n              name\n              status\n              startedAt\n              endedAt\n          }\n      }\n  }\n": types.GetCompetitionPageDocument,
 };
 
 /**
@@ -68,6 +70,10 @@ export function gql(source: "\n  mutation StartCommission($id: ID!) {\n    start
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n"): (typeof documents)["\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query GetCompetitionPage($id: ID!) {\n      competition(id: $id) {\n          id\n          name\n          status\n          startedAt\n          plannedStartAt\n          plannedEndAt\n          endedAt\n          holders\n          series {\n              id\n              name\n              status\n          }\n      }\n      commissionsByCompetition(competitionId: $id, limit: 50) {\n          items {\n              id\n              name\n              status\n              startedAt\n              endedAt\n          }\n      }\n  }\n"): (typeof documents)["\n  query GetCompetitionPage($id: ID!) {\n      competition(id: $id) {\n          id\n          name\n          status\n          startedAt\n          plannedStartAt\n          plannedEndAt\n          endedAt\n          holders\n          series {\n              id\n              name\n              status\n          }\n      }\n      commissionsByCompetition(competitionId: $id, limit: 50) {\n          items {\n              id\n              name\n              status\n              startedAt\n              endedAt\n          }\n      }\n  }\n"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

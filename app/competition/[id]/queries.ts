@@ -1,4 +1,6 @@
-export const GET_COMPETITION_PAGE = `
+import { gql } from '@/src/gql';
+
+export const GET_COMPETITION_PAGE = gql(`
   query GetCompetitionPage($id: ID!) {
       competition(id: $id) {
           id
@@ -6,7 +8,14 @@ export const GET_COMPETITION_PAGE = `
           status
           startedAt
           plannedStartAt
+          plannedEndAt
+          endedAt
           holders
+          series {
+              id
+              name
+              status
+          }
       }
       commissionsByCompetition(competitionId: $id, limit: 50) {
           items {
@@ -14,7 +23,8 @@ export const GET_COMPETITION_PAGE = `
               name
               status
               startedAt
+              endedAt
           }
       }
   }
-`;
+`);
