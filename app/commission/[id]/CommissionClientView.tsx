@@ -298,6 +298,11 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
     const isPreStart = initialData.status !== "STARTED" && initialData.status !== "COMPLETED"
     const nonReadyCount = localMembers.filter(m => !m.isReady).length
 
+    const sortedMembers = [...localMembers].sort((a, b) => {
+        const roleOrder = { HEAD: 1, EXPERT: 2, TRAINEE_EXPERT: 3 }
+        return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)
+    })
+
     return (
         <div className="flex h-screen flex-col bg-background">
             <header className="flex shrink-0 items-center border-b border-border bg-card px-6 py-4">
@@ -357,7 +362,7 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
                             </div>
 
                             <div className="flex flex-col gap-3">
-                                {localMembers.map((p) => {
+                                {sortedMembers.map((p) => {
                                     const isMe = p.auid.includes(currentAuid)
                                     return (
                                         <div key={p.id} className={`relative rounded-xl border p-4 shadow-sm flex items-center gap-3 transition-all duration-300 hover:shadow-md w-full ${
