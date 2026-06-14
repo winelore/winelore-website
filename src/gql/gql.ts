@@ -18,12 +18,16 @@ type Documents = {
     "\n  query GetCommissionCandidateCount($commissionId: ID!) {\n    commissionCandidateCount(commissionId: $commissionId)\n  }\n": typeof types.GetCommissionCandidateCountDocument,
     "\n  mutation MarkMemberReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": typeof types.MarkMemberReadyDocument,
     "\n  mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": typeof types.MarkMemberNotReadyDocument,
+    "\n  mutation StartCommission($id: ID!) {\n    startCommission(id: $id) {\n      id\n      status\n      startedAt\n    }\n  }\n": typeof types.StartCommissionDocument,
+    "\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n": typeof types.CompleteCommissionDocument,
 };
 const documents: Documents = {
     "\n  query GetCommission($id: ID!) {\n    commission(id: $id) {\n      id\n      name\n      status\n      plannedStartAt\n      startedAt\n      endedAt\n      createdAt\n      competition {\n        id\n        name\n        holders\n      }\n      members {\n        id\n        auid\n        role\n        isReady\n      }\n    }\n  }\n": types.GetCommissionDocument,
     "\n  query GetCommissionCandidateCount($commissionId: ID!) {\n    commissionCandidateCount(commissionId: $commissionId)\n  }\n": types.GetCommissionCandidateCountDocument,
     "\n  mutation MarkMemberReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": types.MarkMemberReadyDocument,
     "\n  mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": types.MarkMemberNotReadyDocument,
+    "\n  mutation StartCommission($id: ID!) {\n    startCommission(id: $id) {\n      id\n      status\n      startedAt\n    }\n  }\n": types.StartCommissionDocument,
+    "\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n": types.CompleteCommissionDocument,
 };
 
 /**
@@ -56,6 +60,14 @@ export function gql(source: "\n  mutation MarkMemberReady($commissionId: ID!, $m
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation StartCommission($id: ID!) {\n    startCommission(id: $id) {\n      id\n      status\n      startedAt\n    }\n  }\n"): (typeof documents)["\n  mutation StartCommission($id: ID!) {\n    startCommission(id: $id) {\n      id\n      status\n      startedAt\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n"): (typeof documents)["\n  mutation CompleteCommission($id: ID!) {\n    completeCommission(id: $id) {\n      id\n      status\n      endedAt\n    }\n  }\n"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

@@ -67,6 +67,10 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^7.1.2",
     "@graphql-codegen/client-preset": "^6.0.1",
+    "@graphql-codegen/import-types-preset": "^4.0.1",
+    "@graphql-codegen/typescript": "^6.0.2",
+    "@graphql-codegen/typescript-generic-sdk": "^5.0.1",
+    "@graphql-codegen/typescript-operations": "^6.0.3",
     "@parcel/watcher": "^2.5.6",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/js-cookie": "^3.0.6",

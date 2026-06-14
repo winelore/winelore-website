@@ -1,5 +1,4 @@
-import { fetchGraphQL } from '../../../lib/apiClient';
-import { GET_COMMISSION, GET_CANDIDATE_COUNT } from './queries';
+import { sdk } from '../../../lib/apiClient';
 import CommissionClientView from './CommissionClientView';
 
 interface PageProps {
@@ -17,8 +16,8 @@ export default async function CommissionStartPage({ params }: PageProps) {
 
     try {
         const [commissionData, countData] = await Promise.all([
-            fetchGraphQL(GET_COMMISSION, { id: commissionId }),
-            fetchGraphQL(GET_CANDIDATE_COUNT, { commissionId })
+            sdk.GetCommission({ id: commissionId }),
+            sdk.GetCommissionCandidateCount({ commissionId })
         ]);
         commission = commissionData.commission;
         candidateCount = countData.commissionCandidateCount ?? 0;

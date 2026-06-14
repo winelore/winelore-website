@@ -54,3 +54,23 @@ export const MARK_MEMBER_NOT_READY = gql(`
     }
   }
 `);
+
+export const START_COMMISSION = gql(`
+  mutation StartCommission($id: ID!) {
+    startCommission(id: $id) {
+      id
+      status
+      startedAt
+    }
+  }
+`);
+
+export const COMPLETE_COMMISSION = gql(`
+  mutation CompleteCommission($id: ID!) {
+    completeCommission(id: $id) {
+      id
+      status
+      endedAt
+    }
+  }
+`);

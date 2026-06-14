@@ -10,6 +10,16 @@ const config: CodegenConfig = {
             presetConfig: {
                 gqlTagName: 'gql',
             }
+        },
+        './src/gql/sdk.ts': {
+            preset: 'import-types',
+            presetConfig: {
+                typesPath: './graphql',
+            },
+            plugins: [
+                'typescript-operations',
+                'typescript-generic-sdk'
+            ]
         }
     },
     ignoreNoDocuments: true,

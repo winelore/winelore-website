@@ -1,0 +1,160 @@
+/** Internal type. DO NOT USE DIRECTLY. */
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+/** Internal type. DO NOT USE DIRECTLY. */
+export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+import * as Types from './graphql';
+
+import { DocumentNode } from 'graphql';
+import gql from 'graphql-tag';
+export type CommissionMemberRole =
+  | 'EXPERT'
+  | 'HEAD'
+  | 'TRAINEE_EXPERT';
+
+export type CommissionStatus =
+  | 'APPROVED'
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'PLANNED'
+  | 'STARTED';
+
+export type GetCommissionQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, plannedStartAt: string | null, startedAt: string | null, endedAt: string | null, createdAt: string, competition: { id: string, name: string, holders: Array<Array<number>> }, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionMemberRole, isReady: boolean }> } | null };
+
+export type GetCommissionCandidateCountQueryVariables = Exact<{
+  commissionId: string | number;
+}>;
+
+
+export type GetCommissionCandidateCountQuery = { commissionCandidateCount: number };
+
+export type MarkMemberReadyMutationVariables = Exact<{
+  commissionId: string | number;
+  memberId: string | number;
+}>;
+
+
+export type MarkMemberReadyMutation = { markCommissionMemberReady: { id: string, members: Array<{ id: string, isReady: boolean }> } };
+
+export type MarkMemberNotReadyMutationVariables = Exact<{
+  commissionId: string | number;
+  memberId: string | number;
+}>;
+
+
+export type MarkMemberNotReadyMutation = { markCommissionMemberNotReady: { id: string, members: Array<{ id: string, isReady: boolean }> } };
+
+export type StartCommissionMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type StartCommissionMutation = { startCommission: { id: string, status: Types.CommissionStatus, startedAt: string | null } };
+
+export type CompleteCommissionMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type CompleteCommissionMutation = { completeCommission: { id: string, status: Types.CommissionStatus, endedAt: string | null } };
+
+
+export const GetCommissionDocument = gql`
+    query GetCommission($id: ID!) {
+  commission(id: $id) {
+    id
+    name
+    status
+    plannedStartAt
+    startedAt
+    endedAt
+    createdAt
+    competition {
+      id
+      name
+      holders
+    }
+    members {
+      id
+      auid
+      role
+      isReady
+    }
+  }
+}
+    `;
+export const GetCommissionCandidateCountDocument = gql`
+    query GetCommissionCandidateCount($commissionId: ID!) {
+  commissionCandidateCount(commissionId: $commissionId)
+}
+    `;
+export const MarkMemberReadyDocument = gql`
+    mutation MarkMemberReady($commissionId: ID!, $memberId: ID!) {
+  markCommissionMemberReady(id: $commissionId, memberId: $memberId) {
+    id
+    members {
+      id
+      isReady
+    }
+  }
+}
+    `;
+export const MarkMemberNotReadyDocument = gql`
+    mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {
+  markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {
+    id
+    members {
+      id
+      isReady
+    }
+  }
+}
+    `;
+export const StartCommissionDocument = gql`
+    mutation StartCommission($id: ID!) {
+  startCommission(id: $id) {
+    id
+    status
+    startedAt
+  }
+}
+    `;
+export const CompleteCommissionDocument = gql`
+    mutation CompleteCommission($id: ID!) {
+  completeCommission(id: $id) {
+    id
+    status
+    endedAt
+  }
+}
+    `;
+export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
+export function getSdk<C>(requester: Requester<C>) {
+  return {
+    GetCommission(variables: Types.GetCommissionQueryVariables, options?: C): Promise<Types.GetCommissionQuery> {
+      return requester<Types.GetCommissionQuery, Types.GetCommissionQueryVariables>(GetCommissionDocument, variables, options) as Promise<Types.GetCommissionQuery>;
+    },
+    GetCommissionCandidateCount(variables: Types.GetCommissionCandidateCountQueryVariables, options?: C): Promise<Types.GetCommissionCandidateCountQuery> {
+      return requester<Types.GetCommissionCandidateCountQuery, Types.GetCommissionCandidateCountQueryVariables>(GetCommissionCandidateCountDocument, variables, options) as Promise<Types.GetCommissionCandidateCountQuery>;
+    },
+    MarkMemberReady(variables: Types.MarkMemberReadyMutationVariables, options?: C): Promise<Types.MarkMemberReadyMutation> {
+      return requester<Types.MarkMemberReadyMutation, Types.MarkMemberReadyMutationVariables>(MarkMemberReadyDocument, variables, options) as Promise<Types.MarkMemberReadyMutation>;
+    },
+    MarkMemberNotReady(variables: Types.MarkMemberNotReadyMutationVariables, options?: C): Promise<Types.MarkMemberNotReadyMutation> {
+      return requester<Types.MarkMemberNotReadyMutation, Types.MarkMemberNotReadyMutationVariables>(MarkMemberNotReadyDocument, variables, options) as Promise<Types.MarkMemberNotReadyMutation>;
+    },
+    StartCommission(variables: Types.StartCommissionMutationVariables, options?: C): Promise<Types.StartCommissionMutation> {
+      return requester<Types.StartCommissionMutation, Types.StartCommissionMutationVariables>(StartCommissionDocument, variables, options) as Promise<Types.StartCommissionMutation>;
+    },
+    CompleteCommission(variables: Types.CompleteCommissionMutationVariables, options?: C): Promise<Types.CompleteCommissionMutation> {
+      return requester<Types.CompleteCommissionMutation, Types.CompleteCommissionMutationVariables>(CompleteCommissionDocument, variables, options) as Promise<Types.CompleteCommissionMutation>;
+    }
+  };
+}
+export type Sdk = ReturnType<typeof getSdk>;
