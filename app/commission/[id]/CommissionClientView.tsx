@@ -9,7 +9,8 @@ import {
     markMemberReadyAction, 
     markMemberNotReadyAction, 
     startCommissionAction, 
-    completeCommissionAction 
+    completeCommissionAction,
+    getCommissionDataAction
 } from "../actions"
 
 const tabs = [
@@ -133,19 +134,23 @@ interface InitialData {
     members: Member[];
 }
 
-export default function CommissionClientView({ initialData }: { initialData: InitialData }) {
+export default function CommissionClientView({ initialData: propInitialData }: { initialData: InitialData }) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState("competitions")
-    const [localMembers, setLocalMembers] = useState<Member[]>(initialData.members)
+    const [localData, setLocalData] = useState<InitialData>(propInitialData)
+    const [localMembers, setLocalMembers] = useState<Member[]>(propInitialData.members)
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(1)
 
+    const initialData = localData
+
     useEffect(() => {
-        setLocalMembers(initialData.members)
-    }, [initialData.members])
+        setLocalData(propInitialData)
+        setLocalMembers(propInitialData.members)
+    }, [propInitialData])
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -225,12 +230,20 @@ export default function CommissionClientView({ initialData }: { initialData: Ini
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
 
     useEffect(() => {
-        const pollInterval = setInterval(() => {
-            router.refresh()
-        }, 3 * 60 * 1000)
+        const pollInterval = setInterval(async () => {
+            try {
+                const updated = await getCommissionDataAction(localData.id)
+                if (updated) {
+                    setLocalData(updated)
+                    setLocalMembers(updated.members)
+                }
+            } catch (err) {
+                console.error("Failed to poll commission data:", err)
+            }
+        }, 3000)
 
         return () => clearInterval(pollInterval)
-    }, [router])
+    }, [localData.id])
 
     const handleToggleReady = async (shouldBeReady: boolean) => {
         if (!currentMemberId || isMutating) return
