@@ -37,3 +37,39 @@ export async function completeCommissionAction(id: string) {
         throw new Error(err.message || "Failed to complete commission");
     }
 }
+
+export async function getCommissionDataAction(commissionId: string) {
+    try {
+        const [commissionData, countData] = await Promise.all([
+            sdk.GetCommission({ id: commissionId }),
+            sdk.GetCommissionCandidateCount({ commissionId })
+        ]);
+        const commission = commissionData.commission;
+        if (!commission) return null;
+
+        return {
+            id: commission.id,
+            name: commission.name,
+            status: commission.status,
+            plannedStartAt: commission.plannedStartAt || null,
+            startedAt: commission.startedAt || null,
+            endedAt: commission.endedAt || null,
+            competition: {
+                id: commission.competition.id,
+                name: commission.competition.name,
+                holders: commission.competition.holders.flat(),
+            },
+            candidateCount: countData.commissionCandidateCount ?? 0,
+            members: commission.members.map((m) => ({
+                id: m.id,
+                auid: m.auid.flat(),
+                role: m.role,
+                isReady: m.isReady,
+            }))
+        };
+    } catch (err: any) {
+        console.error("Server Action Error (getCommissionDataAction):", err);
+        throw new Error(err.message || "Failed to fetch commission data");
+    }
+}
+

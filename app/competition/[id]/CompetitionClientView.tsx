@@ -1,9 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers } from "lucide-react"
+import Cookies from "js-cookie"
+import { useRouter } from "next/navigation"
+import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import Link from "next/link"
+import { startCompetitionAction, getCompetitionDataAction } from "../actions"
 
 const tabs = [
     { id: "feed", label: "Feed", icon: FileText },
@@ -26,6 +29,21 @@ const formatDateTime = (dateStr: string | null) => {
     return new Intl.DateTimeFormat('en-GB', {
         month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
     }).format(d)
+}
+
+function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
+    const start = new Date(plannedStartAt)
+    const end = plannedEndAt ? new Date(plannedEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000)
+
+    const formatCalDate = (date: Date) => {
+        return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+    }
+
+    const dates = `${formatCalDate(start)}/${formatCalDate(end)}`
+    const text = encodeURIComponent(name)
+    const details = encodeURIComponent(`WineLore competition: ${name}`)
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${details}`
 }
 
 function getAvatarGradient(auid: number): string {
@@ -213,9 +231,54 @@ interface InitialData {
     commissions: Commission[]
 }
 
-export default function CompetitionClientView({ initialData }: { initialData: InitialData }) {
+export default function CompetitionClientView({ initialData: propInitialData }: { initialData: InitialData }) {
+    const router = useRouter()
     const [activeTab, setActiveTab] = useState("competitions")
+    const [localData, setLocalData] = useState<InitialData>(propInitialData)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
+    const [currentAuid, setCurrentAuid] = useState<number>(1)
+    const [isMutating, setIsMutating] = useState(false)
+
+    const initialData = localData
+
+    useEffect(() => {
+        setLocalData(propInitialData)
+    }, [propInitialData])
+
+    useEffect(() => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const updated = await getCompetitionDataAction(localData.id)
+                if (updated) {
+                    setLocalData(updated)
+                }
+            } catch (err) {
+                console.error("Failed to poll competition data:", err)
+            }
+        }, 3000)
+
+        return () => clearInterval(pollInterval)
+    }, [localData.id])
+
+    useEffect(() => {
+        const cookieAuid = Cookies.get("auid")
+        if (cookieAuid) {
+            setCurrentAuid(parseInt(cookieAuid, 10))
+        }
+    }, [])
+
+    const handleStartCompetition = async () => {
+        if (isMutating) return
+        setIsMutating(true)
+        try {
+            await startCompetitionAction(initialData.id)
+            router.refresh()
+        } catch (err) {
+            console.error("Failed to start competition:", err)
+        } finally {
+            setIsMutating(false)
+        }
+    }
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -271,6 +334,8 @@ export default function CompetitionClientView({ initialData }: { initialData: In
 
         return () => clearInterval(intervalId)
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
+
+    const isHolder = initialData.holders.includes(currentAuid)
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
@@ -332,9 +397,21 @@ export default function CompetitionClientView({ initialData }: { initialData: In
                                 <div className="relative">
                                     <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
                                     <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned Start</span>
-                                    <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                                        {formatDateTime(initialData.plannedStartAt)}
-                                    </p>
+                                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                        <p className="text-xs font-semibold text-slate-800">
+                                            {formatDateTime(initialData.plannedStartAt)}
+                                        </p>
+                                        {initialData.status === "PLANNED" && initialData.plannedStartAt && (
+                                            <a
+                                                href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
+                                            >
+                                                Add to Calendar
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                                 {/* Planned End */}
                                 {initialData.plannedEndAt && (
@@ -434,6 +511,52 @@ export default function CompetitionClientView({ initialData }: { initialData: In
                                 </div>
                             </div>
                         </div>
+
+                        {initialData.status === "PLANNED" && (
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
+                                    Actions & Controls
+                                </h3>
+                                <div className="flex flex-col gap-4">
+                                    {isHolder ? (
+                                        <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 flex-wrap sm:flex-nowrap">
+                                            <div className="max-w-full sm:max-w-[65%]">
+                                                <h4 className="text-sm font-bold text-slate-800">
+                                                    Start Competition
+                                                </h4>
+                                                <p className="text-xs text-slate-500 mt-1">
+                                                    As a competition holder, you can start the tasting process once commissions are prepared.
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={handleStartCompetition}
+                                                disabled={isMutating}
+                                                className="group flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 px-6 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0"
+                                            >
+                                                {isMutating ? (
+                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                ) : (
+                                                    <PlayCircle className="h-4 w-4" />
+                                                )}
+                                                <span>Start Competition</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-start gap-3 p-5 rounded-2xl bg-slate-50 border border-slate-100">
+                                            <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
+                                            <div className="min-w-0">
+                                                <h4 className="text-xs font-bold text-slate-800">
+                                                    Competition Planned
+                                                </h4>
+                                                <p className="text-xs text-slate-500 mt-1">
+                                                    This competition has not started yet. Awaiting start by the competition holders.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Commissions list */}
                         <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">

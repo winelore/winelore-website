@@ -36,71 +36,71 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
           <AvatarPlaceholder className="h-9 w-9" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[300px] rounded-[32px] p-0 shadow-lg border-border bg-popover">
+      <PopoverContent align="end" className="w-[260px] rounded-[24px] p-0 shadow-lg border-border bg-popover/80 backdrop-blur-md">
         {/* Group 1: Profile and Log Out */}
-        <div className="flex gap-3 px-4 pb-3 pt-4">
+        <div className="flex gap-3 px-2 pb-2 pt-3">
           <a
             href="#"
-            className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-[24px] bg-transparent py-3.5 text-[15px] font-medium text-foreground transition-colors hover:bg-[#EBEBEB]"
+            className="flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] bg-transparent py-2.5 text-[14px] font-medium text-foreground transition-colors hover:bg-[#EBEBEB]"
           >
-            <CircleUser className="h-6 w-6 stroke-[1.5]" />
+            <CircleUser className="h-5 w-5 stroke-[1.5]" />
             <span>Profile</span>
           </a>
           <a
             href="#"
-            className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-[24px] bg-transparent py-3.5 text-[15px] font-medium text-red-500 transition-colors hover:bg-red-50"
+            className="flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] bg-transparent py-2.5 text-[14px] font-medium text-red-500 transition-colors hover:bg-red-50"
           >
-            <LogOut className="h-6 w-6 stroke-[1.5] text-red-500" />
+            <LogOut className="h-5 w-5 stroke-[1.5] text-red-500" />
             <span>Log Out</span>
           </a>
         </div>
 
-        <div className="px-6">
+        <div className="px-5">
           <div className="h-[1px] w-full bg-border/60" />
         </div>
 
         {/* Group 2: Navigation Links */}
-        <div className="px-2 py-2">
+        <div className="px-2 py-1.5">
           <a
             href="#"
-            className="flex items-center gap-4 rounded-2xl px-4 py-3.5 text-[17px] text-foreground transition-colors hover:bg-muted/50"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
-            <Wine className="h-6 w-6 stroke-[1.5] text-foreground" />
+            <Wine className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>My Beverages</span>
           </a>
           <a
             href="#"
-            className="flex items-center gap-4 rounded-2xl px-4 py-3.5 text-[17px] text-foreground transition-colors hover:bg-muted/50"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
-            <Trophy className="h-6 w-6 stroke-[1.5] text-foreground" />
+            <Trophy className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>My Competitions</span>
           </a>
           <a
             href="#"
-            className="flex items-center gap-4 rounded-2xl px-4 py-3.5 text-[17px] text-foreground transition-colors hover:bg-muted/50"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
-            <ListTodo className="h-6 w-6 stroke-[1.5] text-foreground" />
+            <ListTodo className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>My Assessments</span>
           </a>
         </div>
 
-        <div className="px-6">
+        <div className="px-5">
           <div className="h-[1px] w-full bg-border/60" />
         </div>
 
         {/* Group 3: AXUS ID Profile */}
-        <div className="px-2 pb-4 pt-2">
+        <div className="px-2 pb-3 pt-1.5">
           <a
             href="#"
-            className="flex items-center justify-between rounded-2xl px-4 py-3.5 text-[17px] text-foreground transition-colors hover:bg-muted/50"
+            className="flex items-center justify-between rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
-            <div className="flex items-center gap-4">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center">
-                <AxusLogo className="h-8 w-auto object-contain max-w-none" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <AxusLogo className="h-6 w-auto object-contain max-w-none" />
               </div>
               <span>AXUS ID Profile</span>
             </div>
-            <ExternalLink className="h-6 w-6 stroke-[1.5] text-foreground" />
+            <ExternalLink className="h-5 w-5 stroke-[1.5] text-foreground" />
           </a>
         </div>
       </PopoverContent>

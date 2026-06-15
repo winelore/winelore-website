@@ -28,3 +28,13 @@ export const GET_COMPETITION_PAGE = gql(`
       }
   }
 `);
+
+export const START_COMPETITION = gql(`
+  mutation StartCompetition($id: ID!) {
+      startCompetition(id: $id) {
+          id
+          status
+          startedAt
+      }
+  }
+`);
