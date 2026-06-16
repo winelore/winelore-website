@@ -42,7 +42,7 @@ export type GetCommissionQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, plannedStartAt: string | null, startedAt: string | null, endedAt: string | null, createdAt: string, competition: { id: string, name: string, holders: Array<Array<number>> }, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionMemberRole, isReady: boolean }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, plannedDates: { start: string | null, end: string | null } | null, competition: { id: string, name: string, holders: Array<Array<number>> }, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionMemberRole, isReady: boolean }> } | null };
 
 export type GetCommissionCandidateCountQueryVariables = Exact<{
   commissionId: string | number;
@@ -86,7 +86,7 @@ export type GetCompetitionPageQueryVariables = Exact<{
 }>;
 
 
-export type GetCompetitionPageQuery = { competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, plannedStartAt: string | null, plannedEndAt: string | null, endedAt: string | null, holders: Array<Array<number>>, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } } | null, commissionsByCompetition: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null }> } };
+export type GetCompetitionPageQuery = { competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } } | null, commissionsByCompetition: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, plannedDates: { start: string | null, end: string | null } | null }> } };
 
 export type StartCompetitionMutationVariables = Exact<{
   id: string | number;
@@ -102,7 +102,10 @@ export const GetCommissionDocument = gql`
     id
     name
     status
-    plannedStartAt
+    plannedDates {
+      start
+      end
+    }
     startedAt
     endedAt
     createdAt
@@ -172,8 +175,10 @@ export const GetCompetitionPageDocument = gql`
     name
     status
     startedAt
-    plannedStartAt
-    plannedEndAt
+    plannedDates {
+      start
+      end
+    }
     endedAt
     holders
     series {
@@ -187,6 +192,10 @@ export const GetCompetitionPageDocument = gql`
       id
       name
       status
+      plannedDates {
+        start
+        end
+      }
       startedAt
       endedAt
     }

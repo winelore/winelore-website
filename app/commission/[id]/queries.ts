@@ -6,7 +6,10 @@ export const GET_COMMISSION = gql(`
       id
       name
       status
-      plannedStartAt
+      plannedDates {
+        start
+        end
+      }
       startedAt
       endedAt
       createdAt

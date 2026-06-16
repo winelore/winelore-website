@@ -51,7 +51,8 @@ export async function getCommissionDataAction(commissionId: string) {
             id: commission.id,
             name: commission.name,
             status: commission.status,
-            plannedStartAt: commission.plannedStartAt || null,
+            plannedStartAt: commission.plannedDates?.start || null,
+            plannedEndAt: commission.plannedDates?.end || null,
             startedAt: commission.startedAt || null,
             endedAt: commission.endedAt || null,
             competition: {

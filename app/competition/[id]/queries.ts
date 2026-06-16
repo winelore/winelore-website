@@ -7,8 +7,10 @@ export const GET_COMPETITION_PAGE = gql(`
           name
           status
           startedAt
-          plannedStartAt
-          plannedEndAt
+          plannedDates {
+              start
+              end
+          }
           endedAt
           holders
           series {
@@ -22,6 +24,10 @@ export const GET_COMPETITION_PAGE = gql(`
               id
               name
               status
+              plannedDates {
+                  start
+                  end
+              }
               startedAt
               endedAt
           }

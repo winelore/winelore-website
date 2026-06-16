@@ -23,8 +23,8 @@ export async function getCompetitionDataAction(competitionId: string) {
             name: competition.name,
             status: competition.status,
             startedAt: competition.startedAt || null,
-            plannedStartAt: competition.plannedStartAt || null,
-            plannedEndAt: competition.plannedEndAt || null,
+            plannedStartAt: competition.plannedDates?.start || null,
+            plannedEndAt: competition.plannedDates?.end || null,
             endedAt: competition.endedAt || null,
             series: {
                 id: competition.series.id,
@@ -36,6 +36,8 @@ export async function getCompetitionDataAction(competitionId: string) {
                 id: comm.id,
                 name: comm.name,
                 status: comm.status,
+                plannedStartAt: comm.plannedDates?.start || null,
+                plannedEndAt: comm.plannedDates?.end || null,
                 startedAt: comm.startedAt || null,
                 endedAt: comm.endedAt || null
             }))

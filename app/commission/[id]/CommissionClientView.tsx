@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { 
     markMemberReadyAction, 
@@ -26,6 +26,25 @@ const formatEnumStatus = (status: string | undefined): string => {
         .split("_")
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
+}
+
+function formatDateTime(dateStr: string | null): string {
+    if (!dateStr) return "N/A"
+    const date = new Date(dateStr)
+    return new Intl.DateTimeFormat('en-GB', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    }).format(date)
+}
+
+function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
+    const start = new Date(plannedStartAt)
+    const end = plannedEndAt ? new Date(plannedEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000)
+
+    const formatToGCal = (date: Date) => {
+        return date.toISOString().replace(/-|:|\.\d\d\d/g, "")
+    }
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(name)}&dates=${formatToGCal(start)}/${formatToGCal(end)}`
 }
 
 function getAvatarGradient(auid: number): string {
@@ -123,6 +142,7 @@ interface InitialData {
     name: string;
     status: string;
     plannedStartAt: string | null;
+    plannedEndAt: string | null;
     startedAt: string | null;
     endedAt: string | null;
     candidateCount: number;
@@ -509,6 +529,66 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                 <span className="text-sm text-slate-500 font-medium">
                                     Featuring <strong className="text-slate-800 font-bold">{initialData.candidateCount}</strong> selected beverages for tasting
                                 </span>
+                            </div>
+                        </div>
+
+                        {/* Timeline and Dates */}
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
+                            <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2 mb-4">
+                                <Calendar className="w-5 h-5 text-indigo-500" />
+                                Timeline Details
+                            </h3>
+                            <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
+                                {/* Planned Start */}
+                                <div className="relative">
+                                    <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned Start</span>
+                                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                        <p className="text-xs font-semibold text-slate-800">
+                                            {formatDateTime(initialData.plannedStartAt)}
+                                        </p>
+                                        {initialData.status === "PLANNED" && initialData.plannedStartAt && (
+                                            <a
+                                                href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
+                                            >
+                                                Add to Calendar
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Planned End */}
+                                {initialData.plannedEndAt && (
+                                    <div className="relative">
+                                        <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-400 border-2 border-white" />
+                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned End</span>
+                                        <p className="text-xs font-semibold text-slate-800 mt-0.5">
+                                            {formatDateTime(initialData.plannedEndAt)}
+                                        </p>
+                                    </div>
+                                )}
+                                {/* Actual Start */}
+                                <div className="relative">
+                                    <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
+                                        initialData.startedAt ? 'bg-emerald-500' : 'bg-slate-200'
+                                    }`} />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual Start</span>
+                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-slate-800' : 'text-slate-400'}`}>
+                                        {initialData.startedAt ? formatDateTime(initialData.startedAt) : "Not started yet"}
+                                    </p>
+                                </div>
+                                {/* Actual End */}
+                                <div className="relative">
+                                    <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
+                                        initialData.endedAt ? 'bg-rose-500' : 'bg-slate-200'
+                                    }`} />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual End</span>
+                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-slate-800' : 'text-slate-400'}`}>
+                                        {initialData.endedAt ? formatDateTime(initialData.endedAt) : "Not completed yet"}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
