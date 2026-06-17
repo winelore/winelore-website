@@ -59,6 +59,29 @@ export async function getCommissionDataAction(commissionId: string) {
                 id: commission.competition.id,
                 name: commission.competition.name,
                 holders: commission.competition.holders.flat(),
+                // Временный мок шаблона для теста формы оценки
+                evaluationTemplateEdition: {
+                    id: "mock-template-id",
+                    categories: [
+                        {
+                            id: "cat-1",
+                            name: "Visual Assessment",
+                            description: "Color, clarity, and fluid characteristics",
+                            properties: [
+                                { id: "prop-1", name: "Clarity", type: "BOOLEAN", meta: null },
+                                { id: "prop-2", name: "Color Intensity", type: "INT", meta: null }
+                            ]
+                        },
+                        {
+                            id: "cat-2",
+                            name: "Olfactory Assessment",
+                            description: "Aroma cleanliness and intensity",
+                            properties: [
+                                { id: "prop-3", name: "Aroma Score", type: "DOUBLE", meta: null }
+                            ]
+                        }
+                    ]
+                }
             },
             candidateCount: countData.commissionCandidateCount ?? 0,
             members: commission.members.map((m) => ({

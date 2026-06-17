@@ -19,6 +19,7 @@ const tabs = [
     { id: "wines", label: "Wines", icon: Wine },
 ]
 
+
 const formatEnumStatus = (status: string | undefined): string => {
     if (!status) return ""
     return status
@@ -164,6 +165,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     const [isMutating, setIsMutating] = useState(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(1)
+    const [hasRedirected, setHasRedirected] = useState(false)
 
     const initialData = localData
 
@@ -193,6 +195,18 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     const creatorNames = initialData.competition.holders.length > 0
         ? initialData.competition.holders.join(", ")
         : "Unknown Creator"
+
+    useEffect(() => {
+        if (hasRedirected) return
+
+        const currentUrl = new URL(window.location.href)
+        const hasErrorParam = currentUrl.searchParams.has('error')
+
+        if (initialData.status === "STARTED" && !hasErrorParam) {
+            setHasRedirected(true)
+            router.push(`/commission/${initialData.id}/evaluation`)
+        }
+    }, [initialData.status, initialData.id, router, hasRedirected])
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -485,6 +499,19 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                             )}
                                             {formatEnumStatus(initialData.status)}
                                         </span>
+                                        {/* ========================================================= */}
+                                        {/* PERSISTENT EVALUATION BUTTON */}
+                                        {/* Displays if commission is active but member navigated back */}
+                                        {/* ========================================================= */}
+                                        {initialData.status === "STARTED" && (
+                                            <button
+                                                onClick={() => router.push(`/commission/${initialData.id}/evaluation`)}
+                                                className="ml-2 inline-flex items-center gap-1.5 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-md px-2.5 py-1 transition-colors shadow-sm"
+                                            >
+                                                <PlayCircle className="w-3.5 h-3.5" />
+                                                Continue Evaluation
+                                            </button>
+                                        )}
                                         {timeDisplay && (
                                             <>
                                                 <span className="text-slate-300">|</span>

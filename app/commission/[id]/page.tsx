@@ -6,6 +6,10 @@ interface PageProps {
         id: string;
     }>;
 }
+//
+// const data = await sdk.GetAllCommissions({ limit: 30 });
+// const commissionsList = data?.commissions?.items || [];
+// console.log(commissionsList);
 
 export default async function CommissionStartPage({ params }: PageProps) {
     const resolvedParams = await params;
@@ -15,6 +19,7 @@ export default async function CommissionStartPage({ params }: PageProps) {
     let candidateCount = 0;
 
     try {
+
         const [commissionData, countData] = await Promise.all([
             sdk.GetCommission({ id: commissionId }),
             sdk.GetCommissionCandidateCount({ commissionId })

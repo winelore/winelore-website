@@ -14,6 +14,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n        query GetAllCommissions($cursor: ID, $limit: Int) {\n            commissions(cursor: $cursor, limit: $limit) {\n                items {\n                    id\n                    name\n                    status\n                }\n            }\n        }\n    ": typeof types.GetAllCommissionsDocument,
     "\n  query GetCommission($id: ID!) {\n    commission(id: $id) {\n      id\n      name\n      status\n      plannedDates {\n        start\n        end\n      }\n      startedAt\n      endedAt\n      createdAt\n      competition {\n        id\n        name\n        holders\n      }\n      members {\n        id\n        auid\n        role\n        isReady\n      }\n    }\n  }\n": typeof types.GetCommissionDocument,
     "\n  query GetCommissionCandidateCount($commissionId: ID!) {\n    commissionCandidateCount(commissionId: $commissionId)\n  }\n": typeof types.GetCommissionCandidateCountDocument,
     "\n  mutation MarkMemberReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": typeof types.MarkMemberReadyDocument,
@@ -25,6 +26,7 @@ type Documents = {
     "\n  query GetDashboardCompetitions($limit: Int) {\n      competitions(limit: $limit) {\n          items {\n              id\n              name\n              status\n              startedAt\n              plannedDates {\n                  start\n                  end\n              }\n              endedAt\n              holders\n              series {\n                  id\n                  name\n                  status\n              }\n          }\n      }\n  }\n": typeof types.GetDashboardCompetitionsDocument,
 };
 const documents: Documents = {
+    "\n        query GetAllCommissions($cursor: ID, $limit: Int) {\n            commissions(cursor: $cursor, limit: $limit) {\n                items {\n                    id\n                    name\n                    status\n                }\n            }\n        }\n    ": types.GetAllCommissionsDocument,
     "\n  query GetCommission($id: ID!) {\n    commission(id: $id) {\n      id\n      name\n      status\n      plannedDates {\n        start\n        end\n      }\n      startedAt\n      endedAt\n      createdAt\n      competition {\n        id\n        name\n        holders\n      }\n      members {\n        id\n        auid\n        role\n        isReady\n      }\n    }\n  }\n": types.GetCommissionDocument,
     "\n  query GetCommissionCandidateCount($commissionId: ID!) {\n    commissionCandidateCount(commissionId: $commissionId)\n  }\n": types.GetCommissionCandidateCountDocument,
     "\n  mutation MarkMemberReady($commissionId: ID!, $memberId: ID!) {\n    markCommissionMemberReady(id: $commissionId, memberId: $memberId) {\n      id\n      members {\n        id\n        isReady\n      }\n    }\n  }\n": types.MarkMemberReadyDocument,
@@ -50,6 +52,10 @@ const documents: Documents = {
  */
 export function gql(source: string): unknown;
 
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n        query GetAllCommissions($cursor: ID, $limit: Int) {\n            commissions(cursor: $cursor, limit: $limit) {\n                items {\n                    id\n                    name\n                    status\n                }\n            }\n        }\n    "): (typeof documents)["\n        query GetAllCommissions($cursor: ID, $limit: Int) {\n            commissions(cursor: $cursor, limit: $limit) {\n                items {\n                    id\n                    name\n                    status\n                }\n            }\n        }\n    "];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

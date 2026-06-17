@@ -37,6 +37,14 @@ export type CompetitionStatus =
   | 'PLANNED'
   | 'STARTED';
 
+export type GetAllCommissionsQueryVariables = Exact<{
+  cursor?: string | number | null | undefined;
+  limit?: number | null | undefined;
+}>;
+
+
+export type GetAllCommissionsQuery = { commissions: { items: Array<{ id: string, name: string, status: Types.CommissionStatus }> } };
+
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -103,6 +111,17 @@ export type GetDashboardCompetitionsQueryVariables = Exact<{
 export type GetDashboardCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
 
 
+export const GetAllCommissionsDocument = gql`
+    query GetAllCommissions($cursor: ID, $limit: Int) {
+  commissions(cursor: $cursor, limit: $limit) {
+    items {
+      id
+      name
+      status
+    }
+  }
+}
+    `;
 export const GetCommissionDocument = gql`
     query GetCommission($id: ID!) {
   commission(id: $id) {
@@ -244,6 +263,9 @@ export const GetDashboardCompetitionsDocument = gql`
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
+    GetAllCommissions(variables?: Types.GetAllCommissionsQueryVariables, options?: C): Promise<Types.GetAllCommissionsQuery> {
+      return requester<Types.GetAllCommissionsQuery, Types.GetAllCommissionsQueryVariables>(GetAllCommissionsDocument, variables, options) as Promise<Types.GetAllCommissionsQuery>;
+    },
     GetCommission(variables: Types.GetCommissionQueryVariables, options?: C): Promise<Types.GetCommissionQuery> {
       return requester<Types.GetCommissionQuery, Types.GetCommissionQueryVariables>(GetCommissionDocument, variables, options) as Promise<Types.GetCommissionQuery>;
     },
