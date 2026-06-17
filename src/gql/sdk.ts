@@ -95,6 +95,13 @@ export type StartCompetitionMutationVariables = Exact<{
 
 export type StartCompetitionMutation = { startCompetition: { id: string, status: Types.CompetitionStatus, startedAt: string | null } };
 
+export type GetDashboardCompetitionsQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+
+export type GetDashboardCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
+
 
 export const GetCommissionDocument = gql`
     query GetCommission($id: ID!) {
@@ -211,6 +218,29 @@ export const StartCompetitionDocument = gql`
   }
 }
     `;
+export const GetDashboardCompetitionsDocument = gql`
+    query GetDashboardCompetitions($limit: Int) {
+  competitions(limit: $limit) {
+    items {
+      id
+      name
+      status
+      startedAt
+      plannedDates {
+        start
+        end
+      }
+      endedAt
+      holders
+      series {
+        id
+        name
+        status
+      }
+    }
+  }
+}
+    `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
@@ -237,6 +267,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     StartCompetition(variables: Types.StartCompetitionMutationVariables, options?: C): Promise<Types.StartCompetitionMutation> {
       return requester<Types.StartCompetitionMutation, Types.StartCompetitionMutationVariables>(StartCompetitionDocument, variables, options) as Promise<Types.StartCompetitionMutation>;
+    },
+    GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
+      return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
     }
   };
 }
