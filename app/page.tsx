@@ -17,8 +17,8 @@ export default async function DashboardPage() {
         status: comp.status,
         description: "", // Fallback as backend doesn't have description
         holder: comp.holders.flat(),
-        plannedStartAt: comp.plannedStartAt || null,
-        plannedEndAt: comp.plannedEndAt || null,
+        plannedStartAt: comp.plannedDates?.start || null,
+        plannedEndAt: comp.plannedDates?.end || null,
         startedAt: comp.startedAt || null,
         endedAt: comp.endedAt || null,
         series: {

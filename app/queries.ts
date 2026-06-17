@@ -8,8 +8,10 @@ export const GET_DASHBOARD_COMPETITIONS = gql(`
               name
               status
               startedAt
-              plannedStartAt
-              plannedEndAt
+              plannedDates {
+                  start
+                  end
+              }
               endedAt
               holders
               series {

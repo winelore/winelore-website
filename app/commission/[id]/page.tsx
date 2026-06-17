@@ -41,7 +41,7 @@ export default async function CommissionStartPage({ params }: PageProps) {
         id: commission.id,
         name: commission.name,
         status: commission.status,
-        plannedStartAt: commission.plannedStartAt || null,
+        plannedStartAt: commission.plannedDates?.start || null,
         startedAt: commission.startedAt || null,
         endedAt: commission.endedAt || null,
         competition: {
