@@ -75,10 +75,10 @@
 }
 
 @theme inline {
-  --color-brand-burgundy: #8b1538;
-  --color-brand-burgundy-hover: #730f2c;
-  --color-brand-burgundy-soft: #fbf1f4;
-  --color-brand-burgundy-soft-dark: #2c0e16;
+  --color-brand-blue: #007aff;
+  --color-brand-blue-hover: #0062cc;
+  --color-brand-blue-soft: #e5f2ff;
+  --color-brand-blue-soft-dark: #002244;
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);

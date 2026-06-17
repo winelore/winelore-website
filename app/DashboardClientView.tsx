@@ -123,7 +123,7 @@ function CompetitionCard({ competition }: { competition: Competition }) {
     return (
         <Link 
             href={`/competition/${competition.id}`}
-            className="group block rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-none transition-all duration-300 hover:shadow-[0_4px_16px_rgba(139,21,56,0.06)] hover:border-brand-burgundy/30 dark:hover:border-rose-500/25 active:scale-[0.985]"
+            className="group block rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-none transition-all duration-300 hover:shadow-[0_4px_16px_rgba(0,122,255,0.06)] hover:border-brand-blue/30 dark:hover:border-blue-500/25 active:scale-[0.985]"
         >
             <div className="flex items-start gap-3.5">
                 <AvatarPlaceholder className="h-10 w-10 shrink-0" />
@@ -138,7 +138,7 @@ function CompetitionCard({ competition }: { competition: Competition }) {
                             </span>
                         )}
                     </div>
-                    <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200 mt-2 truncate group-hover:text-brand-burgundy dark:group-hover:text-rose-400 transition-colors">
+                    <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200 mt-2 truncate group-hover:text-brand-blue dark:group-hover:text-blue-400 transition-colors">
                         {competition.name}
                     </h3>
                 </div>
@@ -157,7 +157,7 @@ function CompetitionCard({ competition }: { competition: Competition }) {
                         {competition.series.name}
                     </span>
                 </div>
-                <span className="text-zinc-200 dark:text-zinc-850">•</span>
+                <span className="text-zinc-200 dark:text-zinc-800">•</span>
                 <div className="flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5 stroke-[1.8] text-zinc-400 dark:text-zinc-500" />
                     <span className="font-semibold">Holder: {competition.holder.join(", ")}</span>
@@ -176,7 +176,7 @@ export default function WineLoreDashboard({ initialCompetitions }: { initialComp
         <header className="sticky top-0 z-50 flex shrink-0 items-center border-b border-zinc-200/50 dark:border-zinc-800/40 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-md px-6 py-3.5">
             {/* Logo */}
             <div className="flex-1 flex items-center justify-start">
-                <h1 className="text-xl font-extrabold text-brand-burgundy dark:text-rose-500 tracking-tight">
+                <h1 className="text-xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
                     WineLore
                 </h1>
             </div>
@@ -196,7 +196,7 @@ export default function WineLoreDashboard({ initialCompetitions }: { initialComp
                                     : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
                                 }`}
                             >
-                                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-brand-burgundy dark:text-rose-400" : ""}`} />
+                                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-brand-blue dark:text-blue-400" : ""}`} />
                                 <span>{tab.label}</span>
                             </button>
                         )

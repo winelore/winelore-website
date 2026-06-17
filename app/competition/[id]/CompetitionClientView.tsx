@@ -98,7 +98,7 @@ function StatusSteps({ status }: { status: string }) {
                                 isCompleted 
                                     ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/10" 
                                     : isActive 
-                                        ? "bg-brand-burgundy border-brand-burgundy text-white shadow-md shadow-brand-burgundy/10 ring-4 ring-brand-burgundy/5 dark:ring-rose-500/10" 
+                                        ? "bg-brand-blue border-brand-blue text-white shadow-md shadow-brand-blue/10 ring-4 ring-brand-blue/5 dark:ring-blue-500/10" 
                                         : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700/50 text-zinc-400 dark:text-zinc-500"
                             }`}>
                                 {isCompleted ? (
@@ -165,7 +165,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
         return () => clearInterval(intervalId)
     }, [comm.status, comm.startedAt, comm.endedAt, comm.plannedStartAt])
 
-    let statusStyle = "bg-zinc-50 text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-700/10"
+    let statusStyle = "bg-zinc-50 text-zinc-650 dark:bg-zinc-800/60 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-700/10"
     if (comm.status === "STARTED") {
         statusStyle = "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200/40 dark:border-emerald-500/10"
     } else if (comm.status === "PLANNED") {
@@ -175,14 +175,14 @@ function CommissionCard({ comm }: { comm: Commission }) {
     return (
         <Link
             href={`/commission/${comm.id}`}
-            className="group flex items-center justify-between gap-4 p-4.5 bg-white dark:bg-zinc-900 hover:bg-zinc-50/60 dark:hover:bg-zinc-850/40 transition-colors active:opacity-85"
+            className="group flex items-center justify-between gap-4 p-4.5 bg-white dark:bg-zinc-900 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 transition-colors active:opacity-85"
         >
             <div className="flex items-center gap-3.5 min-w-0">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-burgundy/5 text-brand-burgundy dark:text-rose-400 border border-brand-burgundy/10 group-hover:bg-brand-burgundy group-hover:text-white transition-colors duration-300">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-blue/5 text-brand-blue dark:text-blue-400 border border-brand-blue/10 group-hover:bg-brand-blue group-hover:text-white transition-colors duration-300">
                     <Wine className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                    <span className="block text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover:text-brand-burgundy dark:group-hover:text-rose-450 transition-colors duration-200">
+                    <span className="block text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover:text-brand-blue dark:group-hover:text-blue-400 transition-colors duration-200">
                         {comm.name}
                     </span>
                     <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-550 uppercase tracking-wide">
@@ -198,7 +198,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
                     </span>
                     {timeStr && (
                         <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
-                            <Timer className="w-3.5 h-3.5 text-brand-burgundy dark:text-rose-500" />
+                            <Timer className="w-3.5 h-3.5 text-brand-blue dark:text-blue-500" />
                             {timeStr}
                         </span>
                     )}
@@ -355,7 +355,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
             <header className="sticky top-0 z-50 flex shrink-0 items-center border-b border-zinc-200/50 dark:border-zinc-800/40 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-md px-6 py-3.5">
                 <div className="flex-1 flex items-center justify-start">
                     <Link href="/">
-                        <h1 className="text-xl font-extrabold text-brand-burgundy dark:text-rose-500 tracking-tight cursor-pointer hover:opacity-90 transition-opacity">
+                        <h1 className="text-xl font-extrabold text-zinc-900 dark:text-white tracking-tight cursor-pointer hover:opacity-90 transition-opacity">
                             WineLore
                         </h1>
                     </Link>
@@ -374,7 +374,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer ${isActive ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
                                 >
-                                    <Icon className={`h-3.5 w-3.5 ${isActive ? "text-brand-burgundy dark:text-rose-450" : ""}`} />
+                                    <Icon className={`h-3.5 w-3.5 ${isActive ? "text-brand-blue dark:text-blue-450" : ""}`} />
                                     <span>{tab.label}</span>
                                 </Link>
                             )
@@ -397,28 +397,28 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
 
                         {/* Series Details */}
                         <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-none flex items-center gap-4">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-burgundy/5 text-brand-burgundy dark:text-rose-400 border border-brand-burgundy/10">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-blue/5 text-brand-blue dark:text-blue-400 border border-brand-blue/10">
                                 <Layers className="h-5 w-5" />
                             </div>
                             <div className="min-w-0">
                                 <span className="text-[10px] font-semibold tracking-wider uppercase text-zinc-400 dark:text-zinc-500">
                                     Competition Series
                                 </span>
-                                <p className="text-sm font-bold text-zinc-850 dark:text-zinc-200 mt-0.5 truncate">{initialData.series.name}</p>
+                                <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mt-0.5 truncate">{initialData.series.name}</p>
                             </div>
                         </div>
 
                         {/* Timeline and Dates */}
                         <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-none">
                             <h3 className="text-sm font-bold tracking-tight text-zinc-800 dark:text-zinc-200 flex items-center gap-2 mb-4">
-                                <Calendar className="w-4 h-4 text-brand-burgundy dark:text-rose-500" />
+                                <Calendar className="w-4 h-4 text-brand-blue dark:text-blue-500" />
                                 Timeline Details
                             </h3>
                             <div className="flex flex-col gap-4 relative pl-4 border-l border-zinc-100 dark:border-zinc-800 ml-2.5">
                                 {/* Planned Start */}
                                 <div className="relative">
-                                    <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-brand-burgundy border-2 border-white dark:border-zinc-900 shadow-sm" />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-405 dark:text-zinc-500">Planned Start</span>
+                                    <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-brand-blue border-2 border-white dark:border-zinc-900 shadow-sm" />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Planned Start</span>
                                     <div className="flex items-center gap-2 flex-wrap mt-0.5">
                                         <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                                             {formatDateTime(initialData.plannedStartAt)}
@@ -428,7 +428,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                                 href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-burgundy hover:text-brand-burgundy-hover bg-brand-burgundy-soft dark:bg-brand-burgundy-soft-dark border border-brand-burgundy/10 dark:border-brand-burgundy/30 rounded-md px-1.5 py-0.5 transition-colors"
+                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-blue hover:text-brand-blue-hover bg-brand-blue-soft dark:bg-brand-blue-soft-dark border border-brand-blue/10 dark:border-brand-blue/30 rounded-md px-1.5 py-0.5 transition-colors"
                                             >
                                                 Add to Calendar
                                             </a>
@@ -438,8 +438,8 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                 {/* Planned End */}
                                 {initialData.plannedEndAt && (
                                     <div className="relative">
-                                        <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-rose-455 border-2 border-white dark:border-zinc-900 shadow-sm" />
-                                        <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-405 dark:text-zinc-500">Planned End</span>
+                                        <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-brand-blue border-2 border-white dark:border-zinc-900 shadow-sm" />
+                                        <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Planned End</span>
                                         <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
                                             {formatDateTime(initialData.plannedEndAt)}
                                         </p>
@@ -448,10 +448,10 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                 {/* Actual Start */}
                                 <div className="relative">
                                     <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white dark:border-zinc-900 shadow-sm ${
-                                        initialData.startedAt ? 'bg-emerald-555' : 'bg-zinc-200 dark:bg-zinc-800'
+                                        initialData.startedAt ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-800'
                                     }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-405 dark:text-zinc-500">Actual Start</span>
-                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-zinc-800 dark:text-zinc-250' : 'text-zinc-400 dark:text-zinc-600'}`}>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Actual Start</span>
+                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-400 dark:text-zinc-600'}`}>
                                         {initialData.startedAt ? formatDateTime(initialData.startedAt) : "Not started yet"}
                                     </p>
                                 </div>
@@ -460,8 +460,8 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                     <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white dark:border-zinc-900 shadow-sm ${
                                         initialData.endedAt ? 'bg-red-500' : 'bg-zinc-200 dark:bg-zinc-800'
                                     }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-405 dark:text-zinc-500">Actual End</span>
-                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-zinc-800 dark:text-zinc-250' : 'text-zinc-400 dark:text-zinc-600'}`}>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Actual End</span>
+                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-400 dark:text-zinc-600'}`}>
                                         {initialData.endedAt ? formatDateTime(initialData.endedAt) : "Not ended yet"}
                                     </p>
                                 </div>
@@ -473,17 +473,17 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                     <div className="w-full lg:w-[55%] flex flex-col gap-5">
                         {/* Competition Header Card */}
                         <div className="relative overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-none">
-                            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-brand-burgundy/5 dark:bg-rose-500/5 blur-3xl pointer-events-none" />
+                            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-brand-blue/5 dark:bg-blue-500/5 blur-3xl pointer-events-none" />
 
                             <div className="flex items-start gap-4 mb-5">
-                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-brand-burgundy/5 text-brand-burgundy dark:text-rose-400 border border-brand-burgundy/10 shadow-inner">
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-brand-blue/5 text-brand-blue dark:text-blue-400 border border-brand-blue/10 shadow-inner">
                                     <Trophy className="h-7 w-7" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <span className="text-[10px] font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500">
                                         Competition Panel
                                     </span>
-                                    <h2 className="text-xl md:text-2xl font-extrabold text-zinc-800 dark:text-zinc-150 tracking-tight mt-0.5 truncate">
+                                    <h2 className="text-xl md:text-2xl font-extrabold text-zinc-800 dark:text-zinc-200 tracking-tight mt-0.5 truncate">
                                         {initialData.name}
                                     </h2>
                                     <p className="text-sm mt-2 flex items-center gap-2 flex-wrap">
@@ -491,7 +491,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                             initialData.status === "STARTED" 
                                                 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/40" 
                                                 : initialData.status === "COMPLETED"
-                                                    ? "bg-zinc-105 text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-405 border border-zinc-200/50"
+                                                    ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-400 border border-zinc-200/50"
                                                     : "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border border-blue-200/40"
                                         }`}>
                                             {initialData.status === "STARTED" && (
@@ -505,8 +505,8 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                         {timeDisplay && (
                                             <>
                                                 <span className="text-zinc-200 dark:text-zinc-800">|</span>
-                                                <span className="text-zinc-550 dark:text-zinc-450 font-semibold flex items-center gap-1 text-xs">
-                                                    <Timer className="w-3.5 h-3.5 text-brand-burgundy dark:text-rose-500" />
+                                                <span className="text-zinc-500 dark:text-zinc-400 font-semibold flex items-center gap-1 text-xs">
+                                                    <Timer className="w-3.5 h-3.5 text-brand-blue dark:text-blue-500" />
                                                     {timeDisplay}
                                                 </span>
                                             </>
@@ -516,19 +516,19 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                             </div>
 
                             <div className="border-t border-zinc-100 dark:border-zinc-800/60 pt-5">
-                                <h4 className="text-[9px] uppercase font-bold tracking-wider text-zinc-405 dark:text-zinc-500 mb-3">
+                                <h4 className="text-[9px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">
                                     Competition Holders
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {initialData.holders.length > 0 ? (
                                         initialData.holders.map((holderAuid) => (
-                                            <div key={holderAuid} className="flex items-center gap-2 rounded-xl border border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 px-3 py-1 hover:border-brand-burgundy/20 dark:hover:border-rose-500/20 transition-colors duration-250">
+                                            <div key={holderAuid} className="flex items-center gap-2 rounded-xl border border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 px-3 py-1 hover:border-brand-blue/20 dark:hover:border-blue-500/20 transition-colors duration-250">
                                                 <HolderAvatar auid={holderAuid} className="h-5 w-5" />
                                                 <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">AUID: {holderAuid}</span>
                                             </div>
                                         ))
                                     ) : (
-                                        <span className="text-xs text-zinc-400 dark:text-zinc-500">No holders listed</span>
+                                        <span className="text-xs text-zinc-400 dark:text-zinc-550">No holders listed</span>
                                     )}
                                 </div>
                             </div>
@@ -553,7 +553,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                             <button
                                                 onClick={handleStartCompetition}
                                                 disabled={isMutating}
-                                                className="group flex items-center gap-2 rounded-xl bg-brand-burgundy hover:bg-brand-burgundy-hover text-white shadow-md shadow-brand-burgundy/15 px-5 py-2.5 text-xs font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
+                                                className="group flex items-center gap-2 rounded-xl bg-brand-blue hover:bg-brand-blue-hover text-white shadow-md shadow-brand-blue/15 px-5 py-2.5 text-xs font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
                                             >
                                                 {isMutating ? (
                                                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
@@ -565,7 +565,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                         </div>
                                     ) : (
                                         <div className="flex items-start gap-3 p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/20 border border-zinc-100 dark:border-zinc-800/40">
-                                            <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
                                             <div className="min-w-0">
                                                 <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
                                                     Competition Planned
@@ -585,7 +585,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                             <div className="flex items-center justify-between mb-4">
                                 <div>
                                     <h3 className="text-base font-bold tracking-tight text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                                        <Wine className="w-4.5 h-4.5 text-brand-burgundy dark:text-rose-500" />
+                                        <Wine className="w-4.5 h-4.5 text-brand-blue dark:text-blue-500" />
                                         Commissions
                                     </h3>
                                     <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
