@@ -11,7 +11,7 @@ import { startCompetitionAction, getCompetitionDataAction } from "../actions"
 const tabs = [
     { id: "feed", label: "Feed", icon: FileText },
     { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "wines", label: "Wines", icon: Wine },
+    { id: "beverages", label: "Beverages", icon: Wine },
 ]
 
 const formatEnumStatus = (status: string | undefined): string => {

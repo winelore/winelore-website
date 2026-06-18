@@ -16,7 +16,7 @@ import {
 const tabs = [
     { id: "feed", label: "Feed", icon: FileText },
     { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "wines", label: "Wines", icon: Wine },
+    { id: "beverages", label: "Beverages", icon: Wine },
 ]
 
 const formatEnumStatus = (status: string | undefined): string => {
@@ -82,7 +82,7 @@ function MemberAvatar({ auid, role, className }: { auid: number[]; role: string;
 function StatusSteps({ status }: { status: string }) {
     const steps = [
         { id: "readying", label: "Readying Members", description: "Waiting for readiness" },
-        { id: "tasting", label: "Tasting In Progress", description: "Evaluating wines" },
+        { id: "tasting", label: "Tasting In Progress", description: "Evaluating beverages" },
         { id: "completed", label: "Completed", description: "Results ready" }
     ]
 
@@ -722,7 +722,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                                 Tasting is Active
                                             </h4>
                                             <p className="text-xs text-slate-600 mt-1">
-                                                The commission has started. Please proceed with assessing your assigned wines and submitting scores.
+                                                The commission has started. Please proceed with assessing your assigned beverages and submitting scores.
                                             </p>
                                         </div>
                                     </div>
