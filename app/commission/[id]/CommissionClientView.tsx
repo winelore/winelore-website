@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
@@ -166,6 +166,8 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(1)
     const [hasRedirected, setHasRedirected] = useState(false)
+    const [commission, setCommission] = useState(propInitialData)
+    const prevStatusRef = useRef(commission.status)
 
     const initialData = localData
 
@@ -197,16 +199,16 @@ export default function CommissionClientView({ initialData: propInitialData }: {
         : "Unknown Creator"
 
     useEffect(() => {
-        if (hasRedirected) return
+        const prevStatus = prevStatusRef.current
+        const currentStatus = commission.status
 
-        const currentUrl = new URL(window.location.href)
-        const hasErrorParam = currentUrl.searchParams.has('error')
-
-        if (initialData.status === "STARTED" && !hasErrorParam) {
+        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
             setHasRedirected(true)
-            router.push(`/commission/${initialData.id}/evaluation`)
+            router.push(`/commission/${commission.id}/evaluation`)
         }
-    }, [initialData.status, initialData.id, router, hasRedirected])
+
+        prevStatusRef.current = currentStatus
+    }, [commission.status, commission.id, hasRedirected, router])
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;

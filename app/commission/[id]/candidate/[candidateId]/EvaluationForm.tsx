@@ -70,6 +70,26 @@ export default function EvaluationForm({ categories, candidateId }: { categories
         return smartMap
     }, [categories, values])
 
+    // Verify if all required standard fields are filled (skip SMART fields as they are auto-computed)
+    const isFormValid = useMemo(() => {
+        for (const category of categories) {
+            for (const prop of category.properties) {
+                if (prop.type === "SMART") continue
+
+                const val = values[prop.id]
+                if (val === undefined || val === null || val === "") {
+                    return false
+                }
+            }
+        }
+        return true
+    }, [categories, values])
+
+    const handleSubmit = () => {
+        console.log("Submitting values for candidate", candidateId, { ...values, ...computedSmartValues })
+        // Action to submit data to the backend should be called here
+    }
+
     return (
         <div className="flex flex-col gap-8">
             {categories.map((category) => (
@@ -148,12 +168,18 @@ export default function EvaluationForm({ categories, candidateId }: { categories
                 </div>
             ))}
 
-            <button
-                disabled
-                className="w-full py-3 bg-slate-200 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl cursor-not-allowed mt-4"
-            >
-                Submit Evaluation (Locked)
-            </button>
+            {isFormValid ? (
+                <button
+                    onClick={handleSubmit}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors mt-4 shadow-md shadow-indigo-600/10"
+                >
+                    Submit Evaluation
+                </button>
+            ) : (
+                <div className="w-full py-3 bg-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl text-center cursor-default select-none mt-4">
+                    Submit Evaluation
+                </div>
+            )}
         </div>
     )
 }
