@@ -6,6 +6,13 @@ import * as Types from './graphql';
 
 import { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
+export type BeverageStatus =
+  | 'APPROVED'
+  | 'DRAFT'
+  | 'PUBLISHED'
+  | 'SUBMITTED'
+  | 'SUSPENDED';
+
 export type CommissionMemberRole =
   | 'EXPERT'
   | 'HEAD'
@@ -36,6 +43,18 @@ export type CompetitionStatus =
   | 'IN_REVIEW'
   | 'PLANNED'
   | 'STARTED';
+
+export type ProducerRole =
+  | 'DISTRIBUTOR'
+  | 'MAKER'
+  | 'OWNER';
+
+export type WineType =
+  | 'FORTIFIED'
+  | 'RED'
+  | 'ROSE'
+  | 'SPARKLING'
+  | 'WHITE';
 
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
@@ -94,6 +113,20 @@ export type StartCompetitionMutationVariables = Exact<{
 
 
 export type StartCompetitionMutation = { startCompetition: { id: string, status: Types.CompetitionStatus, startedAt: string | null } };
+
+export type GetWinesQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+
+export type GetWinesQuery = { wines: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, type: Types.WineType, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }> }> } };
+
+export type GetCompetitionsQueryVariables = Exact<{
+  limit?: number | null | undefined;
+}>;
+
+
+export type GetCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
 
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -218,6 +251,45 @@ export const StartCompetitionDocument = gql`
   }
 }
     `;
+export const GetWinesDocument = gql`
+    query GetWines($limit: Int) {
+  wines(limit: $limit) {
+    items {
+      id
+      name
+      status
+      type
+      producers {
+        id
+        auid
+        role
+      }
+    }
+  }
+}
+    `;
+export const GetCompetitionsDocument = gql`
+    query GetCompetitions($limit: Int) {
+  competitions(limit: $limit) {
+    items {
+      id
+      name
+      status
+      startedAt
+      endedAt
+      plannedDates {
+        start
+        end
+      }
+      series {
+        id
+        name
+      }
+      holders
+    }
+  }
+}
+    `;
 export const GetDashboardCompetitionsDocument = gql`
     query GetDashboardCompetitions($limit: Int) {
   competitions(limit: $limit) {
@@ -267,6 +339,12 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     StartCompetition(variables: Types.StartCompetitionMutationVariables, options?: C): Promise<Types.StartCompetitionMutation> {
       return requester<Types.StartCompetitionMutation, Types.StartCompetitionMutationVariables>(StartCompetitionDocument, variables, options) as Promise<Types.StartCompetitionMutation>;
+    },
+    GetWines(variables?: Types.GetWinesQueryVariables, options?: C): Promise<Types.GetWinesQuery> {
+      return requester<Types.GetWinesQuery, Types.GetWinesQueryVariables>(GetWinesDocument, variables, options) as Promise<Types.GetWinesQuery>;
+    },
+    GetCompetitions(variables?: Types.GetCompetitionsQueryVariables, options?: C): Promise<Types.GetCompetitionsQuery> {
+      return requester<Types.GetCompetitionsQuery, Types.GetCompetitionsQueryVariables>(GetCompetitionsDocument, variables, options) as Promise<Types.GetCompetitionsQuery>;
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;

@@ -62,14 +62,14 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         {/* Group 2: Navigation Links */}
         <div className="px-2 py-1.5">
           <a
-            href="#"
+            href="/myBeverages"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <Wine className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>My Beverages</span>
           </a>
           <a
-            href="#"
+            href="/myCompetitions"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <Trophy className="h-5 w-5 stroke-[1.5] text-foreground" />
