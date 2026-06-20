@@ -50,6 +50,12 @@ export type CommissionStatus =
   | 'PLANNED'
   | 'STARTED';
 
+export type CompetitionFilterInput = {
+  holders?: Array<Array<number>> | null | undefined;
+  seriesId?: string | number | null | undefined;
+  status?: CompetitionStatus | null | undefined;
+};
+
 export type CompetitionSeriesStatus =
   | 'APPROVED'
   | 'ARCHIVED'
@@ -124,11 +130,28 @@ export type EvaluationTemplateEditionStatus =
   | 'ARCHIVED'
   | 'DRAFT';
 
+export type ProducerRole =
+  | 'BOTTLER'
+  | 'MAKER';
+
 export type SubmitEvaluationInput = {
   candidateId: string | number;
   comments?: Array<EvaluationCommentInput> | null | undefined;
   scores: Array<EvaluatedPropertyScoreInput>;
 };
+
+export type WineFilterInput = {
+  producers?: Array<Array<number>> | null | undefined;
+  status?: BeverageStatus | null | undefined;
+  type?: WineType | null | undefined;
+};
+
+export type WineType =
+  | 'FORTIFIED'
+  | 'RED'
+  | 'ROSE'
+  | 'SPARKLING'
+  | 'WHITE';
 
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
@@ -319,6 +342,22 @@ export type StartCompetitionMutationVariables = Exact<{
 
 
 export type StartCompetitionMutation = { startCompetition: { id: string, status: Types.CompetitionStatus, startedAt: string | null } };
+
+export type GetMyBeveragesQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  filter?: Types.WineFilterInput | null | undefined;
+}>;
+
+
+export type GetMyBeveragesQuery = { wines: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, type: Types.WineType, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }> }> } };
+
+export type GetMyCompetitionsQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  filter?: Types.CompetitionFilterInput | null | undefined;
+}>;
+
+
+export type GetMyCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
 
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -785,6 +824,45 @@ export const StartCompetitionDocument = gql`
   }
 }
     `;
+export const GetMyBeveragesDocument = gql`
+    query GetMyBeverages($limit: Int, $filter: WineFilterInput) {
+  wines(limit: $limit, filter: $filter) {
+    items {
+      id
+      name
+      status
+      type
+      producers {
+        id
+        auid
+        role
+      }
+    }
+  }
+}
+    `;
+export const GetMyCompetitionsDocument = gql`
+    query GetMyCompetitions($limit: Int, $filter: CompetitionFilterInput) {
+  competitions(limit: $limit, filter: $filter) {
+    items {
+      id
+      name
+      status
+      startedAt
+      endedAt
+      plannedDates {
+        start
+        end
+      }
+      series {
+        id
+        name
+      }
+      holders
+    }
+  }
+}
+    `;
 export const GetDashboardCompetitionsDocument = gql`
     query GetDashboardCompetitions($limit: Int) {
   competitions(limit: $limit) {
@@ -861,6 +939,12 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     StartCompetition(variables: Types.StartCompetitionMutationVariables, options?: C): Promise<Types.StartCompetitionMutation> {
       return requester<Types.StartCompetitionMutation, Types.StartCompetitionMutationVariables>(StartCompetitionDocument, variables, options) as Promise<Types.StartCompetitionMutation>;
+    },
+    GetMyBeverages(variables?: Types.GetMyBeveragesQueryVariables, options?: C): Promise<Types.GetMyBeveragesQuery> {
+      return requester<Types.GetMyBeveragesQuery, Types.GetMyBeveragesQueryVariables>(GetMyBeveragesDocument, variables, options) as Promise<Types.GetMyBeveragesQuery>;
+    },
+    GetMyCompetitions(variables?: Types.GetMyCompetitionsQueryVariables, options?: C): Promise<Types.GetMyCompetitionsQuery> {
+      return requester<Types.GetMyCompetitionsQuery, Types.GetMyCompetitionsQueryVariables>(GetMyCompetitionsDocument, variables, options) as Promise<Types.GetMyCompetitionsQuery>;
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
