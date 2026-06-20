@@ -1,8 +1,8 @@
-import { gql } from '@/src/gql';
+import { gql } from "@/src/gql"
 
-export const GET_COMPETITIONS = gql(`
-  query GetCompetitions($limit: Int) {
-    competitions(limit: $limit) {
+export const GET_MY_COMPETITIONS = gql(`
+  query GetMyCompetitions($limit: Int, $filter: CompetitionFilterInput) {
+    competitions(limit: $limit, filter: $filter) {
       items {
         id
         name

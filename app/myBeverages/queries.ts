@@ -1,8 +1,8 @@
-import { gql } from '@/src/gql';
+import { gql } from "@/src/gql"
 
-export const GET_WINES = gql(`
-  query GetWines($limit: Int) {
-    wines(limit: $limit) {
+export const GET_MY_BEVERAGES = gql(`
+  query GetMyBeverages($limit: Int, $filter: WineFilterInput) {
+    wines(limit: $limit, filter: $filter) {
       items {
         id
         name
@@ -16,4 +16,4 @@ export const GET_WINES = gql(`
       }
     }
   }
-`);
+`)
