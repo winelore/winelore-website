@@ -19,7 +19,6 @@ const tabs = [
     { id: "wines", label: "Wines", icon: Wine },
 ]
 
-
 const formatEnumStatus = (status: string | undefined): string => {
     if (!status) return ""
     return status
@@ -122,7 +121,6 @@ function StatusSteps({ status }: { status: string }) {
                                     <p className="text-[10px] text-slate-400">{step.description}</p>
                                 </div>
                             </div>
-
                         </React.Fragment>
                     )
                 })}
@@ -136,6 +134,16 @@ interface Member {
     auid: number[];
     role: "HEAD" | "EXPERT" | "TRAINEE_EXPERT";
     isReady: boolean;
+}
+
+interface Replica {
+    id: string;
+    name: string;
+    type: "STANDARD" | "TRAINEE";
+    status: string;
+    members: Member[];
+    candidateCount: number;
+    replicaCandidates: { id: string; status: string }[];
 }
 
 interface InitialData {
@@ -152,62 +160,88 @@ interface InitialData {
         name: string;
         holders: number[];
     };
+    replicas: Replica[];
     members: Member[];
 }
 
-export default function CommissionClientView({ initialData: propInitialData }: { initialData: InitialData }) {
+export default function CommissionClientView({ 
+    initialData: propInitialData,
+    serverAuid 
+}: { 
+    initialData: InitialData;
+    serverAuid?: number | null;
+}) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
-    const [localMembers, setLocalMembers] = useState<Member[]>(propInitialData.members)
+    const [localReplicas, setLocalReplicas] = useState<Replica[]>(propInitialData.replicas || [])
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
-    const [currentAuid, setCurrentAuid] = useState<number>(1)
+    const [currentAuid, setCurrentAuid] = useState<number>(serverAuid || 1)
     const [hasRedirected, setHasRedirected] = useState(false)
-    const prevStatusRef = useRef(localData.status)
- 
-     const initialData = localData
- 
-     useEffect(() => {
-         setLocalData(propInitialData)
-         setLocalMembers(propInitialData.members)
-     }, [propInitialData])
- 
-     useEffect(() => {
-         const cookieAuid = Cookies.get("auid")
-         if (cookieAuid) {
-             setCurrentAuid(parseInt(cookieAuid, 10))
-         }
-     }, [])
- 
-     useEffect(() => {
-         const me = localMembers.find(m => m.auid.includes(currentAuid))
-         if (me) {
-             setCurrentUserRole(me.role)
-             setCurrentMemberId(me.id)
-         } else {
-             setCurrentUserRole(null)
-             setCurrentMemberId(null)
-         }
-     }, [localMembers, currentAuid])
- 
-     const creatorNames = initialData.competition.holders.length > 0
-         ? initialData.competition.holders.join(", ")
-         : "Unknown Creator"
- 
-     useEffect(() => {
-         const prevStatus = prevStatusRef.current
-         const currentStatus = localData.status
- 
-         if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
-             setHasRedirected(true)
-             router.push(`/commission/${localData.id}/evaluation`)
-         }
- 
-         prevStatusRef.current = currentStatus
-     }, [localData.status, localData.id, hasRedirected, router])
+
+    const initialData = localData
+
+    // Detect user's active replica
+    const activeReplica = localReplicas.find(r => 
+        r.members.some(m => m.auid.includes(currentAuid))
+    ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
+
+    const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
+
+    const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
+    const localMembers = selectedReplica ? selectedReplica.members : []
+
+    const prevReplicaStatusRef = useRef(selectedReplica?.status)
+
+    useEffect(() => {
+        setLocalData(propInitialData)
+        if (propInitialData.replicas) {
+            setLocalReplicas(propInitialData.replicas)
+            const active = propInitialData.replicas.find(r => 
+                r.members.some(m => m.auid.includes(currentAuid))
+            ) || propInitialData.replicas.find(r => r.type === "STANDARD") || propInitialData.replicas[0] || null
+            if (active && !selectedReplicaId) {
+                setSelectedReplicaId(active.id)
+            }
+        }
+    }, [propInitialData, currentAuid, selectedReplicaId])
+
+    useEffect(() => {
+        const cookieAuid = Cookies.get("auid")
+        if (cookieAuid) {
+            setCurrentAuid(parseInt(cookieAuid, 10))
+        }
+    }, [])
+
+    useEffect(() => {
+        const me = localMembers.find(m => m.auid.includes(currentAuid))
+        if (me) {
+            setCurrentUserRole(me.role)
+            setCurrentMemberId(me.id)
+        } else {
+            setCurrentUserRole(null)
+            setCurrentMemberId(null)
+        }
+    }, [localMembers, currentAuid])
+
+    const creatorNames = initialData.competition.holders.length > 0
+        ? initialData.competition.holders.join(", ")
+        : "Unknown Creator"
+
+    useEffect(() => {
+        const prevStatus = prevReplicaStatusRef.current
+        const currentStatus = selectedReplica?.status
+
+        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
+            setHasRedirected(true)
+            router.push(`/commission/${localData.id}/evaluation`)
+        }
+
+        prevReplicaStatusRef.current = currentStatus
+    }, [selectedReplica?.status, localData.id, hasRedirected, router])
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -223,11 +257,10 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
                 const formattedTime = hours > 0
-                    ? `${hours}h ${minutes}m ${seconds}s`
-                    : `${minutes}m ${seconds}s`
-
+                    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                
                 setTimeDisplay(formattedTime)
-
             } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
                 const start = new Date(initialData.startedAt).getTime()
                 const end = new Date(initialData.endedAt).getTime()
@@ -235,28 +268,32 @@ export default function CommissionClientView({ initialData: propInitialData }: {
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-                const formattedTime = hours > 0
-                    ? `${hours}h ${minutes}m`
-                    : `${minutes}m`
-
-                setTimeDisplay(`Lasted ${formattedTime}`)
-
+                
+                setTimeDisplay(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`)
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
-                const date = new Date(initialData.plannedStartAt)
-                const formattedDate = new Intl.DateTimeFormat('en-GB', {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                }).format(date)
-                setTimeDisplay(`Planned for ${formattedDate}`)
+                const start = new Date(initialData.plannedStartAt).getTime()
+                const now = new Date().getTime()
+                const diff = start - now
 
+                if (diff <= 0) {
+                    setTimeDisplay("Starting soon")
+                } else {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+                    if (days > 0) {
+                        setTimeDisplay(`In ${days}d ${hours}h`)
+                    } else {
+                        setTimeDisplay(`In ${hours}h ${minutes}m`)
+                    }
+                }
             } else {
                 setTimeDisplay("")
             }
         }
 
         updateTime()
-
         if (initialData.status === "STARTED") {
             intervalId = setInterval(updateTime, 1000)
         }
@@ -270,7 +307,9 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                 const updated = await getCommissionDataAction(localData.id)
                 if (updated) {
                     setLocalData(updated)
-                    setLocalMembers(updated.members)
+                    if (updated.replicas) {
+                        setLocalReplicas(updated.replicas)
+                    }
                 }
             } catch (err) {
                 console.error("Failed to poll commission data:", err)
@@ -281,24 +320,32 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     }, [localData.id])
 
     const handleToggleReady = async (shouldBeReady: boolean) => {
-        if (!currentMemberId || isMutating) return
+        if (!selectedReplica || !currentMemberId || isMutating) return
         setIsMutating(true)
 
         try {
             let updatedMembers;
             if (shouldBeReady) {
-                const response = await markMemberReadyAction(initialData.id, currentMemberId)
-                updatedMembers = response.markCommissionMemberReady?.members
+                const response = await markMemberReadyAction(selectedReplica.id, currentMemberId)
+                updatedMembers = response.markCommissionReplicaMemberReady?.members
             } else {
-                const response = await markMemberNotReadyAction(initialData.id, currentMemberId)
-                updatedMembers = response.markCommissionMemberNotReady?.members
+                const response = await markMemberNotReadyAction(selectedReplica.id, currentMemberId)
+                updatedMembers = response.markCommissionReplicaMemberNotReady?.members
             }
 
             if (updatedMembers) {
-                setLocalMembers(prev =>
-                    prev.map(m => {
-                        const match = updatedMembers.find((u: any) => u.id === m.id)
-                        return match ? { ...m, isReady: match.isReady } : m
+                setLocalReplicas(prev =>
+                    prev.map(r => {
+                        if (r.id === selectedReplica.id) {
+                            return {
+                                ...r,
+                                members: r.members.map(m => {
+                                    const match = updatedMembers.find((u: any) => u.id === m.id)
+                                    return match ? { ...m, isReady: match.isReady } : m
+                                })
+                            }
+                        }
+                        return r
                     })
                 )
             }
@@ -310,26 +357,26 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     }
 
     const handleStartCommission = async () => {
-        if (isMutating) return
+        if (!selectedReplica || isMutating) return
         setIsMutating(true)
         try {
-            await startCommissionAction(initialData.id)
+            await startCommissionAction(selectedReplica.id)
             router.refresh()
         } catch (err) {
-            console.error("Failed to start commission:", err)
+            console.error("Failed to start replica tasting session:", err)
         } finally {
             setIsMutating(false)
         }
     }
 
     const handleCompleteCommission = async () => {
-        if (isMutating) return
+        if (!selectedReplica || isMutating) return
         setIsMutating(true)
         try {
-            await completeCommissionAction(initialData.id)
+            await completeCommissionAction(selectedReplica.id)
             router.refresh()
         } catch (err) {
-            console.error("Failed to complete commission:", err)
+            console.error("Failed to complete replica tasting session:", err)
         } finally {
             setIsMutating(false)
         }
@@ -338,13 +385,15 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     const isEveryoneReady = localMembers.every(m => m.isReady)
     const myStatus = localMembers.find(m => m.auid.includes(currentAuid))
     const amIReady = myStatus?.isReady || false
-    const isPreStart = initialData.status !== "STARTED" && initialData.status !== "COMPLETED"
+    const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
     const nonReadyCount = localMembers.filter(m => !m.isReady).length
 
     const sortedMembers = [...localMembers].sort((a, b) => {
         const roleOrder = { HEAD: 1, EXPERT: 2, TRAINEE_EXPERT: 3 }
         return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)
     })
+
+    const replicaStatus = selectedReplica?.status || "DRAFT"
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
@@ -385,19 +434,79 @@ export default function CommissionClientView({ initialData: propInitialData }: {
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
 
-                    {/* Left Column: Stepper and Tasting Panel */}
+                    {/* Left Column: Replicas, Stepper and Tasting Panel */}
                     <div className="w-full lg:w-[45%] flex flex-col gap-6">
-                        <StatusSteps status={initialData.status} />
+                        
+                        {/* Replica Selector Tabs */}
+                        {localReplicas.length > 0 && (
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                                    <Layers className="w-4 h-4 text-indigo-500" />
+                                    Tasting Replicas
+                                </h3>
+                                <div className="flex flex-col gap-2">
+                                    {localReplicas.map((r) => {
+                                        const isSelected = r.id === selectedReplicaId
+                                        const isUserReplica = r.members.some(m => m.auid.includes(currentAuid))
+                                        return (
+                                            <button
+                                                key={r.id}
+                                                onClick={() => {
+                                                    setSelectedReplicaId(r.id)
+                                                    setHasRedirected(false)
+                                                }}
+                                                className={`flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full ${
+                                                    isSelected
+                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                                                        : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-600 hover:text-slate-800"
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span>{r.name}</span>
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
+                                                        isSelected 
+                                                            ? "bg-indigo-700/60 border-indigo-500 text-indigo-100" 
+                                                            : "bg-slate-150 border-slate-200 text-slate-500"
+                                                    }`}>
+                                                        {r.type}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {isUserReplica && (
+                                                        <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
+                                                            isSelected ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
+                                                        }`}>
+                                                            My Tasting
+                                                        </span>
+                                                    )}
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full ${
+                                                        r.status === "STARTED"
+                                                            ? (isSelected ? "bg-emerald-400 text-indigo-950 font-extrabold" : "bg-emerald-500/10 text-emerald-600")
+                                                            : r.status === "COMPLETED"
+                                                                ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
+                                                                : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
+                                                    }`}>
+                                                        {formatEnumStatus(r.status)}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <StatusSteps status={replicaStatus} />
 
                         <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Users className="w-5 h-5 text-indigo-500" />
-                                        Tasting Panel
+                                        Tasting Panel ({selectedReplica?.name || "Standard"})
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Members evaluating this competition
+                                        Members evaluating this replica
                                     </p>
                                 </div>
                                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
@@ -464,6 +573,9 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                         </div>
                                     )
                                 })}
+                                {localMembers.length === 0 && (
+                                    <p className="text-sm text-slate-400 text-center py-4">No members assigned to this replica.</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -486,19 +598,19 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                     </h2>
                                     <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                            initialData.status === "STARTED" 
+                                            replicaStatus === "STARTED" 
                                                 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" 
-                                                : initialData.status === "COMPLETED"
+                                                : replicaStatus === "COMPLETED"
                                                     ? "bg-slate-100 text-slate-500 border border-slate-200"
                                                     : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
                                         }`}>
-                                            {initialData.status === "STARTED" && (
+                                            {replicaStatus === "STARTED" && (
                                                 <span className="relative flex h-2 w-2 mr-1">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                                 </span>
                                             )}
-                                            {formatEnumStatus(initialData.status)}
+                                            {formatEnumStatus(replicaStatus)}
                                         </span>
                                         {timeDisplay && (
                                             <>
@@ -542,7 +654,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                             <div className="flex items-center gap-3 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl p-4 mt-4">
                                 <Layers className="h-5 w-5 text-indigo-500 shrink-0" />
                                 <span className="text-sm text-slate-500 font-medium">
-                                    Featuring <strong className="text-slate-800 font-bold">{initialData.candidateCount}</strong> selected beverages for tasting
+                                    Replica has <strong className="text-slate-800 font-bold">{selectedReplica?.candidateCount || 0}</strong> assigned beverages for tasting
                                 </span>
                             </div>
                         </div>
@@ -562,7 +674,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                         <p className="text-xs font-semibold text-slate-800">
                                             {formatDateTime(initialData.plannedStartAt)}
                                         </p>
-                                        {initialData.status === "PLANNED" && initialData.plannedStartAt && (
+                                        {selectedReplica?.status === "PLANNED" && initialData.plannedStartAt && (
                                             <a
                                                 href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
                                                 target="_blank"
@@ -613,7 +725,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                             </h3>
                             
                             <div className="flex flex-col gap-6">
-                                {localData.status === "STARTED" && (
+                                {replicaStatus === "STARTED" && (
                                     <button
                                         onClick={() => router.push(`/commission/${localData.id}/evaluation`)}
                                         className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
@@ -662,7 +774,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                 {currentUserRole === "HEAD" && (
                                     <div className="border-t border-slate-100 pt-6">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                                            Head of Commission Tools
+                                            Head of Commission Tools ({selectedReplica?.name})
                                         </h4>
                                         
                                         {isPreStart && (
@@ -682,7 +794,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                                         ) : (
                                                             <PlayCircle className="h-5 w-5" />
                                                         )}
-                                                        <span>Start Commission</span>
+                                                        <span>Start Tasting Session</span>
                                                     </button>
                                                     
                                                     {!isEveryoneReady && (
@@ -700,7 +812,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                             </div>
                                         )}
 
-                                        {localData.status === "STARTED" && (
+                                        {replicaStatus === "STARTED" && (
                                             <div className="flex flex-col gap-2.5">
                                                 <p className="text-xs text-slate-500 mb-1">
                                                     As the Head of Commission, you can end the evaluation once all members have finished their tasting assessments.
@@ -716,7 +828,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                                         ) : (
                                                             <StopCircle className="h-5 w-5" />
                                                         )}
-                                                        <span>Complete Commission</span>
+                                                        <span>Complete Tasting Session</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -724,21 +836,21 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                     </div>
                                 )}
 
-                                {initialData.status === "COMPLETED" && (
+                                {replicaStatus === "COMPLETED" && (
                                     <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
                                         <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                                         <div>
                                             <h4 className="text-sm font-bold text-emerald-800">
-                                                Commission Session Completed
+                                                Tasting Session Completed
                                             </h4>
                                             <p className="text-xs text-emerald-600/90 mt-1">
-                                                All tasting sessions have concluded. The evaluation data has been locked and archived for scoring.
+                                                All tasting sessions for this replica have concluded. The evaluation data has been locked and archived.
                                             </p>
                                         </div>
                                     </div>
                                 )}
 
-                                {localData.status === "STARTED" && currentUserRole !== "HEAD" && (
+                                {replicaStatus === "STARTED" && currentUserRole !== "HEAD" && (
                                     <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
                                         <div className="flex items-start gap-3">
                                             <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
@@ -750,7 +862,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                                     Tasting is Active
                                                 </h4>
                                                 <p className="text-xs text-slate-600 mt-1">
-                                                    The commission has started. Please proceed with assessing your assigned wines and submitting scores.
+                                                    The tasting session has started. Please proceed with assessing your assigned wines and submitting scores.
                                                 </p>
                                             </div>
                                         </div>

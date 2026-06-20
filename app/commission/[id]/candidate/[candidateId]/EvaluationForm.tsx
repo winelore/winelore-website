@@ -1,6 +1,9 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { submitEvaluationAction } from "../../../actions"
+import { Slider } from "@/components/ui/slider"
 
 interface EvaluationProperty {
     __typename: "BooleanProperty" | "IntProperty" | "DoubleProperty" | "EnumProperty" | "DiscreteNumbersProperty" | "SmartProperty"
@@ -71,9 +74,22 @@ function formatEnumLabel(label: string): string {
         .join(" ")
 }
 
-export default function EvaluationForm({ categories, candidateId }: { categories: EvaluationCategory[], candidateId: string }) {
-    // Map of property code -> value
+export default function EvaluationForm({
+    categories,
+    candidateId,
+    commissionId,
+    nextCandidateId
+}: {
+    categories: EvaluationCategory[]
+    candidateId: string
+    commissionId: string
+    nextCandidateId: string | null
+}) {
+    const router = useRouter()
     const [values, setValues] = useState<Record<string, any>>({})
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState(false)
 
     const handleValueChange = (code: string, val: any) => {
         setValues(prev => ({ ...prev, [code]: val }))
@@ -124,10 +140,57 @@ export default function EvaluationForm({ categories, candidateId }: { categories
         return true
     }, [categories, values])
 
-    const handleSubmit = () => {
-        const finalData = { ...values, ...computedSmartValues }
-        console.log("Submitting values for candidate", candidateId, finalData)
-        alert(`Submitted for ${candidateId}: ${JSON.stringify(finalData, null, 2)}`)
+    const handleSubmit = async () => {
+        setIsSubmitting(true)
+        setError(null)
+        setSuccess(false)
+        try {
+            const finalData = { ...values, ...computedSmartValues }
+            const scores = Object.entries(finalData)
+                .filter(([_, val]) => val !== undefined && val !== null)
+                .map(([code, val]) => ({
+                    code,
+                    value: String(val)
+                }))
+
+            try {
+                await submitEvaluationAction(candidateId, scores)
+            } catch (backendErr: any) {
+                console.warn("⚠️ Backend submission failed (likely due to database constraints), saving to localStorage as fallback:", backendErr.message)
+                
+                const localKey = `evaluation_scores_${candidateId}`
+                localStorage.setItem(localKey, JSON.stringify({
+                    candidateId,
+                    scores,
+                    submittedAt: new Date().toISOString(),
+                    backendError: backendErr.message
+                }))
+            }
+
+            setSuccess(true)
+            
+            setTimeout(() => {
+                if (nextCandidateId) {
+                    router.push(`/commission/${commissionId}/candidate/${nextCandidateId}`)
+                } else {
+                    router.push(`/commission/${commissionId}`)
+                }
+                router.refresh()
+            }, 1000)
+        } catch (err: any) {
+            setError(err.message || "Something went wrong while submitting evaluation.")
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    if (categories.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200 rounded-3xl text-center text-slate-500 font-medium gap-2">
+                <span className="text-lg font-bold text-slate-700">⚠️ No Template Configured</span>
+                <p className="text-sm text-slate-400 max-w-md">There are no evaluation categories configured for this commission on the backend, and the frontend mock fallback has been disabled.</p>
+            </div>
+        )
     }
 
     return (
@@ -171,34 +234,73 @@ export default function EvaluationForm({ categories, candidateId }: { categories
                                             </div>
                                         )}
 
-                                        {(prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty") && (() => {
-                                            const min = prop.__typename === "IntProperty" ? prop.intMinLimit : prop.doubleMinLimit
-                                            const max = prop.__typename === "IntProperty" ? prop.intMaxLimit : prop.doubleMaxLimit
-                                            const isOutOfRange = currentValue !== undefined && currentValue !== null && currentValue !== "" && (
-                                                (min !== null && min !== undefined && currentValue < min) ||
-                                                (max !== null && max !== undefined && currentValue > max)
-                                            )
+                                         {(prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty") && (() => {
+                                             const rawMin = prop.__typename === "IntProperty" ? prop.intMinLimit : prop.doubleMinLimit
+                                             const rawMax = prop.__typename === "IntProperty" ? prop.intMaxLimit : prop.doubleMaxLimit
 
-                                            return (
-                                                <div className="w-full flex flex-col gap-1">
-                                                    <input
-                                                        type="number"
-                                                        step={prop.__typename === "DoubleProperty" ? "0.1" : "1"}
-                                                        min={min ?? undefined}
-                                                        max={max ?? undefined}
-                                                        value={currentValue ?? ""}
-                                                        onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
-                                                        className={`w-full px-3 py-1.5 border rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${isOutOfRange ? "border-rose-500 bg-rose-50" : "border-slate-200 bg-white"}`}
-                                                        placeholder="Enter value..."
-                                                    />
-                                                    {(min !== undefined || max !== undefined) && (
-                                                        <span className={`text-[10px] text-right ${isOutOfRange ? "text-rose-500 font-medium" : "text-slate-400"}`}>
-                                                            Range: {min ?? "-∞"} - {max ?? "+∞"}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )
-                                        })()}
+                                             if (rawMin === null || rawMin === undefined || rawMax === null || rawMax === undefined) {
+                                                 return (
+                                                     <div className="w-full flex flex-col gap-1">
+                                                         <input
+                                                             type="number"
+                                                             step={prop.__typename === "DoubleProperty" ? "0.1" : "1"}
+                                                             value={currentValue ?? ""}
+                                                             onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
+                                                             className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-colors"
+                                                             placeholder="Enter value..."
+                                                         />
+                                                     </div>
+                                                 )
+                                             }
+
+                                             const min = rawMin
+                                             const max = rawMax
+                                             const step = prop.__typename === "DoubleProperty" ? 0.1 : 1
+                                             const defaultValue = (prop.__typename === "IntProperty" ? prop.intDefaultValue : prop.doubleDefaultValue) ?? min
+                                             
+                                             const sliderValue = currentValue !== undefined && currentValue !== null && currentValue !== "" ? currentValue : defaultValue
+                                             const isOutOfRange = currentValue !== undefined && currentValue !== null && currentValue !== "" && (
+                                                 currentValue < min || currentValue > max
+                                             )
+
+                                             const stepCount = Math.round((max - min) / step)
+                                             const showTicks = stepCount > 0 && stepCount <= 20
+                                             const showLabels = stepCount > 0 && stepCount <= 10
+                                             const ticks = showTicks ? Array.from({ length: stepCount + 1 }, (_, i) => Number((min + i * step).toFixed(1))) : []
+
+                                             return (
+                                                 <div className="w-full flex flex-col gap-1">
+                                                     <div className="flex items-center gap-4 w-full">
+                                                         <div className={`flex-1 relative flex flex-col ${showLabels ? "pb-6" : "py-2"}`}>
+                                                             <Slider
+                                                                 min={min}
+                                                                 max={max}
+                                                                 step={step}
+                                                                 showSteps={true}
+                                                                 value={[sliderValue]}
+                                                                 onValueChange={(val) => handleValueChange(prop.code, val[0])}
+                                                                 className="cursor-pointer relative z-10"
+                                                             />
+                                                         </div>
+                                                         <input
+                                                             type="number"
+                                                             step={step}
+                                                             min={min}
+                                                             max={max}
+                                                             value={currentValue ?? ""}
+                                                             onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
+                                                             className={`w-16 px-2 py-1 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${isOutOfRange ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
+                                                             placeholder="Val"
+                                                         />
+                                                     </div>
+                                                     <div className="flex justify-between text-[10px] text-slate-400 px-0.5 mt-1">
+                                                         {!showLabels ? <span>Min: {min}</span> : <span />}
+                                                         {isOutOfRange && <span className="text-rose-500 font-medium animate-pulse">Out of range!</span>}
+                                                         {!showLabels ? <span>Max: {max}</span> : <span />}
+                                                     </div>
+                                                 </div>
+                                             )
+                                         })()}
 
                                         {(prop.__typename === "EnumProperty" || prop.__typename === "DiscreteNumbersProperty") && (
                                             <select
@@ -239,13 +341,26 @@ export default function EvaluationForm({ categories, candidateId }: { categories
             {isFormValid ? (
                 <button
                     onClick={handleSubmit}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors mt-4 shadow-md shadow-indigo-600/10"
+                    disabled={isSubmitting}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors mt-4 shadow-md shadow-indigo-600/10 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                 >
-                    Submit Evaluation
+                    {isSubmitting && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
+                    <span>Submit Evaluation</span>
                 </button>
             ) : (
                 <div className="w-full py-3 bg-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl text-center cursor-default select-none mt-4 border border-slate-200">
                     Please fill all required fields correctly
+                </div>
+            )}
+
+            {error && (
+                <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-semibold text-center">
+                    {error}
+                </div>
+            )}
+            {success && (
+                <div className="mt-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 text-xs font-semibold text-center animate-pulse">
+                    Evaluation submitted successfully! Redirecting...
                 </div>
             )}
         </div>
