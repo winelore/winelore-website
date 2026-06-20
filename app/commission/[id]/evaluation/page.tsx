@@ -27,6 +27,9 @@ export default async function EvaluationProxyPage({ params }: Props) {
 
     // Use a hardcoded string ID if the array is empty
     const firstCandidateId = candidates[0]?.id || "test-fake-candidate-id"
+    
+    // In a real scenario, we might want to find the first candidate that hasn't been evaluated by this member yet.
+    // For now, we just redirect to the first one available.
 
     redirect(`/commission/${id}/candidate/${firstCandidateId}`)
 

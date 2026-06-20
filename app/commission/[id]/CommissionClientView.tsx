@@ -166,49 +166,48 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(1)
     const [hasRedirected, setHasRedirected] = useState(false)
-    const [commission, setCommission] = useState(propInitialData)
-    const prevStatusRef = useRef(commission.status)
-
-    const initialData = localData
-
-    useEffect(() => {
-        setLocalData(propInitialData)
-        setLocalMembers(propInitialData.members)
-    }, [propInitialData])
-
-    useEffect(() => {
-        const cookieAuid = Cookies.get("auid")
-        if (cookieAuid) {
-            setCurrentAuid(parseInt(cookieAuid, 10))
-        }
-    }, [])
-
-    useEffect(() => {
-        const me = localMembers.find(m => m.auid.includes(currentAuid))
-        if (me) {
-            setCurrentUserRole(me.role)
-            setCurrentMemberId(me.id)
-        } else {
-            setCurrentUserRole(null)
-            setCurrentMemberId(null)
-        }
-    }, [localMembers, currentAuid])
-
-    const creatorNames = initialData.competition.holders.length > 0
-        ? initialData.competition.holders.join(", ")
-        : "Unknown Creator"
-
-    useEffect(() => {
-        const prevStatus = prevStatusRef.current
-        const currentStatus = commission.status
-
-        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
-            setHasRedirected(true)
-            router.push(`/commission/${commission.id}/evaluation`)
-        }
-
-        prevStatusRef.current = currentStatus
-    }, [commission.status, commission.id, hasRedirected, router])
+    const prevStatusRef = useRef(localData.status)
+ 
+     const initialData = localData
+ 
+     useEffect(() => {
+         setLocalData(propInitialData)
+         setLocalMembers(propInitialData.members)
+     }, [propInitialData])
+ 
+     useEffect(() => {
+         const cookieAuid = Cookies.get("auid")
+         if (cookieAuid) {
+             setCurrentAuid(parseInt(cookieAuid, 10))
+         }
+     }, [])
+ 
+     useEffect(() => {
+         const me = localMembers.find(m => m.auid.includes(currentAuid))
+         if (me) {
+             setCurrentUserRole(me.role)
+             setCurrentMemberId(me.id)
+         } else {
+             setCurrentUserRole(null)
+             setCurrentMemberId(null)
+         }
+     }, [localMembers, currentAuid])
+ 
+     const creatorNames = initialData.competition.holders.length > 0
+         ? initialData.competition.holders.join(", ")
+         : "Unknown Creator"
+ 
+     useEffect(() => {
+         const prevStatus = prevStatusRef.current
+         const currentStatus = localData.status
+ 
+         if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
+             setHasRedirected(true)
+             router.push(`/commission/${localData.id}/evaluation`)
+         }
+ 
+         prevStatusRef.current = currentStatus
+     }, [localData.status, localData.id, hasRedirected, router])
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -501,19 +500,6 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                             )}
                                             {formatEnumStatus(initialData.status)}
                                         </span>
-                                        {/* ========================================================= */}
-                                        {/* PERSISTENT EVALUATION BUTTON */}
-                                        {/* Displays if commission is active but member navigated back */}
-                                        {/* ========================================================= */}
-                                        {initialData.status === "STARTED" && (
-                                            <button
-                                                onClick={() => router.push(`/commission/${initialData.id}/evaluation`)}
-                                                className="ml-2 inline-flex items-center gap-1.5 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-md px-2.5 py-1 transition-colors shadow-sm"
-                                            >
-                                                <PlayCircle className="w-3.5 h-3.5" />
-                                                Continue Evaluation
-                                            </button>
-                                        )}
                                         {timeDisplay && (
                                             <>
                                                 <span className="text-slate-300">|</span>
@@ -627,6 +613,16 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                             </h3>
                             
                             <div className="flex flex-col gap-6">
+                                {localData.status === "STARTED" && (
+                                    <button
+                                        onClick={() => router.push(`/commission/${localData.id}/evaluation`)}
+                                        className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
+                                    >
+                                        <FileText className="h-5 w-5" />
+                                        <span>Continue to Evaluation</span>
+                                    </button>
+                                )}
+
                                 {isPreStart && currentUserRole && (
                                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
@@ -704,23 +700,25 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                             </div>
                                         )}
 
-                                        {initialData.status === "STARTED" && (
+                                        {localData.status === "STARTED" && (
                                             <div className="flex flex-col gap-2.5">
                                                 <p className="text-xs text-slate-500 mb-1">
                                                     As the Head of Commission, you can end the evaluation once all members have finished their tasting assessments.
                                                 </p>
-                                                <button
-                                                    onClick={handleCompleteCommission}
-                                                    disabled={isMutating}
-                                                    className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/15 transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
-                                                >
-                                                    {isMutating ? (
-                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                    ) : (
-                                                        <StopCircle className="h-5 w-5" />
-                                                    )}
-                                                    <span>Complete Commission</span>
-                                                </button>
+                                                <div className="flex flex-wrap gap-3">
+                                                    <button
+                                                        onClick={handleCompleteCommission}
+                                                        disabled={isMutating}
+                                                        className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/15 transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
+                                                    >
+                                                        {isMutating ? (
+                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                        ) : (
+                                                            <StopCircle className="h-5 w-5" />
+                                                        )}
+                                                        <span>Complete Commission</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -740,19 +738,21 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                     </div>
                                 )}
 
-                                {initialData.status === "STARTED" && currentUserRole !== "HEAD" && (
-                                    <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex items-start gap-3">
-                                        <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-indigo-800">
-                                                Tasting is Active
-                                            </h4>
-                                            <p className="text-xs text-slate-600 mt-1">
-                                                The commission has started. Please proceed with assessing your assigned wines and submitting scores.
-                                            </p>
+                                {localData.status === "STARTED" && currentUserRole !== "HEAD" && (
+                                    <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-indigo-800">
+                                                    Tasting is Active
+                                                </h4>
+                                                <p className="text-xs text-slate-600 mt-1">
+                                                    The commission has started. Please proceed with assessing your assigned wines and submitting scores.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

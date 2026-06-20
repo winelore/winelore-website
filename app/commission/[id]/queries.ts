@@ -28,6 +28,78 @@ export const GET_COMMISSION = gql(`
   }
 `);
 
+export const GET_COMMISSION_TEMPLATES = gql(`
+  query GetCommissionTemplates($id: ID!) {
+    commission(id: $id) {
+      id
+      templateEditions {
+        id
+        beverageType
+        templateEdition {
+          id
+          version
+          status
+          categories {
+            id
+            name
+            properties {
+              __typename
+              id
+              code
+              name
+              description
+              isRequired
+              ... on BooleanProperty {
+                boolDefaultValue: defaultValue
+              }
+              ... on IntProperty {
+                intMinLimit: minLimit
+                intMaxLimit: maxLimit
+                intDefaultValue: defaultValue
+              }
+              ... on DoubleProperty {
+                doubleMinLimit: minLimit
+                doubleMaxLimit: maxLimit
+                doubleDefaultValue: defaultValue
+              }
+              ... on EnumProperty {
+                enumAllowedValues: allowedValues
+                enumDefaultValue: defaultValue
+              }
+              ... on DiscreteNumbersProperty {
+                discreteAllowedValues: allowedValues
+                discreteDefaultValue: defaultValue
+              }
+              ... on SmartProperty {
+                expression {
+                  __typename
+                  type
+                  ... on BinaryExpression {
+                    left {
+                      __typename
+                      type
+                    }
+                    right {
+                      __typename
+                      type
+                    }
+                  }
+                  ... on ConstantExpression {
+                    value
+                  }
+                  ... on VariableExpression {
+                    code
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
 export const GET_CANDIDATE_COUNT = gql(`
   query GetCommissionCandidateCount($commissionId: ID!) {
     commissionCandidateCount(commissionId: $commissionId)
@@ -74,6 +146,32 @@ export const COMPLETE_COMMISSION = gql(`
       id
       status
       endedAt
+    }
+  }
+`);
+
+export const GET_COMMISSION_CANDIDATES = gql(`
+  query GetCommissionCandidates($commissionId: ID!) {
+    commissionCandidatesByCommission(commissionId: $commissionId) {
+      items {
+        id
+        anonymizedCode
+        orderIndex
+        status
+        sample {
+          id
+          volumeMl
+          batch {
+            id
+            vintage
+            beverage {
+              id
+              name
+              status
+            }
+          }
+        }
+      }
     }
   }
 `);

@@ -15,8 +15,8 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     // Logs the full structure to your terminal/server console
     console.log("👉 COMMISSION DEBUG DATA:", JSON.stringify(commission, null, 2))
 
-    // Temporary fallback to prevent crashes while we check the logs
-    const categories = (commission as any).categories || []
+    // Use the dynamic evaluation template from the backend
+    const categories = commission.competition?.evaluationTemplateEdition?.categories || []
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4 md:px-8 flex justify-center">
