@@ -13,10 +13,33 @@ export type BeverageStatus =
   | 'SUBMITTED'
   | 'SUSPENDED';
 
-export type CommissionMemberRole =
+export type BeverageType =
+  | 'BEER'
+  | 'CIDER'
+  | 'OTHER'
+  | 'SPIRIT'
+  | 'WINE';
+
+export type CommissionReplicaCandidateStatus =
+  | 'DISQUALIFIED'
+  | 'EVALUATED'
+  | 'PENDING'
+  | 'POSTPONED';
+
+export type CommissionReplicaMemberRole =
   | 'EXPERT'
-  | 'HEAD'
-  | 'TRAINEE_EXPERT';
+  | 'HEAD';
+
+export type CommissionReplicaStatus =
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'DRAFT'
+  | 'PLANNED'
+  | 'STARTED';
+
+export type CommissionReplicaType =
+  | 'STANDARD'
+  | 'TRAINEE';
 
 export type CommissionStatus =
   | 'APPROVED'
@@ -50,10 +73,72 @@ export type CompetitionStatus =
   | 'PLANNED'
   | 'STARTED';
 
+export type CreateEvaluationTemplateEditionInput = {
+  categories: Array<EvaluationTemplateEditionCategoryInput>;
+  templateId: string | number;
+  version: number;
+};
+
+export type CreateEvaluationTemplateInput = {
+  beverageType: BeverageType;
+  name: string;
+  owners: Array<Array<number>>;
+};
+
+export type EvaluatedPropertyScoreInput = {
+  code: string;
+  value?: string | null | undefined;
+};
+
+export type EvaluationCommentInput = {
+  propertyId?: string | number | null | undefined;
+  sortOrder: number;
+  text?: string | null | undefined;
+  voiceUrl?: string | null | undefined;
+};
+
+export type EvaluationExpressionInput = {
+  constantValue?: string | null | undefined;
+  left?: EvaluationExpressionInput | null | undefined;
+  right?: EvaluationExpressionInput | null | undefined;
+  type: string;
+  variableCode?: string | null | undefined;
+};
+
+export type EvaluationPropertyInput = {
+  allowedValues?: Array<string> | null | undefined;
+  code: string;
+  defaultValue?: string | null | undefined;
+  description?: string | null | undefined;
+  expression?: EvaluationExpressionInput | null | undefined;
+  id?: string | number | null | undefined;
+  isRequired: boolean;
+  maxLimit?: number | null | undefined;
+  minLimit?: number | null | undefined;
+  name: string;
+  type: string;
+};
+
+export type EvaluationTemplateEditionCategoryInput = {
+  id?: string | number | null | undefined;
+  name: string;
+  properties: Array<EvaluationPropertyInput>;
+};
+
+export type EvaluationTemplateEditionStatus =
+  | 'ACTIVE'
+  | 'ARCHIVED'
+  | 'DRAFT';
+
 export type ProducerRole =
-  | 'DISTRIBUTOR'
-  | 'MAKER'
-  | 'OWNER';
+  | 'BOTTLER'
+  | 'MAKER';
+
+export type SubmitEvaluationInput = {
+  candidateId: string | number;
+  comments?: Array<EvaluationCommentInput> | null | undefined;
+  scores: Array<EvaluatedPropertyScoreInput>;
+};
 
 export type WineFilterInput = {
   producers?: Array<Array<number>> | null | undefined;
@@ -73,7 +158,81 @@ export type GetCommissionQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, plannedDates: { start: string | null, end: string | null } | null, competition: { id: string, name: string, holders: Array<Array<number>> }, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionMemberRole, isReady: boolean }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, plannedDates: { start: string | null, end: string | null } | null, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus }> }> } | null };
+
+export type GetCommissionTemplatesQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: Types.BeverageType, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, categories: Array<{ id: string, name: string, properties: Array<
+            | { __typename: 'BooleanProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, boolDefaultValue: boolean | null }
+            | { __typename: 'DiscreteNumbersProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, discreteAllowedValues: Array<number>, discreteDefaultValue: number | null }
+            | { __typename: 'DoubleProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, doubleMinLimit: number | null, doubleMaxLimit: number | null, doubleDefaultValue: number | null }
+            | { __typename: 'EnumProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, enumAllowedValues: Array<string>, enumDefaultValue: string | null }
+            | { __typename: 'IntProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, intMinLimit: number | null, intMaxLimit: number | null, intDefaultValue: number | null }
+            | { __typename: 'SmartProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, expression:
+                | { __typename: 'BinaryExpression', type: string, left:
+                    | { __typename: 'BinaryExpression', type: string, left:
+                        | { __typename: 'BinaryExpression', type: string, left:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                          , right:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                           }
+                        | { __typename: 'ConstantExpression', value: string, type: string }
+                        | { __typename: 'VariableExpression', code: string, type: string }
+                      , right:
+                        | { __typename: 'BinaryExpression', type: string, left:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                          , right:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                           }
+                        | { __typename: 'ConstantExpression', value: string, type: string }
+                        | { __typename: 'VariableExpression', code: string, type: string }
+                       }
+                    | { __typename: 'ConstantExpression', value: string, type: string }
+                    | { __typename: 'VariableExpression', code: string, type: string }
+                  , right:
+                    | { __typename: 'BinaryExpression', type: string, left:
+                        | { __typename: 'BinaryExpression', type: string, left:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                          , right:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                           }
+                        | { __typename: 'ConstantExpression', value: string, type: string }
+                        | { __typename: 'VariableExpression', code: string, type: string }
+                      , right:
+                        | { __typename: 'BinaryExpression', type: string, left:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                          , right:
+                            | { __typename: 'BinaryExpression', type: string }
+                            | { __typename: 'ConstantExpression', value: string, type: string }
+                            | { __typename: 'VariableExpression', code: string, type: string }
+                           }
+                        | { __typename: 'ConstantExpression', value: string, type: string }
+                        | { __typename: 'VariableExpression', code: string, type: string }
+                       }
+                    | { __typename: 'ConstantExpression', value: string, type: string }
+                    | { __typename: 'VariableExpression', code: string, type: string }
+                   }
+                | { __typename: 'ConstantExpression', value: string, type: string }
+                | { __typename: 'VariableExpression', code: string, type: string }
+               }
+          > }> } }> } | null };
 
 export type GetCommissionCandidateCountQueryVariables = Exact<{
   commissionId: string | number;
@@ -82,35 +241,93 @@ export type GetCommissionCandidateCountQueryVariables = Exact<{
 
 export type GetCommissionCandidateCountQuery = { commissionCandidateCount: number };
 
-export type MarkMemberReadyMutationVariables = Exact<{
-  commissionId: string | number;
+export type MarkReplicaMemberReadyMutationVariables = Exact<{
+  replicaId: string | number;
   memberId: string | number;
 }>;
 
 
-export type MarkMemberReadyMutation = { markCommissionMemberReady: { id: string, members: Array<{ id: string, isReady: boolean }> } };
+export type MarkReplicaMemberReadyMutation = { markCommissionReplicaMemberReady: { id: string, members: Array<{ id: string, isReady: boolean }> } };
 
-export type MarkMemberNotReadyMutationVariables = Exact<{
-  commissionId: string | number;
+export type MarkReplicaMemberNotReadyMutationVariables = Exact<{
+  replicaId: string | number;
   memberId: string | number;
 }>;
 
 
-export type MarkMemberNotReadyMutation = { markCommissionMemberNotReady: { id: string, members: Array<{ id: string, isReady: boolean }> } };
+export type MarkReplicaMemberNotReadyMutation = { markCommissionReplicaMemberNotReady: { id: string, members: Array<{ id: string, isReady: boolean }> } };
 
-export type StartCommissionMutationVariables = Exact<{
+export type StartCommissionReplicaMutationVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type StartCommissionMutation = { startCommission: { id: string, status: Types.CommissionStatus, startedAt: string | null } };
+export type StartCommissionReplicaMutation = { startCommissionReplica: { id: string, status: Types.CommissionReplicaStatus } };
 
-export type CompleteCommissionMutationVariables = Exact<{
+export type CompleteCommissionReplicaMutationVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type CompleteCommissionMutation = { completeCommission: { id: string, status: Types.CommissionStatus, endedAt: string | null } };
+export type CompleteCommissionReplicaMutation = { completeCommissionReplica: { id: string, status: Types.CommissionReplicaStatus } };
+
+export type GetReplicaCandidatesQueryVariables = Exact<{
+  replicaId: string | number;
+}>;
+
+
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus } } } } }> } | null };
+
+export type GetReplicaCandidateQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus } } } } } | null };
+
+export type CreateEvaluationTemplateMutationVariables = Exact<{
+  input: Types.CreateEvaluationTemplateInput;
+}>;
+
+
+export type CreateEvaluationTemplateMutation = { createEvaluationTemplate: { id: string, name: string } };
+
+export type CreateEvaluationTemplateEditionMutationVariables = Exact<{
+  input: Types.CreateEvaluationTemplateEditionInput;
+}>;
+
+
+export type CreateEvaluationTemplateEditionMutation = { createEvaluationTemplateEdition: { id: string, version: number } };
+
+export type ActivateEvaluationTemplateEditionMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type ActivateEvaluationTemplateEditionMutation = { activateEvaluationTemplateEdition: { id: string, status: Types.EvaluationTemplateEditionStatus } };
+
+export type SetCommissionTemplateEditionMutationVariables = Exact<{
+  id: string | number;
+  beverageType: Types.BeverageType;
+  templateEditionId: string | number;
+}>;
+
+
+export type SetCommissionTemplateEditionMutation = { setCommissionTemplateEdition: { id: string } };
+
+export type SubmitEvaluationMutationVariables = Exact<{
+  input: Types.SubmitEvaluationInput;
+}>;
+
+
+export type SubmitEvaluationMutation = { submitEvaluation: { id: string, isComplete: boolean, scores: Array<{ code: string, value: string | null }> } };
+
+export type MarkCommissionReplicaCandidateAsEvaluatedMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type MarkCommissionReplicaCandidateAsEvaluatedMutation = { markCommissionReplicaCandidateAsEvaluated: { id: string, status: Types.CommissionReplicaCandidateStatus } };
 
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
@@ -168,11 +385,236 @@ export const GetCommissionDocument = gql`
       name
       holders
     }
-    members {
+    replicas {
       id
-      auid
-      role
-      isReady
+      name
+      type
+      status
+      members {
+        id
+        auid
+        role
+        isReady
+      }
+      replicaCandidates {
+        id
+        status
+      }
+    }
+  }
+}
+    `;
+export const GetCommissionTemplatesDocument = gql`
+    query GetCommissionTemplates($id: ID!) {
+  commission(id: $id) {
+    id
+    templateEditions {
+      id
+      beverageType
+      templateEdition {
+        id
+        version
+        status
+        categories {
+          id
+          name
+          properties {
+            __typename
+            id
+            code
+            name
+            description
+            isRequired
+            ... on BooleanProperty {
+              boolDefaultValue: defaultValue
+            }
+            ... on IntProperty {
+              intMinLimit: minLimit
+              intMaxLimit: maxLimit
+              intDefaultValue: defaultValue
+            }
+            ... on DoubleProperty {
+              doubleMinLimit: minLimit
+              doubleMaxLimit: maxLimit
+              doubleDefaultValue: defaultValue
+            }
+            ... on EnumProperty {
+              enumAllowedValues: allowedValues
+              enumDefaultValue: defaultValue
+            }
+            ... on DiscreteNumbersProperty {
+              discreteAllowedValues: allowedValues
+              discreteDefaultValue: defaultValue
+            }
+            ... on SmartProperty {
+              expression {
+                __typename
+                type
+                ... on ConstantExpression {
+                  value
+                }
+                ... on VariableExpression {
+                  code
+                }
+                ... on BinaryExpression {
+                  left {
+                    __typename
+                    type
+                    ... on ConstantExpression {
+                      value
+                    }
+                    ... on VariableExpression {
+                      code
+                    }
+                    ... on BinaryExpression {
+                      left {
+                        __typename
+                        type
+                        ... on ConstantExpression {
+                          value
+                        }
+                        ... on VariableExpression {
+                          code
+                        }
+                        ... on BinaryExpression {
+                          left {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                          right {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                        }
+                      }
+                      right {
+                        __typename
+                        type
+                        ... on ConstantExpression {
+                          value
+                        }
+                        ... on VariableExpression {
+                          code
+                        }
+                        ... on BinaryExpression {
+                          left {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                          right {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  right {
+                    __typename
+                    type
+                    ... on ConstantExpression {
+                      value
+                    }
+                    ... on VariableExpression {
+                      code
+                    }
+                    ... on BinaryExpression {
+                      left {
+                        __typename
+                        type
+                        ... on ConstantExpression {
+                          value
+                        }
+                        ... on VariableExpression {
+                          code
+                        }
+                        ... on BinaryExpression {
+                          left {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                          right {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                        }
+                      }
+                      right {
+                        __typename
+                        type
+                        ... on ConstantExpression {
+                          value
+                        }
+                        ... on VariableExpression {
+                          code
+                        }
+                        ... on BinaryExpression {
+                          left {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                          right {
+                            __typename
+                            type
+                            ... on ConstantExpression {
+                              value
+                            }
+                            ... on VariableExpression {
+                              code
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -182,9 +624,9 @@ export const GetCommissionCandidateCountDocument = gql`
   commissionCandidateCount(commissionId: $commissionId)
 }
     `;
-export const MarkMemberReadyDocument = gql`
-    mutation MarkMemberReady($commissionId: ID!, $memberId: ID!) {
-  markCommissionMemberReady(id: $commissionId, memberId: $memberId) {
+export const MarkReplicaMemberReadyDocument = gql`
+    mutation MarkReplicaMemberReady($replicaId: ID!, $memberId: ID!) {
+  markCommissionReplicaMemberReady(id: $replicaId, memberId: $memberId) {
     id
     members {
       id
@@ -193,9 +635,9 @@ export const MarkMemberReadyDocument = gql`
   }
 }
     `;
-export const MarkMemberNotReadyDocument = gql`
-    mutation MarkMemberNotReady($commissionId: ID!, $memberId: ID!) {
-  markCommissionMemberNotReady(id: $commissionId, memberId: $memberId) {
+export const MarkReplicaMemberNotReadyDocument = gql`
+    mutation MarkReplicaMemberNotReady($replicaId: ID!, $memberId: ID!) {
+  markCommissionReplicaMemberNotReady(id: $replicaId, memberId: $memberId) {
     id
     members {
       id
@@ -204,21 +646,138 @@ export const MarkMemberNotReadyDocument = gql`
   }
 }
     `;
-export const StartCommissionDocument = gql`
-    mutation StartCommission($id: ID!) {
-  startCommission(id: $id) {
+export const StartCommissionReplicaDocument = gql`
+    mutation StartCommissionReplica($id: ID!) {
+  startCommissionReplica(id: $id) {
     id
     status
-    startedAt
   }
 }
     `;
-export const CompleteCommissionDocument = gql`
-    mutation CompleteCommission($id: ID!) {
-  completeCommission(id: $id) {
+export const CompleteCommissionReplicaDocument = gql`
+    mutation CompleteCommissionReplica($id: ID!) {
+  completeCommissionReplica(id: $id) {
     id
     status
-    endedAt
+  }
+}
+    `;
+export const GetReplicaCandidatesDocument = gql`
+    query GetReplicaCandidates($replicaId: ID!) {
+  commissionReplica(id: $replicaId) {
+    id
+    status
+    replicaCandidates {
+      id
+      status
+      candidate {
+        id
+        anonymizedCode
+        sample {
+          id
+          volumeMl
+          batch {
+            id
+            vintage
+            beverage {
+              id
+              name
+              status
+            }
+          }
+        }
+      }
+    }
+  }
+}
+    `;
+export const GetReplicaCandidateDocument = gql`
+    query GetReplicaCandidate($id: ID!) {
+  commissionReplicaCandidate(id: $id) {
+    id
+    status
+    replica {
+      id
+      name
+      type
+      status
+      commission {
+        id
+        name
+      }
+    }
+    candidate {
+      id
+      anonymizedCode
+      sample {
+        id
+        volumeMl
+        batch {
+          id
+          vintage
+          beverage {
+            id
+            name
+            status
+          }
+        }
+      }
+    }
+  }
+}
+    `;
+export const CreateEvaluationTemplateDocument = gql`
+    mutation CreateEvaluationTemplate($input: CreateEvaluationTemplateInput!) {
+  createEvaluationTemplate(input: $input) {
+    id
+    name
+  }
+}
+    `;
+export const CreateEvaluationTemplateEditionDocument = gql`
+    mutation CreateEvaluationTemplateEdition($input: CreateEvaluationTemplateEditionInput!) {
+  createEvaluationTemplateEdition(input: $input) {
+    id
+    version
+  }
+}
+    `;
+export const ActivateEvaluationTemplateEditionDocument = gql`
+    mutation ActivateEvaluationTemplateEdition($id: ID!) {
+  activateEvaluationTemplateEdition(id: $id) {
+    id
+    status
+  }
+}
+    `;
+export const SetCommissionTemplateEditionDocument = gql`
+    mutation SetCommissionTemplateEdition($id: ID!, $beverageType: BeverageType!, $templateEditionId: ID!) {
+  setCommissionTemplateEdition(
+    id: $id
+    beverageType: $beverageType
+    templateEditionId: $templateEditionId
+  ) {
+    id
+  }
+}
+    `;
+export const SubmitEvaluationDocument = gql`
+    mutation SubmitEvaluation($input: SubmitEvaluationInput!) {
+  submitEvaluation(input: $input) {
+    id
+    isComplete
+    scores {
+      code
+      value
+    }
+  }
+}
+    `;
+export const MarkCommissionReplicaCandidateAsEvaluatedDocument = gql`
+    mutation MarkCommissionReplicaCandidateAsEvaluated($id: ID!) {
+  markCommissionReplicaCandidateAsEvaluated(id: $id) {
+    id
+    status
   }
 }
     `;
@@ -333,20 +892,47 @@ export function getSdk<C>(requester: Requester<C>) {
     GetCommission(variables: Types.GetCommissionQueryVariables, options?: C): Promise<Types.GetCommissionQuery> {
       return requester<Types.GetCommissionQuery, Types.GetCommissionQueryVariables>(GetCommissionDocument, variables, options) as Promise<Types.GetCommissionQuery>;
     },
+    GetCommissionTemplates(variables: Types.GetCommissionTemplatesQueryVariables, options?: C): Promise<Types.GetCommissionTemplatesQuery> {
+      return requester<Types.GetCommissionTemplatesQuery, Types.GetCommissionTemplatesQueryVariables>(GetCommissionTemplatesDocument, variables, options) as Promise<Types.GetCommissionTemplatesQuery>;
+    },
     GetCommissionCandidateCount(variables: Types.GetCommissionCandidateCountQueryVariables, options?: C): Promise<Types.GetCommissionCandidateCountQuery> {
       return requester<Types.GetCommissionCandidateCountQuery, Types.GetCommissionCandidateCountQueryVariables>(GetCommissionCandidateCountDocument, variables, options) as Promise<Types.GetCommissionCandidateCountQuery>;
     },
-    MarkMemberReady(variables: Types.MarkMemberReadyMutationVariables, options?: C): Promise<Types.MarkMemberReadyMutation> {
-      return requester<Types.MarkMemberReadyMutation, Types.MarkMemberReadyMutationVariables>(MarkMemberReadyDocument, variables, options) as Promise<Types.MarkMemberReadyMutation>;
+    MarkReplicaMemberReady(variables: Types.MarkReplicaMemberReadyMutationVariables, options?: C): Promise<Types.MarkReplicaMemberReadyMutation> {
+      return requester<Types.MarkReplicaMemberReadyMutation, Types.MarkReplicaMemberReadyMutationVariables>(MarkReplicaMemberReadyDocument, variables, options) as Promise<Types.MarkReplicaMemberReadyMutation>;
     },
-    MarkMemberNotReady(variables: Types.MarkMemberNotReadyMutationVariables, options?: C): Promise<Types.MarkMemberNotReadyMutation> {
-      return requester<Types.MarkMemberNotReadyMutation, Types.MarkMemberNotReadyMutationVariables>(MarkMemberNotReadyDocument, variables, options) as Promise<Types.MarkMemberNotReadyMutation>;
+    MarkReplicaMemberNotReady(variables: Types.MarkReplicaMemberNotReadyMutationVariables, options?: C): Promise<Types.MarkReplicaMemberNotReadyMutation> {
+      return requester<Types.MarkReplicaMemberNotReadyMutation, Types.MarkReplicaMemberNotReadyMutationVariables>(MarkReplicaMemberNotReadyDocument, variables, options) as Promise<Types.MarkReplicaMemberNotReadyMutation>;
     },
-    StartCommission(variables: Types.StartCommissionMutationVariables, options?: C): Promise<Types.StartCommissionMutation> {
-      return requester<Types.StartCommissionMutation, Types.StartCommissionMutationVariables>(StartCommissionDocument, variables, options) as Promise<Types.StartCommissionMutation>;
+    StartCommissionReplica(variables: Types.StartCommissionReplicaMutationVariables, options?: C): Promise<Types.StartCommissionReplicaMutation> {
+      return requester<Types.StartCommissionReplicaMutation, Types.StartCommissionReplicaMutationVariables>(StartCommissionReplicaDocument, variables, options) as Promise<Types.StartCommissionReplicaMutation>;
     },
-    CompleteCommission(variables: Types.CompleteCommissionMutationVariables, options?: C): Promise<Types.CompleteCommissionMutation> {
-      return requester<Types.CompleteCommissionMutation, Types.CompleteCommissionMutationVariables>(CompleteCommissionDocument, variables, options) as Promise<Types.CompleteCommissionMutation>;
+    CompleteCommissionReplica(variables: Types.CompleteCommissionReplicaMutationVariables, options?: C): Promise<Types.CompleteCommissionReplicaMutation> {
+      return requester<Types.CompleteCommissionReplicaMutation, Types.CompleteCommissionReplicaMutationVariables>(CompleteCommissionReplicaDocument, variables, options) as Promise<Types.CompleteCommissionReplicaMutation>;
+    },
+    GetReplicaCandidates(variables: Types.GetReplicaCandidatesQueryVariables, options?: C): Promise<Types.GetReplicaCandidatesQuery> {
+      return requester<Types.GetReplicaCandidatesQuery, Types.GetReplicaCandidatesQueryVariables>(GetReplicaCandidatesDocument, variables, options) as Promise<Types.GetReplicaCandidatesQuery>;
+    },
+    GetReplicaCandidate(variables: Types.GetReplicaCandidateQueryVariables, options?: C): Promise<Types.GetReplicaCandidateQuery> {
+      return requester<Types.GetReplicaCandidateQuery, Types.GetReplicaCandidateQueryVariables>(GetReplicaCandidateDocument, variables, options) as Promise<Types.GetReplicaCandidateQuery>;
+    },
+    CreateEvaluationTemplate(variables: Types.CreateEvaluationTemplateMutationVariables, options?: C): Promise<Types.CreateEvaluationTemplateMutation> {
+      return requester<Types.CreateEvaluationTemplateMutation, Types.CreateEvaluationTemplateMutationVariables>(CreateEvaluationTemplateDocument, variables, options) as Promise<Types.CreateEvaluationTemplateMutation>;
+    },
+    CreateEvaluationTemplateEdition(variables: Types.CreateEvaluationTemplateEditionMutationVariables, options?: C): Promise<Types.CreateEvaluationTemplateEditionMutation> {
+      return requester<Types.CreateEvaluationTemplateEditionMutation, Types.CreateEvaluationTemplateEditionMutationVariables>(CreateEvaluationTemplateEditionDocument, variables, options) as Promise<Types.CreateEvaluationTemplateEditionMutation>;
+    },
+    ActivateEvaluationTemplateEdition(variables: Types.ActivateEvaluationTemplateEditionMutationVariables, options?: C): Promise<Types.ActivateEvaluationTemplateEditionMutation> {
+      return requester<Types.ActivateEvaluationTemplateEditionMutation, Types.ActivateEvaluationTemplateEditionMutationVariables>(ActivateEvaluationTemplateEditionDocument, variables, options) as Promise<Types.ActivateEvaluationTemplateEditionMutation>;
+    },
+    SetCommissionTemplateEdition(variables: Types.SetCommissionTemplateEditionMutationVariables, options?: C): Promise<Types.SetCommissionTemplateEditionMutation> {
+      return requester<Types.SetCommissionTemplateEditionMutation, Types.SetCommissionTemplateEditionMutationVariables>(SetCommissionTemplateEditionDocument, variables, options) as Promise<Types.SetCommissionTemplateEditionMutation>;
+    },
+    SubmitEvaluation(variables: Types.SubmitEvaluationMutationVariables, options?: C): Promise<Types.SubmitEvaluationMutation> {
+      return requester<Types.SubmitEvaluationMutation, Types.SubmitEvaluationMutationVariables>(SubmitEvaluationDocument, variables, options) as Promise<Types.SubmitEvaluationMutation>;
+    },
+    MarkCommissionReplicaCandidateAsEvaluated(variables: Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables, options?: C): Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation> {
+      return requester<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation, Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables>(MarkCommissionReplicaCandidateAsEvaluatedDocument, variables, options) as Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation>;
     },
     GetCompetitionPage(variables: Types.GetCompetitionPageQueryVariables, options?: C): Promise<Types.GetCompetitionPageQuery> {
       return requester<Types.GetCompetitionPageQuery, Types.GetCompetitionPageQueryVariables>(GetCompetitionPageDocument, variables, options) as Promise<Types.GetCompetitionPageQuery>;
