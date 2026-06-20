@@ -16,7 +16,7 @@ import {
 const tabs = [
     { id: "feed", label: "Feed", icon: FileText },
     { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "wines", label: "Wines", icon: Wine },
+    { id: "beverages", label: "Beverages", icon: Wine },
 ]
 
 const formatEnumStatus = (status: string | undefined): string => {
@@ -82,7 +82,7 @@ function MemberAvatar({ auid, role, className }: { auid: number[]; role: string;
 function StatusSteps({ status }: { status: string }) {
     const steps = [
         { id: "readying", label: "Readying Members", description: "Waiting for readiness" },
-        { id: "tasting", label: "Tasting In Progress", description: "Evaluating wines" },
+        { id: "tasting", label: "Tasting In Progress", description: "Evaluating beverages" },
         { id: "completed", label: "Completed", description: "Results ready" }
     ]
 
@@ -164,10 +164,10 @@ interface InitialData {
     members: Member[];
 }
 
-export default function CommissionClientView({ 
+export default function CommissionClientView({
     initialData: propInitialData,
-    serverAuid 
-}: { 
+    serverAuid
+}: {
     initialData: InitialData;
     serverAuid?: number | null;
 }) {
@@ -185,7 +185,7 @@ export default function CommissionClientView({
     const initialData = localData
 
     // Detect user's active replica
-    const activeReplica = localReplicas.find(r => 
+    const activeReplica = localReplicas.find(r =>
         r.members.some(m => m.auid.includes(currentAuid))
     ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
 
@@ -200,7 +200,7 @@ export default function CommissionClientView({
         setLocalData(propInitialData)
         if (propInitialData.replicas) {
             setLocalReplicas(propInitialData.replicas)
-            const active = propInitialData.replicas.find(r => 
+            const active = propInitialData.replicas.find(r =>
                 r.members.some(m => m.auid.includes(currentAuid))
             ) || propInitialData.replicas.find(r => r.type === "STANDARD") || propInitialData.replicas[0] || null
             if (active && !selectedReplicaId) {
@@ -259,7 +259,7 @@ export default function CommissionClientView({
                 const formattedTime = hours > 0
                     ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
                     : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                
+
                 setTimeDisplay(formattedTime)
             } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
                 const start = new Date(initialData.startedAt).getTime()
@@ -268,7 +268,7 @@ export default function CommissionClientView({
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                
+
                 setTimeDisplay(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`)
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
                 const start = new Date(initialData.plannedStartAt).getTime()
@@ -436,7 +436,7 @@ export default function CommissionClientView({
 
                     {/* Left Column: Replicas, Stepper and Tasting Panel */}
                     <div className="w-full lg:w-[45%] flex flex-col gap-6">
-                        
+
                         {/* Replica Selector Tabs */}
                         {localReplicas.length > 0 && (
                             <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
@@ -862,7 +862,7 @@ export default function CommissionClientView({
                                                     Tasting is Active
                                                 </h4>
                                                 <p className="text-xs text-slate-600 mt-1">
-                                                    The tasting session has started. Please proceed with assessing your assigned wines and submitting scores.
+                                                    The tasting session has started. Please proceed with assessing your assigned beverages and submitting scores.
                                                 </p>
                                             </div>
                                         </div>

@@ -1,6 +1,8 @@
 import { sdk } from '@/lib/apiClient';
 import WineLoreDashboard from './DashboardClientView';
 
+export const dynamic = "force-dynamic"
+
 export default async function DashboardPage() {
     let competitions: any[] = [];
     try {
