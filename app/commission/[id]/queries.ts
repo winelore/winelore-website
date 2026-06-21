@@ -23,6 +23,7 @@ export const GET_COMMISSION = gql(`
         name
         type
         status
+        currentCandidateId
         members {
           id
           auid
@@ -32,6 +33,10 @@ export const GET_COMMISSION = gql(`
         replicaCandidates {
           id
           status
+          candidate {
+            id
+            anonymizedCode
+          }
         }
       }
     }
