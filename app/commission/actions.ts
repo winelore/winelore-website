@@ -256,6 +256,7 @@ export async function getCommissionDataAction(commissionId: string) {
             name: r.name || `${r.type} Replica`,
             type: r.type,
             status: r.status,
+            currentCandidateId: r.currentCandidateId || null,
             members: (r.members || []).map((m: any) => ({
                 id: m.id,
                 auid: m.auid ? m.auid.flat() : [],
@@ -265,7 +266,11 @@ export async function getCommissionDataAction(commissionId: string) {
             candidateCount: r.replicaCandidates ? r.replicaCandidates.length : 0,
             replicaCandidates: (r.replicaCandidates || []).map((rc: any) => ({
                 id: rc.id,
-                status: rc.status
+                status: rc.status,
+                candidate: rc.candidate ? {
+                    id: rc.candidate.id,
+                    anonymizedCode: rc.candidate.anonymizedCode || null
+                } : null
             }))
         }));
 

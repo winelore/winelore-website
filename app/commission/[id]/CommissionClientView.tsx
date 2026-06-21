@@ -143,7 +143,15 @@ interface Replica {
     status: string;
     members: Member[];
     candidateCount: number;
-    replicaCandidates: { id: string; status: string }[];
+    replicaCandidates: {
+        id: string;
+        status: string;
+        candidate?: {
+            id: string;
+            anonymizedCode: string | null;
+        } | null;
+    }[];
+    currentCandidateId?: string | null;
 }
 
 interface InitialData {
@@ -726,13 +734,24 @@ export default function CommissionClientView({
                             
                             <div className="flex flex-col gap-6">
                                 {replicaStatus === "STARTED" && (
-                                    <button
-                                        onClick={() => router.push(`/commission/${localData.id}/evaluation`)}
-                                        className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
-                                    >
-                                        <FileText className="h-5 w-5" />
-                                        <span>Continue to Evaluation</span>
-                                    </button>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => router.push(`/commission/${localData.id}/evaluation`)}
+                                            className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
+                                        >
+                                            <FileText className="h-5 w-5" />
+                                            <span>Continue to Evaluation</span>
+                                        </button>
+                                        {selectedReplica?.currentCandidateId && (() => {
+                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
+                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
+                                            return (
+                                                <p className="text-xs text-slate-500 font-medium pl-1">
+                                                    Current candidate: <span className="font-bold text-indigo-600">{code || selectedReplica.currentCandidateId}</span>
+                                                </p>
+                                            );
+                                        })()}
+                                    </div>
                                 )}
 
                                 {isPreStart && currentUserRole && (

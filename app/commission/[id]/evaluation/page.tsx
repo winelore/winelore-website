@@ -32,7 +32,14 @@ export default async function EvaluationProxyPage({ params }: Props) {
         redirect(`/commission/${id}?error=no_candidates`)
     }
 
-    // Redirect to the first candidate of this replica
-    const firstCandidate = replicaCandidates[0]
-    redirect(`/commission/${id}/candidate/${firstCandidate.id}`)
+    // Redirect to currentCandidateId if set, otherwise fallback to the first candidate
+    const targetCandidateId = activeReplica.currentCandidateId && replicaCandidates.some((c: any) => c.id === activeReplica.currentCandidateId)
+        ? activeReplica.currentCandidateId
+        : replicaCandidates[0]?.id;
+
+    if (!targetCandidateId) {
+        redirect(`/commission/${id}?error=no_candidates`)
+    }
+
+    redirect(`/commission/${id}/candidate/${targetCandidateId}`)
 }
