@@ -231,7 +231,13 @@ interface InitialData {
     commissions: Commission[]
 }
 
-export default function CompetitionClientView({ initialData: propInitialData }: { initialData: InitialData }) {
+export default function CompetitionClientView({ 
+    initialData: propInitialData,
+    children
+}: { 
+    initialData: InitialData;
+    children?: React.ReactNode;
+}) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
@@ -367,7 +373,8 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
             </header>
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
+                <div className="w-full max-w-7xl flex flex-col gap-8">
+                    <div className="w-full flex flex-col lg:flex-row items-start gap-8">
                     
                     {/* Left Column: Status, Series, timeline */}
                     <div className="w-full lg:w-[45%] flex flex-col gap-6">
@@ -588,9 +595,10 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                             </div>
                         </div>
                     </div>
-                    
                 </div>
-            </main>
+                {children}
+            </div>
+        </main>
         </div>
     )
 }
