@@ -136,7 +136,9 @@ const en = {
     min: "Min: {{value}}",
     max: "Max: {{value}}",
     outOfRange: "Out of range!",
-    val: "Val",
+    val: "Score",
+    scoreLabelPrefix: "",
+    scoreLabelSuffix: "",
   },
   status: {
     IN_PROGRESS: "In Progress",

@@ -138,7 +138,9 @@ const uk: TranslationKey = {
     min: "Мін: {{value}}",
     max: "Макс: {{value}}",
     outOfRange: "Поза діапазоном!",
-    val: "Знач.",
+    val: "Бал",
+    scoreLabelPrefix: "Оцінка ",
+    scoreLabelSuffix: "",
   },
   status: {
     IN_PROGRESS: "В процесі",

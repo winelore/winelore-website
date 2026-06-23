@@ -4,12 +4,14 @@ import React, { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import Link from "next/link"
 import { FileText, Trophy, Wine, Timer, Calendar, CheckCircle, PlayCircle, AlertCircle } from "lucide-react"
+import { useTranslation } from "@/lib/i18n/context"
 import { ProfileMenu } from "@/components/wine-lore-main"
+import { TranslatedText } from "@/lib/i18n/TranslatedText"
 
-const tabs = [
-    { id: "feed", label: "Feed", icon: FileText },
-    { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "beverages", label: "Beverages", icon: Wine },
+const tabs = (t: any) => [
+    { id: "feed", label: t("common.feed"), icon: FileText },
+    { id: "competitions", label: t("common.competitions"), icon: Trophy },
+    { id: "beverages", label: t("common.beverages"), icon: Wine },
 ]
 
 const formatEnumStatus = (status: string | undefined): string => {
@@ -51,6 +53,7 @@ interface InitialData {
 
 function CompetitionCard({ comp }: { comp: Competition }) {
     const [timeStr, setTimeStr] = useState<string>("")
+    const { t, formatStatus, locale } = useTranslation()
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -63,7 +66,7 @@ function CompetitionCard({ comp }: { comp: Competition }) {
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                setTimeStr(`${hours}h ${minutes}m`)
+                setTimeStr(t("time.durationHoursMinutes", { hours, minutes }))
 
             } else if (comp.status === "COMPLETED" && comp.startedAt && comp.endedAt) {
                 const start = new Date(comp.startedAt).getTime()
@@ -72,14 +75,15 @@ function CompetitionCard({ comp }: { comp: Competition }) {
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                setTimeStr(`Lasted ${hours}h ${minutes}m`)
+                setTimeStr(t("time.lasted", { time: t("time.durationHoursMinutes", { hours, minutes }) }))
 
             } else if (comp.status === "PLANNED" && comp.plannedDates?.start) {
                 const date = new Date(comp.plannedDates.start)
-                const formattedDate = new Intl.DateTimeFormat('en-GB', {
+                const dateLocale = locale === "uk" ? "uk-UA" : "en-GB"
+                const formattedDate = new Intl.DateTimeFormat(dateLocale, {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 }).format(date)
-                setTimeStr(`Planned: ${formattedDate}`)
+                setTimeStr(t("time.planned", { date: formattedDate }))
             } else {
                 setTimeStr("")
             }
@@ -90,7 +94,7 @@ function CompetitionCard({ comp }: { comp: Competition }) {
             intervalId = setInterval(updateTime, 60000)
         }
         return () => clearInterval(intervalId)
-    }, [comp.status, comp.startedAt, comp.endedAt, comp.plannedDates])
+    }, [comp.status, comp.startedAt, comp.endedAt, comp.plannedDates, t, locale])
 
     return (
         <Link
@@ -103,10 +107,10 @@ function CompetitionCard({ comp }: { comp: Competition }) {
                 </div>
                 <div className="flex-1 min-w-0">
                     <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 truncate block">
-                        {comp.series?.name || "Independent"}
+                        {comp.series?.name ? <TranslatedText text={comp.series.name} /> : t("common.independent")}
                     </span>
                     <h3 className="text-xl font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
-                        {comp.name}
+                        <TranslatedText text={comp.name} />
                     </h3>
                 </div>
             </div>
@@ -122,7 +126,7 @@ function CompetitionCard({ comp }: { comp: Competition }) {
                         comp.status === "COMPLETED" ? <CheckCircle className="w-3 h-3" /> :
                             comp.status === "CANCELLED" ? <AlertCircle className="w-3 h-3" /> :
                                 <Calendar className="w-3 h-3" />}
-                    {formatEnumStatus(comp.status)}
+                    {formatStatus(comp.status)}
                 </span>
 
                 {timeStr && (
@@ -139,6 +143,8 @@ function CompetitionCard({ comp }: { comp: Competition }) {
 export default function MyCompetitionsClientView({ initialData }: { initialData: InitialData }) {
     const [activeTab, setActiveTab] = useState("competitions")
     const [currentAuid, setCurrentAuid] = useState<number>(1) // Замокано для тестування
+    const { t } = useTranslation()
+    const myTabs = tabs(t)
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -153,7 +159,7 @@ export default function MyCompetitionsClientView({ initialData }: { initialData:
                 </div>
                 <div className="flex-none">
                     <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
-                        {tabs.map((tab) => {
+                        {myTabs.map((tab) => {
                             const Icon = tab.icon
                             const isActive = activeTab === tab.id
                             return (
@@ -169,7 +175,8 @@ export default function MyCompetitionsClientView({ initialData }: { initialData:
                         })}
                     </nav>
                 </div>
-                <div className="flex-1 flex justify-end">
+                <div className="flex-1 flex justify-end gap-3">
+                    <LanguageSwitcher />
                     <ProfileMenu username="likespro" />
                 </div>
             </header>
@@ -179,11 +186,11 @@ export default function MyCompetitionsClientView({ initialData }: { initialData:
 
                     <div className="flex items-center justify-between">
                         <div>
-                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">My Competitions</h2>
-                            <p className="text-sm text-slate-500 mt-1">Manage and monitor the competitions you organize.</p>
+                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myCompetitions.title")}</h2>
+                            <p className="text-sm text-slate-500 mt-1">{t("myCompetitions.subtitle")}</p>
                         </div>
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                            {initialData.competitions.length} Competitions
+                            {t("myCompetitions.count", { count: initialData.competitions.length })}
                         </span>
                     </div>
 
@@ -195,8 +202,8 @@ export default function MyCompetitionsClientView({ initialData }: { initialData:
                         {initialData.competitions.length === 0 && (
                             <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50">
                                 <Trophy className="w-12 h-12 text-slate-300 mb-4" />
-                                <h3 className="text-lg font-bold text-slate-700">No competitions found</h3>
-                                <p className="text-sm text-slate-500 mt-1 max-w-md">You are not listed as a holder for any competitions yet.</p>
+                                <h3 className="text-lg font-bold text-slate-700">{t("myCompetitions.emptyTitle")}</h3>
+                                <p className="text-sm text-slate-500 mt-1 max-w-md">{t("myCompetitions.emptyDescription")}</p>
                             </div>
                         )}
                     </div>
