@@ -369,6 +369,7 @@ export default function CommissionClientView({
         setIsMutating(true)
         try {
             await startCommissionAction(selectedReplica.id)
+            router.push(`/commission/${initialData.id}/wait`)
             router.refresh()
         } catch (err) {
             console.error("Failed to start replica tasting session:", err)
@@ -885,6 +886,12 @@ export default function CommissionClientView({
                                                 </p>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={() => router.push(`/commission/${localData.id}/wait`)}
+                                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
+                                        >
+                                            Enter Tasting Session →
+                                        </button>
                                     </div>
                                 )}
 
