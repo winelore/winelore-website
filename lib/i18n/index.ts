@@ -1,8 +1,9 @@
 import en from "./locales/en"
 import uk from "./locales/uk"
+import type { TranslationKey } from "./locales/en"
 import type { Locale } from "./types"
 
-export const messages: Record<Locale, typeof en> = {
+export const messages: Record<Locale, TranslationKey> = {
   en,
   uk,
 }

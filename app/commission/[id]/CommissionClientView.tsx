@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
-import { ProfileMenu } from "@/components/wine-lore-main"
-import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { 
     markMemberReadyAction, 
@@ -14,7 +13,6 @@ import {
     completeCommissionAction,
     getCommissionDataAction
 } from "../actions"
-import { TranslatedText } from "@/lib/i18n/TranslatedText"
 
 const tabs = (t: any) => [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -29,14 +27,6 @@ const formatEnumStatus = (status: string | undefined): string => {
         .split("_")
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
-}
-
-function formatDateTime(dateStr: string | null): string {
-    if (!dateStr) return "N/A"
-    const date = new Date(dateStr)
-    return new Intl.DateTimeFormat('en-GB', {
-        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    }).format(date)
 }
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
@@ -185,7 +175,7 @@ export default function CommissionClientView({
 }) {
     const { t, formatStatus, formatReplicaType, formatDateTime, formatShortDateTime } = useTranslation()
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState("competitions")
+    const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
     const [localReplicas, setLocalReplicas] = useState<Replica[]>(propInitialData.replicas || [])
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
@@ -248,13 +238,13 @@ export default function CommissionClientView({
         const prevStatus = prevReplicaStatusRef.current
         const currentStatus = selectedReplica?.status
 
-        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
+        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected && selectedReplica) {
             setHasRedirected(true)
-            router.push(`/commission/${localData.id}/evaluation`)
+            router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)
         }
 
         prevReplicaStatusRef.current = currentStatus
-    }, [selectedReplica?.status, localData.id, hasRedirected, router])
+    }, [selectedReplica?.status, localData.id, hasRedirected, router, selectedReplica])
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -374,6 +364,7 @@ export default function CommissionClientView({
         setIsMutating(true)
         try {
             await startCommissionAction(selectedReplica.id)
+            router.push(`/commission/${initialData.id}/replica/${selectedReplica.id}/wait`)
             router.refresh()
         } catch (err) {
             console.error("Failed to start replica tasting session:", err)
@@ -407,43 +398,11 @@ export default function CommissionClientView({
     })
 
     const replicaStatus = selectedReplica?.status || "DRAFT"
+    const selectedReplicaName = selectedReplica?.name || t("common.standard")
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
-                <div className="flex-1 flex items-center justify-start">
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-                        WineLore
-                    </h1>
-                </div>
-
-                <div className="flex-none">
-                    <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
-                        {tabs(t).map((tab) => {
-                            const Icon = tab.icon
-                            const isActive = activeTab === tab.id
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
-                                        ? "bg-white text-slate-800 shadow-sm border border-slate-100/50"
-                                        : "text-slate-500 hover:text-slate-800"
-                                    }`}
-                                >
-                                    <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
-                                    <span>{tab.label}</span>
-                                </button>
-                            )
-                        })}
-                    </nav>
-                </div>
-
-                <div className="flex-1 flex justify-end gap-3">
-                    <LanguageSwitcher />
-                    <ProfileMenu username="likespro" />
-                </div>
-            </header>
+            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
@@ -476,7 +435,7 @@ export default function CommissionClientView({
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-2">
-                                                    <span><TranslatedText text={r.name} /></span>
+                                                    <span>{r.name}</span>
                                                     <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
                                                         isSelected 
                                                             ? "bg-indigo-700/60 border-indigo-500 text-indigo-100" 
@@ -517,7 +476,7 @@ export default function CommissionClientView({
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Users className="w-5 h-5 text-indigo-500" />
-                                        {t("commission.tastingPanel", { name: <TranslatedText text={selectedReplica?.name || "Standard"} /> })}
+                                        {t("commission.tastingPanel", { name: selectedReplicaName })}
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
                                         {t("commission.tastingPanelSubtitle")}
@@ -611,7 +570,7 @@ export default function CommissionClientView({
                                         {t("commission.session")}
                                     </span>
                                     <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5 truncate">
-                                        <TranslatedText text={initialData.name} />
+                                        {initialData.name}
                                     </h2>
                                     <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -650,7 +609,7 @@ export default function CommissionClientView({
                                             {t("commission.competition")}
                                         </h4>
                                         <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">
-                                            <TranslatedText text={initialData.competition.name} />
+                                            {initialData.competition.name}
                                         </p>
                                     </div>
                                 </div>
@@ -745,7 +704,7 @@ export default function CommissionClientView({
                                 {replicaStatus === "STARTED" && (
                                     <div className="flex flex-col gap-2">
                                         <button
-                                            onClick={() => router.push(`/commission/${localData.id}/evaluation`)}
+                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
                                             className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
                                         >
                                             <FileText className="h-5 w-5" />
@@ -755,8 +714,9 @@ export default function CommissionClientView({
                                             const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
                                             const code = currentCandidateObj?.candidate?.anonymizedCode;
                                             return (
-                                                <p className="text-xs text-slate-500 font-medium pl-1">
-                                                    {t("commission.currentCandidate", { code: code || selectedReplica.currentCandidateId })}
+                                                <p className="text-xs text-slate-500 font-medium pl-1 flex items-center gap-1.5 flex-wrap">
+                                                    <span>{t("commission.currentCandidate", { code: code || t("common.na") })}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
                                                 </p>
                                             );
                                         })()}
@@ -802,7 +762,7 @@ export default function CommissionClientView({
                                 {currentUserRole === "HEAD" && (
                                     <div className="border-t border-slate-100 pt-6">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                                            {t("commission.headTools", { name: <TranslatedText text={selectedReplica?.name} /> })}
+                                            {t("commission.headTools", { name: selectedReplicaName })}
                                         </h4>
                                         
                                         {isPreStart && (
@@ -894,6 +854,12 @@ export default function CommissionClientView({
                                                 </p>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/wait`)}
+                                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
+                                        >
+                                            {t("commission.enterTastingSession")} →
+                                        </button>
                                     </div>
                                 )}
 

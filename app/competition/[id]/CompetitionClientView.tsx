@@ -4,10 +4,8 @@ import React, { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle } from "lucide-react"
-import { ProfileMenu } from "@/components/wine-lore-main"
-import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import Link from "next/link"
 import { startCompetitionAction, getCompetitionDataAction } from "../actions"
 
@@ -17,24 +15,7 @@ const tabs = (t: any) => [
     { id: "beverages", label: t("common.beverages"), icon: Wine },
 ]
 
-const formatEnumStatus = (status: string | undefined): string => {
-    if (!status) return ""
-    return status
-        .toLowerCase()
-        .split("_")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
-}
-
-const formatDateTime = (dateStr: string | null) => {
-    if (!dateStr) return "N/A"
-    const d = new Date(dateStr)
-    return new Intl.DateTimeFormat('en-GB', {
-        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    }).format(d)
-}
-
-function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
+function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
     const end = plannedEndAt ? new Date(plannedEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000)
 
@@ -44,9 +25,9 @@ function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt
 
     const dates = `${formatCalDate(start)}/${formatCalDate(end)}`
     const text = encodeURIComponent(name)
-    const details = encodeURIComponent(`WineLore competition: ${name}`)
+    const encodedDetails = encodeURIComponent(details)
 
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${details}`
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${encodedDetails}`
 }
 
 function getAvatarGradient(auid: number): string {
@@ -189,7 +170,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
                     {t("commission.session")}
                 </span>
                 <span className="block text-base font-bold text-slate-800 truncate">
-                    <TranslatedText text={comm.name} />
+                    {comm.name}
                 </span>
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider mt-1.5">
                     <span className={
@@ -249,9 +230,9 @@ interface InitialData {
 }
 
 export default function CompetitionClientView({ initialData: propInitialData }: { initialData: InitialData }) {
-    const { t, formatStatus, formatDateTime } = useTranslation()
+    const { t, locale, formatStatus, formatDateTime } = useTranslation()
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState("competitions")
+    const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(1)
@@ -355,33 +336,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
-                <div className="flex-1 flex items-center justify-start">
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">WineLore</h1>
-                </div>
-                <div className="flex-none">
-                    <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
-                        {compTabs.map((tab) => {
-                            const Icon = tab.icon
-                            const isActive = activeTab === tab.id
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive ? "bg-white text-slate-800 shadow-sm border border-slate-100/50" : "text-slate-500 hover:text-slate-800"}`}
-                                >
-                                    <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
-                                    <span>{tab.label}</span>
-                                </button>
-                            )
-                        })}
-                    </nav>
-                </div>
-                <div className="flex-1 flex justify-end gap-3">
-                    <LanguageSwitcher />
-                    <ProfileMenu username="likespro" />
-                </div>
-            </header>
+            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
@@ -400,7 +355,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                     {t("competition.series")}
                                 </span>
                                 <p className="text-base font-bold text-slate-800 mt-0.5 truncate">
-                                    <TranslatedText text={initialData.series.name} />
+                                    {initialData.series.name}
                                 </p>
                             </div>
                         </div>
@@ -422,7 +377,12 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                         </p>
                                         {initialData.status === "PLANNED" && initialData.plannedStartAt && (
                                             <a
-                                                href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
+                                                href={getGoogleCalendarUrl(
+                                                    initialData.name,
+                                                    t("competition.calendarDetails", { name: initialData.name }),
+                                                    initialData.plannedStartAt,
+                                                    initialData.plannedEndAt
+                                                )}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
@@ -481,7 +441,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                         {t("competition.panel")}
                                     </span>
                                     <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5 truncate">
-                                        <TranslatedText text={initialData.name} />
+                                        {initialData.name}
                                     </h2>
                                     <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -497,7 +457,7 @@ export default function CompetitionClientView({ initialData: propInitialData }: 
                                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                                 </span>
                                             )}
-                                            {formatEnumStatus(initialData.status)}
+                                            {formatStatus(initialData.status)}
                                         </span>
                                         {timeDisplay && (
                                             <>

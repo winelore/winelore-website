@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
-import { getCommissionDataAction } from "../../actions"
+import { getCommissionDataAction } from "../../../../actions"
 
 interface Props {
-    params: Promise<{ id: string }>
+    params: Promise<{ id: string; replicaId: string }>
 }
 
 export default async function EvaluationProxyPage({ params }: Props) {
-    const { id } = await params
+    const { id, replicaId } = await params
     const cookieStore = await cookies()
     const auidStr = cookieStore.get("auid")?.value
     const currentAuid = auidStr ? parseInt(auidStr, 10) : null
@@ -17,29 +17,27 @@ export default async function EvaluationProxyPage({ params }: Props) {
         redirect(`/`)
     }
 
-    // Find user's active replica
+    // Find the specific replica
     const replicas = commission.replicas || []
-    const activeReplica = replicas.find((r: any) => 
-        r.members.some((m: any) => m.auid.includes(currentAuid))
-    ) || replicas.find((r: any) => r.type === "STANDARD") || replicas[0] || null
+    const replica = replicas.find((r: any) => r.id === replicaId)
 
-    if (!activeReplica || activeReplica.status !== "STARTED") {
+    if (!replica || replica.status !== "STARTED") {
         redirect(`/commission/${id}?error=not_started`)
     }
 
-    const replicaCandidates = activeReplica.replicaCandidates || []
+    const replicaCandidates = replica.replicaCandidates || []
     if (replicaCandidates.length === 0) {
         redirect(`/commission/${id}?error=no_candidates`)
     }
 
     // Redirect to currentCandidateId if set, otherwise fallback to the first candidate
-    const targetCandidateId = activeReplica.currentCandidateId && replicaCandidates.some((c: any) => c.id === activeReplica.currentCandidateId)
-        ? activeReplica.currentCandidateId
+    const targetCandidateId = replica.currentCandidateId && replicaCandidates.some((c: any) => c.id === replica.currentCandidateId)
+        ? replica.currentCandidateId
         : replicaCandidates[0]?.id;
 
     if (!targetCandidateId) {
         redirect(`/commission/${id}?error=no_candidates`)
     }
 
-    redirect(`/commission/${id}/candidate/${targetCandidateId}`)
+    redirect(`/commission/${id}/replica/${replicaId}/candidate/${targetCandidateId}`)
 }

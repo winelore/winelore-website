@@ -31,10 +31,21 @@ export async function fetchGraphQL<TResult, TVariables>(
     return data;
 }
 
-const requester = async <R, V>(doc: DocumentNode, vars?: V): Promise<R> => {
+export interface RequesterOptions {
+    headers?: Record<string, string>;
+}
+
+const requester = async <R, V>(
+    doc: DocumentNode,
+    vars?: V,
+    options?: RequesterOptions
+): Promise<R> => {
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...options?.headers
+        },
         body: JSON.stringify({
             query: print(doc),
             variables: vars,
@@ -53,4 +64,4 @@ const requester = async <R, V>(doc: DocumentNode, vars?: V): Promise<R> => {
     return data;
 };
 
-export const sdk = getSdk(requester);
+export const sdk = getSdk<RequesterOptions>(requester);

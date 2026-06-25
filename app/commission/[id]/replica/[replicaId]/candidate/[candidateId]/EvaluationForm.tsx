@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
-import { submitEvaluationAction } from "../../../actions"
+import { submitEvaluationAction } from "../../../../../actions"
 import { Slider } from "@/components/ui/slider"
 
 interface EvaluationProperty {
@@ -14,6 +14,7 @@ interface EvaluationProperty {
     name: string
     description?: string | null
     isRequired: boolean
+    isResult?: boolean | null
     boolDefaultValue?: boolean | null
     intMinLimit?: number | null
     intMaxLimit?: number | null
@@ -67,15 +68,6 @@ function evaluateAST(ast: any, currentValues: Record<string, number | boolean>):
     return null
 }
 
-function formatEnumLabel(label: string): string {
-    if (!label) return ""
-    return label
-        .toLowerCase()
-        .split("_")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
-}
-
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
     const backendTranslated = useBackendTranslation(translatedLabel)
@@ -86,16 +78,54 @@ export default function EvaluationForm({
     categories,
     candidateId,
     commissionId,
-    nextCandidateId
+    replicaId,
 }: {
     categories: EvaluationCategory[]
     candidateId: string
     commissionId: string
-    nextCandidateId: string | null
+    replicaId: string
 }) {
     const router = useRouter()
     const { t, formatEnumLabel } = useTranslation()
-    const [values, setValues] = useState<Record<string, any>>({})
+    const [values, setValues] = useState<Record<string, any>>(() => {
+        const initial: Record<string, any> = {}
+        categories.forEach(category => {
+            category.properties.forEach(prop => {
+                switch (prop.__typename) {
+                    case "BooleanProperty":
+                        if (prop.boolDefaultValue !== null && prop.boolDefaultValue !== undefined) {
+                            initial[prop.code] = prop.boolDefaultValue
+                        }
+                        break
+                    case "IntProperty": {
+                        const hasRange = prop.intMinLimit !== null && prop.intMinLimit !== undefined
+                            && prop.intMaxLimit !== null && prop.intMaxLimit !== undefined
+                        const seeded = prop.intDefaultValue ?? (hasRange ? prop.intMinLimit : undefined)
+                        if (seeded !== null && seeded !== undefined) initial[prop.code] = seeded
+                        break
+                    }
+                    case "DoubleProperty": {
+                        const hasRange = prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined
+                            && prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined
+                        const seeded = prop.doubleDefaultValue ?? (hasRange ? prop.doubleMinLimit : undefined)
+                        if (seeded !== null && seeded !== undefined) initial[prop.code] = seeded
+                        break
+                    }
+                    case "EnumProperty":
+                        if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
+                            initial[prop.code] = prop.enumDefaultValue
+                        }
+                        break
+                    case "DiscreteNumbersProperty":
+                        if (prop.discreteDefaultValue !== null && prop.discreteDefaultValue !== undefined) {
+                            initial[prop.code] = prop.discreteDefaultValue
+                        }
+                        break
+                }
+            })
+        })
+        return initial
+    })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
@@ -162,32 +192,16 @@ export default function EvaluationForm({
                     value: String(val)
                 }))
 
-            try {
-                await submitEvaluationAction(candidateId, scores)
-            } catch (backendErr: any) {
-                console.warn("⚠️ Backend submission failed (likely due to database constraints), saving to localStorage as fallback:", backendErr.message)
-                
-                const localKey = `evaluation_scores_${candidateId}`
-                localStorage.setItem(localKey, JSON.stringify({
-                    candidateId,
-                    scores,
-                    submittedAt: new Date().toISOString(),
-                    backendError: backendErr.message
-                }))
-            }
+            await submitEvaluationAction(candidateId, scores)
 
             setSuccess(true)
             
             setTimeout(() => {
-                if (nextCandidateId) {
-                    router.push(`/commission/${commissionId}/candidate/${nextCandidateId}`)
-                } else {
-                    router.push(`/commission/${commissionId}`)
-                }
+                router.push(`/commission/${commissionId}/replica/${replicaId}/wait`)
                 router.refresh()
             }, 1000)
-        } catch (err: any) {
-            setError(err.message || "Something went wrong while submitting evaluation.")
+        } catch {
+            setError(t("evaluation.submitError"))
         } finally {
             setIsSubmitting(false)
         }
@@ -204,19 +218,38 @@ export default function EvaluationForm({
 
     return (
         <div className="flex flex-col gap-8">
-            {categories.map((category) => (
+            {categories.map((category) => {
+                const orderedProperties = [
+                    ...category.properties.filter((prop) => prop.isResult !== true),
+                    ...category.properties.filter((prop) => prop.isResult === true),
+                ]
+
+                return (
                 <div key={category.id} className="border border-slate-100 rounded-2xl p-6 bg-slate-50/30">
                     <h2 className="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
                         <TranslatedText text={category.name} />
                     </h2>
 
                     <div className="flex flex-col gap-5">
-                        {category.properties.map((prop) => {
+                        {orderedProperties.map((prop, index) => {
                             const currentValue = values[prop.code]
                             const isSmart = prop.__typename === "SmartProperty"
+                            const isResult = prop.isResult === true
+                            const startsResultSection = isResult && orderedProperties[index - 1]?.isResult !== true
 
                             return (
-                                <div key={prop.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                                <React.Fragment key={prop.id}>
+                                {startsResultSection && (
+                                    <div className="mt-2 flex items-baseline gap-2">
+                                        <p className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-indigo-600">
+                                            {t("evaluation.resultsSection")}
+                                        </p>
+                                        <p className="text-[11px] font-medium text-slate-400">
+                                            {t("evaluation.resultsSectionDesc")}
+                                        </p>
+                                    </div>
+                                )}
+                                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                             <h4 className="text-sm font-semibold text-slate-800">
@@ -343,7 +376,7 @@ export default function EvaluationForm({
                                         )}
 
                                         {prop.__typename === "SmartProperty" && (
-                                            <div className="px-4 py-1.5 bg-indigo-50/50 border border-indigo-100 rounded-lg text-sm font-bold text-indigo-700 w-full text-center">
+                                            <div className={`px-4 py-1.5 rounded-lg text-sm font-bold w-full text-center ${isResult ? "border border-indigo-200 bg-white text-indigo-800 shadow-sm" : "border border-indigo-100 bg-indigo-50/50 text-indigo-700"}`}>
                                                 {computedSmartValues[prop.code] !== undefined
                                                     ? computedSmartValues[prop.code].toFixed(2)
                                                     : t("evaluation.waitingDependencies")}
@@ -351,11 +384,13 @@ export default function EvaluationForm({
                                         )}
                                     </div>
                                 </div>
+                                </React.Fragment>
                             )
                         })}
                     </div>
                 </div>
-            ))}
+                )
+            })}
 
             {isFormValid ? (
                 <button
