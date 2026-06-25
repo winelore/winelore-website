@@ -1,8 +1,15 @@
 import { getCommissionDataAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
 import EvaluationForm from "./EvaluationForm"
 import { notFound, redirect } from "next/navigation"
-import { MapPin } from "lucide-react"
+import { FileText, MapPin, Trophy, Wine } from "lucide-react"
+import { ProfileMenu } from "@/components/wine-lore-main"
 import { getGeographicInfo } from "../../../../../../../lib/geocoding"
+
+const headerTabs = [
+    { id: "feed", label: "Feed", icon: FileText, active: false },
+    { id: "competitions", label: "Competitions", icon: Trophy, active: true },
+    { id: "beverages", label: "Beverages", icon: Wine, active: false },
+]
 
 interface Props {
     params: Promise<{ id: string; replicaId: string; candidateId: string }>
@@ -45,8 +52,41 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const categories = commission.competition?.evaluationTemplateEdition?.categories || []
 
     return (
-        <div className="min-h-screen bg-slate-50 py-8 px-4 md:px-8 flex justify-center">
-            <div className="w-full max-w-4xl bg-white rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
+        <div className="flex min-h-screen flex-col bg-slate-50">
+            <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
+                <div className="flex-1 flex items-center justify-start">
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+                        WineLore
+                    </h1>
+                </div>
+
+                <div className="flex-none">
+                    <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
+                        {headerTabs.map((tab) => {
+                            const Icon = tab.icon
+                            return (
+                                <span
+                                    key={tab.id}
+                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${tab.active
+                                        ? "bg-white text-slate-800 shadow-sm border border-slate-100/50"
+                                        : "text-slate-500"
+                                    }`}
+                                >
+                                    <Icon className={`h-4 w-4 ${tab.active ? "text-indigo-600" : ""}`} />
+                                    <span>{tab.label}</span>
+                                </span>
+                            )
+                        })}
+                    </nav>
+                </div>
+
+                <div className="flex-1 flex justify-end">
+                    <ProfileMenu username="likespro" />
+                </div>
+            </header>
+
+            <main className="flex-1 overflow-auto py-8 px-4 md:px-8 flex justify-center">
+                <div className="w-full max-w-4xl bg-white rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
                 <header className="border-b border-slate-100 pb-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Evaluation Process ({replicaCandidate.replica.name || `${replicaCandidate.replica.type} Replica`})</span>
@@ -79,7 +119,8 @@ export default async function CandidateEvaluationPage({ params }: Props) {
                     commissionId={commissionId}
                     replicaId={currentReplicaId}
                 />
-            </div>
+                </div>
+            </main>
         </div>
     )
 }
