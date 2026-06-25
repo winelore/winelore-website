@@ -4,34 +4,18 @@ import React, { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle } from "lucide-react"
-import { ProfileMenu } from "@/components/wine-lore-main"
+import { AppHeader, type AppTabId } from "@/components/AppHeader"
+import { useTranslation } from "@/lib/i18n/context"
 import Link from "next/link"
 import { startCompetitionAction, getCompetitionDataAction } from "../actions"
 
-const tabs = [
-    { id: "feed", label: "Feed", icon: FileText },
-    { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "wines", label: "Wines", icon: Wine },
+const tabs = (t: any) => [
+    { id: "feed", label: t("common.feed"), icon: FileText },
+    { id: "competitions", label: t("common.competitions"), icon: Trophy },
+    { id: "beverages", label: t("common.beverages"), icon: Wine },
 ]
 
-const formatEnumStatus = (status: string | undefined): string => {
-    if (!status) return ""
-    return status
-        .toLowerCase()
-        .split("_")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
-}
-
-const formatDateTime = (dateStr: string | null) => {
-    if (!dateStr) return "N/A"
-    const d = new Date(dateStr)
-    return new Intl.DateTimeFormat('en-GB', {
-        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    }).format(d)
-}
-
-function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
+function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
     const end = plannedEndAt ? new Date(plannedEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000)
 
@@ -41,9 +25,9 @@ function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt
 
     const dates = `${formatCalDate(start)}/${formatCalDate(end)}`
     const text = encodeURIComponent(name)
-    const details = encodeURIComponent(`WineLore competition: ${name}`)
+    const encodedDetails = encodeURIComponent(details)
 
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${details}`
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${encodedDetails}`
 }
 
 function getAvatarGradient(auid: number): string {
@@ -72,10 +56,11 @@ function HolderAvatar({ auid, className }: { auid: number; className?: string })
 }
 
 function StatusSteps({ status }: { status: string }) {
+    const { t } = useTranslation()
     const steps = [
-        { id: "planned", label: "Competition Planned", description: "Awaiting start" },
-        { id: "started", label: "Tasting In Progress", description: "Active evaluation" },
-        { id: "completed", label: "Competition Completed", description: "Tasting concluded" }
+        { id: "planned", label: t("competition.stepPlanned"), description: t("competition.stepPlannedDesc") },
+        { id: "started", label: t("competition.stepStarted"), description: t("competition.stepStartedDesc") },
+        { id: "completed", label: t("competition.stepCompleted"), description: t("competition.stepCompletedDesc") }
     ]
 
     let currentStepIdx = 0
@@ -124,6 +109,7 @@ function StatusSteps({ status }: { status: string }) {
 
 function CommissionCard({ comm }: { comm: Commission }) {
     const [timeStr, setTimeStr] = useState<string>("")
+    const { t, formatStatus, locale } = useTranslation()
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -138,7 +124,8 @@ function CommissionCard({ comm }: { comm: Commission }) {
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-                setTimeStr(hours > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${minutes}m ${seconds}s`)
+                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
+                setTimeStr(`${time} ${seconds}s`)
             } else if (comm.status === "COMPLETED" && comm.startedAt && comm.endedAt) {
                 const start = new Date(comm.startedAt).getTime()
                 const end = new Date(comm.endedAt).getTime()
@@ -146,9 +133,16 @@ function CommissionCard({ comm }: { comm: Commission }) {
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-                setTimeStr(`Lasted ${hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}`)
+                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
+                setTimeStr(t("time.lasted", { time }))
+            } else if (comm.status === "PLANNED" && comm.plannedStartAt) {
+                const date = new Date(comm.plannedStartAt)
+                const dateLocale = locale === "uk" ? "uk-UA" : "en-GB"
+                const formattedDate = new Intl.DateTimeFormat(dateLocale, {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                }).format(date)
+                setTimeStr(t("time.plannedFor", { date: formattedDate }))
             } else {
                 setTimeStr("")
             }
@@ -161,7 +155,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
         }
 
         return () => clearInterval(intervalId)
-    }, [comm.status, comm.startedAt, comm.endedAt])
+    }, [comm.status, comm.startedAt, comm.endedAt, comm.plannedStartAt, t, locale])
 
     return (
         <Link
@@ -173,15 +167,17 @@ function CommissionCard({ comm }: { comm: Commission }) {
             </div>
             <div className="flex-1 min-w-0">
                 <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
-                    Commission Session
+                    {t("commission.session")}
                 </span>
-                <span className="block text-base font-bold text-slate-800 truncate">{comm.name}</span>
+                <span className="block text-base font-bold text-slate-800 truncate">
+                    {comm.name}
+                </span>
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider mt-1.5">
                     <span className={
                         comm.status === 'STARTED' ? 'text-emerald-500' :
                         comm.status === 'COMPLETED' ? 'text-slate-400' : 'text-amber-500'
                     }>
-                        {formatEnumStatus(comm.status)}
+                        {formatStatus(comm.status)}
                     </span>
                     {timeStr && (
                         <>
@@ -214,6 +210,8 @@ interface Commission {
     id: string
     name: string
     status: CommissionStatus
+    plannedStartAt: string | null
+    plannedEndAt: string | null
     startedAt: string | null
     endedAt: string | null
 }
@@ -238,14 +236,16 @@ export default function CompetitionClientView({
     initialData: InitialData;
     children?: React.ReactNode;
 }) {
+    const { t, locale, formatStatus, formatDateTime } = useTranslation()
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState("competitions")
+    const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(1)
     const [isMutating, setIsMutating] = useState(false)
 
     const initialData = localData
+    const compTabs = tabs(t)
 
     useEffect(() => {
         setLocalData(propInitialData)
@@ -312,20 +312,17 @@ export default function CompetitionClientView({
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-                const formattedTime = hours > 0
-                    ? `${hours}h ${minutes}m`
-                    : `${minutes}m`
-
-                setTimeDisplay(`Lasted ${formattedTime}`)
+                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
+                setTimeDisplay(t("time.lasted", { time }))
 
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
                 const date = new Date(initialData.plannedStartAt)
-                const formattedDate = new Intl.DateTimeFormat('en-GB', {
+                const dateLocale = locale === "uk" ? "uk-UA" : "en-GB"
+                const formattedDate = new Intl.DateTimeFormat(dateLocale, {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 }).format(date)
-                setTimeDisplay(`Planned for ${formattedDate}`)
+                setTimeDisplay(t("time.plannedFor", { date: formattedDate }))
 
             } else {
                 setTimeDisplay("")
@@ -345,32 +342,7 @@ export default function CompetitionClientView({
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
-                <div className="flex-1 flex items-center justify-start">
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">WineLore</h1>
-                </div>
-                <div className="flex-none">
-                    <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
-                        {tabs.map((tab) => {
-                            const Icon = tab.icon
-                            const isActive = activeTab === tab.id
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive ? "bg-white text-slate-800 shadow-sm border border-slate-100/50" : "text-slate-500 hover:text-slate-800"}`}
-                                >
-                                    <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
-                                    <span>{tab.label}</span>
-                                </button>
-                            )
-                        })}
-                    </nav>
-                </div>
-                <div className="flex-1 flex justify-end">
-                    <ProfileMenu username="likespro" />
-                </div>
-            </header>
+            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col gap-8">
@@ -387,9 +359,11 @@ export default function CompetitionClientView({
                             </div>
                             <div className="min-w-0">
                                 <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
-                                    Competition Series
+                                    {t("competition.series")}
                                 </span>
-                                <p className="text-base font-bold text-slate-800 mt-0.5 truncate">{initialData.series.name}</p>
+                                <p className="text-base font-bold text-slate-800 mt-0.5 truncate">
+                                    {initialData.series.name}
+                                </p>
                             </div>
                         </div>
 
@@ -397,25 +371,30 @@ export default function CompetitionClientView({
                         <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
                             <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2 mb-4">
                                 <Calendar className="w-5 h-5 text-indigo-500" />
-                                Timeline Details
+                                {t("competition.timelineDetails")}
                             </h3>
                             <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
                                 {/* Planned Start */}
                                 <div className="relative">
                                     <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned Start</span>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.plannedStart")}</span>
                                     <div className="flex items-center gap-2 flex-wrap mt-0.5">
                                         <p className="text-xs font-semibold text-slate-800">
                                             {formatDateTime(initialData.plannedStartAt)}
                                         </p>
                                         {initialData.status === "PLANNED" && initialData.plannedStartAt && (
                                             <a
-                                                href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
+                                                href={getGoogleCalendarUrl(
+                                                    initialData.name,
+                                                    t("competition.calendarDetails", { name: initialData.name }),
+                                                    initialData.plannedStartAt,
+                                                    initialData.plannedEndAt
+                                                )}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
                                             >
-                                                Add to Calendar
+                                                {t("common.addToCalendar")}
                                             </a>
                                         )}
                                     </div>
@@ -424,7 +403,7 @@ export default function CompetitionClientView({
                                 {initialData.plannedEndAt && (
                                     <div className="relative">
                                         <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-400 border-2 border-white" />
-                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned End</span>
+                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.plannedEnd")}</span>
                                         <p className="text-xs font-semibold text-slate-800 mt-0.5">
                                             {formatDateTime(initialData.plannedEndAt)}
                                         </p>
@@ -435,9 +414,9 @@ export default function CompetitionClientView({
                                     <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
                                         initialData.startedAt ? 'bg-emerald-500' : 'bg-slate-200'
                                     }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual Start</span>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.actualStart")}</span>
                                     <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                        {initialData.startedAt ? formatDateTime(initialData.startedAt) : "Not started yet"}
+                                        {initialData.startedAt ? formatDateTime(initialData.startedAt) : t("competition.notStartedYet")}
                                     </p>
                                 </div>
                                 {/* Actual End */}
@@ -445,9 +424,9 @@ export default function CompetitionClientView({
                                     <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
                                         initialData.endedAt ? 'bg-rose-500' : 'bg-slate-200'
                                     }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual End</span>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.actualEnd")}</span>
                                     <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                        {initialData.endedAt ? formatDateTime(initialData.endedAt) : "Not ended yet"}
+                                        {initialData.endedAt ? formatDateTime(initialData.endedAt) : t("competition.notEndedYet")}
                                     </p>
                                 </div>
                             </div>
@@ -466,7 +445,7 @@ export default function CompetitionClientView({
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
-                                        Competition Panel
+                                        {t("competition.panel")}
                                     </span>
                                     <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5 truncate">
                                         {initialData.name}
@@ -485,7 +464,7 @@ export default function CompetitionClientView({
                                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                                 </span>
                                             )}
-                                            {formatEnumStatus(initialData.status)}
+                                            {formatStatus(initialData.status)}
                                         </span>
                                         {timeDisplay && (
                                             <>
@@ -502,18 +481,18 @@ export default function CompetitionClientView({
 
                             <div className="border-t border-slate-100 pt-6">
                                 <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-3">
-                                    Competition Holders
+                                    {t("competition.holders")}
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {initialData.holders.length > 0 ? (
                                         initialData.holders.map((holderAuid) => (
                                             <div key={holderAuid} className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-1.5 hover:border-indigo-200 transition-colors duration-250">
                                                 <HolderAvatar auid={holderAuid} className="h-5 w-5" />
-                                                <span className="text-xs font-bold text-slate-700">AUID: {holderAuid}</span>
+                                                <span className="text-xs font-bold text-slate-700">{t("competition.auid", { id: holderAuid })}</span>
                                             </div>
                                         ))
                                     ) : (
-                                        <span className="text-xs text-slate-400">No holders listed</span>
+                                        <span className="text-xs text-slate-400">{t("competition.noHolders")}</span>
                                     )}
                                 </div>
                             </div>
@@ -522,17 +501,17 @@ export default function CompetitionClientView({
                         {initialData.status === "PLANNED" && (
                             <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
                                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-                                    Actions & Controls
+                                    {t("competition.actionsControls")}
                                 </h3>
                                 <div className="flex flex-col gap-4">
                                     {isHolder ? (
                                         <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 flex-wrap sm:flex-nowrap">
                                             <div className="max-w-full sm:max-w-[65%]">
                                                 <h4 className="text-sm font-bold text-slate-800">
-                                                    Start Competition
+                                                    {t("competition.startTitle")}
                                                 </h4>
                                                 <p className="text-xs text-slate-500 mt-1">
-                                                    As a competition holder, you can start the tasting process once commissions are prepared.
+                                                    {t("competition.startDescription")}
                                                 </p>
                                             </div>
                                             <button
@@ -545,7 +524,7 @@ export default function CompetitionClientView({
                                                 ) : (
                                                     <PlayCircle className="h-4 w-4" />
                                                 )}
-                                                <span>Start Competition</span>
+                                                <span>{t("competition.startButton")}</span>
                                             </button>
                                         </div>
                                     ) : (
@@ -553,10 +532,10 @@ export default function CompetitionClientView({
                                             <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
                                             <div className="min-w-0">
                                                 <h4 className="text-xs font-bold text-slate-800">
-                                                    Competition Planned
+                                                    {t("competition.plannedTitle")}
                                                 </h4>
                                                 <p className="text-xs text-slate-500 mt-1">
-                                                    This competition has not started yet. Awaiting start by the competition holders.
+                                                    {t("competition.plannedDescription")}
                                                 </p>
                                             </div>
                                         </div>
@@ -571,14 +550,14 @@ export default function CompetitionClientView({
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Wine className="w-5 h-5 text-indigo-500" />
-                                        Commissions
+                                        {t("competition.commissions")}
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Commissions associated with this competition
+                                        {t("competition.commissionsSubtitle")}
                                     </p>
                                 </div>
                                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                    {initialData.commissions.length} Total
+                                    {t("common.total")}: {initialData.commissions.length}
                                 </span>
                             </div>
 
@@ -589,7 +568,7 @@ export default function CompetitionClientView({
 
                                 {initialData.commissions.length === 0 && (
                                     <div className="text-slate-400 text-sm py-4 text-center">
-                                        No commissions found for this competition.
+                                        {t("competition.noCommissions")}
                                     </div>
                                 )}
                             </div>

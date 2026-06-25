@@ -24,6 +24,10 @@ export const GET_COMPETITION_PAGE = gql(`
               id
               name
               status
+              plannedDates {
+                  start
+                  end
+              }
               startedAt
               endedAt
           }

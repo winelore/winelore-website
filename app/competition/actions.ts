@@ -2,7 +2,14 @@
 
 import { sdk } from '../../lib/apiClient';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id: string | null | undefined): boolean {
+    if (!id) return false;
+    return UUID_REGEX.test(id);
+}
+
 export async function startCompetitionAction(id: string) {
+    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
         return await sdk.StartCompetition({ id });
     } catch (err: any) {
@@ -12,6 +19,7 @@ export async function startCompetitionAction(id: string) {
 }
 
 export async function getCompetitionDataAction(competitionId: string) {
+    if (!isValidUuid(competitionId)) return null;
     try {
         const data = await sdk.GetCompetitionPage({ id: competitionId });
         const competition = data.competition;
@@ -36,6 +44,8 @@ export async function getCompetitionDataAction(competitionId: string) {
                 id: comm.id,
                 name: comm.name,
                 status: comm.status,
+                plannedStartAt: comm.plannedDates?.start || null,
+                plannedEndAt: comm.plannedDates?.end || null,
                 startedAt: comm.startedAt || null,
                 endedAt: comm.endedAt || null
             }))

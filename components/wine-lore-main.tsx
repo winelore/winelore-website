@@ -2,6 +2,7 @@
 
 import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useTranslation } from "@/lib/i18n/context"
 import { BadgeCheck } from "lucide-react"
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -27,6 +28,7 @@ interface ProfileMenuProps {
 }
 
 export function ProfileMenu({ username }: ProfileMenuProps) {
+  const { t } = useTranslation()
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -44,14 +46,14 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
             className="flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] bg-transparent py-2.5 text-[14px] font-medium text-foreground transition-colors hover:bg-[#EBEBEB]"
           >
             <CircleUser className="h-5 w-5 stroke-[1.5]" />
-            <span>Profile</span>
+            <span>{t("common.profile")}</span>
           </a>
           <a
             href="#"
             className="flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] bg-transparent py-2.5 text-[14px] font-medium text-red-500 transition-colors hover:bg-red-50"
           >
             <LogOut className="h-5 w-5 stroke-[1.5] text-red-500" />
-            <span>Log Out</span>
+            <span>{t("common.logOut")}</span>
           </a>
         </div>
 
@@ -62,25 +64,25 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         {/* Group 2: Navigation Links */}
         <div className="px-2 py-1.5">
           <a
-            href="#"
+            href="/myBeverages"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <Wine className="h-5 w-5 stroke-[1.5] text-foreground" />
-            <span>My Beverages</span>
+            <span>{t("common.myBeverages")}</span>
           </a>
           <a
-            href="#"
+            href="/myCompetitions"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <Trophy className="h-5 w-5 stroke-[1.5] text-foreground" />
-            <span>My Competitions</span>
+            <span>{t("common.myCompetitions")}</span>
           </a>
           <a
             href="#"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <ListTodo className="h-5 w-5 stroke-[1.5] text-foreground" />
-            <span>My Assessments</span>
+            <span>{t("common.myAssessments")}</span>
           </a>
         </div>
 
@@ -98,7 +100,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
               <div className="flex h-5 w-5 shrink-0 items-center justify-center">
                 <AxusLogo className="h-6 w-auto object-contain max-w-none" />
               </div>
-              <span>AXUS ID Profile</span>
+              <span>{t("common.axusIdProfile")}</span>
             </div>
             <ExternalLink className="h-5 w-5 stroke-[1.5] text-foreground" />
           </a>

@@ -24,17 +24,28 @@ export async function fetchGraphQL<TResult, TVariables>(
 
     if (errors) {
         // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error:', errors);
+        console.error('GraphQL Pipeline Error (fetchGraphQL):', JSON.stringify(errors, null, 2));
         throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
     }
 
     return data;
 }
 
-const requester = async <R, V>(doc: DocumentNode, vars?: V): Promise<R> => {
+export interface RequesterOptions {
+    headers?: Record<string, string>;
+}
+
+const requester = async <R, V>(
+    doc: DocumentNode,
+    vars?: V,
+    options?: RequesterOptions
+): Promise<R> => {
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...options?.headers
+        },
         body: JSON.stringify({
             query: print(doc),
             variables: vars,
@@ -46,11 +57,11 @@ const requester = async <R, V>(doc: DocumentNode, vars?: V): Promise<R> => {
 
     if (errors) {
         // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error:', errors);
+        console.error('GraphQL Pipeline Error (SDK requester):', JSON.stringify(errors, null, 2));
         throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
     }
 
     return data;
 };
 
-export const sdk = getSdk(requester);
+export const sdk = getSdk<RequesterOptions>(requester);
