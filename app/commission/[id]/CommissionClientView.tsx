@@ -747,8 +747,10 @@ export default function CommissionClientView({
                                             const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
                                             const code = currentCandidateObj?.candidate?.anonymizedCode;
                                             return (
-                                                <p className="text-xs text-slate-500 font-medium pl-1">
-                                                    Current candidate: <span className="font-bold text-indigo-600">{code || selectedReplica.currentCandidateId}</span>
+                                                <p className="text-xs text-slate-500 font-medium pl-1 flex items-center gap-1.5 flex-wrap">
+                                                    <span>Current candidate:</span>
+                                                    <span className="font-bold text-indigo-600">{code || "N/A"}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
                                                 </p>
                                             );
                                         })()}

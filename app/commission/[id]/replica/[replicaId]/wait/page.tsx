@@ -17,6 +17,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [role, setRole] = useState<string>("EXPERT");
     const [members, setMembers] = useState<any[]>([]);
     const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(null);
+    const [currentCandidateCode, setCurrentCandidateCode] = useState<string | null>(null);
     const [isSwitching, setIsSwitching] = useState(false);
     const [evaluations, setEvaluations] = useState<any[]>([]);
     const [propertyMap, setPropertyMap] = useState<Record<string, string>>({});
@@ -33,7 +34,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
         const fetchData = async () => {
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -57,6 +58,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 }
 
                 setCurrentCandidateId(newCandidateId);
+                setCurrentCandidateCode(newCandidateCode);
 
             } catch (err) {
                 console.error("Polling error", err);
@@ -94,11 +96,16 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-800">Head Dashboard</h1>
-                            <p className="text-slate-500 text-sm mt-1">
-                                Current candidate:{" "}
+                            <p className="text-slate-500 text-sm mt-1 flex items-center gap-1.5 flex-wrap">
+                                <span>Current candidate:</span>
                                 <span className="font-mono font-semibold text-indigo-600">
-                                    {currentCandidateId ? currentCandidateId.slice(0, 8) + "…" : "Loading…"}
+                                    {currentCandidateCode || (currentCandidateId ? "Loading..." : "None")}
                                 </span>
+                                {currentCandidateId && (
+                                    <span className="text-[11px] text-slate-400 font-mono font-normal">
+                                        ({currentCandidateId})
+                                    </span>
+                                )}
                             </p>
                         </div>
                         <button

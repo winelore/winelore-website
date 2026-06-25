@@ -363,16 +363,16 @@ async function rawGraphQL(query: string, variables: Record<string, any>) {
 
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
-        return { members: [], currentCandidateId: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
+        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
     }
     try {
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
-        if (!commission) return { members: [], currentCandidateId: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
+        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return { members: [], currentCandidateId: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
+        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
 
         // Members of this replica only
         const members = (replica.members || []).map((m: any) => ({
@@ -381,6 +381,8 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         }));
 
         const currentCandidateId = replica.currentCandidateId || null;
+        const currentCandidateObj = (replica.replicaCandidates || []).find((rc: any) => rc.id === currentCandidateId);
+        const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
 
         // All done when there's no current candidate and all replica candidates are EVALUATED
         const replicaCandidates = replica.replicaCandidates || [];
@@ -416,7 +418,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             }
         }
 
-        return { members, currentCandidateId, allCandidatesEvaluated, evaluations, propertyMap };
+        return { members, currentCandidateId, currentCandidateCode, allCandidatesEvaluated, evaluations, propertyMap };
     } catch (err: any) {
         console.error("Server Action Error (getWaitDataAction):", err);
         throw new Error(err.message || "Failed to fetch wait data");
