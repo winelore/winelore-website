@@ -19,6 +19,8 @@ const en = {
     independent: "Independent",
     unknownCreator: "Unknown Creator",
     standard: "Standard",
+    loading: "Loading...",
+    none: "None",
   },
   dashboard: {
     holderId: "Holder ID: {{ids}}",
@@ -118,6 +120,23 @@ const en = {
     statusReady: "Ready",
     statusWaiting: "Waiting",
     startingSoon: "Starting soon",
+    notFoundTitle: "Commission not found",
+    notFoundDescription: "Please check the link or contact your administrator.",
+    headDashboard: "Head Dashboard",
+    currentCandidateLabel: "Current candidate:",
+    nextBeverage: "Next Beverage",
+    commissionMembers: "Commission Members ({{count}} members)",
+    loadingMembers: "Loading members...",
+    headOfCommission: "Head of Commission",
+    completed: "Completed",
+    evaluating: "Evaluating...",
+    comments: "Comments:",
+    boredPlay: "Bored? Play!",
+    evaluationSubmitted: "Evaluation Submitted!",
+    waitingNextRound: "Waiting for the Head of Commission to start the next tasting round.",
+    autoRefreshNotice: "Don't close this page, it will automatically refresh.",
+    waitingOtherExperts: "Waiting for other experts...",
+    enterTastingSession: "Enter Tasting Session",
   },
   evaluation: {
     process: "Evaluation Process ({{name}})",
@@ -139,6 +158,10 @@ const en = {
     val: "Score",
     scoreLabelPrefix: "",
     scoreLabelSuffix: "",
+    resultsSection: "Results",
+    resultsSectionDesc: "Calculated or final fields",
+    submittedScores: "Submitted Scores",
+    origin: "Origin:",
   },
   status: {
     IN_PROGRESS: "In Progress",
@@ -189,5 +212,13 @@ const en = {
   },
 } as const
 
-export type TranslationKey = typeof en
+type DeepStringValues<T> = {
+  [K in keyof T]: T[K] extends string
+    ? string
+    : T[K] extends Record<string, unknown>
+      ? DeepStringValues<T[K]>
+      : T[K]
+}
+
+export type TranslationKey = DeepStringValues<typeof en>
 export default en

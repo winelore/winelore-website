@@ -5,8 +5,7 @@ import Cookies from "js-cookie"
 import Link from "next/link"
 import { FileText, Trophy, Wine, Tag, AlertCircle, CheckCircle } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
-import { ProfileMenu } from "@/components/wine-lore-main"
-import { TranslatedText } from "@/lib/i18n/TranslatedText"
+import { AppHeader, type AppTabId } from "@/components/AppHeader"
 
 const tabs = (t: any) => [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -63,7 +62,7 @@ function BeverageCard({ bev }: { bev: Beverage }) {
                         {formatBeverageType(bev.type)}
                     </span>
                     <h3 className="text-lg font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
-                        <TranslatedText text={bev.name} />
+                        {bev.name}
                     </h3>
                 </div>
             </div>
@@ -89,10 +88,9 @@ function BeverageCard({ bev }: { bev: Beverage }) {
 }
 
 export default function MyBeveragesClientView({ initialData }: { initialData: InitialData }) {
-    const [activeTab, setActiveTab] = useState("beverages")
+    const [activeTab, setActiveTab] = useState<AppTabId>("beverages")
     const [currentAuid, setCurrentAuid] = useState<number>(4) // Замокано для тестування
     const { t } = useTranslation()
-    const myTabs = tabs(t)
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -101,33 +99,7 @@ export default function MyBeveragesClientView({ initialData }: { initialData: In
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
-                <div className="flex-1 flex items-center justify-start">
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">WineLore</h1>
-                </div>
-                <div className="flex-none">
-                    <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
-                        {myTabs.map((tab) => {
-                            const Icon = tab.icon
-                            const isActive = activeTab === tab.id
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive ? "bg-white text-slate-800 shadow-sm border border-slate-100/50" : "text-slate-500 hover:text-slate-800"}`}
-                                >
-                                    <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
-                                    <span>{tab.label}</span>
-                                </button>
-                            )
-                        })}
-                    </nav>
-                </div>
-                <div className="flex-1 flex justify-end gap-3">
-                    <LanguageSwitcher />
-                    <ProfileMenu username="likespro" />
-                </div>
-            </header>
+            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col gap-8">

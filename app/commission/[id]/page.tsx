@@ -1,5 +1,6 @@
 import { getCommissionDataAction } from '../actions';
 import CommissionClientView from './CommissionClientView';
+import CommissionNotFound from './CommissionNotFound';
 import { cookies } from 'next/headers';
 
 interface PageProps {
@@ -26,14 +27,7 @@ export default async function CommissionStartPage({ params }: PageProps) {
     }
 
     if (!commission) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-background text-white">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold mb-2">Commission not found</h2>
-                    <p className="text-muted-foreground">Please check the link or contact your administrator.</p>
-                </div>
-            </div>
-        );
+        return <CommissionNotFound />;
     }
 
     return (
