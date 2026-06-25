@@ -64,6 +64,7 @@ export const GET_COMMISSION_TEMPLATES = gql(`
               name
               description
               isRequired
+              isResult
               ... on BooleanProperty {
                 boolDefaultValue: defaultValue
               }

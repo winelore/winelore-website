@@ -1,12 +1,27 @@
 "use server"
 
-import { sdk } from '../../lib/apiClient';
+import { fetchGraphQL, sdk } from '../../lib/apiClient';
+import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
 import { cookies } from "next/headers";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
     if (!id) return false;
     return UUID_REGEX.test(id);
+}
+
+async function getCommissionTemplatesWithResultMarkers(commissionId: string) {
+    try {
+        return await sdk.GetCommissionTemplates({ id: commissionId });
+    } catch (err: any) {
+        const message = String(err?.message || err);
+        if (!message.includes("isResult")) {
+            throw err;
+        }
+
+        console.warn("Backend does not expose EvaluationProperty.isResult yet; falling back to legacy template query.");
+        return await fetchGraphQL(LegacyGetCommissionTemplatesDocument, { id: commissionId });
+    }
 }
 
 export async function markMemberReadyAction(replicaId: string, memberId: string) {
@@ -188,7 +203,7 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
     console.log(`  Linked template edition ${editionId} to commission ${commissionId}`);
 
     // 5. Fetch the template edition using GetCommissionTemplates
-    const result = await sdk.GetCommissionTemplates({ id: commissionId });
+    const result = await getCommissionTemplatesWithResultMarkers(commissionId);
     const commissionWithTemplates = result.commission;
     const link = commissionWithTemplates?.templateEditions?.find(l => l.beverageType === "WINE") || commissionWithTemplates?.templateEditions?.[0];
     return link?.templateEdition || null;
@@ -243,7 +258,7 @@ export async function getCommissionDataAction(commissionId: string) {
         let templateEdition: any = null;
         try {
             console.log(`🔍 Fetching templates for commission ${commissionId}...`);
-            const templateResult = await sdk.GetCommissionTemplates({ id: commissionId });
+            const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
             const commissionWithTemplates = templateResult.commission;
             
             if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
@@ -363,16 +378,16 @@ async function rawGraphQL(query: string, variables: Record<string, any>) {
 
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
-        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
+        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
     }
     try {
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
-        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
+        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
+        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
 
         // Members of this replica only
         const members = (replica.members || []).map((m: any) => ({
@@ -390,7 +405,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             && replicaCandidates.every((rc: any) => rc.status === 'EVALUATED');
 
         let evaluations: any[] = [];
-        const propertyMap: Record<string, string> = {};
+        const propertyMap: Record<string, { name: string; isResult: boolean }> = {};
 
         if (currentCandidateId) {
             try {
@@ -398,7 +413,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
                 evaluations = await getEvaluationsForCandidateAction(currentCandidateId);
 
                 // Fetch template properties to map codes to user-friendly names
-                const templateResult = await sdk.GetCommissionTemplates({ id: commissionId });
+                const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
                 const commissionWithTemplates = templateResult.commission;
                 if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
                     const link = commissionWithTemplates.templateEditions.find(l => l.beverageType === "WINE") || commissionWithTemplates.templateEditions[0];
@@ -407,7 +422,10 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
                         for (const cat of templateEdition.categories) {
                             if (cat.properties) {
                                   for (const prop of cat.properties) {
-                                    propertyMap[prop.code] = prop.name;
+                                    propertyMap[prop.code] = {
+                                        name: prop.name,
+                                        isResult: (prop as { isResult?: boolean }).isResult === true,
+                                    };
                                 }
                             }
                         }

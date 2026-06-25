@@ -166,12 +166,12 @@ export type GetCommissionTemplatesQueryVariables = Exact<{
 
 
 export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: Types.BeverageType, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, categories: Array<{ id: string, name: string, properties: Array<
-            | { __typename: 'BooleanProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, boolDefaultValue: boolean | null }
-            | { __typename: 'DiscreteNumbersProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, discreteAllowedValues: Array<number>, discreteDefaultValue: number | null }
-            | { __typename: 'DoubleProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, doubleMinLimit: number | null, doubleMaxLimit: number | null, doubleDefaultValue: number | null }
-            | { __typename: 'EnumProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, enumAllowedValues: Array<string>, enumDefaultValue: string | null }
-            | { __typename: 'IntProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, intMinLimit: number | null, intMaxLimit: number | null, intDefaultValue: number | null }
-            | { __typename: 'SmartProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, expression:
+            | { __typename: 'BooleanProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, boolDefaultValue: boolean | null }
+            | { __typename: 'DiscreteNumbersProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, discreteAllowedValues: Array<number>, discreteDefaultValue: number | null }
+            | { __typename: 'DoubleProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, doubleMinLimit: number | null, doubleMaxLimit: number | null, doubleDefaultValue: number | null }
+            | { __typename: 'EnumProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, enumAllowedValues: Array<string>, enumDefaultValue: string | null }
+            | { __typename: 'IntProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, intMinLimit: number | null, intMaxLimit: number | null, intDefaultValue: number | null }
+            | { __typename: 'SmartProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, expression:
                 | { __typename: 'BinaryExpression', type: string, left:
                     | { __typename: 'BinaryExpression', type: string, left:
                         | { __typename: 'BinaryExpression', type: string, left:
@@ -430,6 +430,7 @@ export const GetCommissionTemplatesDocument = gql`
             name
             description
             isRequired
+            isResult
             ... on BooleanProperty {
               boolDefaultValue: defaultValue
             }
