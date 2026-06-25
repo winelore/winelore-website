@@ -3,12 +3,16 @@
 import React, { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
-import { Users, Wine, Loader2, ArrowRight } from "lucide-react"
+import { Users, Wine, Loader2, ArrowRight, Shuffle } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
 } from "../../../../actions"
+
+function isResultProperty(code: string): boolean {
+    return code === 'total_score' || code.endsWith('_score') || code.endsWith('_result');
+}
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -18,9 +22,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [members, setMembers] = useState<any[]>([]);
     const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(null);
     const [currentCandidateCode, setCurrentCandidateCode] = useState<string | null>(null);
+    const [currentCandidateStatus, setCurrentCandidateStatus] = useState<string | null>(null);
     const [isSwitching, setIsSwitching] = useState(false);
     const [evaluations, setEvaluations] = useState<any[]>([]);
     const [propertyMap, setPropertyMap] = useState<Record<string, string>>({});
+    const [resultPropertyCodes, setResultPropertyCodes] = useState<string[]>([]);
+    const [chaoticMode, setChaoticMode] = useState<boolean>(true);
 
     // 1. Read AUID from cookie (fallback to 1)
     useEffect(() => {
@@ -28,18 +35,34 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         setAuid(cookieAuid ? parseInt(cookieAuid, 10) : 1);
     }, []);
 
+    // Read chaotic mode from localStorage
+    useEffect(() => {
+        const stored = localStorage.getItem(`chaotic_mode_${replicaId}`);
+        if (stored !== null) setChaoticMode(stored === 'true');
+    }, [replicaId]);
+
+    const handleToggleChaoticMode = () => {
+        setChaoticMode(prev => {
+            const next = !prev;
+            localStorage.setItem(`chaotic_mode_${replicaId}`, String(next));
+            return next;
+        });
+    };
+
     // 2. Polling loop every 3 seconds
     useEffect(() => {
         if (auid === null) return;
 
         const fetchData = async () => {
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateStatus: newCandidateStatus, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, resultPropertyCodes: newResultCodes } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
                 setEvaluations(newEvaluations || []);
                 setPropertyMap(newPropertyMap || {});
+                setResultPropertyCodes(newResultCodes || []);
+                setCurrentCandidateStatus(newCandidateStatus || null);
 
                 // Find current user's role
                 const me = commMembers.find((m: any) => Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid);
@@ -83,6 +106,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     };
 
+    // In non-chaotic mode, HEAD can only advance when the current candidate is not PENDING
+    const isNextDisabled = !currentCandidateId || isSwitching || (!chaoticMode && currentCandidateStatus === 'PENDING');
+
     const heads = members.filter(m => m.role === "HEAD");
     const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
 
@@ -93,32 +119,72 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         return (
             <main className="min-h-screen bg-slate-50 p-6 md:p-10">
                 <div className="max-w-4xl mx-auto space-y-8">
-                    <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-800">Head Dashboard</h1>
-                            <p className="text-slate-500 text-sm mt-1 flex items-center gap-1.5 flex-wrap">
-                                <span>Current candidate:</span>
-                                <span className="font-mono font-semibold text-indigo-600">
-                                    {currentCandidateCode || (currentCandidateId ? "Loading..." : "None")}
-                                </span>
-                                {currentCandidateId && (
-                                    <span className="text-[11px] text-slate-400 font-mono font-normal">
-                                        ({currentCandidateId})
+                    <header className="flex flex-col bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h1 className="text-2xl font-bold text-slate-800">Head Dashboard</h1>
+                                <p className="text-slate-500 text-sm mt-1 flex items-center gap-1.5 flex-wrap">
+                                    <span>Current candidate:</span>
+                                    <span className="font-mono font-semibold text-indigo-600">
+                                        {currentCandidateCode || (currentCandidateId ? "Loading..." : "None")}
                                     </span>
+                                    {currentCandidateId && (
+                                        <span className="text-[11px] text-slate-400 font-mono font-normal">
+                                            ({currentCandidateId})
+                                        </span>
+                                    )}
+                                    {currentCandidateStatus && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                            currentCandidateStatus === 'PENDING' 
+                                                ? 'bg-amber-100 text-amber-600' 
+                                                : 'bg-emerald-100 text-emerald-600'
+                                        }`}>
+                                            {currentCandidateStatus}
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5">
+                                <button
+                                    onClick={handleNextBeverage}
+                                    disabled={isNextDisabled}
+                                    className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+                                >
+                                    {isSwitching ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <>Next Beverage <ArrowRight className="w-5 h-5" /></>
+                                    )}
+                                </button>
+                                {!chaoticMode && currentCandidateStatus === 'PENDING' && (
+                                    <p className="text-[11px] text-amber-600 font-medium text-right">
+                                        Waiting for evaluations to enable
+                                    </p>
                                 )}
-                            </p>
+                            </div>
                         </div>
-                        <button
-                            onClick={handleNextBeverage}
-                            disabled={!currentCandidateId || isSwitching}
-                            className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
-                        >
-                            {isSwitching ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <>Next Beverage <ArrowRight className="w-5 h-5" /></>
-                            )}
-                        </button>
+
+                        {/* Chaotic mode toggle */}
+                        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <Shuffle className="w-4 h-4 text-amber-500 shrink-0" />
+                                <div>
+                                    <p className="text-sm font-bold text-slate-800">Chaotic Mode</p>
+                                    <p className="text-xs text-slate-400">
+                                        {chaoticMode
+                                            ? "Advance freely — candidates can be skipped at any time."
+                                            : "Ordered — Next Beverage enabled only after all experts evaluate."}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleToggleChaoticMode}
+                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${chaoticMode ? "bg-amber-500" : "bg-slate-200"}`}
+                                aria-pressed={chaoticMode}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${chaoticMode ? "translate-x-6" : "translate-x-1"}`} />
+                            </button>
+                        </div>
                     </header>
 
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -174,10 +240,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     <div className="flex flex-wrap gap-2">
                                                         {evaluation.scores.map((score: any) => {
                                                             const displayName = propertyMap[score.code] || score.code;
+                                                            const isResult = resultPropertyCodes.includes(score.code) || isResultProperty(score.code);
                                                             return (
-                                                                <div key={score.code} className="inline-flex items-center bg-white border border-indigo-100 rounded-lg px-2 py-0.5 text-xs shadow-sm">
+                                                                <div key={score.code} className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs shadow-sm ${isResult ? "bg-amber-50 border border-amber-200" : "bg-white border border-indigo-100"}`}>
                                                                     <span className="text-slate-500 mr-1">{displayName}:</span>
-                                                                    <span className="font-bold text-indigo-950">{score.value}</span>
+                                                                    <span className={`font-bold ${isResult ? "text-amber-700" : "text-indigo-950"}`}>{score.value}</span>
+                                                                    {isResult && <span className="ml-1 text-amber-500 text-[10px]">★</span>}
                                                                 </div>
                                                             );
                                                         })}
@@ -241,10 +309,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     <div className="flex flex-wrap gap-2">
                                                         {evaluation.scores.map((score: any) => {
                                                             const displayName = propertyMap[score.code] || score.code;
+                                                            const isResult = resultPropertyCodes.includes(score.code) || isResultProperty(score.code);
                                                             return (
-                                                                <div key={score.code} className="inline-flex items-center bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-xs shadow-sm">
+                                                                <div key={score.code} className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs shadow-sm ${isResult ? "bg-amber-50 border border-amber-200" : "bg-white border border-slate-200"}`}>
                                                                     <span className="text-slate-500 mr-1">{displayName}:</span>
-                                                                    <span className="font-bold text-slate-800">{score.value}</span>
+                                                                    <span className={`font-bold ${isResult ? "text-amber-700" : "text-slate-800"}`}>{score.value}</span>
+                                                                    {isResult && <span className="ml-1 text-amber-500 text-[10px]">★</span>}
                                                                 </div>
                                                             );
                                                         })}

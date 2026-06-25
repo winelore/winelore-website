@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar, Shuffle } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { 
     markMemberReadyAction, 
@@ -189,6 +189,7 @@ export default function CommissionClientView({
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(serverAuid || 1)
     const [hasRedirected, setHasRedirected] = useState(false)
+    const [chaoticMode, setChaoticMode] = useState<boolean>(true)
 
     const initialData = localData
 
@@ -223,6 +224,21 @@ export default function CommissionClientView({
             setCurrentAuid(parseInt(cookieAuid, 10))
         }
     }, [])
+
+    useEffect(() => {
+        if (!selectedReplicaId) return;
+        const stored = localStorage.getItem(`chaotic_mode_${selectedReplicaId}`);
+        if (stored !== null) setChaoticMode(stored === 'true');
+    }, [selectedReplicaId])
+
+    const handleToggleChaoticMode = () => {
+        if (!selectedReplicaId) return;
+        setChaoticMode(prev => {
+            const next = !prev;
+            localStorage.setItem(`chaotic_mode_${selectedReplicaId}`, String(next));
+            return next;
+        });
+    }
 
     useEffect(() => {
         const me = localMembers.find(m => m.auid.includes(currentAuid))
@@ -836,6 +852,28 @@ export default function CommissionClientView({
 
                                         {replicaStatus === "STARTED" && (
                                             <div className="flex flex-col gap-2.5">
+                                                {/* Chaotic Mode toggle */}
+                                                <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-amber-50/60 border border-amber-100">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <Shuffle className="w-4 h-4 text-amber-500 shrink-0" />
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-bold text-slate-800">Chaotic Mode</p>
+                                                            <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+                                                                {chaoticMode
+                                                                    ? "Freely advance candidates at any time."
+                                                                    : "Next Beverage only after all experts evaluate."}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleToggleChaoticMode}
+                                                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${chaoticMode ? "bg-amber-500" : "bg-slate-200"}`}
+                                                        aria-pressed={chaoticMode}
+                                                    >
+                                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${chaoticMode ? "translate-x-6" : "translate-x-1"}`} />
+                                                    </button>
+                                                </div>
+
                                                 <p className="text-xs text-slate-500 mb-1">
                                                     As the Head of Commission, you can end the evaluation once all members have finished their tasting assessments.
                                                 </p>

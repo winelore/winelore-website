@@ -74,6 +74,10 @@ function formatEnumLabel(label: string): string {
         .join(" ")
 }
 
+function isResultProperty(code: string): boolean {
+    return code === 'total_score' || code.endsWith('_score') || code.endsWith('_result');
+}
+
 export default function EvaluationForm({
     categories,
     candidateId,
@@ -153,7 +157,7 @@ export default function EvaluationForm({
                     value: String(val)
                 }))
 
-            await submitEvaluationAction(candidateId, scores)
+            await submitEvaluationAction(candidateId, scores, replicaId)
 
             setSuccess(true)
             
@@ -189,13 +193,19 @@ export default function EvaluationForm({
                         {category.properties.map((prop) => {
                             const currentValue = values[prop.code]
                             const isSmart = prop.__typename === "SmartProperty"
+                            const isResult = isResultProperty(prop.code)
 
                             return (
-                                <div key={prop.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                                <div key={prop.id} className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 bg-white rounded-xl shadow-xs border ${isResult ? "border-amber-200 bg-amber-50/20" : "border-slate-100"}`}>
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             <h4 className="text-sm font-semibold text-slate-800">{prop.name}</h4>
                                             {prop.isRequired && !isSmart && <span className="text-rose-500 text-xs">*</span>}
+                                            {isResult && (
+                                                <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded-md leading-none">
+                                                    ★ Result
+                                                </span>
+                                            )}
                                         </div>
                                         {prop.description && <p className="text-xs text-slate-400 mt-0.5">{prop.description}</p>}
                                     </div>
@@ -308,7 +318,7 @@ export default function EvaluationForm({
                                         )}
 
                                         {prop.__typename === "SmartProperty" && (
-                                            <div className="px-4 py-1.5 bg-indigo-50/50 border border-indigo-100 rounded-lg text-sm font-bold text-indigo-700 w-full text-center">
+                                            <div className={`px-4 py-1.5 rounded-lg text-sm font-bold w-full text-center ${isResult ? "bg-amber-50 border border-amber-200 text-amber-700" : "bg-indigo-50/50 border border-indigo-100 text-indigo-700"}`}>
                                                 {computedSmartValues[prop.code] !== undefined
                                                     ? computedSmartValues[prop.code].toFixed(2)
                                                     : "Waiting for dependencies..."}
