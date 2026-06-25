@@ -276,14 +276,14 @@ export type GetReplicaCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus } } } } }> } | null };
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null } } } } }> } | null };
 
 export type GetReplicaCandidateQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus } } } } } | null };
+export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null } } } } } | null };
 
 export type CreateEvaluationTemplateMutationVariables = Exact<{
   input: Types.CreateEvaluationTemplateInput;
@@ -688,6 +688,12 @@ export const GetReplicaCandidatesDocument = gql`
               id
               name
               status
+              ... on Wine {
+                origin {
+                  latitude
+                  longitude
+                }
+              }
             }
           }
         }
@@ -724,6 +730,12 @@ export const GetReplicaCandidateDocument = gql`
             id
             name
             status
+            ... on Wine {
+              origin {
+                latitude
+                longitude
+              }
+            }
           }
         }
       }

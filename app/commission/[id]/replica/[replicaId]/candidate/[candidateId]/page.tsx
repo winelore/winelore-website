@@ -1,35 +1,45 @@
-import { getCommissionDataAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../actions"
+import { getCommissionDataAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
 import EvaluationForm from "./EvaluationForm"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { MapPin } from "lucide-react"
+import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 
 interface Props {
-    params: Promise<{ id: string; candidateId: string }>
+    params: Promise<{ id: string; replicaId: string; candidateId: string }>
 }
 
 export default async function CandidateEvaluationPage({ params }: Props) {
-    const { id: routeCommissionId, candidateId } = await params
+    const { id: routeCommissionId, replicaId, candidateId } = await params
 
     // 1. Fetch the replica candidate by its ID (candidateId is replica candidate ID)
     const replicaCandidate = await getReplicaCandidateAction(candidateId)
     if (!replicaCandidate) notFound()
 
     const commissionId = replicaCandidate.replica.commission.id
-    const replicaId = replicaCandidate.replica.id
+    const currentReplicaId = replicaCandidate.replica.id
+
+    // If this candidate was already evaluated, send the user back to the wait page
+    if (replicaCandidate.status === "EVALUATED") {
+        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
+    }
 
     // 2. Fetch the commission data (which includes templates/categories)
     const commission = await getCommissionDataAction(commissionId)
     if (!commission) notFound()
 
     // 3. Fetch all replica candidates for this replica
-    const replicaCandidates = await getReplicaCandidatesAction(replicaId)
+    const replicaCandidates = await getReplicaCandidatesAction(currentReplicaId)
     
     const currentIndex = replicaCandidates.findIndex((c: any) => c.id === candidateId)
     const currentReplicaCandidate = replicaCandidates[currentIndex] || replicaCandidate
     const currentCandidate = currentReplicaCandidate.candidate
 
-    const nextCandidateId = currentIndex !== -1 && currentIndex < replicaCandidates.length - 1 
-        ? replicaCandidates[currentIndex + 1].id 
-        : null
+    // Fetch candidate origin from coordinates if available
+    const origin = currentCandidate?.sample?.batch?.beverage?.origin
+    let originInfo = null
+    if (origin && typeof origin.latitude === "number" && typeof origin.longitude === "number") {
+        originInfo = await getGeographicInfo(origin.latitude, origin.longitude)
+    }
 
     // Use the dynamic evaluation template from the backend
     const categories = commission.competition?.evaluationTemplateEdition?.categories || []
@@ -43,7 +53,18 @@ export default async function CandidateEvaluationPage({ params }: Props) {
                         <h1 className="text-2xl font-extrabold text-slate-800 mt-1">
                             Candidate: <span className="text-indigo-600">{currentCandidate?.anonymizedCode || candidateId}</span>
                         </h1>
-                        <p className="text-sm text-slate-400 mt-1">Commission: {commission.name}</p>
+                        <div className="flex flex-col gap-1 mt-1">
+                            <p className="text-sm text-slate-400">Commission: {commission.name}</p>
+                            {originInfo && (originInfo.country || originInfo.region || originInfo.district) && (
+                                <p className="text-sm text-slate-600 flex items-center gap-1.5 mt-0.5">
+                                    <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+                                    <span className="font-medium text-slate-700">Origin: </span>
+                                    <span className="text-slate-600">
+                                        {[originInfo.country, originInfo.region, originInfo.district].filter(Boolean).join(", ")}
+                                    </span>
+                                </p>
+                            )}
+                        </div>
                     </div>
                     {currentIndex !== -1 && (
                         <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-500 text-center">
@@ -56,7 +77,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
                     categories={categories}
                     candidateId={candidateId}
                     commissionId={commissionId}
-                    nextCandidateId={nextCandidateId}
+                    replicaId={currentReplicaId}
                 />
             </div>
         </div>

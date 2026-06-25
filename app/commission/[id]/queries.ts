@@ -328,6 +328,12 @@ export const GET_REPLICA_CANDIDATES = gql(`
                 id
                 name
                 status
+                ... on Wine {
+                  origin {
+                    latitude
+                    longitude
+                  }
+                }
               }
             }
           }
@@ -365,6 +371,12 @@ export const GET_REPLICA_CANDIDATE = gql(`
               id
               name
               status
+              ... on Wine {
+                origin {
+                  latitude
+                  longitude
+                }
+              }
             }
           }
         }

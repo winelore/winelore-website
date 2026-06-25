@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { submitEvaluationAction } from "../../../actions"
+import { submitEvaluationAction } from "../../../../../actions"
 import { Slider } from "@/components/ui/slider"
 
 interface EvaluationProperty {
@@ -78,12 +78,12 @@ export default function EvaluationForm({
     categories,
     candidateId,
     commissionId,
-    nextCandidateId
+    replicaId,
 }: {
     categories: EvaluationCategory[]
     candidateId: string
     commissionId: string
-    nextCandidateId: string | null
+    replicaId: string
 }) {
     const router = useRouter()
     const [values, setValues] = useState<Record<string, any>>({})
@@ -153,28 +153,12 @@ export default function EvaluationForm({
                     value: String(val)
                 }))
 
-            try {
-                await submitEvaluationAction(candidateId, scores)
-            } catch (backendErr: any) {
-                console.warn("⚠️ Backend submission failed (likely due to database constraints), saving to localStorage as fallback:", backendErr.message)
-                
-                const localKey = `evaluation_scores_${candidateId}`
-                localStorage.setItem(localKey, JSON.stringify({
-                    candidateId,
-                    scores,
-                    submittedAt: new Date().toISOString(),
-                    backendError: backendErr.message
-                }))
-            }
+            await submitEvaluationAction(candidateId, scores)
 
             setSuccess(true)
             
             setTimeout(() => {
-                if (nextCandidateId) {
-                    router.push(`/commission/${commissionId}/candidate/${nextCandidateId}`)
-                } else {
-                    router.push(`/commission/${commissionId}`)
-                }
+                router.push(`/commission/${commissionId}/replica/${replicaId}/wait`)
                 router.refresh()
             }, 1000)
         } catch (err: any) {

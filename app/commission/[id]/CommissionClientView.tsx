@@ -243,13 +243,13 @@ export default function CommissionClientView({
         const prevStatus = prevReplicaStatusRef.current
         const currentStatus = selectedReplica?.status
 
-        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
+        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected && selectedReplica) {
             setHasRedirected(true)
-            router.push(`/commission/${localData.id}/evaluation`)
+            router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)
         }
 
         prevReplicaStatusRef.current = currentStatus
-    }, [selectedReplica?.status, localData.id, hasRedirected, router])
+    }, [selectedReplica?.status, localData.id, hasRedirected, router, selectedReplica])
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -369,7 +369,7 @@ export default function CommissionClientView({
         setIsMutating(true)
         try {
             await startCommissionAction(selectedReplica.id)
-            router.push(`/commission/${initialData.id}/wait`)
+            router.push(`/commission/${initialData.id}/replica/${selectedReplica.id}/wait`)
             router.refresh()
         } catch (err) {
             console.error("Failed to start replica tasting session:", err)
@@ -737,7 +737,7 @@ export default function CommissionClientView({
                                 {replicaStatus === "STARTED" && (
                                     <div className="flex flex-col gap-2">
                                         <button
-                                            onClick={() => router.push(`/commission/${localData.id}/evaluation`)}
+                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
                                             className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
                                         >
                                             <FileText className="h-5 w-5" />
@@ -887,7 +887,7 @@ export default function CommissionClientView({
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => router.push(`/commission/${localData.id}/wait`)}
+                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/wait`)}
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
                                         >
                                             Enter Tasting Session →

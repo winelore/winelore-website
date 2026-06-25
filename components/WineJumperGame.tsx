@@ -109,8 +109,8 @@ export default function WineJumperGame() {
                     <h3 className="text-xl font-bold text-slate-800 mb-4">
                         {isGameOver ? `Гра закінчена. Рахунок: ${score}` : "Wine Jumper"}
                     </h3>
-                    <button onClick={(e) => { e.stopPropagation(); startGame(); }} className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition active:scale-95">
-                        <PlayCircle className="w-5 h-5" />
+                    <button onClick={(e) => { e.stopPropagation(); startGame(); }} className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-indigo-700 transition active:scale-95 text-sm whitespace-nowrap">
+                        <PlayCircle className="w-4 h-4 shrink-0" />
                         {isGameOver ? "Спробувати ще раз" : "Грати (Тисни Пробіл)"}
                     </button>
                 </div>
