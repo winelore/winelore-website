@@ -347,7 +347,7 @@ export async function getReplicaCandidateAction(id: string) {
     }
 }
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:8080/graphql';
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
 
 async function rawGraphQL(query: string, variables: Record<string, any>) {
     const res = await fetch(GRAPHQL_ENDPOINT, {

@@ -18,7 +18,7 @@ export default function SubmitEvaluationButton({ commissionId, candidateId, scor
         setIsSubmitting(true);
         try {
             // Реальна мутація з твоєї схеми
-            const response = await fetch('http://localhost:8080', {
+            const response = await fetch('http://switchback.proxy.rlwy.net:43233', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
