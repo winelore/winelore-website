@@ -64,6 +64,8 @@ export default async function CompetitionStartPage({ params }: PageProps) {
             id: comm.id,
             name: comm.name,
             status: comm.status,
+            plannedStartAt: comm.plannedDates?.start || null,
+            plannedEndAt: comm.plannedDates?.end || null,
             startedAt: comm.startedAt || null,
             endedAt: comm.endedAt || null
         }))

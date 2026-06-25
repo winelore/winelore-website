@@ -1,5 +1,6 @@
-import { sdk } from '../../../lib/apiClient';
+import { getCommissionDataAction } from '../actions';
 import CommissionClientView from './CommissionClientView';
+import { cookies } from 'next/headers';
 
 interface PageProps {
     params: Promise<{
@@ -11,16 +12,14 @@ export default async function CommissionStartPage({ params }: PageProps) {
     const resolvedParams = await params;
     const commissionId = resolvedParams.id;
 
+    const cookieStore = await cookies();
+    const auidStr = cookieStore.get("auid")?.value;
+    const currentAuid = auidStr ? parseInt(auidStr, 10) : null;
+
     let commission = null;
-    let candidateCount = 0;
 
     try {
-        const [commissionData, countData] = await Promise.all([
-            sdk.GetCommission({ id: commissionId }),
-            sdk.GetCommissionCandidateCount({ commissionId })
-        ]);
-        commission = commissionData.commission;
-        candidateCount = countData.commissionCandidateCount ?? 0;
+        commission = await getCommissionDataAction(commissionId);
     } catch (error) {
         console.error("Error loading initial data:", error);
         commission = null;
@@ -37,26 +36,10 @@ export default async function CommissionStartPage({ params }: PageProps) {
         );
     }
 
-    const initialData = {
-        id: commission.id,
-        name: commission.name,
-        status: commission.status,
-        plannedStartAt: commission.plannedDates?.start || null,
-        startedAt: commission.startedAt || null,
-        endedAt: commission.endedAt || null,
-        competition: {
-            id: commission.competition.id,
-            name: commission.competition.name,
-            holders: commission.competition.holders.flat(),
-        },
-        candidateCount: candidateCount,
-        members: commission.members.map((m) => ({
-            id: m.id,
-            auid: m.auid.flat(),
-            role: m.role,
-            isReady: m.isReady,
-        }))
-    };
-
-    return <CommissionClientView initialData={initialData} />;
+    return (
+        <CommissionClientView 
+            initialData={commission} 
+            serverAuid={currentAuid} 
+        />
+    );
 }

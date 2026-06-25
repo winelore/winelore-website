@@ -124,7 +124,7 @@ function CompetitionCard({ competition }: { competition: Competition }) {
     return (
         <Link 
             href={`/competition/${competition.id}`}
-            className="block rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:border-blue-500/30 active:scale-[0.99]"
+            className="group bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 flex flex-col min-h-[140px]"
         >
             <div className="flex items-start gap-3">
                 <AvatarPlaceholder className="h-10 w-10 shrink-0" />
@@ -164,17 +164,15 @@ export default function WineLoreDashboard({ initialCompetitions }: { initialComp
   return (
     <div className="flex h-screen flex-col bg-background">
         {/* Header */}
-        <header className="flex shrink-0 items-center border-b border-border bg-card px-6 py-4">
-            {/* Logo */}
+        <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
             <div className="flex-1 flex items-center justify-start">
-                <h1 className="text-2xl font-bold text-card-foreground tracking-tight">
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
                     WineLore
                 </h1>
             </div>
 
-            {/* Navigation Tabs */}
             <div className="flex-none">
-                <nav className="flex items-center rounded-full border border-border bg-muted/50 p-1">
+                <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
                     {tabs.map((tab) => {
                         const Icon = tab.icon
                         const isActive = activeTab === tab.id
@@ -183,11 +181,11 @@ export default function WineLoreDashboard({ initialCompetitions }: { initialComp
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
-                                    ? "bg-card text-primary shadow-sm"
-                                    : "text-muted-foreground hover:text-card-foreground"
+                                    ? "bg-white text-slate-800 shadow-sm border border-slate-100/50"
+                                    : "text-slate-500 hover:text-slate-800"
                                 }`}
                             >
-                                <Icon className={`h-4 w-4 ${isActive ? "text-blue-500" : ""}`} />
+                                <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
                                 <span>{tab.label}</span>
                             </button>
                         )
@@ -195,8 +193,6 @@ export default function WineLoreDashboard({ initialCompetitions }: { initialComp
                 </nav>
             </div>
 
-
-            {/* User Profile */}
             <div className="flex-1 flex justify-end">
                 <ProfileMenu username="likespro" />
             </div>

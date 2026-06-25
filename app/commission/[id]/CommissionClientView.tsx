@@ -1,9 +1,9 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { 
     markMemberReadyAction, 
@@ -16,7 +16,7 @@ import {
 const tabs = [
     { id: "feed", label: "Feed", icon: FileText },
     { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "wines", label: "Wines", icon: Wine },
+    { id: "beverages", label: "Beverages", icon: Wine },
 ]
 
 const formatEnumStatus = (status: string | undefined): string => {
@@ -26,6 +26,25 @@ const formatEnumStatus = (status: string | undefined): string => {
         .split("_")
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
+}
+
+function formatDateTime(dateStr: string | null): string {
+    if (!dateStr) return "N/A"
+    const date = new Date(dateStr)
+    return new Intl.DateTimeFormat('en-GB', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    }).format(date)
+}
+
+function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
+    const start = new Date(plannedStartAt)
+    const end = plannedEndAt ? new Date(plannedEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000)
+
+    const formatToGCal = (date: Date) => {
+        return date.toISOString().replace(/-|:|\.\d\d\d/g, "")
+    }
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(name)}&dates=${formatToGCal(start)}/${formatToGCal(end)}`
 }
 
 function getAvatarGradient(auid: number): string {
@@ -63,7 +82,7 @@ function MemberAvatar({ auid, role, className }: { auid: number[]; role: string;
 function StatusSteps({ status }: { status: string }) {
     const steps = [
         { id: "readying", label: "Readying Members", description: "Waiting for readiness" },
-        { id: "tasting", label: "Tasting In Progress", description: "Evaluating wines" },
+        { id: "tasting", label: "Tasting In Progress", description: "Evaluating beverages" },
         { id: "completed", label: "Completed", description: "Results ready" }
     ]
 
@@ -102,7 +121,6 @@ function StatusSteps({ status }: { status: string }) {
                                     <p className="text-[10px] text-slate-400">{step.description}</p>
                                 </div>
                             </div>
-
                         </React.Fragment>
                     )
                 })}
@@ -118,11 +136,30 @@ interface Member {
     isReady: boolean;
 }
 
+interface Replica {
+    id: string;
+    name: string;
+    type: "STANDARD" | "TRAINEE";
+    status: string;
+    members: Member[];
+    candidateCount: number;
+    replicaCandidates: {
+        id: string;
+        status: string;
+        candidate?: {
+            id: string;
+            anonymizedCode: string | null;
+        } | null;
+    }[];
+    currentCandidateId?: string | null;
+}
+
 interface InitialData {
     id: string;
     name: string;
     status: string;
     plannedStartAt: string | null;
+    plannedEndAt: string | null;
     startedAt: string | null;
     endedAt: string | null;
     candidateCount: number;
@@ -131,26 +168,54 @@ interface InitialData {
         name: string;
         holders: number[];
     };
+    replicas: Replica[];
     members: Member[];
 }
 
-export default function CommissionClientView({ initialData: propInitialData }: { initialData: InitialData }) {
+export default function CommissionClientView({
+    initialData: propInitialData,
+    serverAuid
+}: {
+    initialData: InitialData;
+    serverAuid?: number | null;
+}) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
-    const [localMembers, setLocalMembers] = useState<Member[]>(propInitialData.members)
+    const [localReplicas, setLocalReplicas] = useState<Replica[]>(propInitialData.replicas || [])
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
-    const [currentAuid, setCurrentAuid] = useState<number>(1)
+    const [currentAuid, setCurrentAuid] = useState<number>(serverAuid || 1)
+    const [hasRedirected, setHasRedirected] = useState(false)
 
     const initialData = localData
 
+    // Detect user's active replica
+    const activeReplica = localReplicas.find(r =>
+        r.members.some(m => m.auid.includes(currentAuid))
+    ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
+
+    const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
+
+    const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
+    const localMembers = selectedReplica ? selectedReplica.members : []
+
+    const prevReplicaStatusRef = useRef(selectedReplica?.status)
+
     useEffect(() => {
         setLocalData(propInitialData)
-        setLocalMembers(propInitialData.members)
-    }, [propInitialData])
+        if (propInitialData.replicas) {
+            setLocalReplicas(propInitialData.replicas)
+            const active = propInitialData.replicas.find(r =>
+                r.members.some(m => m.auid.includes(currentAuid))
+            ) || propInitialData.replicas.find(r => r.type === "STANDARD") || propInitialData.replicas[0] || null
+            if (active && !selectedReplicaId) {
+                setSelectedReplicaId(active.id)
+            }
+        }
+    }, [propInitialData, currentAuid, selectedReplicaId])
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -175,6 +240,18 @@ export default function CommissionClientView({ initialData: propInitialData }: {
         : "Unknown Creator"
 
     useEffect(() => {
+        const prevStatus = prevReplicaStatusRef.current
+        const currentStatus = selectedReplica?.status
+
+        if (prevStatus !== "STARTED" && currentStatus === "STARTED" && !hasRedirected) {
+            setHasRedirected(true)
+            router.push(`/commission/${localData.id}/evaluation`)
+        }
+
+        prevReplicaStatusRef.current = currentStatus
+    }, [selectedReplica?.status, localData.id, hasRedirected, router])
+
+    useEffect(() => {
         let intervalId: NodeJS.Timeout;
 
         const updateTime = () => {
@@ -188,11 +265,10 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
                 const formattedTime = hours > 0
-                    ? `${hours}h ${minutes}m ${seconds}s`
-                    : `${minutes}m ${seconds}s`
+                    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 
                 setTimeDisplay(formattedTime)
-
             } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
                 const start = new Date(initialData.startedAt).getTime()
                 const end = new Date(initialData.endedAt).getTime()
@@ -200,28 +276,32 @@ export default function CommissionClientView({ initialData: propInitialData }: {
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-                const formattedTime = hours > 0
-                    ? `${hours}h ${minutes}m`
-                    : `${minutes}m`
-
-                setTimeDisplay(`Lasted ${formattedTime}`)
-
+                setTimeDisplay(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`)
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
-                const date = new Date(initialData.plannedStartAt)
-                const formattedDate = new Intl.DateTimeFormat('en-GB', {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                }).format(date)
-                setTimeDisplay(`Planned for ${formattedDate}`)
+                const start = new Date(initialData.plannedStartAt).getTime()
+                const now = new Date().getTime()
+                const diff = start - now
 
+                if (diff <= 0) {
+                    setTimeDisplay("Starting soon")
+                } else {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+                    if (days > 0) {
+                        setTimeDisplay(`In ${days}d ${hours}h`)
+                    } else {
+                        setTimeDisplay(`In ${hours}h ${minutes}m`)
+                    }
+                }
             } else {
                 setTimeDisplay("")
             }
         }
 
         updateTime()
-
         if (initialData.status === "STARTED") {
             intervalId = setInterval(updateTime, 1000)
         }
@@ -235,7 +315,9 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                 const updated = await getCommissionDataAction(localData.id)
                 if (updated) {
                     setLocalData(updated)
-                    setLocalMembers(updated.members)
+                    if (updated.replicas) {
+                        setLocalReplicas(updated.replicas)
+                    }
                 }
             } catch (err) {
                 console.error("Failed to poll commission data:", err)
@@ -246,24 +328,32 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     }, [localData.id])
 
     const handleToggleReady = async (shouldBeReady: boolean) => {
-        if (!currentMemberId || isMutating) return
+        if (!selectedReplica || !currentMemberId || isMutating) return
         setIsMutating(true)
 
         try {
             let updatedMembers;
             if (shouldBeReady) {
-                const response = await markMemberReadyAction(initialData.id, currentMemberId)
-                updatedMembers = response.markCommissionMemberReady?.members
+                const response = await markMemberReadyAction(selectedReplica.id, currentMemberId)
+                updatedMembers = response.markCommissionReplicaMemberReady?.members
             } else {
-                const response = await markMemberNotReadyAction(initialData.id, currentMemberId)
-                updatedMembers = response.markCommissionMemberNotReady?.members
+                const response = await markMemberNotReadyAction(selectedReplica.id, currentMemberId)
+                updatedMembers = response.markCommissionReplicaMemberNotReady?.members
             }
 
             if (updatedMembers) {
-                setLocalMembers(prev =>
-                    prev.map(m => {
-                        const match = updatedMembers.find((u: any) => u.id === m.id)
-                        return match ? { ...m, isReady: match.isReady } : m
+                setLocalReplicas(prev =>
+                    prev.map(r => {
+                        if (r.id === selectedReplica.id) {
+                            return {
+                                ...r,
+                                members: r.members.map(m => {
+                                    const match = updatedMembers.find((u: any) => u.id === m.id)
+                                    return match ? { ...m, isReady: match.isReady } : m
+                                })
+                            }
+                        }
+                        return r
                     })
                 )
             }
@@ -275,26 +365,26 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     }
 
     const handleStartCommission = async () => {
-        if (isMutating) return
+        if (!selectedReplica || isMutating) return
         setIsMutating(true)
         try {
-            await startCommissionAction(initialData.id)
+            await startCommissionAction(selectedReplica.id)
             router.refresh()
         } catch (err) {
-            console.error("Failed to start commission:", err)
+            console.error("Failed to start replica tasting session:", err)
         } finally {
             setIsMutating(false)
         }
     }
 
     const handleCompleteCommission = async () => {
-        if (isMutating) return
+        if (!selectedReplica || isMutating) return
         setIsMutating(true)
         try {
-            await completeCommissionAction(initialData.id)
+            await completeCommissionAction(selectedReplica.id)
             router.refresh()
         } catch (err) {
-            console.error("Failed to complete commission:", err)
+            console.error("Failed to complete replica tasting session:", err)
         } finally {
             setIsMutating(false)
         }
@@ -303,13 +393,15 @@ export default function CommissionClientView({ initialData: propInitialData }: {
     const isEveryoneReady = localMembers.every(m => m.isReady)
     const myStatus = localMembers.find(m => m.auid.includes(currentAuid))
     const amIReady = myStatus?.isReady || false
-    const isPreStart = initialData.status !== "STARTED" && initialData.status !== "COMPLETED"
+    const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
     const nonReadyCount = localMembers.filter(m => !m.isReady).length
 
     const sortedMembers = [...localMembers].sort((a, b) => {
         const roleOrder = { HEAD: 1, EXPERT: 2, TRAINEE_EXPERT: 3 }
         return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)
     })
+
+    const replicaStatus = selectedReplica?.status || "DRAFT"
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
@@ -350,19 +442,79 @@ export default function CommissionClientView({ initialData: propInitialData }: {
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
 
-                    {/* Left Column: Stepper and Tasting Panel */}
+                    {/* Left Column: Replicas, Stepper and Tasting Panel */}
                     <div className="w-full lg:w-[45%] flex flex-col gap-6">
-                        <StatusSteps status={initialData.status} />
+
+                        {/* Replica Selector Tabs */}
+                        {localReplicas.length > 0 && (
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                                    <Layers className="w-4 h-4 text-indigo-500" />
+                                    Tasting Replicas
+                                </h3>
+                                <div className="flex flex-col gap-2">
+                                    {localReplicas.map((r) => {
+                                        const isSelected = r.id === selectedReplicaId
+                                        const isUserReplica = r.members.some(m => m.auid.includes(currentAuid))
+                                        return (
+                                            <button
+                                                key={r.id}
+                                                onClick={() => {
+                                                    setSelectedReplicaId(r.id)
+                                                    setHasRedirected(false)
+                                                }}
+                                                className={`flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full ${
+                                                    isSelected
+                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                                                        : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-600 hover:text-slate-800"
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span>{r.name}</span>
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
+                                                        isSelected 
+                                                            ? "bg-indigo-700/60 border-indigo-500 text-indigo-100" 
+                                                            : "bg-slate-150 border-slate-200 text-slate-500"
+                                                    }`}>
+                                                        {r.type}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {isUserReplica && (
+                                                        <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
+                                                            isSelected ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
+                                                        }`}>
+                                                            My Tasting
+                                                        </span>
+                                                    )}
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full ${
+                                                        r.status === "STARTED"
+                                                            ? (isSelected ? "bg-emerald-400 text-indigo-950 font-extrabold" : "bg-emerald-500/10 text-emerald-600")
+                                                            : r.status === "COMPLETED"
+                                                                ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
+                                                                : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
+                                                    }`}>
+                                                        {formatEnumStatus(r.status)}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <StatusSteps status={replicaStatus} />
 
                         <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Users className="w-5 h-5 text-indigo-500" />
-                                        Tasting Panel
+                                        Tasting Panel ({selectedReplica?.name || "Standard"})
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Members evaluating this competition
+                                        Members evaluating this replica
                                     </p>
                                 </div>
                                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
@@ -429,6 +581,9 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                         </div>
                                     )
                                 })}
+                                {localMembers.length === 0 && (
+                                    <p className="text-sm text-slate-400 text-center py-4">No members assigned to this replica.</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -451,19 +606,19 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                     </h2>
                                     <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                            initialData.status === "STARTED" 
+                                            replicaStatus === "STARTED" 
                                                 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" 
-                                                : initialData.status === "COMPLETED"
+                                                : replicaStatus === "COMPLETED"
                                                     ? "bg-slate-100 text-slate-500 border border-slate-200"
                                                     : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
                                         }`}>
-                                            {initialData.status === "STARTED" && (
+                                            {replicaStatus === "STARTED" && (
                                                 <span className="relative flex h-2 w-2 mr-1">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                                 </span>
                                             )}
-                                            {formatEnumStatus(initialData.status)}
+                                            {formatEnumStatus(replicaStatus)}
                                         </span>
                                         {timeDisplay && (
                                             <>
@@ -507,8 +662,68 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                             <div className="flex items-center gap-3 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl p-4 mt-4">
                                 <Layers className="h-5 w-5 text-indigo-500 shrink-0" />
                                 <span className="text-sm text-slate-500 font-medium">
-                                    Featuring <strong className="text-slate-800 font-bold">{initialData.candidateCount}</strong> selected beverages for tasting
+                                    Replica has <strong className="text-slate-800 font-bold">{selectedReplica?.candidateCount || 0}</strong> assigned beverages for tasting
                                 </span>
+                            </div>
+                        </div>
+
+                        {/* Timeline and Dates */}
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
+                            <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2 mb-4">
+                                <Calendar className="w-5 h-5 text-indigo-500" />
+                                Timeline Details
+                            </h3>
+                            <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
+                                {/* Planned Start */}
+                                <div className="relative">
+                                    <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned Start</span>
+                                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                        <p className="text-xs font-semibold text-slate-800">
+                                            {formatDateTime(initialData.plannedStartAt)}
+                                        </p>
+                                        {selectedReplica?.status === "PLANNED" && initialData.plannedStartAt && (
+                                            <a
+                                                href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
+                                            >
+                                                Add to Calendar
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Planned End */}
+                                {initialData.plannedEndAt && (
+                                    <div className="relative">
+                                        <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-400 border-2 border-white" />
+                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned End</span>
+                                        <p className="text-xs font-semibold text-slate-800 mt-0.5">
+                                            {formatDateTime(initialData.plannedEndAt)}
+                                        </p>
+                                    </div>
+                                )}
+                                {/* Actual Start */}
+                                <div className="relative">
+                                    <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
+                                        initialData.startedAt ? 'bg-emerald-500' : 'bg-slate-200'
+                                    }`} />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual Start</span>
+                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-slate-800' : 'text-slate-400'}`}>
+                                        {initialData.startedAt ? formatDateTime(initialData.startedAt) : "Not started yet"}
+                                    </p>
+                                </div>
+                                {/* Actual End */}
+                                <div className="relative">
+                                    <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
+                                        initialData.endedAt ? 'bg-rose-500' : 'bg-slate-200'
+                                    }`} />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual End</span>
+                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-slate-800' : 'text-slate-400'}`}>
+                                        {initialData.endedAt ? formatDateTime(initialData.endedAt) : "Not completed yet"}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -518,6 +733,27 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                             </h3>
                             
                             <div className="flex flex-col gap-6">
+                                {replicaStatus === "STARTED" && (
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => router.push(`/commission/${localData.id}/evaluation`)}
+                                            className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
+                                        >
+                                            <FileText className="h-5 w-5" />
+                                            <span>Continue to Evaluation</span>
+                                        </button>
+                                        {selectedReplica?.currentCandidateId && (() => {
+                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
+                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
+                                            return (
+                                                <p className="text-xs text-slate-500 font-medium pl-1">
+                                                    Current candidate: <span className="font-bold text-indigo-600">{code || selectedReplica.currentCandidateId}</span>
+                                                </p>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+
                                 {isPreStart && currentUserRole && (
                                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
@@ -557,7 +793,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                 {currentUserRole === "HEAD" && (
                                     <div className="border-t border-slate-100 pt-6">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                                            Head of Commission Tools
+                                            Head of Commission Tools ({selectedReplica?.name})
                                         </h4>
                                         
                                         {isPreStart && (
@@ -577,7 +813,7 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                                         ) : (
                                                             <PlayCircle className="h-5 w-5" />
                                                         )}
-                                                        <span>Start Commission</span>
+                                                        <span>Start Tasting Session</span>
                                                     </button>
                                                     
                                                     {!isEveryoneReady && (
@@ -595,55 +831,59 @@ export default function CommissionClientView({ initialData: propInitialData }: {
                                             </div>
                                         )}
 
-                                        {initialData.status === "STARTED" && (
+                                        {replicaStatus === "STARTED" && (
                                             <div className="flex flex-col gap-2.5">
                                                 <p className="text-xs text-slate-500 mb-1">
                                                     As the Head of Commission, you can end the evaluation once all members have finished their tasting assessments.
                                                 </p>
-                                                <button
-                                                    onClick={handleCompleteCommission}
-                                                    disabled={isMutating}
-                                                    className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/15 transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
-                                                >
-                                                    {isMutating ? (
-                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                    ) : (
-                                                        <StopCircle className="h-5 w-5" />
-                                                    )}
-                                                    <span>Complete Commission</span>
-                                                </button>
+                                                <div className="flex flex-wrap gap-3">
+                                                    <button
+                                                        onClick={handleCompleteCommission}
+                                                        disabled={isMutating}
+                                                        className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/15 transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
+                                                    >
+                                                        {isMutating ? (
+                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                        ) : (
+                                                            <StopCircle className="h-5 w-5" />
+                                                        )}
+                                                        <span>Complete Tasting Session</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                {initialData.status === "COMPLETED" && (
+                                {replicaStatus === "COMPLETED" && (
                                     <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
                                         <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                                         <div>
                                             <h4 className="text-sm font-bold text-emerald-800">
-                                                Commission Session Completed
+                                                Tasting Session Completed
                                             </h4>
                                             <p className="text-xs text-emerald-600/90 mt-1">
-                                                All tasting sessions have concluded. The evaluation data has been locked and archived for scoring.
+                                                All tasting sessions for this replica have concluded. The evaluation data has been locked and archived.
                                             </p>
                                         </div>
                                     </div>
                                 )}
 
-                                {initialData.status === "STARTED" && currentUserRole !== "HEAD" && (
-                                    <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex items-start gap-3">
-                                        <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-indigo-800">
-                                                Tasting is Active
-                                            </h4>
-                                            <p className="text-xs text-slate-600 mt-1">
-                                                The commission has started. Please proceed with assessing your assigned wines and submitting scores.
-                                            </p>
+                                {replicaStatus === "STARTED" && currentUserRole !== "HEAD" && (
+                                    <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-indigo-800">
+                                                    Tasting is Active
+                                                </h4>
+                                                <p className="text-xs text-slate-600 mt-1">
+                                                    The tasting session has started. Please proceed with assessing your assigned beverages and submitting scores.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

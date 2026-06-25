@@ -11,7 +11,7 @@ import { startCompetitionAction, getCompetitionDataAction } from "../actions"
 const tabs = [
     { id: "feed", label: "Feed", icon: FileText },
     { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "wines", label: "Wines", icon: Wine },
+    { id: "beverages", label: "Beverages", icon: Wine },
 ]
 
 const formatEnumStatus = (status: string | undefined): string => {
@@ -146,9 +146,14 @@ function CommissionCard({ comm }: { comm: Commission }) {
 
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
                 setTimeStr(`Lasted ${hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}`)
+            } else if (comm.status === "PLANNED" && comm.plannedStartAt) {
+                const date = new Date(comm.plannedStartAt)
+                const formattedDate = new Intl.DateTimeFormat('en-GB', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                }).format(date)
+                setTimeStr(`Planned for ${formattedDate}`)
             } else {
                 setTimeStr("")
             }
@@ -161,7 +166,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
         }
 
         return () => clearInterval(intervalId)
-    }, [comm.status, comm.startedAt, comm.endedAt])
+    }, [comm.status, comm.startedAt, comm.endedAt, comm.plannedStartAt])
 
     return (
         <Link
@@ -214,6 +219,8 @@ interface Commission {
     id: string
     name: string
     status: CommissionStatus
+    plannedStartAt: string | null
+    plannedEndAt: string | null
     startedAt: string | null
     endedAt: string | null
 }
