@@ -194,11 +194,7 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
     return link?.templateEdition || null;
 }
 
-export async function submitEvaluationAction(
-    candidateId: string,
-    scores: { code: string, value: string }[],
-    replicaId?: string
-) {
+export async function submitEvaluationAction(candidateId: string, scores: { code: string, value: string }[]) {
     if (!isValidUuid(candidateId)) throw new Error("Invalid candidateId parameter");
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
@@ -220,26 +216,10 @@ export async function submitEvaluationAction(
         });
         
         try {
-            let shouldMarkEvaluated = !replicaId; // if no replicaId, mark unconditionally (legacy)
-
-            if (replicaId && isValidUuid(replicaId)) {
-                const [evaluations, membersCount] = await Promise.all([
-                    getEvaluationsForCandidateAction(candidateId),
-                    getReplicaMembersCount(replicaId)
-                ]);
-                const completeCount = evaluations.filter((e: any) => e.isComplete).length;
-                shouldMarkEvaluated = membersCount > 0 && completeCount >= membersCount;
-                console.log(`📊 Evaluations: ${completeCount}/${membersCount} complete for candidate ${candidateId}`);
-            }
-
-            if (shouldMarkEvaluated) {
-                console.log(`Updating candidate ${candidateId} status to EVALUATED...`);
-                await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId });
-            } else {
-                console.log(`⏳ Not all members evaluated yet — keeping candidate ${candidateId} in current status`);
-            }
+            console.log(`Updating candidate ${candidateId} status to EVALUATED...`);
+            await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId });
         } catch (statusErr: any) {
-            console.warn(`⚠️ Failed to check/mark candidate status:`, statusErr.message);
+            console.warn(`⚠️ Failed to update candidate status to EVALUATED:`, statusErr.message);
         }
 
         return submitResponse.submitEvaluation;
@@ -367,10 +347,6 @@ export async function getReplicaCandidateAction(id: string) {
     }
 }
 
-function isResultProperty(code: string): boolean {
-    return code === 'total_score' || code.endsWith('_score') || code.endsWith('_result');
-}
-
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
 
 async function rawGraphQL(query: string, variables: Record<string, any>) {
@@ -386,18 +362,17 @@ async function rawGraphQL(query: string, variables: Record<string, any>) {
 }
 
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
-    const empty = { members: [], currentCandidateId: null, currentCandidateCode: null, currentCandidateStatus: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {}, resultPropertyCodes: [] as string[] };
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
-        return empty;
+        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
     }
     try {
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
-        if (!commission) return empty;
+        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return empty;
+        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} };
 
         // Members of this replica only
         const members = (replica.members || []).map((m: any) => ({
@@ -408,7 +383,6 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const currentCandidateId = replica.currentCandidateId || null;
         const currentCandidateObj = (replica.replicaCandidates || []).find((rc: any) => rc.id === currentCandidateId);
         const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
-        const currentCandidateStatus = currentCandidateObj?.status || null;
 
         // All done when there's no current candidate and all replica candidates are EVALUATED
         const replicaCandidates = replica.replicaCandidates || [];
@@ -432,7 +406,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
                     if (templateEdition && templateEdition.categories) {
                         for (const cat of templateEdition.categories) {
                             if (cat.properties) {
-                                for (const prop of cat.properties) {
+                                  for (const prop of cat.properties) {
                                     propertyMap[prop.code] = prop.name;
                                 }
                             }
@@ -444,29 +418,10 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             }
         }
 
-        const resultPropertyCodes = Object.keys(propertyMap).filter(isResultProperty);
-
-        return { members, currentCandidateId, currentCandidateCode, currentCandidateStatus, allCandidatesEvaluated, evaluations, propertyMap, resultPropertyCodes };
+        return { members, currentCandidateId, currentCandidateCode, allCandidatesEvaluated, evaluations, propertyMap };
     } catch (err: any) {
         console.error("Server Action Error (getWaitDataAction):", err);
         throw new Error(err.message || "Failed to fetch wait data");
-    }
-}
-
-async function getReplicaMembersCount(replicaId: string): Promise<number> {
-    try {
-        const data = await rawGraphQL(`
-            query GetReplicaMembersCount($id: ID!) {
-                commissionReplica(id: $id) {
-                    members {
-                        id
-                    }
-                }
-            }
-        `, { id: replicaId });
-        return data?.commissionReplica?.members?.length ?? 0;
-    } catch {
-        return 0;
     }
 }
 
