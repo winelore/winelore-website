@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n/context"
+import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
 import { submitEvaluationAction } from "../../../actions"
 import { Slider } from "@/components/ui/slider"
 
@@ -74,6 +76,12 @@ function formatEnumLabel(label: string): string {
         .join(" ")
 }
 
+function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
+    const translatedLabel = formatEnumLabel(value)
+    const backendTranslated = useBackendTranslation(translatedLabel)
+    return <option value={value}>{backendTranslated}</option>
+}
+
 export default function EvaluationForm({
     categories,
     candidateId,
@@ -86,6 +94,7 @@ export default function EvaluationForm({
     nextCandidateId: string | null
 }) {
     const router = useRouter()
+    const { t, formatEnumLabel } = useTranslation()
     const [values, setValues] = useState<Record<string, any>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -187,8 +196,8 @@ export default function EvaluationForm({
     if (categories.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200 rounded-3xl text-center text-slate-500 font-medium gap-2">
-                <span className="text-lg font-bold text-slate-700">⚠️ No Template Configured</span>
-                <p className="text-sm text-slate-400 max-w-md">There are no evaluation categories configured for this commission on the backend, and the frontend mock fallback has been disabled.</p>
+                <span className="text-lg font-bold text-slate-700">⚠️ {t("evaluation.noTemplate")}</span>
+                <p className="text-sm text-slate-400 max-w-md">{t("evaluation.noTemplateDesc")}</p>
             </div>
         )
     }
@@ -198,7 +207,7 @@ export default function EvaluationForm({
             {categories.map((category) => (
                 <div key={category.id} className="border border-slate-100 rounded-2xl p-6 bg-slate-50/30">
                     <h2 className="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
-                        {category.name}
+                        <TranslatedText text={category.name} />
                     </h2>
 
                     <div className="flex flex-col gap-5">
@@ -210,10 +219,20 @@ export default function EvaluationForm({
                                 <div key={prop.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <h4 className="text-sm font-semibold text-slate-800">{prop.name}</h4>
+                                            <h4 className="text-sm font-semibold text-slate-800">
+                                                <TranslatedText 
+                                                    text={prop.name} 
+                                                    prefix={prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty" ? t("evaluation.scoreLabelPrefix") : ""} 
+                                                    suffix={t("evaluation.scoreLabelSuffix")} 
+                                                />
+                                            </h4>
                                             {prop.isRequired && !isSmart && <span className="text-rose-500 text-xs">*</span>}
                                         </div>
-                                        {prop.description && <p className="text-xs text-slate-400 mt-0.5">{prop.description}</p>}
+                                        {prop.description && (
+                                            <p className="text-xs text-slate-400 mt-0.5">
+                                                <TranslatedText text={prop.description} />
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="w-full md:w-64 flex justify-end">
@@ -223,13 +242,13 @@ export default function EvaluationForm({
                                                     onClick={() => handleValueChange(prop.code, true)}
                                                     className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-colors ${currentValue === true ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                                 >
-                                                    Yes
+                                                    {t("common.yes")}
                                                 </button>
                                                 <button
                                                     onClick={() => handleValueChange(prop.code, false)}
                                                     className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-colors ${currentValue === false ? "bg-rose-600 border-rose-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                                 >
-                                                    No
+                                                    {t("common.no")}
                                                 </button>
                                             </div>
                                         )}
@@ -247,7 +266,7 @@ export default function EvaluationForm({
                                                              value={currentValue ?? ""}
                                                              onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
                                                              className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-colors"
-                                                             placeholder="Enter value..."
+                                                             placeholder={t("evaluation.enterValue")}
                                                          />
                                                      </div>
                                                  )
@@ -290,13 +309,13 @@ export default function EvaluationForm({
                                                              value={currentValue ?? ""}
                                                              onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
                                                              className={`w-16 px-2 py-1 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${isOutOfRange ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
-                                                             placeholder="Val"
+                                                             placeholder={t("evaluation.val")}
                                                          />
                                                      </div>
                                                      <div className="flex justify-between text-[10px] text-slate-400 px-0.5 mt-1">
-                                                         {!showLabels ? <span>Min: {min}</span> : <span />}
-                                                         {isOutOfRange && <span className="text-rose-500 font-medium animate-pulse">Out of range!</span>}
-                                                         {!showLabels ? <span>Max: {max}</span> : <span />}
+                                                         {!showLabels ? <span>{t("evaluation.min", { value: min })}</span> : <span />}
+                                                         {isOutOfRange && <span className="text-rose-500 font-medium animate-pulse">{t("evaluation.outOfRange")}</span>}
+                                                         {!showLabels ? <span>{t("evaluation.max", { value: max })}</span> : <span />}
                                                      </div>
                                                  </div>
                                              )
@@ -311,10 +330,10 @@ export default function EvaluationForm({
                                                 }}
                                                 className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
                                             >
-                                                <option value="">Select option...</option>
+                                                <option value="">{t("evaluation.selectOption")}</option>
                                                 {prop.__typename === "EnumProperty" 
                                                     ? prop.enumAllowedValues?.map((opt) => (
-                                                        <option key={opt} value={opt}>{formatEnumLabel(opt)}</option>
+                                                        <EnumOption key={opt} value={opt} formatEnumLabel={formatEnumLabel} />
                                                     ))
                                                     : prop.discreteAllowedValues?.map((opt) => (
                                                         <option key={opt} value={opt}>{opt}</option>
@@ -327,7 +346,7 @@ export default function EvaluationForm({
                                             <div className="px-4 py-1.5 bg-indigo-50/50 border border-indigo-100 rounded-lg text-sm font-bold text-indigo-700 w-full text-center">
                                                 {computedSmartValues[prop.code] !== undefined
                                                     ? computedSmartValues[prop.code].toFixed(2)
-                                                    : "Waiting for dependencies..."}
+                                                    : t("evaluation.waitingDependencies")}
                                             </div>
                                         )}
                                     </div>
@@ -345,11 +364,11 @@ export default function EvaluationForm({
                     className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors mt-4 shadow-md shadow-indigo-600/10 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                 >
                     {isSubmitting && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
-                    <span>Submit Evaluation</span>
+                    <span>{t("evaluation.submit")}</span>
                 </button>
             ) : (
                 <div className="w-full py-3 bg-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl text-center cursor-default select-none mt-4 border border-slate-200">
-                    Please fill all required fields correctly
+                    {t("evaluation.fillRequired")}
                 </div>
             )}
 
@@ -360,7 +379,7 @@ export default function EvaluationForm({
             )}
             {success && (
                 <div className="mt-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 text-xs font-semibold text-center animate-pulse">
-                    Evaluation submitted successfully! Redirecting...
+                    {t("evaluation.submitSuccess")}
                 </div>
             )}
         </div>

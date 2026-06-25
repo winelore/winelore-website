@@ -5,6 +5,8 @@ import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
 import { ProfileMenu } from "@/components/wine-lore-main"
+import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { useTranslation } from "@/lib/i18n/context"
 import { 
     markMemberReadyAction, 
     markMemberNotReadyAction, 
@@ -12,11 +14,12 @@ import {
     completeCommissionAction,
     getCommissionDataAction
 } from "../actions"
+import { TranslatedText } from "@/lib/i18n/TranslatedText"
 
-const tabs = [
-    { id: "feed", label: "Feed", icon: FileText },
-    { id: "competitions", label: "Competitions", icon: Trophy },
-    { id: "beverages", label: "Beverages", icon: Wine },
+const tabs = (t: any) => [
+    { id: "feed", label: t("common.feed"), icon: FileText },
+    { id: "competitions", label: t("common.competitions"), icon: Trophy },
+    { id: "beverages", label: t("common.beverages"), icon: Wine },
 ]
 
 const formatEnumStatus = (status: string | undefined): string => {
@@ -80,10 +83,11 @@ function MemberAvatar({ auid, role, className }: { auid: number[]; role: string;
 }
 
 function StatusSteps({ status }: { status: string }) {
+    const { t } = useTranslation()
     const steps = [
-        { id: "readying", label: "Readying Members", description: "Waiting for readiness" },
-        { id: "tasting", label: "Tasting In Progress", description: "Evaluating beverages" },
-        { id: "completed", label: "Completed", description: "Results ready" }
+        { id: "readying", label: t("commission.stepReadying"), description: t("commission.stepReadyingDesc") },
+        { id: "tasting", label: t("commission.stepTasting"), description: t("commission.stepTastingDesc") },
+        { id: "completed", label: t("commission.stepCompleted"), description: t("commission.stepCompletedDesc") }
     ]
 
     let currentStepIdx = 0
@@ -179,6 +183,7 @@ export default function CommissionClientView({
     initialData: InitialData;
     serverAuid?: number | null;
 }) {
+    const { t, formatStatus, formatReplicaType, formatDateTime, formatShortDateTime } = useTranslation()
     const router = useRouter()
     const [activeTab, setActiveTab] = useState("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
@@ -237,7 +242,7 @@ export default function CommissionClientView({
 
     const creatorNames = initialData.competition.holders.length > 0
         ? initialData.competition.holders.join(", ")
-        : "Unknown Creator"
+        : t("common.unknownCreator")
 
     useEffect(() => {
         const prevStatus = prevReplicaStatusRef.current
@@ -277,23 +282,23 @@ export default function CommissionClientView({
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
-                setTimeDisplay(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`)
+                setTimeDisplay(hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes }))
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
                 const start = new Date(initialData.plannedStartAt).getTime()
                 const now = new Date().getTime()
                 const diff = start - now
 
                 if (diff <= 0) {
-                    setTimeDisplay("Starting soon")
+                    setTimeDisplay(t("time.startingSoon"))
                 } else {
                     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
                     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
                     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
                     if (days > 0) {
-                        setTimeDisplay(`In ${days}d ${hours}h`)
+                        setTimeDisplay(t("time.inDaysHours", { days, hours }))
                     } else {
-                        setTimeDisplay(`In ${hours}h ${minutes}m`)
+                        setTimeDisplay(t("time.inHoursMinutes", { hours, minutes }))
                     }
                 }
             } else {
@@ -414,7 +419,7 @@ export default function CommissionClientView({
 
                 <div className="flex-none">
                     <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
-                        {tabs.map((tab) => {
+                        {tabs(t).map((tab) => {
                             const Icon = tab.icon
                             const isActive = activeTab === tab.id
                             return (
@@ -434,7 +439,8 @@ export default function CommissionClientView({
                     </nav>
                 </div>
 
-                <div className="flex-1 flex justify-end">
+                <div className="flex-1 flex justify-end gap-3">
+                    <LanguageSwitcher />
                     <ProfileMenu username="likespro" />
                 </div>
             </header>
@@ -450,7 +456,7 @@ export default function CommissionClientView({
                             <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
                                     <Layers className="w-4 h-4 text-indigo-500" />
-                                    Tasting Replicas
+                                    {t("commission.tastingReplicas")}
                                 </h3>
                                 <div className="flex flex-col gap-2">
                                     {localReplicas.map((r) => {
@@ -470,13 +476,13 @@ export default function CommissionClientView({
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-2">
-                                                    <span>{r.name}</span>
+                                                    <span><TranslatedText text={r.name} /></span>
                                                     <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
                                                         isSelected 
                                                             ? "bg-indigo-700/60 border-indigo-500 text-indigo-100" 
                                                             : "bg-slate-150 border-slate-200 text-slate-500"
                                                     }`}>
-                                                        {r.type}
+                                                        {formatReplicaType(r.type)}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -484,7 +490,7 @@ export default function CommissionClientView({
                                                         <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
                                                             isSelected ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
                                                         }`}>
-                                                            My Tasting
+                                                            {t("commission.myTasting")}
                                                         </span>
                                                     )}
                                                     <span className={`text-[9px] px-2 py-0.5 rounded-full ${
@@ -494,7 +500,7 @@ export default function CommissionClientView({
                                                                 ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
                                                                 : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
                                                     }`}>
-                                                        {formatEnumStatus(r.status)}
+                                                        {formatStatus(r.status)}
                                                     </span>
                                                 </div>
                                             </button>
@@ -511,14 +517,17 @@ export default function CommissionClientView({
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Users className="w-5 h-5 text-indigo-500" />
-                                        Tasting Panel ({selectedReplica?.name || "Standard"})
+                                        {t("commission.tastingPanel", { name: <TranslatedText text={selectedReplica?.name || "Standard"} /> })}
                                     </h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Members evaluating this replica
+                                        {t("commission.tastingPanelSubtitle")}
                                     </p>
                                 </div>
                                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                    {localMembers.filter(m => m.isReady).length} / {localMembers.length} Ready
+                                    {t("commission.readyCount", { 
+                                        ready: localMembers.filter(m => m.isReady).length, 
+                                        total: localMembers.length 
+                                    })}
                                 </span>
                             </div>
 
@@ -538,7 +547,7 @@ export default function CommissionClientView({
                                                         <span>AUID: {p.auid.join(", ")}</span>
                                                         {isMe && (
                                                             <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded-xs uppercase tracking-wider">
-                                                                You
+                                                                {t("common.you")}
                                                             </span>
                                                         )}
                                                     </p>
@@ -547,17 +556,17 @@ export default function CommissionClientView({
                                                     <div className="flex items-center">
                                                         {p.role === "HEAD" && (
                                                             <span className="bg-amber-500/10 text-amber-600 border border-amber-500/15 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                                                                <Crown className="w-3 h-3"/> Head
+                                                                <Crown className="w-3 h-3"/> {t("commission.roleHead")}
                                                             </span>
                                                         )}
                                                         {p.role === "TRAINEE_EXPERT" && (
                                                             <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/15 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                                                                <GraduationCap className="w-3 h-3"/> Trainee
+                                                                <GraduationCap className="w-3 h-3"/> {t("commission.roleTrainee")}
                                                             </span>
                                                         )}
                                                         {p.role === "EXPERT" && (
                                                             <span className="bg-indigo-50/70 text-indigo-600 border border-indigo-100 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                                                                Expert
+                                                                {t("commission.roleExpert")}
                                                             </span>
                                                         )}
                                                     </div>
@@ -567,12 +576,12 @@ export default function CommissionClientView({
                                                         {p.isReady ? (
                                                             <>
                                                                 <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                                                                <span>Ready</span>
+                                                                <span>{t("commission.statusReady")}</span>
                                                             </>
                                                         ) : (
                                                             <>
                                                                 <div className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-slate-300 animate-spin" style={{ animationDuration: '3s' }} />
-                                                                <span>Waiting</span>
+                                                                <span>{t("commission.statusWaiting")}</span>
                                                             </>
                                                         )}
                                                     </div>
@@ -582,7 +591,7 @@ export default function CommissionClientView({
                                     )
                                 })}
                                 {localMembers.length === 0 && (
-                                    <p className="text-sm text-slate-400 text-center py-4">No members assigned to this replica.</p>
+                                    <p className="text-sm text-slate-400 text-center py-4">{t("commission.noMembers")}</p>
                                 )}
                             </div>
                         </div>
@@ -599,10 +608,10 @@ export default function CommissionClientView({
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
-                                        Commission Session
+                                        {t("commission.session")}
                                     </span>
                                     <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5 truncate">
-                                        {initialData.name}
+                                        <TranslatedText text={initialData.name} />
                                     </h2>
                                     <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -618,7 +627,7 @@ export default function CommissionClientView({
                                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                                 </span>
                                             )}
-                                            {formatEnumStatus(replicaStatus)}
+                                            {formatStatus(replicaStatus)}
                                         </span>
                                         {timeDisplay && (
                                             <>
@@ -638,10 +647,10 @@ export default function CommissionClientView({
                                     <Trophy className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
                                     <div className="min-w-0 flex-1">
                                         <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                            Competition
+                                            {t("commission.competition")}
                                         </h4>
                                         <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">
-                                            {initialData.competition.name}
+                                            <TranslatedText text={initialData.competition.name} />
                                         </p>
                                     </div>
                                 </div>
@@ -650,7 +659,7 @@ export default function CommissionClientView({
                                     <User className="h-5 w-5 text-indigo-500 mt-0.5 shrink-0" />
                                     <div className="min-w-0 flex-1">
                                         <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                            Holders
+                                            {t("commission.holders")}
                                         </h4>
                                         <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate" title={creatorNames}>
                                             {creatorNames}
@@ -662,7 +671,7 @@ export default function CommissionClientView({
                             <div className="flex items-center gap-3 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl p-4 mt-4">
                                 <Layers className="h-5 w-5 text-indigo-500 shrink-0" />
                                 <span className="text-sm text-slate-500 font-medium">
-                                    Replica has <strong className="text-slate-800 font-bold">{selectedReplica?.candidateCount || 0}</strong> assigned beverages for tasting
+                                    {t("commission.replicaBeverages", { count: selectedReplica?.candidateCount || 0 })}
                                 </span>
                             </div>
                         </div>
@@ -671,13 +680,13 @@ export default function CommissionClientView({
                         <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
                             <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2 mb-4">
                                 <Calendar className="w-5 h-5 text-indigo-500" />
-                                Timeline Details
+                                {t("commission.timelineDetails")}
                             </h3>
                             <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
                                 {/* Planned Start */}
                                 <div className="relative">
                                     <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned Start</span>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.plannedStart")}</span>
                                     <div className="flex items-center gap-2 flex-wrap mt-0.5">
                                         <p className="text-xs font-semibold text-slate-800">
                                             {formatDateTime(initialData.plannedStartAt)}
@@ -689,7 +698,7 @@ export default function CommissionClientView({
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
                                             >
-                                                Add to Calendar
+                                                {t("common.addToCalendar")}
                                             </a>
                                         )}
                                     </div>
@@ -698,7 +707,7 @@ export default function CommissionClientView({
                                 {initialData.plannedEndAt && (
                                     <div className="relative">
                                         <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-400 border-2 border-white" />
-                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Planned End</span>
+                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.plannedEnd")}</span>
                                         <p className="text-xs font-semibold text-slate-800 mt-0.5">
                                             {formatDateTime(initialData.plannedEndAt)}
                                         </p>
@@ -709,9 +718,9 @@ export default function CommissionClientView({
                                     <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
                                         initialData.startedAt ? 'bg-emerald-500' : 'bg-slate-200'
                                     }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual Start</span>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.actualStart")}</span>
                                     <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                        {initialData.startedAt ? formatDateTime(initialData.startedAt) : "Not started yet"}
+                                        {initialData.startedAt ? formatDateTime(initialData.startedAt) : t("commission.notStartedYet")}
                                     </p>
                                 </div>
                                 {/* Actual End */}
@@ -719,9 +728,9 @@ export default function CommissionClientView({
                                     <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
                                         initialData.endedAt ? 'bg-rose-500' : 'bg-slate-200'
                                     }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Actual End</span>
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.actualEnd")}</span>
                                     <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                        {initialData.endedAt ? formatDateTime(initialData.endedAt) : "Not completed yet"}
+                                        {initialData.endedAt ? formatDateTime(initialData.endedAt) : t("commission.notCompletedYet")}
                                     </p>
                                 </div>
                             </div>
@@ -729,7 +738,7 @@ export default function CommissionClientView({
 
                         <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-                                Actions & Controls
+                                {t("commission.actionsControls")}
                             </h3>
                             
                             <div className="flex flex-col gap-6">
@@ -740,14 +749,14 @@ export default function CommissionClientView({
                                             className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
                                         >
                                             <FileText className="h-5 w-5" />
-                                            <span>Continue to Evaluation</span>
+                                            <span>{t("commission.continueEvaluation")}</span>
                                         </button>
                                         {selectedReplica?.currentCandidateId && (() => {
                                             const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
                                             const code = currentCandidateObj?.candidate?.anonymizedCode;
                                             return (
                                                 <p className="text-xs text-slate-500 font-medium pl-1">
-                                                    Current candidate: <span className="font-bold text-indigo-600">{code || selectedReplica.currentCandidateId}</span>
+                                                    {t("commission.currentCandidate", { code: code || selectedReplica.currentCandidateId })}
                                                 </p>
                                             );
                                         })()}
@@ -758,10 +767,10 @@ export default function CommissionClientView({
                                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
                                             <h4 className="text-sm font-bold text-slate-800">
-                                                Your Readiness
+                                                {t("commission.yourReadiness")}
                                             </h4>
                                             <p className="text-xs text-slate-500 mt-0.5">
-                                                Mark yourself as ready when you are prepared to start tasting
+                                                {t("commission.readinessDescription")}
                                             </p>
                                         </div>
                                         <button
@@ -778,12 +787,12 @@ export default function CommissionClientView({
                                             ) : amIReady ? (
                                                 <>
                                                     <CheckCircle className="h-4 w-4" />
-                                                    <span>Ready!</span>
+                                                    <span>{t("commission.ready")}</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <PlayCircle className="h-4 w-4" />
-                                                    <span>Mark Ready</span>
+                                                    <span>{t("commission.markReady")}</span>
                                                 </>
                                             )}
                                         </button>
@@ -793,7 +802,7 @@ export default function CommissionClientView({
                                 {currentUserRole === "HEAD" && (
                                     <div className="border-t border-slate-100 pt-6">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                                            Head of Commission Tools ({selectedReplica?.name})
+                                            {t("commission.headTools", { name: <TranslatedText text={selectedReplica?.name} /> })}
                                         </h4>
                                         
                                         {isPreStart && (
@@ -813,18 +822,18 @@ export default function CommissionClientView({
                                                         ) : (
                                                             <PlayCircle className="h-5 w-5" />
                                                         )}
-                                                        <span>Start Tasting Session</span>
+                                                        <span>{t("commission.startTasting")}</span>
                                                     </button>
                                                     
                                                     {!isEveryoneReady && (
                                                         <span className="text-xs text-slate-500 font-medium animate-fade-in-slide">
-                                                            Waiting for {nonReadyCount} member{nonReadyCount > 1 ? 's' : ''} to be ready.
+                                                            {t("commission.waitingMembers", { count: nonReadyCount })}
                                                         </span>
                                                     )}
                                                     {isEveryoneReady && (
                                                         <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5 animate-pulse">
                                                             <Check className="w-4 h-4 shrink-0" />
-                                                            Everyone is ready! Start session.
+                                                            {t("commission.everyoneReady")}
                                                         </span>
                                                     )}
                                                 </div>
@@ -834,7 +843,7 @@ export default function CommissionClientView({
                                         {replicaStatus === "STARTED" && (
                                             <div className="flex flex-col gap-2.5">
                                                 <p className="text-xs text-slate-500 mb-1">
-                                                    As the Head of Commission, you can end the evaluation once all members have finished their tasting assessments.
+                                                    {t("commission.completeDescription")}
                                                 </p>
                                                 <div className="flex flex-wrap gap-3">
                                                     <button
@@ -847,7 +856,7 @@ export default function CommissionClientView({
                                                         ) : (
                                                             <StopCircle className="h-5 w-5" />
                                                         )}
-                                                        <span>Complete Tasting Session</span>
+                                                        <span>{t("commission.completeTasting")}</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -860,10 +869,10 @@ export default function CommissionClientView({
                                         <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                                         <div>
                                             <h4 className="text-sm font-bold text-emerald-800">
-                                                Tasting Session Completed
+                                                {t("commission.sessionCompleted")}
                                             </h4>
                                             <p className="text-xs text-emerald-600/90 mt-1">
-                                                All tasting sessions for this replica have concluded. The evaluation data has been locked and archived.
+                                                {t("commission.sessionCompletedDesc")}
                                             </p>
                                         </div>
                                     </div>
@@ -878,10 +887,10 @@ export default function CommissionClientView({
                                             </div>
                                             <div>
                                                 <h4 className="text-sm font-bold text-indigo-800">
-                                                    Tasting is Active
+                                                    {t("commission.tastingActive")}
                                                 </h4>
                                                 <p className="text-xs text-slate-600 mt-1">
-                                                    The tasting session has started. Please proceed with assessing your assigned beverages and submitting scores.
+                                                    {t("commission.tastingActiveDesc")}
                                                 </p>
                                             </div>
                                         </div>
@@ -893,10 +902,10 @@ export default function CommissionClientView({
                                         <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mt-1.5 shrink-0" />
                                         <div>
                                             <h4 className="text-sm font-bold text-slate-800">
-                                                Waiting for Session Start
+                                                {t("commission.waitingStart")}
                                             </h4>
                                             <p className="text-xs text-slate-500 mt-1">
-                                                Once all members are ready, the Head of Commission will initiate the tasting session.
+                                                {t("commission.waitingStartDesc")}
                                             </p>
                                         </div>
                                     </div>
