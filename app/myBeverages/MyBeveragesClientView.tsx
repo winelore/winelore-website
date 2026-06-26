@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import Link from "next/link"
-import { FileText, Trophy, Wine, Tag, AlertCircle, CheckCircle } from "lucide-react"
+import { FileText, Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 
@@ -40,6 +40,7 @@ interface Beverage {
     status: BeverageStatus
     type: BeverageType
     producers: ProducerDetails[]
+    originParts?: string[]
 }
 
 interface InitialData {
@@ -47,7 +48,7 @@ interface InitialData {
 }
 
 function BeverageCard({ bev }: { bev: Beverage }) {
-    const { formatStatus, formatBeverageType } = useTranslation()
+    const { formatStatus, formatBeverageType, t } = useTranslation()
     return (
         <Link
             href={`/beverage/${bev.id}`}
@@ -64,6 +65,13 @@ function BeverageCard({ bev }: { bev: Beverage }) {
                     <h3 className="text-lg font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
                         {bev.name}
                     </h3>
+                    {bev.originParts && bev.originParts.length > 0 && (
+                        <p className="flex items-center gap-1 mt-1 text-[11px] text-slate-500 truncate">
+                            <MapPin className="w-3 h-3 text-indigo-400 shrink-0" />
+                            <span className="font-medium text-slate-600">{t("myBeverages.origin")}</span>
+                            <span>{bev.originParts.join(", ")}</span>
+                        </p>
+                    )}
                 </div>
             </div>
 

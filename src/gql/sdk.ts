@@ -113,6 +113,7 @@ export type EvaluationPropertyInput = {
   expression?: EvaluationExpressionInput | null | undefined;
   id?: string | number | null | undefined;
   isRequired: boolean;
+  isResult?: boolean;
   maxLimit?: number | null | undefined;
   minLimit?: number | null | undefined;
   name: string;

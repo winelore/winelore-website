@@ -1,7 +1,12 @@
 "use server"
 
-import { fetchGraphQL, sdk } from '../../lib/apiClient';
+import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
 import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
+import {
+    GET_COMMISSION_TEMPLATES_DEEP_QUERY,
+    type GetCommissionTemplatesDeepResult,
+    type GetCommissionTemplatesDeepVariables,
+} from '../../lib/commissionTemplatesQuery';
 import { cookies } from "next/headers";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,7 +17,12 @@ function isValidUuid(id: string | null | undefined): boolean {
 
 async function getCommissionTemplatesWithResultMarkers(commissionId: string) {
     try {
-        return await sdk.GetCommissionTemplates({ id: commissionId });
+        // Use the deep expression query so SmartProperty formulas (left-leaning weighted
+        // sums that can be many levels deep) are fetched in full rather than truncated.
+        return await fetchGraphQLRaw<GetCommissionTemplatesDeepResult, GetCommissionTemplatesDeepVariables>(
+            GET_COMMISSION_TEMPLATES_DEEP_QUERY,
+            { id: commissionId },
+        );
     } catch (err: any) {
         const message = String(err?.message || err);
         if (!message.includes("isResult")) {
@@ -209,7 +219,30 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
     return link?.templateEdition || null;
 }
 
-export async function submitEvaluationAction(candidateId: string, scores: { code: string, value: string }[]) {
+export async function getVoiceUploadUrlAction(
+    fileName: string,
+    contentType: string,
+): Promise<{ uploadUrl: string; fileUrl: string } | null> {
+    try {
+        const data = await rawGraphQL(`
+            mutation GetAudioUploadUrl($fileName: String!, $contentType: String!) {
+                getPresignedAudioUploadUrl(fileName: $fileName, contentType: $contentType) {
+                    uploadUrl
+                    fileUrl
+                }
+            }
+        `, { fileName, contentType });
+        return data?.getPresignedAudioUploadUrl ?? null;
+    } catch {
+        return null;
+    }
+}
+
+export async function submitEvaluationAction(
+    candidateId: string,
+    scores: { code: string, value: string }[],
+    comments?: { propertyId?: string | number | null, text?: string, sortOrder: number, voiceUrl?: string }[],
+) {
     if (!isValidUuid(candidateId)) throw new Error("Invalid candidateId parameter");
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
@@ -224,7 +257,8 @@ export async function submitEvaluationAction(candidateId: string, scores: { code
         const submitResponse = await sdk.SubmitEvaluation({
             input: {
                 candidateId,
-                scores
+                scores,
+                ...(comments && comments.length > 0 ? { comments } : {}),
             }
         }, {
             headers
@@ -362,7 +396,7 @@ export async function getReplicaCandidateAction(id: string) {
     }
 }
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:8080/graphql';
 
 async function rawGraphQL(query: string, variables: Record<string, any>) {
     const res = await fetch(GRAPHQL_ENDPOINT, {
@@ -378,16 +412,16 @@ async function rawGraphQL(query: string, variables: Record<string, any>) {
 
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
-        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
+        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
     }
     try {
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
-        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
+        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
+        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
 
         // Members of this replica only
         const members = (replica.members || []).map((m: any) => ({
@@ -401,6 +435,16 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
 
         // All done when there's no current candidate and all replica candidates are EVALUATED
         const replicaCandidates = replica.replicaCandidates || [];
+        const totalCandidates = replicaCandidates.length;
+        const evaluatedCount = replicaCandidates.filter((rc: any) => rc.status === 'EVALUATED').length;
+        const currentCandidateIndex = currentCandidateId
+            ? replicaCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
+            : -1;
+        const candidatesLeft = totalCandidates - evaluatedCount;
+        const candidatesLeftAfterCurrent = currentCandidateIndex >= 0
+            ? totalCandidates - currentCandidateIndex - 1
+            : candidatesLeft;
+
         const allCandidatesEvaluated = replicaCandidates.length > 0
             && replicaCandidates.every((rc: any) => rc.status === 'EVALUATED');
 
@@ -422,10 +466,13 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
                         for (const cat of templateEdition.categories) {
                             if (cat.properties) {
                                   for (const prop of cat.properties) {
-                                    propertyMap[prop.code] = {
+                                    const meta = {
                                         name: prop.name,
                                         isResult: (prop as { isResult?: boolean }).isResult === true,
                                     };
+                                    propertyMap[prop.code] = meta;
+                                    // Also index by ID so evaluation comments (which use propertyId) resolve correctly
+                                    if (prop.id) propertyMap[String(prop.id)] = meta;
                                 }
                             }
                         }
@@ -436,7 +483,18 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             }
         }
 
-        return { members, currentCandidateId, currentCandidateCode, allCandidatesEvaluated, evaluations, propertyMap };
+        return {
+            members,
+            currentCandidateId,
+            currentCandidateCode,
+            allCandidatesEvaluated,
+            evaluations,
+            propertyMap,
+            totalCandidates,
+            currentCandidateIndex,
+            candidatesLeft,
+            candidatesLeftAfterCurrent,
+        };
     } catch (err: any) {
         console.error("Server Action Error (getWaitDataAction):", err);
         throw new Error(err.message || "Failed to fetch wait data");

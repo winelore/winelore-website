@@ -4,7 +4,29 @@ import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '../src/gql/sdk';
 
-const GRAPHQL_ENDPOINT = 'http://switchback.proxy.rlwy.net:43233/graphql';
+const GRAPHQL_ENDPOINT = 'http://localhost:8080/graphql';
+
+export async function fetchGraphQLRaw<TResult, TVariables>(
+    query: string,
+    variables?: TVariables
+): Promise<TResult> {
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+        next: { revalidate: 0 }
+    });
+
+    const { data, errors } = await response.json();
+
+    if (errors) {
+        // eslint-disable-next-line no-console
+        console.error('GraphQL Pipeline Error (fetchGraphQLRaw):', JSON.stringify(errors, null, 2));
+        throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
+    }
+
+    return data;
+}
 
 export async function fetchGraphQL<TResult, TVariables>(
     document: TypedDocumentNode<TResult, TVariables>,

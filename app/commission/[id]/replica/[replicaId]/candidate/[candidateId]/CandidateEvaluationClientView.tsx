@@ -17,6 +17,7 @@ interface CandidateEvaluationClientViewProps {
   commissionName: string
   currentIndex: number
   totalCandidates: number
+  candidatesLeft: number
   categories: EvaluationCategory[]
   candidateId: string
   commissionId: string
@@ -30,13 +31,14 @@ export default function CandidateEvaluationClientView({
   commissionName,
   currentIndex,
   totalCandidates,
+  candidatesLeft,
   categories,
   candidateId,
   commissionId,
   replicaId,
   originParts,
 }: CandidateEvaluationClientViewProps) {
-  const { t } = useTranslation()
+  const { t, tCount } = useTranslation()
   const displayReplicaName = replicaName || t("common.standard")
 
   return (
@@ -69,11 +71,18 @@ export default function CandidateEvaluationClientView({
             </div>
           </div>
           {currentIndex !== -1 && (
-            <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-500 text-center">
-              {t("evaluation.candidateProgress", {
-                current: currentIndex + 1,
-                total: totalCandidates,
-              })}
+            <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold text-slate-500 text-center space-y-0.5">
+              <div>
+                {t("evaluation.candidateProgress", {
+                  current: currentIndex + 1,
+                  total: totalCandidates,
+                })}
+              </div>
+              {candidatesLeft > 0 && (
+                <div className="text-indigo-600 font-semibold">
+                  {tCount("commission.candidatesLeftToEvaluate", candidatesLeft)}
+                </div>
+              )}
             </div>
           )}
         </header>

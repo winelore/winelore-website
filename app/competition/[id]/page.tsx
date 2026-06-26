@@ -20,7 +20,6 @@ export default async function CompetitionStartPage({ params }: PageProps) {
     try {
         const data = await fetchGraphQL(GET_COMPETITION_PAGE, { id: competitionId });
 
-        // Додаємо перевірку чи data дійсно існує
         if (data) {
             competition = data.competition;
             commissions = data.commissionsByCompetition?.items || [];
@@ -46,7 +45,6 @@ export default async function CompetitionStartPage({ params }: PageProps) {
         );
     }
 
-    // Форматуємо дані для передачі у клієнтський компонент
     const initialData = {
         id: competition.id,
         name: competition.name,
@@ -72,5 +70,7 @@ export default async function CompetitionStartPage({ params }: PageProps) {
         }))
     };
 
-    return <CompetitionClientView initialData={initialData} />;
+    return (
+        <CompetitionClientView initialData={initialData} />
+    );
 }

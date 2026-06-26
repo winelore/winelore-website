@@ -32,6 +32,8 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const currentIndex = replicaCandidates.findIndex((c: any) => c.id === candidateId)
     const currentReplicaCandidate = replicaCandidates[currentIndex] || replicaCandidate
     const currentCandidate = currentReplicaCandidate.candidate
+    const evaluatedCount = replicaCandidates.filter((c: any) => c.status === "EVALUATED").length
+    const candidatesLeft = replicaCandidates.length - evaluatedCount
 
     // Fetch candidate origin from coordinates if available
     const origin = currentCandidate?.sample?.batch?.beverage?.origin
@@ -50,6 +52,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             commissionName={commission.name}
             currentIndex={currentIndex}
             totalCandidates={replicaCandidates.length}
+            candidatesLeft={candidatesLeft}
             categories={categories}
             candidateId={candidateId}
             commissionId={commissionId}

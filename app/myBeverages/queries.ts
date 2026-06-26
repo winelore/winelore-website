@@ -13,6 +13,10 @@ export const GET_MY_BEVERAGES = gql(`
           auid
           role
         }
+        origin {
+          latitude
+          longitude
+        }
       }
     }
   }

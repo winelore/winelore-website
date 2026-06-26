@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react"
 import { FileText, Trophy, Wine } from "lucide-react"
+import Link from "next/link"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 import { useTranslation } from "@/lib/i18n/context"
@@ -36,7 +37,9 @@ export function AppHeader({
   return (
     <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
       <div className="flex flex-1 items-center justify-start">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800">WineLore</h1>
+        <Link href="/" className="text-2xl font-bold tracking-tight text-slate-800 transition-colors hover:text-slate-600">
+          WineLore
+        </Link>
       </div>
 
       <div className="flex-none">

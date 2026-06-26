@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import Cookies from "js-cookie"
 import {
   translate,
+  translateWithCount,
   formatStatus,
   formatBeverageType,
   formatReplicaType,
@@ -18,6 +19,7 @@ interface LocaleContextValue {
   locale: Locale
   setLocale: (locale: Locale) => void
   t: (key: MessageKey, params?: Record<string, string | number>) => string
+  tCount: (key: MessageKey, count: number, params?: Record<string, string | number>) => string
   formatStatus: (status: string) => string
   formatBeverageType: (type: string) => string
   formatReplicaType: (type: string) => string
@@ -60,6 +62,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     locale,
     setLocale,
     t: (key, params) => translate(locale, key, params),
+    tCount: (key, count, params) => translateWithCount(locale, key, count, params),
     formatStatus: (status) => formatStatus(status, locale),
     formatBeverageType: (type) => formatBeverageType(type, locale),
     formatReplicaType: (type) => formatReplicaType(type, locale),
