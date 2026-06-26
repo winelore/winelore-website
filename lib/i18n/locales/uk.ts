@@ -172,6 +172,12 @@ const uk: TranslationKey = {
     addComment: "Коментар (необов'язково)...",
     generalCommentLabel: "Загальний коментар",
     generalCommentPlaceholder: "Загальне враження, нотатки або спостереження щодо цього вина...",
+    voiceRecord: "Записати голосовий коментар",
+    voiceStop: "Зупинити запис",
+    voiceDiscard: "Видалити голосовий запис",
+    voiceRecorded: "Голос ({{seconds}}с)",
+    voiceMicError: "Доступ до мікрофона відхилено. Перевірте дозволи браузера.",
+    voiceUploadFailed: "Помилка завантаження голосу — надсилається лише текст.",
   },
   status: {
     IN_PROGRESS: "В процесі",

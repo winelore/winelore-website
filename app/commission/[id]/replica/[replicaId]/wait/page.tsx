@@ -95,12 +95,12 @@ function SubmittedScores({
 }
 
 function hasFullAssessmentDetails(
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; propertyId?: string | null }> },
+    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
     propertyMap: Record<string, PropertyMeta>,
 ) {
     const scores = evaluation.scores || []
     const hasNonResultScores = scores.some((s) => propertyMap[s.code]?.isResult !== true)
-    const allComments = (evaluation.comments || []).filter((c) => c.text)
+    const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
     const hasHiddenComments = allComments.some((c) => !isResultOrGeneralComment(c, propertyMap))
     return hasNonResultScores || hasHiddenComments
 }
@@ -110,7 +110,7 @@ function MemberEvaluationSection({
     propertyMap,
     accent,
 }: {
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; propertyId?: string | null }> }
+    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
     propertyMap: Record<string, PropertyMeta>
     accent: "indigo" | "slate"
 }) {
@@ -155,7 +155,7 @@ function MemberEvaluationDetails({
     accent,
     showAll,
 }: {
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; propertyId?: string | null }> }
+    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
     propertyMap: Record<string, PropertyMeta>
     accent: "indigo" | "slate"
     showAll: boolean
@@ -163,7 +163,7 @@ function MemberEvaluationDetails({
     const { t } = useTranslation()
 
     const scores = evaluation.scores || []
-    const allComments = (evaluation.comments || []).filter((c) => c.text)
+    const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
     const visibleComments = showAll
         ? allComments
         : allComments.filter((c) => isResultOrGeneralComment(c, propertyMap))
@@ -190,14 +190,24 @@ function MemberEvaluationDetails({
             {visibleComments.length > 0 && (
                 <div className={`pl-2 border-l-2 ${commentAccentClass} mt-2`}>
                     <p className="text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">{t("commission.comments")}</p>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                         {visibleComments.map((comment) => {
                             const displayName = comment.propertyId
                                 ? propertyMap[comment.propertyId]?.name || comment.propertyId
                                 : t("evaluation.generalCommentLabel")
                             return (
-                                <div key={comment.id} className={`text-xs ${commentTextClass}`}>
-                                    <span className={`font-semibold ${commentLabelClass}`}><TranslatedText text={displayName} />:</span> {comment.text}
+                                <div key={comment.id} className={`text-xs ${commentTextClass} space-y-1`}>
+                                    <span className={`font-semibold ${commentLabelClass}`}><TranslatedText text={displayName} />:</span>
+                                    {comment.text && <span> {comment.text}</span>}
+                                    {comment.voiceUrl && (
+                                        <div className="mt-1">
+                                            <audio
+                                                src={comment.voiceUrl}
+                                                controls
+                                                className="h-7 w-full max-w-xs"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )
                         })}

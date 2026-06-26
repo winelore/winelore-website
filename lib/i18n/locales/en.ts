@@ -170,6 +170,12 @@ const en = {
     addComment: "Comment (optional)...",
     generalCommentLabel: "General Comment",
     generalCommentPlaceholder: "Overall impressions, notes, or observations about this wine...",
+    voiceRecord: "Record voice comment",
+    voiceStop: "Stop recording",
+    voiceDiscard: "Discard voice recording",
+    voiceRecorded: "Voice ({{seconds}}s)",
+    voiceMicError: "Microphone access denied. Check browser permissions.",
+    voiceUploadFailed: "Voice upload failed — submitting text only.",
   },
   status: {
     IN_PROGRESS: "In Progress",

@@ -1,7 +1,12 @@
 "use server"
 
-import { fetchGraphQL, sdk } from '../../lib/apiClient';
+import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
 import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
+import {
+    GET_COMMISSION_TEMPLATES_DEEP_QUERY,
+    type GetCommissionTemplatesDeepResult,
+    type GetCommissionTemplatesDeepVariables,
+} from '../../lib/commissionTemplatesQuery';
 import { cookies } from "next/headers";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,7 +17,12 @@ function isValidUuid(id: string | null | undefined): boolean {
 
 async function getCommissionTemplatesWithResultMarkers(commissionId: string) {
     try {
-        return await sdk.GetCommissionTemplates({ id: commissionId });
+        // Use the deep expression query so SmartProperty formulas (left-leaning weighted
+        // sums that can be many levels deep) are fetched in full rather than truncated.
+        return await fetchGraphQLRaw<GetCommissionTemplatesDeepResult, GetCommissionTemplatesDeepVariables>(
+            GET_COMMISSION_TEMPLATES_DEEP_QUERY,
+            { id: commissionId },
+        );
     } catch (err: any) {
         const message = String(err?.message || err);
         if (!message.includes("isResult")) {
@@ -209,10 +219,29 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
     return link?.templateEdition || null;
 }
 
+export async function getVoiceUploadUrlAction(
+    fileName: string,
+    contentType: string,
+): Promise<{ uploadUrl: string; fileUrl: string } | null> {
+    try {
+        const data = await rawGraphQL(`
+            mutation GetAudioUploadUrl($fileName: String!, $contentType: String!) {
+                getPresignedAudioUploadUrl(fileName: $fileName, contentType: $contentType) {
+                    uploadUrl
+                    fileUrl
+                }
+            }
+        `, { fileName, contentType });
+        return data?.getPresignedAudioUploadUrl ?? null;
+    } catch {
+        return null;
+    }
+}
+
 export async function submitEvaluationAction(
     candidateId: string,
     scores: { code: string, value: string }[],
-    comments?: { propertyId?: string | number | null, text: string, sortOrder: number }[],
+    comments?: { propertyId?: string | number | null, text?: string, sortOrder: number, voiceUrl?: string }[],
 ) {
     if (!isValidUuid(candidateId)) throw new Error("Invalid candidateId parameter");
     try {
@@ -367,7 +396,7 @@ export async function getReplicaCandidateAction(id: string) {
     }
 }
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:8080/graphql';
 
 async function rawGraphQL(query: string, variables: Record<string, any>) {
     const res = await fetch(GRAPHQL_ENDPOINT, {
