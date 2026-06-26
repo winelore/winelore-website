@@ -26,7 +26,7 @@ const uk: TranslationKey = {
     none: "Немає",
   },
   dashboard: {
-    holderId: "ID організатора: {{ids}}",
+    holderId: "Організатор: {{ids}}",
   },
   myBeverages: {
     title: "Мої напої",

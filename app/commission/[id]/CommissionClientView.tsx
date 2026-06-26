@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { useUsernames } from "@/hooks/useUsernames"
 import { 
     markMemberReadyAction, 
     markMemberNotReadyAction, 
@@ -54,10 +55,10 @@ function getAvatarGradient(auid: number): string {
     return gradients[idx]
 }
 
-function MemberAvatar({ auid, role, className }: { auid: number[]; role: string; className?: string }) {
+function MemberAvatar({ auid, role, username, className }: { auid: number[]; role: string; username?: string; className?: string }) {
     const primaryAuid = auid[0] || 0
     const gradient = getAvatarGradient(primaryAuid)
-    const initials = primaryAuid ? `${primaryAuid}`.slice(-2) : "?"
+    const initials = username ? username.slice(0, 2).toUpperCase() : (primaryAuid ? `${primaryAuid}`.slice(-2) : "?")
     
     return (
         <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm shrink-0 border border-white/10 ${className}`}>
@@ -196,6 +197,14 @@ export default function CommissionClientView({
     const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
     const localMembers = selectedReplica ? selectedReplica.members : []
 
+    // Fetch usernames for panel members and competition creators/holders
+    const allMemberAuids = useMemo(() => {
+        const memberIds = localMembers.flatMap(m => m.auid);
+        const holderIds = initialData.competition.holders || [];
+        return Array.from(new Set([...memberIds, ...holderIds]));
+    }, [localMembers, initialData.competition.holders])
+    const { usernames } = useUsernames(allMemberAuids)
+
     const prevReplicaStatusRef = useRef(selectedReplica?.status)
 
     useEffect(() => {
@@ -230,7 +239,7 @@ export default function CommissionClientView({
     }, [localMembers, currentAuid])
 
     const creatorNames = initialData.competition.holders.length > 0
-        ? initialData.competition.holders.join(", ")
+        ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
         : t("common.unknownCreator")
 
     useEffect(() => {
@@ -525,11 +534,11 @@ export default function CommissionClientView({
                                                 ? "border-indigo-200 bg-indigo-50/30 shadow-indigo-100/30 shadow-md" 
                                                 : "border-slate-100 bg-slate-50/30 hover:border-slate-200/50 hover:bg-slate-50/50"
                                         }`}>
-                                            <MemberAvatar auid={p.auid} role={p.role} className="h-10 w-10 shrink-0" />
+                                            <MemberAvatar auid={p.auid} role={p.role} username={usernames[p.auid[0]]} className="h-10 w-10 shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
-                                                        <span>AUID: {p.auid.join(", ")}</span>
+                                                        <span>{p.auid.map(id => usernames[id] || String(id)).join(", ")}</span>
                                                         {isMe && (
                                                             <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded-xs uppercase tracking-wider">
                                                                 {t("common.you")}

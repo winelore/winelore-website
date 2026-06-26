@@ -27,6 +27,8 @@ interface ProfileMenuProps {
   username: string
 }
 
+const AXUS_ACCOUNT_URL = `${process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app"}/account`
+
 export function ProfileMenu({ username }: ProfileMenuProps) {
   const { t } = useTranslation()
   return (
@@ -42,7 +44,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         {/* Group 1: Profile and Log Out */}
         <div className="flex gap-3 px-2 pb-2 pt-3">
           <a
-            href="#"
+            href={AXUS_ACCOUNT_URL}
             className="flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] bg-transparent py-2.5 text-[14px] font-medium text-foreground transition-colors hover:bg-[#EBEBEB]"
           >
             <CircleUser className="h-5 w-5 stroke-[1.5]" />
@@ -93,7 +95,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         {/* Group 3: AXUS ID Profile */}
         <div className="px-2 pb-3 pt-1.5">
           <a
-            href={`${process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app"}/account`}
+            href={AXUS_ACCOUNT_URL}
             className="flex items-center justify-between rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <div className="flex items-center gap-3">

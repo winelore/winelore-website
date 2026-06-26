@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { FileText, Trophy, Wine, User, Layers } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import Link from "next/link"
+import { useUsernames } from "@/hooks/useUsernames"
 
 const tabs = (t: any) => [
   { id: "feed", label: t("common.feed"), icon: FileText },
@@ -110,7 +111,7 @@ function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string
   return ""
 }
 
-function CompetitionCard({ competition }: { competition: Competition }) {
+function CompetitionCard({ competition, usernames }: { competition: Competition; usernames: Record<string, string> }) {
     const [isMounted, setIsMounted] = useState(false)
     const { t, formatStatus } = useTranslation()
 
@@ -157,7 +158,7 @@ function CompetitionCard({ competition }: { competition: Competition }) {
                 </div>
                 <div className="flex items-center gap-1.5">
                     <User className="h-4 w-4" />
-                    <span>{t("dashboard.holderId", { ids: competition.holder.join(", ") })}</span>
+                    <span>{t("dashboard.holderId", { ids: competition.holder.map(id => usernames[id] || String(id)).join(", ") })}</span>
                 </div>
             </div>
         </Link>
@@ -167,6 +168,12 @@ function CompetitionCard({ competition }: { competition: Competition }) {
 export default function WineLoreDashboard({ initialCompetitions }: { initialCompetitions: Competition[] }) {
   const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
 
+  // Fetch usernames for all competition holders on the dashboard
+  const allHolderAuids = useMemo(() => {
+    return Array.from(new Set(initialCompetitions.flatMap(c => c.holder || [])))
+  }, [initialCompetitions])
+  const { usernames } = useUsernames(allHolderAuids)
+
   return (
     <div className="flex h-screen flex-col bg-background">
         <AppHeader activeTab={activeTab} onTabChange={setActiveTab} wineTab />
@@ -175,7 +182,11 @@ export default function WineLoreDashboard({ initialCompetitions }: { initialComp
       <main className="flex-1 overflow-auto p-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {initialCompetitions.map((competition) => (
-            <CompetitionCard key={competition.id} competition={competition} />
+            <CompetitionCard 
+              key={competition.id} 
+              competition={competition} 
+              usernames={usernames}
+            />
           ))}
         </div>
       </main>

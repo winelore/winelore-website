@@ -24,7 +24,7 @@ const hu = {
         none: "Nincs",
     },
     dashboard: {
-        holderId: "Szervező ID: {{ids}}",
+        holderId: "Szervező: {{ids}}",
     },
     myBeverages: {
         title: "Saját italok",

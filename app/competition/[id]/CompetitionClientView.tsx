@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { useUsernames } from "@/hooks/useUsernames"
 import { getDateLocale } from "@/lib/i18n"
 import Link from "next/link"
 import { startCompetitionAction, getCompetitionDataAction } from "../actions"
@@ -46,9 +47,9 @@ function getAvatarGradient(auid: number): string {
     return gradients[idx]
 }
 
-function HolderAvatar({ auid, className }: { auid: number; className?: string }) {
+function HolderAvatar({ auid, username, className }: { auid: number; username?: string; className?: string }) {
     const gradient = getAvatarGradient(auid)
-    const initials = `${auid}`.slice(-2)
+    const initials = username ? username.slice(0, 2).toUpperCase() : `${auid}`.slice(-2)
     return (
         <div className={`flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[10px] shadow-sm shrink-0 border border-white/10 ${className}`}>
             <span>{initials}</span>
@@ -248,6 +249,12 @@ export default function CompetitionClientView({
 
     const initialData = localData
     const compTabs = tabs(t)
+
+    // Fetch usernames for competition holders
+    const allHolderAuids = useMemo(() => {
+        return initialData.holders || []
+    }, [initialData.holders])
+    const { usernames } = useUsernames(allHolderAuids)
 
     useEffect(() => {
         setLocalData(propInitialData)
@@ -488,8 +495,8 @@ export default function CompetitionClientView({
                                     {initialData.holders.length > 0 ? (
                                         initialData.holders.map((holderAuid) => (
                                             <div key={holderAuid} className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-1.5 hover:border-indigo-200 transition-colors duration-250">
-                                                <HolderAvatar auid={holderAuid} className="h-5 w-5" />
-                                                <span className="text-xs font-bold text-slate-700">{t("competition.auid", { id: holderAuid })}</span>
+                                                <HolderAvatar auid={holderAuid} username={usernames[holderAuid]} className="h-5 w-5" />
+                                                <span className="text-xs font-bold text-slate-700">{usernames[holderAuid] || String(holderAuid)}</span>
                                             </div>
                                         ))
                                     ) : (

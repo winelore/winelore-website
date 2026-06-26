@@ -24,7 +24,7 @@ const en = {
     none: "None",
   },
   dashboard: {
-    holderId: "Holder ID: {{ids}}",
+    holderId: "Holder: {{ids}}",
   },
   myBeverages: {
     title: "My Beverages",

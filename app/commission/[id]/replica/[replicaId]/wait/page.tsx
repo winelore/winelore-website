@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, use } from "react"
+import React, { useState, useEffect, use, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
 import { Users, Wine, Loader2, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
@@ -8,6 +8,7 @@ import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
+import { useUsernames } from "@/hooks/useUsernames"
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
@@ -288,6 +289,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
 
+    // Fetch usernames for commission members
+    const allMemberAuids = useMemo(() => {
+        return Array.from(new Set(members.flatMap(m => normalizeAuids(m.auid))));
+    }, [members]);
+    const { usernames } = useUsernames(allMemberAuids);
+
     // 1. Read AUID from cookie and restore cached evaluation from submit
     useEffect(() => {
         const cookieAuid = Cookies.get("auid");
@@ -459,7 +466,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 
                                 {/* 1. Render Heads */}
                                 {heads.map((headMember, i) => {
-                                    const headAuidsStr = normalizeAuids(headMember.auid).join(", ");
+                                    const headAuidsStr = normalizeAuids(headMember.auid).map(id => usernames[id] || id).join(", ");
                                     const headKeyAuid = normalizeAuids(headMember.auid)[0] ?? i;
 
                                     const evaluation = findEvaluationForMember(evaluations, headMember.auid);
@@ -503,7 +510,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                                 {/* 2. Render Experts */}
                                 {experts.map((expert, i) => {
-                                    const expertAuidsStr = normalizeAuids(expert.auid).join(", ");
+                                    const expertAuidsStr = normalizeAuids(expert.auid).map(id => usernames[id] || id).join(", ");
                                     const expertKeyAuid = normalizeAuids(expert.auid)[0] ?? i;
 
                                     const evaluation = findEvaluationForMember(evaluations, expert.auid);
