@@ -141,7 +141,7 @@ function CompetitionCard({ comp }: { comp: Competition }) {
 
 export default function MyCompetitionsClientView({ initialData }: { initialData: InitialData }) {
     const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
-    const [currentAuid, setCurrentAuid] = useState<number>(1) // Замокано для тестування
+    const [currentAuid, setCurrentAuid] = useState<number | null>(null)
     const { t } = useTranslation()
 
     useEffect(() => {

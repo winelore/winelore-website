@@ -272,7 +272,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const { id: commissionId, replicaId } = use(params);
     const router = useRouter();
     const { t, tCount } = useTranslation();
-    const [auid, setAuid] = useState<number>(1);
+    const [auid, setAuid] = useState<number | null>(null);
     const [role, setRole] = useState<string>("EXPERT");
     const [members, setMembers] = useState<any[]>([]);
     const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(null);
@@ -288,16 +288,20 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
 
-    // 1. Read AUID from cookie (fallback to 1) and restore cached evaluation from submit
+    // 1. Read AUID from cookie and restore cached evaluation from submit
     useEffect(() => {
         const cookieAuid = Cookies.get("auid");
-        setAuid(cookieAuid ? parseInt(cookieAuid, 10) : 1);
+        if (!cookieAuid) {
+            router.push("/auth/login");
+            return;
+        }
+        setAuid(parseInt(cookieAuid, 10));
 
         const cached = readCachedWaitEvaluation(commissionId, replicaId);
         if (cached) {
             setMyEvaluation(cached);
         }
-    }, [commissionId, replicaId]);
+    }, [commissionId, replicaId, router]);
 
     // 2. Polling loop every 3 seconds
     useEffect(() => {
@@ -328,7 +332,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 setCandidatesLeftAfterCurrent(newCandidatesLeftAfterCurrent ?? 0);
 
                 // Find current user's role
-                const me = commMembers.find((m: any) => Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid);
+                const me = commMembers.find((m: any) => auid !== null && (Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid));
                 if (me) setRole(me.role);
 
                 if (!newCandidateId || allCandidatesEvaluated) {

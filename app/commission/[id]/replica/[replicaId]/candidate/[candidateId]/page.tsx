@@ -2,6 +2,7 @@ import { getCommissionDataAction, getReplicaCandidateAction, getReplicaCandidate
 import { notFound, redirect } from "next/navigation"
 import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
+import { cookies } from "next/headers"
 
 interface Props {
     params: Promise<{ id: string; replicaId: string; candidateId: string }>
@@ -9,6 +10,12 @@ interface Props {
 
 export default async function CandidateEvaluationPage({ params }: Props) {
     const { id: routeCommissionId, replicaId, candidateId } = await params
+
+    const cookieStore = await cookies()
+    const auidStr = cookieStore.get("auid")?.value
+    if (!auidStr) {
+        redirect("/auth/login")
+    }
 
     // 1. Fetch the replica candidate by its ID (candidateId is replica candidate ID)
     const replicaCandidate = await getReplicaCandidateAction(candidateId)

@@ -97,7 +97,7 @@ function BeverageCard({ bev }: { bev: Beverage }) {
 
 export default function MyBeveragesClientView({ initialData }: { initialData: InitialData }) {
     const [activeTab, setActiveTab] = useState<AppTabId>("beverages")
-    const [currentAuid, setCurrentAuid] = useState<number>(4) // Замокано для тестування
+    const [currentAuid, setCurrentAuid] = useState<number | null>(null)
     const { t } = useTranslation()
 
     useEffect(() => {

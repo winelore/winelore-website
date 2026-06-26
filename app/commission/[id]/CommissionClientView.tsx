@@ -181,14 +181,14 @@ export default function CommissionClientView({
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
-    const [currentAuid, setCurrentAuid] = useState<number>(serverAuid || 1)
+    const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [hasRedirected, setHasRedirected] = useState(false)
 
     const initialData = localData
 
     // Detect user's active replica
     const activeReplica = localReplicas.find(r =>
-        r.members.some(m => m.auid.includes(currentAuid))
+        r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
     ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
 
     const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
@@ -203,7 +203,7 @@ export default function CommissionClientView({
         if (propInitialData.replicas) {
             setLocalReplicas(propInitialData.replicas)
             const active = propInitialData.replicas.find(r =>
-                r.members.some(m => m.auid.includes(currentAuid))
+                r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
             ) || propInitialData.replicas.find(r => r.type === "STANDARD") || propInitialData.replicas[0] || null
             if (active && !selectedReplicaId) {
                 setSelectedReplicaId(active.id)
@@ -219,7 +219,7 @@ export default function CommissionClientView({
     }, [])
 
     useEffect(() => {
-        const me = localMembers.find(m => m.auid.includes(currentAuid))
+        const me = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
         if (me) {
             setCurrentUserRole(me.role)
             setCurrentMemberId(me.id)
@@ -373,7 +373,7 @@ export default function CommissionClientView({
     }
 
     const isEveryoneReady = localMembers.every(m => m.isReady)
-    const myStatus = localMembers.find(m => m.auid.includes(currentAuid))
+    const myStatus = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
     const amIReady = myStatus?.isReady || false
     const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
     const nonReadyCount = localMembers.filter(m => !m.isReady).length
@@ -386,7 +386,7 @@ export default function CommissionClientView({
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = initialData.status === "COMPLETED"
-    const showResultsBanner = isCommissionCompleted || initialData.competition.holders.includes(currentAuid)
+    const showResultsBanner = isCommissionCompleted || (currentAuid !== null && initialData.competition.holders.includes(currentAuid))
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
@@ -446,7 +446,7 @@ export default function CommissionClientView({
                                 <div className="flex flex-col gap-2">
                                     {localReplicas.map((r) => {
                                         const isSelected = r.id === selectedReplicaId
-                                        const isUserReplica = r.members.some(m => m.auid.includes(currentAuid))
+                                        const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
                                         return (
                                             <button
                                                 key={r.id}
@@ -518,7 +518,7 @@ export default function CommissionClientView({
 
                             <div className="flex flex-col gap-3">
                                 {sortedMembers.map((p) => {
-                                    const isMe = p.auid.includes(currentAuid)
+                                    const isMe = currentAuid !== null && p.auid.includes(currentAuid)
                                     return (
                                         <div key={p.id} className={`relative rounded-xl border p-4 shadow-sm flex items-center gap-3 transition-all duration-300 hover:shadow-md w-full ${
                                             isMe 

@@ -3,6 +3,7 @@
 import { fetchGraphQL } from '@/lib/apiClient';
 import { GET_COMPETITION_PAGE } from './queries';
 import CompetitionClientView from './CompetitionClientView';
+import { cookies } from 'next/headers';
 
 interface PageProps {
     params: Promise<{
@@ -13,6 +14,10 @@ interface PageProps {
 export default async function CompetitionStartPage({ params }: PageProps) {
     const resolvedParams = await params;
     const competitionId = resolvedParams.id;
+
+    const cookieStore = await cookies();
+    const auidStr = cookieStore.get("auid")?.value;
+    const serverAuid = auidStr ? parseInt(auidStr, 10) : null;
 
     let competition: any = null;
     let commissions: any[] = [];
@@ -71,6 +76,6 @@ export default async function CompetitionStartPage({ params }: PageProps) {
     };
 
     return (
-        <CompetitionClientView initialData={initialData} />
+        <CompetitionClientView initialData={initialData} serverAuid={serverAuid} />
     );
 }

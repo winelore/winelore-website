@@ -10,7 +10,10 @@ export default async function EvaluationProxyPage({ params }: Props) {
     const { id, replicaId } = await params
     const cookieStore = await cookies()
     const auidStr = cookieStore.get("auid")?.value
-    const currentAuid = auidStr ? parseInt(auidStr, 10) : null
+    if (!auidStr) {
+        redirect("/auth/login")
+    }
+    const currentAuid = parseInt(auidStr, 10)
 
     const commission = await getCommissionDataAction(id)
     if (!commission) {

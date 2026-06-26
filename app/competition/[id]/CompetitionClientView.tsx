@@ -231,9 +231,11 @@ interface InitialData {
 
 export default function CompetitionClientView({ 
     initialData: propInitialData,
+    serverAuid,
     children
 }: { 
     initialData: InitialData;
+    serverAuid?: number | null;
     children?: React.ReactNode;
 }) {
     const { t, locale, formatStatus, formatDateTime } = useTranslation()
@@ -241,7 +243,7 @@ export default function CompetitionClientView({
     const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
-    const [currentAuid, setCurrentAuid] = useState<number>(1)
+    const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [isMutating, setIsMutating] = useState(false)
 
     const initialData = localData
@@ -337,7 +339,7 @@ export default function CompetitionClientView({
         return () => clearInterval(intervalId)
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
 
-    const isHolder = initialData.holders.includes(currentAuid)
+    const isHolder = currentAuid !== null && initialData.holders.includes(currentAuid)
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">

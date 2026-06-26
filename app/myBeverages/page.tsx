@@ -1,16 +1,19 @@
 export const dynamic = "force-dynamic"
 
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { getGeographicInfo } from "@/lib/geocoding"
 import { GET_MY_BEVERAGES } from "./queries"
 import MyBeveragesClientView from "./MyBeveragesClientView"
 
 export default async function MyBeveragesPage() {
-    // const cookieStore = cookies()
-    // const currentAuidStr = cookieStore.get("auid")?.value
-    // const currentAuid = currentAuidStr ? parseInt(currentAuidStr, 10) : 0
-    const currentAuid = 1;
+    const cookieStore = await cookies()
+    const currentAuidStr = cookieStore.get("auid")?.value
+    if (!currentAuidStr) {
+        redirect("/auth/login")
+    }
+    const currentAuid = parseInt(currentAuidStr, 10);
 
     let myBeverages: any[] = [];
 

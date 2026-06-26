@@ -70,13 +70,16 @@ export async function startCommissionAction(id: string) {
 
 async function bootstrapTemplateEditionForCommission(commissionId: string) {
     console.log(`🚀 Bootstrapping real template edition for commission ${commissionId}...`);
+    const cookieStore = await cookies();
+    const auidStr = cookieStore.get("auid")?.value;
+    const currentAuid = auidStr ? parseInt(auidStr, 10) : 1;
     // 1. Create a new evaluation template
     const templateName = `Wine Evaluation Template ${Date.now()}`;
     const templateRes = await sdk.CreateEvaluationTemplate({
         input: {
             name: templateName,
             beverageType: "WINE",
-            owners: [[1]] // likespro with AUID [1]
+            owners: [[currentAuid]]
         }
     });
     const templateId = templateRes.createEvaluationTemplate.id;
@@ -242,7 +245,10 @@ export async function submitEvaluationAction(
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
         
         const cookieStore = await cookies();
-        const auid = cookieStore.get("auid")?.value ?? "1";
+        const auid = cookieStore.get("auid")?.value;
+        if (!auid) {
+            throw new Error("Unauthorized: Please sign in");
+        }
         const headers: Record<string, string> = {
             "actor": auid,
             "x-actor": auid,
@@ -414,7 +420,10 @@ async function rawGraphQL(
 
 async function getActorHeaders(): Promise<Record<string, string>> {
     const cookieStore = await cookies();
-    const auid = cookieStore.get("auid")?.value ?? "1";
+    const auid = cookieStore.get("auid")?.value;
+    if (!auid) {
+        throw new Error("Unauthorized: Please sign in");
+    }
     return { actor: auid, "x-actor": auid };
 }
 
@@ -522,8 +531,8 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         }
 
         const cookieStore = await cookies();
-        const actorAuid = cookieStore.get("auid")?.value ?? "1";
-        const myMember = members.find((m: any) => memberMatchesActor(m.auid, actorAuid));
+        const actorAuid = cookieStore.get("auid")?.value;
+        const myMember = actorAuid ? members.find((m: any) => memberMatchesActor(m.auid, actorAuid)) : null;
 
         let myEvaluation: any = null;
         if (currentCandidateId) {
@@ -545,7 +554,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         if (!myEvaluation && myMember) {
             myEvaluation = findEvaluationForMember(evaluations, myMember.auid);
         }
-        if (!myEvaluation) {
+        if (!myEvaluation && actorAuid) {
             myEvaluation = findEvaluationForMember(evaluations, actorAuid);
         }
 
