@@ -620,7 +620,10 @@ export async function getEvaluationsForCandidateAction(candidateId: string) {
 export async function markCandidateEvaluatedAction(candidateId: string) {
     if (!isValidUuid(candidateId)) return null;
     try {
-        const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId });
+        // The backend authorizes this mutation against the acting member (the HEAD),
+        // so the actor headers must be forwarded just like for the other mutations.
+        const headers = await getActorHeaders();
+        const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId }, { headers });
         return data.markCommissionReplicaCandidateAsEvaluated;
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
