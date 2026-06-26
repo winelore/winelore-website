@@ -162,6 +162,9 @@ const en = {
     resultsSectionDesc: "Calculated or final fields",
     submittedScores: "Submitted Scores",
     origin: "Origin:",
+    addComment: "Comment (optional)...",
+    generalCommentLabel: "General Comment",
+    generalCommentPlaceholder: "Overall impressions, notes, or observations about this wine...",
   },
   status: {
     IN_PROGRESS: "In Progress",

@@ -3,7 +3,6 @@
 import { fetchGraphQL } from '@/lib/apiClient';
 import { GET_COMPETITION_PAGE } from './queries';
 import CompetitionClientView from './CompetitionClientView';
-import { CommentSection } from "@/components/comments/CommentSection"; // Імпорт вашого нового компонента
 
 interface PageProps {
     params: Promise<{
@@ -72,13 +71,6 @@ export default async function CompetitionStartPage({ params }: PageProps) {
     };
 
     return (
-        <CompetitionClientView initialData={initialData}>
-            <div className="w-full border-t border-slate-100 dark:border-slate-800/80 pt-8 mt-4">
-                <CommentSection 
-                    entityId={competitionId} 
-                    entityType="competition" 
-                />
-            </div>
-        </CompetitionClientView>
+        <CompetitionClientView initialData={initialData} />
     );
 }

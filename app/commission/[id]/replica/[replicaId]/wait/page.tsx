@@ -255,7 +255,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     <div className="space-y-1">
                                                         {evaluation.comments.map((comment: any) => {
                                                             if (!comment.text) return null;
-                                                            const displayName = propertyMap[comment.propertyId]?.name || comment.propertyId;
+                                                            const displayName = comment.propertyId
+                                                                ? propertyMap[comment.propertyId]?.name || comment.propertyId
+                                                                : t("evaluation.generalCommentLabel");
                                                             return (
                                                                 <div key={comment.id} className="text-xs text-indigo-950">
                                                                     <span className="font-semibold text-indigo-500"><TranslatedText text={displayName} />:</span> {comment.text}
@@ -313,7 +315,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     <div className="space-y-1">
                                                         {evaluation.comments.map((comment: any) => {
                                                             if (!comment.text) return null;
-                                                            const displayName = propertyMap[comment.propertyId]?.name || comment.propertyId;
+                                                            const displayName = comment.propertyId
+                                                                ? propertyMap[comment.propertyId]?.name || comment.propertyId
+                                                                : t("evaluation.generalCommentLabel");
                                                             return (
                                                                 <div key={comment.id} className="text-xs text-slate-600">
                                                                     <span className="font-semibold text-slate-500"><TranslatedText text={displayName} />:</span> {comment.text}

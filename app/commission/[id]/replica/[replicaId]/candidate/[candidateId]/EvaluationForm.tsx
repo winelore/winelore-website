@@ -126,12 +126,18 @@ export default function EvaluationForm({
         })
         return initial
     })
+    const [commentValues, setCommentValues] = useState<Record<string, string>>({})
+    const [generalComment, setGeneralComment] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
 
     const handleValueChange = (code: string, val: any) => {
         setValues(prev => ({ ...prev, [code]: val }))
+    }
+
+    const handleCommentChange = (propId: string, text: string) => {
+        setCommentValues(prev => ({ ...prev, [propId]: text }))
     }
 
     const computedSmartValues = useMemo(() => {
@@ -150,6 +156,18 @@ export default function EvaluationForm({
 
         return smartMap
     }, [categories, values])
+
+    const smartPropertyCodes = useMemo(() => {
+        const codes = new Set<string>()
+        categories.forEach(category => {
+            category.properties.forEach(prop => {
+                if (prop.__typename === "SmartProperty") {
+                    codes.add(prop.code)
+                }
+            })
+        })
+        return codes
+    }, [categories])
 
     const isFormValid = useMemo(() => {
         for (const category of categories) {
@@ -184,15 +202,26 @@ export default function EvaluationForm({
         setError(null)
         setSuccess(false)
         try {
-            const finalData = { ...values, ...computedSmartValues }
-            const scores = Object.entries(finalData)
-                .filter(([_, val]) => val !== undefined && val !== null)
+            const scores = Object.entries(values)
+                .filter(([code, val]) => val !== undefined && val !== null && !smartPropertyCodes.has(code))
                 .map(([code, val]) => ({
                     code,
                     value: String(val)
                 }))
 
-            await submitEvaluationAction(candidateId, scores)
+            const perPropertyComments = Object.entries(commentValues)
+                .filter(([_, text]) => text.trim().length > 0)
+                .map(([propId, text], index) => ({
+                    propertyId: propId,
+                    text: text.trim(),
+                    sortOrder: index,
+                }))
+
+            const comments = generalComment.trim()
+                ? [...perPropertyComments, { text: generalComment.trim(), sortOrder: perPropertyComments.length }]
+                : perPropertyComments
+
+            await submitEvaluationAction(candidateId, scores, comments)
 
             setSuccess(true)
             
@@ -249,7 +278,8 @@ export default function EvaluationForm({
                                         </p>
                                     </div>
                                 )}
-                                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
+                                <div className={`flex flex-col gap-3 p-3 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                             <h4 className="text-sm font-semibold text-slate-800">
@@ -383,6 +413,16 @@ export default function EvaluationForm({
                                             </div>
                                         )}
                                     </div>
+                                    </div>
+                                    {!isSmart && (
+                                        <textarea
+                                            rows={1}
+                                            value={commentValues[prop.id] ?? ""}
+                                            onChange={(e) => handleCommentChange(prop.id, e.target.value)}
+                                            placeholder={t("evaluation.addComment")}
+                                            className="w-full px-3 py-1.5 border border-slate-100 rounded-lg text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 bg-slate-50/60 resize-none transition-colors"
+                                        />
+                                    )}
                                 </div>
                                 </React.Fragment>
                             )
@@ -391,6 +431,19 @@ export default function EvaluationForm({
                 </div>
                 )
             })}
+
+            <div className="border border-slate-100 rounded-2xl p-6 bg-slate-50/30">
+                <h2 className="text-sm font-bold text-slate-700 mb-3">
+                    {t("evaluation.generalCommentLabel")}
+                </h2>
+                <textarea
+                    rows={3}
+                    value={generalComment}
+                    onChange={(e) => setGeneralComment(e.target.value)}
+                    placeholder={t("evaluation.generalCommentPlaceholder")}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white resize-none transition-colors"
+                />
+            </div>
 
             {isFormValid ? (
                 <button

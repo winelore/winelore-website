@@ -164,6 +164,9 @@ const uk: TranslationKey = {
     resultsSectionDesc: "Розраховані або фінальні поля",
     submittedScores: "Надіслані оцінки",
     origin: "Походження:",
+    addComment: "Коментар (необов'язково)...",
+    generalCommentLabel: "Загальний коментар",
+    generalCommentPlaceholder: "Загальне враження, нотатки або спостереження щодо цього вина...",
   },
   status: {
     IN_PROGRESS: "В процесі",

@@ -209,7 +209,11 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
     return link?.templateEdition || null;
 }
 
-export async function submitEvaluationAction(candidateId: string, scores: { code: string, value: string }[]) {
+export async function submitEvaluationAction(
+    candidateId: string,
+    scores: { code: string, value: string }[],
+    comments?: { propertyId?: string | number | null, text: string, sortOrder: number }[],
+) {
     if (!isValidUuid(candidateId)) throw new Error("Invalid candidateId parameter");
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
@@ -224,7 +228,8 @@ export async function submitEvaluationAction(candidateId: string, scores: { code
         const submitResponse = await sdk.SubmitEvaluation({
             input: {
                 candidateId,
-                scores
+                scores,
+                ...(comments && comments.length > 0 ? { comments } : {}),
             }
         }, {
             headers
@@ -422,10 +427,13 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
                         for (const cat of templateEdition.categories) {
                             if (cat.properties) {
                                   for (const prop of cat.properties) {
-                                    propertyMap[prop.code] = {
+                                    const meta = {
                                         name: prop.name,
                                         isResult: (prop as { isResult?: boolean }).isResult === true,
                                     };
+                                    propertyMap[prop.code] = meta;
+                                    // Also index by ID so evaluation comments (which use propertyId) resolve correctly
+                                    if (prop.id) propertyMap[String(prop.id)] = meta;
                                 }
                             }
                         }
