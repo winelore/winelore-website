@@ -1,3 +1,4 @@
+import { messages } from "./index"
 import type { Locale } from "./types"
 
 const memoryCache = new Map<string, string>()
@@ -32,6 +33,21 @@ export async function translateBackendText(
 ): Promise<string> {
   const trimmed = text.trim()
   if (!trimmed) return text
+
+  // 1. Check local dictionary first (static translations)
+  const dictionary = (messages[targetLocale] as any)?.backend || {}
+  
+  // Try exact match
+  if (dictionary[trimmed]) {
+    return dictionary[trimmed]
+  }
+  
+  // Try case-insensitive match
+  const lowerTrimmed = trimmed.toLowerCase()
+  const foundKey = Object.keys(dictionary).find(k => k.toLowerCase() === lowerTrimmed)
+  if (foundKey) {
+    return dictionary[foundKey]
+  }
 
   const cacheKey = getCacheKey(trimmed, targetLocale)
   let cached = memoryCache.get(cacheKey) ?? readFromStorage(cacheKey)

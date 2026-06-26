@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { getDateLocale } from "@/lib/i18n"
 import Link from "next/link"
 import { startCompetitionAction, getCompetitionDataAction } from "../actions"
 
@@ -138,8 +139,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
                 setTimeStr(t("time.lasted", { time }))
             } else if (comm.status === "PLANNED" && comm.plannedStartAt) {
                 const date = new Date(comm.plannedStartAt)
-                const dateLocale = locale === "uk" ? "uk-UA" : "en-GB"
-                const formattedDate = new Intl.DateTimeFormat(dateLocale, {
+                const formattedDate = new Intl.DateTimeFormat(getDateLocale(locale), {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 }).format(date)
                 setTimeStr(t("time.plannedFor", { date: formattedDate }))
@@ -318,8 +318,7 @@ export default function CompetitionClientView({
 
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
                 const date = new Date(initialData.plannedStartAt)
-                const dateLocale = locale === "uk" ? "uk-UA" : "en-GB"
-                const formattedDate = new Intl.DateTimeFormat(dateLocale, {
+                const formattedDate = new Intl.DateTimeFormat(getDateLocale(locale), {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 }).format(date)
                 setTimeDisplay(t("time.plannedFor", { date: formattedDate }))
