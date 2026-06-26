@@ -58,7 +58,7 @@ function getAvatarGradient(auid: number): string {
 function MemberAvatar({ auid, role, username, className }: { auid: number[]; role: string; username?: string; className?: string }) {
     const primaryAuid = auid[0] || 0
     const gradient = getAvatarGradient(primaryAuid)
-    const initials = username ? username.slice(0, 2).toUpperCase() : (primaryAuid ? `${primaryAuid}`.slice(-2) : "?")
+    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : (primaryAuid ? `${primaryAuid}`.slice(-2) : "?")
     
     return (
         <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm shrink-0 border border-white/10 ${className}`}>

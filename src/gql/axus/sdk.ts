@@ -406,6 +406,13 @@ export type SetDefaultVariationMutationVariables = Exact<{
 
 export type SetDefaultVariationMutation = { setDefaultVariation: { auid: string, variationId: string } };
 
+export type UserDetailsQueryVariables = Exact<{
+  auid: string | number;
+}>;
+
+
+export type UserDetailsQuery = { usernames: { defaultUsername: string } | null, defaultVariation: { variationId: string } | null, variations: Array<{ id: string, firstName: string | null, lastName: string | null }> };
+
 
 export const LoginDocument = gql`
     mutation Login($auid: ID!, $password: String!, $permissions: [String!]) {
@@ -606,6 +613,21 @@ export const SetDefaultVariationDocument = gql`
   }
 }
     `;
+export const UserDetailsDocument = gql`
+    query UserDetails($auid: ID!) {
+  usernames(auid: $auid) {
+    defaultUsername
+  }
+  defaultVariation(auid: $auid) {
+    variationId
+  }
+  variations(auid: $auid) {
+    id
+    firstName
+    lastName
+  }
+}
+    `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
@@ -665,6 +687,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     SetDefaultVariation(variables: SetDefaultVariationMutationVariables, options?: C): Promise<SetDefaultVariationMutation> {
       return requester<SetDefaultVariationMutation, SetDefaultVariationMutationVariables>(SetDefaultVariationDocument, variables, options) as Promise<SetDefaultVariationMutation>;
+    },
+    UserDetails(variables: UserDetailsQueryVariables, options?: C): Promise<UserDetailsQuery> {
+      return requester<UserDetailsQuery, UserDetailsQueryVariables>(UserDetailsDocument, variables, options) as Promise<UserDetailsQuery>;
     }
   };
 }

@@ -49,7 +49,7 @@ function getAvatarGradient(auid: number): string {
 
 function HolderAvatar({ auid, username, className }: { auid: number; username?: string; className?: string }) {
     const gradient = getAvatarGradient(auid)
-    const initials = username ? username.slice(0, 2).toUpperCase() : `${auid}`.slice(-2)
+    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : `${auid}`.slice(-2)
     return (
         <div className={`flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[10px] shadow-sm shrink-0 border border-white/10 ${className}`}>
             <span>{initials}</span>
