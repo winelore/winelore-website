@@ -33,13 +33,13 @@ export default async function EvaluationProxyPage({ params }: Props) {
         redirect(`/commission/${id}?error=no_candidates`)
     }
 
-    const isFinished = (status: string) => status === "EVALUATED" || status === "DISQUALIFIED"
-    const pointed = replica.currentCandidateId
-        ? replicaCandidates.find((c: { id: string; status: string }) => c.id === replica.currentCandidateId)
-        : null
-    const targetCandidateId = pointed && !isFinished(pointed.status)
-        ? pointed.id
-        : replicaCandidates.find((c: { status: string }) => !isFinished(c.status))?.id
+    // Only the backend's currentCandidateId is authoritative. If it isn't set yet,
+    // send the user to the wait page rather than guessing a candidate the backend
+    // does not consider current (which would be rejected on submit).
+    const targetCandidateId =
+        replica.currentCandidateId && replicaCandidates.some((c: any) => c.id === replica.currentCandidateId)
+            ? replica.currentCandidateId
+            : null
 
     if (!targetCandidateId) {
         redirect(`/commission/${id}/replica/${replicaId}/wait`)

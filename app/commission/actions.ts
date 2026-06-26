@@ -428,20 +428,6 @@ function isReplicaCandidateFinished(status: string): boolean {
     return status === "EVALUATED" || status === "DISQUALIFIED";
 }
 
-function resolveCurrentReplicaCandidateId(
-    replicaCurrentCandidateId: string | null | undefined,
-    replicaCandidates: Array<{ id: string; status: string }>,
-): string | null {
-    if (replicaCurrentCandidateId) {
-        const pointed = replicaCandidates.find((rc) => rc.id === replicaCurrentCandidateId);
-        if (pointed && !isReplicaCandidateFinished(pointed.status)) {
-            return replicaCurrentCandidateId;
-        }
-    }
-    const nextPending = replicaCandidates.find((rc) => !isReplicaCandidateFinished(rc.status));
-    return nextPending?.id ?? null;
-}
-
 function getCompetitionFeatureFlags(competition: {
     wineJumperMiniGameEnabled?: boolean;
     voiceCommentsEnabled?: boolean;
@@ -493,10 +479,11 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         }));
 
         const replicaCandidates = replica.replicaCandidates || [];
-        const currentCandidateId = resolveCurrentReplicaCandidateId(
-            replica.currentCandidateId,
-            replicaCandidates,
-        );
+        // The backend is the single source of truth for which candidate is current.
+        // Never compute a "next" candidate on the frontend: the backend advances
+        // currentCandidateId itself when the HEAD marks a candidate as evaluated, and
+        // it rejects evaluations for any candidate that is not the current one.
+        const currentCandidateId = replica.currentCandidateId || null;
         const currentCandidateObj = replicaCandidates.find((rc: any) => rc.id === currentCandidateId);
         const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
 
