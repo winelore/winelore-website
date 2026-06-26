@@ -25,13 +25,13 @@ export function AppHeader({
   const { t } = useTranslation()
 
   const tabs: { id: AppTabId; label: string; icon: LucideIcon }[] = [
-    { id: "feed", label: t("common.feed"), icon: FileText },
-    { id: "competitions", label: t("common.competitions"), icon: Trophy },
-    {
+    //{ id: "feed", label: t("common.feed"), icon: FileText },
+    /*{ id: "competitions", label: t("common.competitions"), icon: Trophy },*/
+    /*{
       id: wineTab ? "wines" : "beverages",
       label: wineTab ? t("common.wines") : t("common.beverages"),
       icon: Wine,
-    },
+    },*/
   ]
 
   return (

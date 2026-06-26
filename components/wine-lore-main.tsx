@@ -77,13 +77,13 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
             <Trophy className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>{t("common.myCompetitions")}</span>
           </a>
-          <a
+{/*          <a
             href="#"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <ListTodo className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>{t("common.myAssessments")}</span>
-          </a>
+          </a>*/}
         </div>
 
         <div className="px-5">
