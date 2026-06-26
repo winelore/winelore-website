@@ -5,6 +5,45 @@ import { useRouter } from "next/navigation"
 
 const TOTAL_SCORE_CODE = "taste_score"
 
+interface ReplicaCandidateDetails {
+    total: string
+    categories: Record<string, string>
+    isPreview: boolean
+}
+
+interface OverallAverage {
+    average: string
+    isPreview: boolean
+}
+
+function PreviewScoreBadge({ className = "" }: { className?: string }) {
+    return (
+        <span
+            className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded ${className}`}
+            title="Based on submitted scores so far; not all experts have finished evaluating"
+        >
+            Preview
+        </span>
+    )
+}
+
+function ScoreCell({ value, isPreview }: { value: string | number | null; isPreview?: boolean }) {
+    if (value === null || value === "-") return <>-</>
+
+    return (
+        <div className="flex flex-col items-center gap-1">
+            <span className={isPreview ? "text-amber-700" : undefined}>{value}</span>
+            {isPreview && <PreviewScoreBadge />}
+        </div>
+    )
+}
+
+function hasTotalScore(ev: any): boolean {
+    const score = ev.scores?.find((s: any) => s.code === TOTAL_SCORE_CODE)
+    if (!score) return false
+    return !isNaN(parseFloat(score.value))
+}
+
 interface CommissionResultsClientViewProps {
     commission: any
     awardsMap: Record<string, any[]>
@@ -38,27 +77,31 @@ export default function CommissionResultsClientView({ commission, awardsMap }: C
 
     // --- ОБРОБКА БАЛІВ ---
 
-    const getReplicaCandidateDetails = (replica: any, candidateId: string) => {
+    const getReplicaCandidateDetails = (replica: any, candidateId: string): ReplicaCandidateDetails | null => {
         const rc = replica.replicaCandidates.find((c: any) => c.candidate.id === candidateId)
         if (!rc || !rc.evaluations || rc.evaluations.length === 0) return null
 
         let totalSum = 0
         let totalCount = 0
+        let completeWithTotalCount = 0
         const categoryValues: Record<string, string[]> = {}
+        const expectedEvaluators = replica.members?.length ?? 0
 
         rc.evaluations.forEach((ev: any) => {
-            if (!ev.isComplete) return
-            ev.scores.forEach((score: any) => {
-                if (score.code === TOTAL_SCORE_CODE) {
-                    const val = parseFloat(score.value)
-                    if (!isNaN(val)) {
-                        totalSum += val
-                        totalCount++
-                    }
-                } else {
-                    if (!categoryValues[score.code]) categoryValues[score.code] = []
-                    categoryValues[score.code].push(score.value)
-                }
+            const totalScoreObj = ev.scores?.find((s: any) => s.code === TOTAL_SCORE_CODE)
+            const totalVal = totalScoreObj ? parseFloat(totalScoreObj.value) : NaN
+
+            if (!isNaN(totalVal)) {
+                totalSum += totalVal
+                totalCount++
+                if (ev.isComplete) completeWithTotalCount++
+            }
+
+            ev.scores?.forEach((score: any) => {
+                if (score.code === TOTAL_SCORE_CODE) return
+                if (!ev.isComplete && !score.value) return
+                if (!categoryValues[score.code]) categoryValues[score.code] = []
+                categoryValues[score.code].push(score.value)
             })
         })
 
@@ -77,24 +120,40 @@ export default function CommissionResultsClientView({ commission, awardsMap }: C
             }
         })
 
+        const isPreview = expectedEvaluators > 0
+            ? completeWithTotalCount < expectedEvaluators
+            : rc.evaluations.some((ev: any) => !ev.isComplete && hasTotalScore(ev))
+
         return {
             total: totalCount > 0 ? (totalSum / totalCount).toFixed(2) : "-",
-            categories
+            categories,
+            isPreview,
         }
     }
 
-    // РАХУЄМО СЕРЕДНЄ ТІЛЬКИ ДЛЯ ОСНОВНИХ ЕКСПЕРТІВ (Ігноруємо TRAINEE)
-    const getOverallCandidateAverage = (candidateId: string) => {
-        const scores = commission.replicas
-            .filter((r: any) => r.type !== "TRAINEE")
-            .map((r: any) => {
-                const details = getReplicaCandidateDetails(r, candidateId)
-                return details ? parseFloat(details.total) : NaN
-            })
-            .filter((s: number) => !isNaN(s))
+    const getOverallCandidateAverage = (candidateId: string): OverallAverage => {
+        const nonTraineeReplicas = commission.replicas.filter((r: any) => r.type !== "TRAINEE")
+        const scores: number[] = []
+        let isPreview = false
 
-        if (scores.length === 0) return "-"
-        return (scores.reduce((a: number, b: number) => a + b, 0) / scores.length).toFixed(2)
+        nonTraineeReplicas.forEach((r: any) => {
+            const details = getReplicaCandidateDetails(r, candidateId)
+            if (details) {
+                const val = parseFloat(details.total)
+                if (!isNaN(val)) scores.push(val)
+                if (details.isPreview) isPreview = true
+            } else {
+                const rc = r.replicaCandidates?.find((c: any) => c.candidate.id === candidateId)
+                const expected = r.members?.length ?? 0
+                if (rc && expected > 0) isPreview = true
+            }
+        })
+
+        if (scores.length === 0) return { average: "-", isPreview: false }
+        return {
+            average: (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2),
+            isPreview,
+        }
     }
 
     const getExpertBreakdown = (candidateId: string) => {
@@ -224,8 +283,12 @@ export default function CommissionResultsClientView({ commission, awardsMap }: C
                                                     onClick={() => setExpandedCompareCandidateId(expandedCompareCandidateId === candidate.id ? null : candidate.id)}
                                                 >
                                                     <td className="py-4 px-6 font-medium text-slate-800">{candidate.anonymizedCode || "N/A"}</td>
-                                                    <td className="py-4 px-6 text-center">{totalA ?? "-"}</td>
-                                                    <td className="py-4 px-6 text-center">{totalB ?? "-"}</td>
+                                                    <td className="py-4 px-6 text-center">
+                                                        <ScoreCell value={totalA} isPreview={detA?.isPreview} />
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center">
+                                                        <ScoreCell value={totalB} isPreview={detB?.isPreview} />
+                                                    </td>
                                                     <td className={`py-4 px-6 text-center font-bold ${totalDiff !== "-" && parseFloat(totalDiff) > 0 ? "text-emerald-600" : totalDiff !== "-" && parseFloat(totalDiff) < 0 ? "text-rose-600" : "text-slate-500"}`}>
                                                         {totalDiff !== "-" ? (parseFloat(totalDiff) > 0 ? `+${totalDiff}` : totalDiff) : "-"}
                                                     </td>
@@ -318,7 +381,7 @@ export default function CommissionResultsClientView({ commission, awardsMap }: C
                                     const beverageName = candidate.sample?.batch?.beverage?.name || "Unknown Beverage"
 
                                     // Розрахунок без TRAINEE
-                                    const overallAverage = getOverallCandidateAverage(candidate.id)
+                                    const { average: overallAverage, isPreview: isAveragePreview } = getOverallCandidateAverage(candidate.id)
 
                                     const allBeverageAwards = awardsMap[beverageId] || []
                                     const currentCommissionAwards = allBeverageAwards.filter((a: any) => a.commissionId === commission.id)
@@ -337,8 +400,8 @@ export default function CommissionResultsClientView({ commission, awardsMap }: C
                                                     </div>
                                                 </td>
 
-                                                <td className="py-4 px-6 text-center border-l border-slate-50 font-bold text-indigo-700 bg-indigo-50/10 text-lg">
-                                                    {overallAverage}
+                                                <td className={`py-4 px-6 text-center border-l border-slate-50 font-bold bg-indigo-50/10 text-lg ${isAveragePreview ? "text-amber-700" : "text-indigo-700"}`}>
+                                                    <ScoreCell value={overallAverage} isPreview={isAveragePreview} />
                                                 </td>
 
                                                 <td className="py-4 px-6 border-l border-slate-50">

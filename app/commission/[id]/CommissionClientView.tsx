@@ -399,12 +399,52 @@ export default function CommissionClientView({
 
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
+    const isCommissionCompleted = initialData.status === "COMPLETED"
+    const showResultsBanner = isCommissionCompleted || initialData.competition.holders.includes(currentAuid)
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+                {showResultsBanner && (
+                    <div className={`w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
+                        isCommissionCompleted
+                            ? "bg-emerald-50 border-emerald-200"
+                            : "bg-indigo-50 border-indigo-200"
+                    }`}>
+                        <div className="flex items-center gap-3">
+                            {isCommissionCompleted ? (
+                                <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                            ) : (
+                                <Trophy className="w-5 h-5 text-indigo-600 shrink-0" />
+                            )}
+                            <div>
+                                <p className={`text-sm font-bold ${isCommissionCompleted ? "text-emerald-800" : "text-indigo-900"}`}>
+                                    {isCommissionCompleted
+                                        ? t("commission.sessionCompleted")
+                                        : t("commission.resultsBannerTitle")}
+                                </p>
+                                <p className={`text-xs mt-0.5 ${isCommissionCompleted ? "text-emerald-600" : "text-indigo-600"}`}>
+                                    {isCommissionCompleted
+                                        ? t("commission.allCandidatesEvaluatedDesc")
+                                        : t("commission.resultsBannerDesc")}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => router.push(`/commission/${localData.id}/results`)}
+                            className={`shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
+                                isCommissionCompleted
+                                    ? "bg-emerald-600 hover:bg-emerald-700"
+                                    : "bg-indigo-600 hover:bg-indigo-700"
+                            }`}
+                        >
+                            <Trophy className="w-4 h-4" />
+                            {t("commission.continueToResults")}
+                        </button>
+                    </div>
+                )}
                 <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
 
                     {/* Left Column: Replicas, Stepper and Tasting Panel */}
@@ -482,7 +522,7 @@ export default function CommissionClientView({
                                         {t("commission.tastingPanelSubtitle")}
                                     </p>
                                 </div>
-                                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                <span className="inline-flex items-center justify-center shrink-0 whitespace-nowrap text-xs font-semibold px-3 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100 tabular-nums">
                                     {t("commission.readyCount", { 
                                         ready: localMembers.filter(m => m.isReady).length, 
                                         total: localMembers.length 
@@ -827,13 +867,20 @@ export default function CommissionClientView({
                                 {replicaStatus === "COMPLETED" && (
                                     <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
                                         <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                                        <div>
+                                        <div className="flex-1">
                                             <h4 className="text-sm font-bold text-emerald-800">
                                                 {t("commission.sessionCompleted")}
                                             </h4>
                                             <p className="text-xs text-emerald-600/90 mt-1">
                                                 {t("commission.sessionCompletedDesc")}
                                             </p>
+                                            <button
+                                                onClick={() => router.push(`/commission/${localData.id}/results`)}
+                                                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
+                                            >
+                                                <Trophy className="w-3.5 h-3.5" />
+                                                {t("commission.viewResults")}
+                                            </button>
                                         </div>
                                     </div>
                                 )}

@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { fetchGraphQL } from "@/lib/apiClient"
+import { fetchGraphQLRaw } from "@/lib/apiClient"
 import { GET_COMMISSION_RESULTS, GET_BEVERAGE_AWARDS } from "./queries"
 import CommissionResultsClientView from "./CommissionResultsClientView"
 
@@ -19,7 +19,7 @@ export default async function CommissionResultsPage({ params }: PageProps) {
 
     try {
         console.log(`[СЕРВЕР] Відправка GET_COMMISSION_RESULTS...`);
-        const response = await fetchGraphQL(GET_COMMISSION_RESULTS, { id: commissionId });
+        const response = await fetchGraphQLRaw<any, { id: string }>(GET_COMMISSION_RESULTS, { id: commissionId });
 
         // Обходимо TypeScript помилку за допомогою 'as any' виключно для дебагу
         const resAny = response as any;
@@ -47,7 +47,7 @@ export default async function CommissionResultsPage({ params }: PageProps) {
                 beverageIds.map(async (beverageId) => {
                     try {
                         console.log(`[СЕРВЕР] Запит нагород для напою ${beverageId}...`);
-                        const res = await fetchGraphQL(GET_BEVERAGE_AWARDS, { beverageId });
+                        const res = await fetchGraphQLRaw<any, { beverageId: string }>(GET_BEVERAGE_AWARDS, { beverageId });
 
                         const awardResAny = res as any;
                         if (awardResAny?.errors) {
