@@ -1,6 +1,4 @@
-import { gql } from "@/src/gql"
-
-export const GET_COMMISSION_RESULTS = gql(`
+export const GET_COMMISSION_RESULTS = `
   query GetCommissionResults($id: ID!) {
     commission(id: $id) {
       id
@@ -24,6 +22,9 @@ export const GET_COMMISSION_RESULTS = gql(`
         name
         type
         status
+        members {
+          id
+        }
         replicaCandidates {
           id
           status
@@ -43,9 +44,9 @@ export const GET_COMMISSION_RESULTS = gql(`
       }
     }
   }
-`)
+`
 
-export const GET_BEVERAGE_AWARDS = gql(`
+export const GET_BEVERAGE_AWARDS = `
   query GetBeverageAwards($beverageId: ID!) {
     beverageAwards(beverageId: $beverageId) {
       id
@@ -58,4 +59,4 @@ export const GET_BEVERAGE_AWARDS = gql(`
       }
     }
   }
-`)
+`

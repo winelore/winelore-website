@@ -232,6 +232,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [propertyMap, setPropertyMap] = useState<Record<string, PropertyMeta>>({});
     const [candidatesLeft, setCandidatesLeft] = useState<number>(0);
     const [candidatesLeftAfterCurrent, setCandidatesLeftAfterCurrent] = useState<number>(0);
+    const [allDone, setAllDone] = useState(false);
 
     // 1. Read AUID from cookie (fallback to 1)
     useEffect(() => {
@@ -259,8 +260,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 if (me) setRole(me.role);
 
                 if (!newCandidateId || allCandidatesEvaluated) {
-                    // Tasting is complete!
-                    router.push(`/commission/${commissionId}`);
+                    setAllDone(true);
                     return;
                 }
 
@@ -302,6 +302,29 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // ==========================================
     // HEAD OF COMMISSION VIEW
     // ==========================================
+    if (allDone) {
+        return (
+            <div className="flex min-h-screen flex-col bg-slate-50">
+                <AppHeader activeTab="competitions" />
+                <main className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-6">
+                    <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <Wine className="w-10 h-10 text-emerald-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-slate-800">{t("commission.allCandidatesEvaluated")}</h1>
+                        <p className="text-slate-500 mt-2 max-w-md mx-auto">{t("commission.allCandidatesEvaluatedDesc")}</p>
+                    </div>
+                    <button
+                        onClick={() => router.push(`/commission/${commissionId}/results`)}
+                        className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all active:scale-95"
+                    >
+                        {t("commission.continueToResults")} <ArrowRight className="w-4 h-4" />
+                    </button>
+                </main>
+            </div>
+        )
+    }
+
     if (role === "HEAD") {
         return (
             <div className="flex min-h-screen flex-col bg-slate-50">
