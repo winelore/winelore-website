@@ -4,7 +4,7 @@ import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '../src/gql/sdk';
 
-const GRAPHQL_ENDPOINT = 'http://localhost:8080/graphql';
+const GRAPHQL_ENDPOINT = 'http://switchback.proxy.rlwy.net:43233/graphql';
 
 export async function fetchGraphQLRaw<TResult, TVariables>(
     query: string,
