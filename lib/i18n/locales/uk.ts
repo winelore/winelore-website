@@ -8,6 +8,7 @@ const uk: TranslationKey = {
     beverages: "Напої",
     profile: "Профіль",
     logOut: "Вийти",
+    signIn: "Увійти",
     myBeverages: "Мої напої",
     myCompetitions: "Мої конкурси",
     myAssessments: "Мої оцінювання",

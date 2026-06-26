@@ -7,6 +7,9 @@ import { ProfileMenu } from "@/components/wine-lore-main"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 import { useTranslation } from "@/lib/i18n/context"
 
+import { useEffect, useState } from "react"
+import Cookies from "js-cookie"
+
 export type AppTabId = "feed" | "competitions" | "wines" | "beverages"
 
 interface AppHeaderProps {
@@ -23,6 +26,17 @@ export function AppHeader({
   wineTab = false,
 }: AppHeaderProps) {
   const { t } = useTranslation()
+  const [currentUser, setCurrentUser] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    const storedAuid = Cookies.get("auid")
+    const storedUsername = Cookies.get("username")
+    if (storedAuid) {
+      setCurrentUser(storedUsername || storedAuid)
+    }
+  }, [])
 
   const tabs: { id: AppTabId; label: string; icon: LucideIcon }[] = [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -54,7 +68,7 @@ export function AppHeader({
                 onClick={() => onTabChange?.(tab.id)}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? "border border-slate-100/50 bg-white text-slate-800 shadow-sm"
+                     ? "border border-slate-100/50 bg-white text-slate-800 shadow-sm"
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -68,7 +82,18 @@ export function AppHeader({
 
       <div className="flex flex-1 items-center justify-end gap-3">
         <LanguageSwitcher />
-        <ProfileMenu username={username} />
+        {!mounted ? (
+          <div className="h-9 w-24 rounded-lg bg-slate-100 animate-pulse" />
+        ) : currentUser ? (
+          <ProfileMenu username={currentUser} />
+        ) : (
+          <a
+            href="/auth/login"
+            className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 shadow-sm"
+          >
+            <span>{t("common.signIn")}</span>
+          </a>
+        )}
       </div>
     </header>
   )

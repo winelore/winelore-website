@@ -6,6 +6,7 @@ const en = {
     beverages: "Beverages",
     profile: "Profile",
     logOut: "Log Out",
+    signIn: "Sign In",
     myBeverages: "My Beverages",
     myCompetitions: "My Competitions",
     myAssessments: "My Assessments",

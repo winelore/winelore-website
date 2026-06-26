@@ -110,8 +110,8 @@ export function useComments(entityId: string, entityType: string) {
         throw new Error('API Schema not ready');
       });
 
-      if (result && 'comments' in result) {
-        setComments(result.comments as Comment[]);
+      if (result && typeof result === 'object' && 'comments' in result) {
+        setComments((result as any).comments as Comment[]);
       } else {
         throw new Error('No data');
       }

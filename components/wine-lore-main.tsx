@@ -49,7 +49,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
             <span>{t("common.profile")}</span>
           </a>
           <a
-            href="#"
+            href="/auth/logout"
             className="flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] bg-transparent py-2.5 text-[14px] font-medium text-red-500 transition-colors hover:bg-red-50"
           >
             <LogOut className="h-5 w-5 stroke-[1.5] text-red-500" />
@@ -93,7 +93,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         {/* Group 3: AXUS ID Profile */}
         <div className="px-2 pb-3 pt-1.5">
           <a
-            href="#"
+            href={`${process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app"}/account`}
             className="flex items-center justify-between rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <div className="flex items-center gap-3">
