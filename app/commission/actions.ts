@@ -264,12 +264,9 @@ export async function submitEvaluationAction(
             headers
         });
         
-        try {
-            console.log(`Updating candidate ${candidateId} status to EVALUATED...`);
-            await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId });
-        } catch (statusErr: any) {
-            console.warn(`⚠️ Failed to update candidate status to EVALUATED:`, statusErr.message);
-        }
+        // Note: We do not mark the candidate as evaluated here because other commission members
+        // still need to submit their evaluations. The HEAD of the commission will advance/mark
+        // the candidate as evaluated from the waiting dashboard.
 
         return submitResponse.submitEvaluation;
     } catch (err: any) {
@@ -427,6 +424,24 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     return { actor: auid, "x-actor": auid };
 }
 
+function isReplicaCandidateFinished(status: string): boolean {
+    return status === "EVALUATED" || status === "DISQUALIFIED";
+}
+
+function resolveCurrentReplicaCandidateId(
+    replicaCurrentCandidateId: string | null | undefined,
+    replicaCandidates: Array<{ id: string; status: string }>,
+): string | null {
+    if (replicaCurrentCandidateId) {
+        const pointed = replicaCandidates.find((rc) => rc.id === replicaCurrentCandidateId);
+        if (pointed && !isReplicaCandidateFinished(pointed.status)) {
+            return replicaCurrentCandidateId;
+        }
+    }
+    const nextPending = replicaCandidates.find((rc) => !isReplicaCandidateFinished(rc.status));
+    return nextPending?.id ?? null;
+}
+
 function getCompetitionFeatureFlags(competition: {
     wineJumperMiniGameEnabled?: boolean;
     voiceCommentsEnabled?: boolean;
@@ -453,6 +468,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         candidatesLeft: 0,
         candidatesLeftAfterCurrent: 0,
         myEvaluation: null as any,
+        hasCompletedCurrentCandidate: false,
         ...emptyFeatureFlags,
     };
 
@@ -476,14 +492,16 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             auid: Array.isArray(m.auid) ? m.auid.flat() : m.auid,
         }));
 
-        const currentCandidateId = replica.currentCandidateId || null;
-        const currentCandidateObj = (replica.replicaCandidates || []).find((rc: any) => rc.id === currentCandidateId);
+        const replicaCandidates = replica.replicaCandidates || [];
+        const currentCandidateId = resolveCurrentReplicaCandidateId(
+            replica.currentCandidateId,
+            replicaCandidates,
+        );
+        const currentCandidateObj = replicaCandidates.find((rc: any) => rc.id === currentCandidateId);
         const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
 
-        // All done when there's no current candidate and all replica candidates are EVALUATED
-        const replicaCandidates = replica.replicaCandidates || [];
         const totalCandidates = replicaCandidates.length;
-        const evaluatedCount = replicaCandidates.filter((rc: any) => rc.status === 'EVALUATED').length;
+        const evaluatedCount = replicaCandidates.filter((rc: any) => isReplicaCandidateFinished(rc.status)).length;
         const currentCandidateIndex = currentCandidateId
             ? replicaCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
             : -1;
@@ -493,7 +511,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             : candidatesLeft;
 
         const allCandidatesEvaluated = replicaCandidates.length > 0
-            && replicaCandidates.every((rc: any) => rc.status === 'EVALUATED');
+            && replicaCandidates.every((rc: any) => isReplicaCandidateFinished(rc.status));
 
         let evaluations: any[] = [];
         const propertyMap: Record<string, { name: string; isResult: boolean }> = {};
@@ -535,9 +553,12 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const myMember = actorAuid ? members.find((m: any) => memberMatchesActor(m.auid, actorAuid)) : null;
 
         let myEvaluation: any = null;
+        let myCurrentCandidateEvaluation: any = null;
         if (currentCandidateId) {
-            myEvaluation = await getMyEvaluationForCandidateAction(currentCandidateId);
+            myCurrentCandidateEvaluation = await getMyEvaluationForCandidateAction(currentCandidateId);
+            myEvaluation = myCurrentCandidateEvaluation;
         }
+        const hasCompletedCurrentCandidate = myCurrentCandidateEvaluation?.isComplete === true;
         if (!myEvaluation) {
             for (const rc of [...replicaCandidates].reverse()) {
                 try {
@@ -570,6 +591,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             candidatesLeft,
             candidatesLeftAfterCurrent,
             myEvaluation: myEvaluation ?? null,
+            hasCompletedCurrentCandidate,
             ...featureFlags,
         };
     } catch (err: any) {
@@ -596,10 +618,11 @@ export async function getMyEvaluationForCandidateAction(candidateId: string) {
 export async function getEvaluationsForCandidateAction(candidateId: string) {
     if (!isValidUuid(candidateId)) return [];
     try {
+        const headers = await getActorHeaders();
         const data = await sdk.GetEvaluationsForCandidate({
             replicaCandidateId: candidateId,
             limit: 50,
-        });
+        }, { headers });
         return data.evaluationsByReplicaCandidate?.items || [];
     } catch (err: any) {
         console.error("Server Action Error (getEvaluationsForCandidateAction):", err);

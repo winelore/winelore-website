@@ -316,7 +316,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
         const fetchData = async () => {
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -342,8 +342,21 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 const me = commMembers.find((m: any) => auid !== null && (Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid));
                 if (me) setRole(me.role);
 
-                if (!newCandidateId || allCandidatesEvaluated) {
+                if (allCandidatesEvaluated) {
                     setAllDone(true);
+                    return;
+                }
+
+                if (!newCandidateId) {
+                    return;
+                }
+
+                const cached = readCachedWaitEvaluation(commissionId, replicaId);
+                const hasFreshSubmitCache =
+                    cached?.candidateId === newCandidateId && cached?.isComplete !== false;
+
+                if (!hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
+                    router.push(`/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`);
                     return;
                 }
 
@@ -355,6 +368,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 setCurrentCandidateId(newCandidateId);
                 setCurrentCandidateCode(newCandidateCode);
+                setIsSwitching(false);
 
             } catch (err) {
                 console.error("Polling error", err);

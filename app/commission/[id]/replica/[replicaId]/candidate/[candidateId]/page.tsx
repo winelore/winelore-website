@@ -1,4 +1,4 @@
-import { getCommissionDataAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
+import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
 import { notFound, redirect } from "next/navigation"
 import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
@@ -24,8 +24,13 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const commissionId = replicaCandidate.replica.commission.id
     const currentReplicaId = replicaCandidate.replica.id
 
-    // If this candidate was already evaluated, send the user back to the wait page
-    if (replicaCandidate.status === "EVALUATED") {
+    // If this candidate round is finished, send the user to the wait page
+    if (replicaCandidate.status === "EVALUATED" || replicaCandidate.status === "DISQUALIFIED") {
+        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
+    }
+
+    const myEvaluation = await getMyEvaluationForCandidateAction(candidateId)
+    if (myEvaluation?.isComplete === true) {
         redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
     }
 
