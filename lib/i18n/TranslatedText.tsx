@@ -43,12 +43,17 @@ export function TranslatedText({ text, className, as: Component = "span", prefix
   const translated = useBackendTranslation(text)
   if (!text) return null
   
-  // Прибираємо "(бал)" завжди, якщо це українська локаль або якщо є префікс
+  // Прибираємо "(бал)" завжди, якщо це українська або угорська локаль або якщо є префікс
   let finalText = translated
   
-  if (finalText.includes("(бал)")) {
-    finalText = finalText.replace("(бал)", "").trim()
+  const removePostfixes = (str: string) => {
+    let s = str
+    if (s.includes("(бал)")) s = s.replace("(бал)", "")
+    if (s.includes("(pont)")) s = s.replace("(pont)", "")
+    return s.trim()
   }
+
+  finalText = removePostfixes(finalText)
 
   if (prefix) {
     // Якщо перекладений текст вже починається з префікса (без врахування регістру),

@@ -4,7 +4,14 @@ import type { Locale } from "@/lib/i18n/types"
 const serverCache = new Map<string, string>()
 
 async function fetchTranslation(text: string, targetLocale: Locale): Promise<string> {
-  const langpair = targetLocale === "uk" ? "en|uk" : "uk|en"
+  let langpair = ""
+  if (targetLocale === "uk") {
+    langpair = "en|uk"
+  } else if (targetLocale === "hu") {
+    langpair = "en|hu"
+  } else {
+    langpair = "uk|en"
+  }
 
   const url = new URL("https://api.mymemory.translated.net/get")
   url.searchParams.set("q", text)
@@ -39,7 +46,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const text = typeof body.text === "string" ? body.text.trim() : ""
-    const targetLocale = body.targetLocale === "uk" ? "uk" : "en"
+    const targetLocale = (body.targetLocale as Locale) || "en"
 
     if (!text) {
       return NextResponse.json({ translatedText: "" })

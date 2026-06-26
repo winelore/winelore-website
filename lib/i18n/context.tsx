@@ -33,9 +33,14 @@ const LocaleContext = createContext<LocaleContextValue | null>(null)
 function readInitialLocale(): Locale {
   if (typeof window === "undefined") return DEFAULT_LOCALE
   const cookie = Cookies.get(LOCALE_COOKIE)
-  if (cookie === "en" || cookie === "uk") return cookie
+
+  // 💡 ДОДАНО: підтримка 'hu' при зчитуванні кукі
+  if (cookie === "en" || cookie === "uk" || cookie === "hu") return cookie as Locale
+
   const browserLang = navigator.language.toLowerCase()
   if (browserLang.startsWith("uk")) return "uk"
+  if (browserLang.startsWith("hu")) return "hu" // 💡 ДОДАНО: автовизначення угорської мови браузера
+
   return DEFAULT_LOCALE
 }
 
@@ -72,9 +77,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }), [locale, setLocale])
 
   return (
-    <LocaleContext.Provider value={value}>
-      {children}
-    </LocaleContext.Provider>
+      <LocaleContext.Provider value={value}>
+        {children}
+      </LocaleContext.Provider>
   )
 }
 

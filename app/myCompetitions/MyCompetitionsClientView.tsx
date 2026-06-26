@@ -5,6 +5,7 @@ import Cookies from "js-cookie"
 import Link from "next/link"
 import { FileText, Trophy, Wine, Timer, Calendar, CheckCircle, PlayCircle, AlertCircle } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
+import { getDateLocale } from "@/lib/i18n"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 
 const tabs = (t: any) => [
@@ -78,8 +79,7 @@ function CompetitionCard({ comp }: { comp: Competition }) {
 
             } else if (comp.status === "PLANNED" && comp.plannedDates?.start) {
                 const date = new Date(comp.plannedDates.start)
-                const dateLocale = locale === "uk" ? "uk-UA" : "en-GB"
-                const formattedDate = new Intl.DateTimeFormat(dateLocale, {
+                const formattedDate = new Intl.DateTimeFormat(getDateLocale(locale), {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 }).format(date)
                 setTimeStr(t("time.planned", { date: formattedDate }))

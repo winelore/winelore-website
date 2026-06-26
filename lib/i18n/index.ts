@@ -1,22 +1,24 @@
 import en from "./locales/en"
 import uk from "./locales/uk"
+import hu from "./locales/hu" // 💡 ДОДАНО: імпорт угорської локалі
 import type { TranslationKey } from "./locales/en"
 import type { Locale } from "./types"
 
 export const messages: Record<Locale, TranslationKey> = {
   en,
   uk,
+  hu, // 💡 ДОДАНО: реєстрація в об'єкті повідомлень
 }
 
 type NestedKeyOf<T, Prefix extends string = ""> = T extends object
-  ? {
+    ? {
       [K in keyof T & string]: T[K] extends object
-        ? NestedKeyOf<T[K], Prefix extends "" ? K : `${Prefix}.${K}`>
-        : Prefix extends ""
-          ? K
-          : `${Prefix}.${K}`
+          ? NestedKeyOf<T[K], Prefix extends "" ? K : `${Prefix}.${K}`>
+          : Prefix extends ""
+              ? K
+              : `${Prefix}.${K}`
     }[keyof T & string]
-  : never
+    : never
 
 export type MessageKey = NestedKeyOf<typeof en>
 
@@ -33,28 +35,28 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string | un
 }
 
 export function translate(
-  locale: Locale,
-  key: MessageKey,
-  params?: Record<string, string | number>
+    locale: Locale,
+    key: MessageKey,
+    params?: Record<string, string | number>
 ): string {
   const template = getNestedValue(messages[locale] as Record<string, unknown>, key)
-    ?? getNestedValue(messages.en as Record<string, unknown>, key)
-    ?? key
+      ?? getNestedValue(messages.en as Record<string, unknown>, key)
+      ?? key
 
   if (!params) return template
 
   return Object.entries(params).reduce(
-    (result, [paramKey, paramValue]) =>
-      result.replace(new RegExp(`\\{\\{${paramKey}\\}\\}`, "g"), String(paramValue)),
-    template
+      (result, [paramKey, paramValue]) =>
+          result.replace(new RegExp(`\\{\\{${paramKey}\\}\\}`, "g"), String(paramValue)),
+      template
   )
 }
 
 export function translateWithCount(
-  locale: Locale,
-  key: MessageKey,
-  count: number,
-  params?: Record<string, string | number>
+    locale: Locale,
+    key: MessageKey,
+    count: number,
+    params?: Record<string, string | number>
 ): string {
   const pluralKey = `${key}_plural` as MessageKey
   const hasPlural = getNestedValue(messages[locale] as Record<string, unknown>, pluralKey) !== undefined
@@ -63,7 +65,10 @@ export function translateWithCount(
 }
 
 export function getDateLocale(locale: Locale): string {
-  return locale === "uk" ? "uk-UA" : "en-GB"
+  // 💡 ОНОВЛЕНО: додано повернення угорської локалі для Intl.DateTimeFormat
+  if (locale === "uk") return "uk-UA"
+  if (locale === "hu") return "hu-HU"
+  return "en-GB"
 }
 
 export function formatDateTime(dateStr: string | null, locale: Locale): string {
@@ -95,10 +100,10 @@ export function formatStatus(status: string, locale: Locale): string {
   if (translated) return translated
 
   return status
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
 }
 
 export function formatBeverageType(type: string, locale: Locale): string {
@@ -121,8 +126,8 @@ export function formatEnumLabel(label: string, locale: Locale): string {
   if (typeTranslated) return typeTranslated
 
   return label
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
 }
