@@ -58,6 +58,8 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             commissionId={commissionId}
             replicaId={currentReplicaId}
             originParts={[originInfo?.country, originInfo?.region, originInfo?.district].filter(Boolean) as string[]}
+            propertyCommentsEnabled={commission.competition.propertyCommentsEnabled}
+            voiceCommentsEnabled={commission.competition.voiceCommentsEnabled}
         />
     )
 }

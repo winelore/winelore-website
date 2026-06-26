@@ -277,11 +277,15 @@ export default function EvaluationForm({
     candidateId,
     commissionId,
     replicaId,
+    propertyCommentsEnabled,
+    voiceCommentsEnabled,
 }: {
     categories: EvaluationCategory[]
     candidateId: string
     commissionId: string
     replicaId: string
+    propertyCommentsEnabled: boolean
+    voiceCommentsEnabled: boolean
 }) {
     const router = useRouter()
     const { t, formatEnumLabel } = useTranslation()
@@ -506,27 +510,32 @@ export default function EvaluationForm({
                     value: String(val)
                 }))
 
-            // Collect all property keys that have text or voice
-            const propKeys = new Set([
-                ...Object.keys(commentValues).filter(k => commentValues[k].trim().length > 0),
-                ...Object.keys(voiceBlobs).filter(k => k !== "general"),
-            ])
+            // Collect per-property comments when enabled
+            let perPropertyComments: Array<{ propertyId: string; text?: string; voiceUrl?: string; sortOrder: number }> = []
+            if (propertyCommentsEnabled) {
+                const propKeys = new Set([
+                    ...Object.keys(commentValues).filter(k => commentValues[k].trim().length > 0),
+                    ...(voiceCommentsEnabled
+                        ? Object.keys(voiceBlobs).filter(k => k !== "general")
+                        : []),
+                ])
 
-            let sortIndex = 0
-            const perPropertyComments = await Promise.all(
-                [...propKeys].map(async (propId) => {
-                    const text = commentValues[propId]?.trim() || undefined
-                    const blob = voiceBlobs[propId]
-                    const voiceUrl = blob ? await uploadVoice(blob, propId) : undefined
-                    return { propertyId: propId, text, voiceUrl, sortOrder: sortIndex++ }
-                })
-            )
+                let sortIndex = 0
+                perPropertyComments = await Promise.all(
+                    [...propKeys].map(async (propId) => {
+                        const text = commentValues[propId]?.trim() || undefined
+                        const blob = voiceCommentsEnabled ? voiceBlobs[propId] : undefined
+                        const voiceUrl = blob ? await uploadVoice(blob, propId) : undefined
+                        return { propertyId: propId, text, voiceUrl, sortOrder: sortIndex++ }
+                    })
+                )
+            }
 
-            const generalBlob = voiceBlobs["general"]
+            const generalBlob = voiceCommentsEnabled ? voiceBlobs["general"] : undefined
             const generalVoiceUrl = generalBlob ? await uploadVoice(generalBlob, "general") : undefined
             const hasGeneral = generalComment.trim() || generalVoiceUrl
             const comments = hasGeneral
-                ? [...perPropertyComments, { text: generalComment.trim() || undefined, voiceUrl: generalVoiceUrl, sortOrder: sortIndex }]
+                ? [...perPropertyComments, { text: generalComment.trim() || undefined, voiceUrl: generalVoiceUrl, sortOrder: perPropertyComments.length }]
                 : perPropertyComments
 
             const submitted = await submitEvaluationAction(candidateId, scores, comments)
@@ -746,7 +755,7 @@ export default function EvaluationForm({
                                         })()}
                                     </div>
                                     </div>
-                                    {!isSmart && (
+                                    {!isSmart && propertyCommentsEnabled && (
                                         <div className="flex flex-col gap-1">
                                             <div className="flex items-end gap-2">
                                                 <textarea
@@ -756,17 +765,19 @@ export default function EvaluationForm({
                                                     placeholder={t("evaluation.addComment")}
                                                     className="flex-1 px-3 py-1.5 border border-slate-100 rounded-lg text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 bg-slate-50/60 resize-none transition-colors"
                                                 />
-                                                <VoiceCommentButton
-                                                    isRecording={activeRecordingKey === prop.id}
-                                                    recordingTime={recordingTime}
-                                                    previewUrl={voicePreviewUrls[prop.id]}
-                                                    disabled={activeRecordingKey !== null && activeRecordingKey !== prop.id}
-                                                    onStart={() => startRecording(prop.id)}
-                                                    onStop={stopRecording}
-                                                    onDiscard={() => discardVoice(prop.id)}
-                                                />
+                                                {voiceCommentsEnabled && (
+                                                    <VoiceCommentButton
+                                                        isRecording={activeRecordingKey === prop.id}
+                                                        recordingTime={recordingTime}
+                                                        previewUrl={voicePreviewUrls[prop.id]}
+                                                        disabled={activeRecordingKey !== null && activeRecordingKey !== prop.id}
+                                                        onStart={() => startRecording(prop.id)}
+                                                        onStop={stopRecording}
+                                                        onDiscard={() => discardVoice(prop.id)}
+                                                    />
+                                                )}
                                             </div>
-                                            {voicePreviewUrls[prop.id] && (
+                                            {voiceCommentsEnabled && voicePreviewUrls[prop.id] && (
                                                 <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1">
                                                     <audio
                                                         src={voicePreviewUrls[prop.id]}
@@ -799,17 +810,19 @@ export default function EvaluationForm({
                             placeholder={t("evaluation.generalCommentPlaceholder")}
                             className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white resize-none transition-colors"
                         />
-                        <VoiceCommentButton
-                            isRecording={activeRecordingKey === "general"}
-                            recordingTime={recordingTime}
-                            previewUrl={voicePreviewUrls["general"]}
-                            disabled={activeRecordingKey !== null && activeRecordingKey !== "general"}
-                            onStart={() => startRecording("general")}
-                            onStop={stopRecording}
-                            onDiscard={() => discardVoice("general")}
-                        />
+                        {voiceCommentsEnabled && (
+                            <VoiceCommentButton
+                                isRecording={activeRecordingKey === "general"}
+                                recordingTime={recordingTime}
+                                previewUrl={voicePreviewUrls["general"]}
+                                disabled={activeRecordingKey !== null && activeRecordingKey !== "general"}
+                                onStart={() => startRecording("general")}
+                                onStop={stopRecording}
+                                onDiscard={() => discardVoice("general")}
+                            />
+                        )}
                     </div>
-                    {voicePreviewUrls["general"] && (
+                    {voiceCommentsEnabled && voicePreviewUrls["general"] && (
                         <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-1">
                             <audio
                                 src={voicePreviewUrls["general"]}

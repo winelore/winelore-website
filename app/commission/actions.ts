@@ -68,16 +68,6 @@ export async function startCommissionAction(id: string) {
     }
 }
 
-export async function completeCommissionAction(id: string) {
-    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
-    try {
-        return await sdk.CompleteCommissionReplica({ id });
-    } catch (err: any) {
-        console.error("Server Action Error (completeCommissionAction):", err);
-        throw new Error(err.message || "Failed to complete commission replica");
-    }
-}
-
 async function bootstrapTemplateEditionForCommission(commissionId: string) {
     console.log(`🚀 Bootstrapping real template edition for commission ${commissionId}...`);
     // 1. Create a new evaluation template
@@ -366,6 +356,9 @@ export async function getCommissionDataAction(commissionId: string) {
                 id: commission.competition.id,
                 name: commission.competition.name,
                 holders: commission.competition.holders.flat(),
+                wineJumperMiniGameEnabled: commission.competition.wineJumperMiniGameEnabled,
+                voiceCommentsEnabled: commission.competition.voiceCommentsEnabled,
+                propertyCommentsEnabled: commission.competition.propertyCommentsEnabled,
                 evaluationTemplateEdition: templateEdition
             },
             candidateCount: countData.commissionCandidateCount ?? 0,
@@ -424,18 +417,48 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     return { actor: auid, "x-actor": auid };
 }
 
+function getCompetitionFeatureFlags(competition: {
+    wineJumperMiniGameEnabled?: boolean;
+    voiceCommentsEnabled?: boolean;
+    propertyCommentsEnabled?: boolean;
+} | null | undefined) {
+    return {
+        wineJumperMiniGameEnabled: competition?.wineJumperMiniGameEnabled ?? false,
+        voiceCommentsEnabled: competition?.voiceCommentsEnabled ?? false,
+        propertyCommentsEnabled: competition?.propertyCommentsEnabled ?? false,
+    };
+}
+
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
+    const emptyFeatureFlags = getCompetitionFeatureFlags(null);
+    const emptyResult = {
+        members: [] as any[],
+        currentCandidateId: null as string | null,
+        currentCandidateCode: null as string | null,
+        allCandidatesEvaluated: false,
+        evaluations: [] as any[],
+        propertyMap: {} as Record<string, { name: string; isResult: boolean }>,
+        totalCandidates: 0,
+        currentCandidateIndex: -1,
+        candidatesLeft: 0,
+        candidatesLeftAfterCurrent: 0,
+        myEvaluation: null as any,
+        ...emptyFeatureFlags,
+    };
+
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
-        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0, myEvaluation: null };
+        return emptyResult;
     }
     try {
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
-        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0, myEvaluation: null };
+        if (!commission) return emptyResult;
+
+        const featureFlags = getCompetitionFeatureFlags(commission.competition);
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0, myEvaluation: null };
+        if (!replica) return emptyResult;
 
         // Members of this replica only
         const members = (replica.members || []).map((m: any) => ({
@@ -537,6 +560,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             candidatesLeft,
             candidatesLeftAfterCurrent,
             myEvaluation: myEvaluation ?? null,
+            ...featureFlags,
         };
     } catch (err: any) {
         console.error("Server Action Error (getWaitDataAction):", err);
@@ -548,25 +572,11 @@ export async function getMyEvaluationForCandidateAction(candidateId: string) {
     if (!isValidUuid(candidateId)) return null;
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            query GetMyEval($candId: ID!) {
-                evaluationByReplicaCandidateAndEvaluator(replicaCandidateId: $candId) {
-                    evaluatorAuid
-                    isComplete
-                    scores {
-                        code
-                        value
-                    }
-                    comments {
-                        id
-                        propertyId
-                        text
-                        voiceUrl
-                    }
-                }
-            }
-        `, { candId: candidateId }, headers);
-        return data?.evaluationByReplicaCandidateAndEvaluator ?? null;
+        const data = await sdk.GetMyEvaluationForCandidate(
+            { replicaCandidateId: candidateId },
+            { headers },
+        );
+        return data.evaluationByReplicaCandidateAndEvaluator ?? null;
     } catch (err: any) {
         console.error("Server Action Error (getMyEvaluationForCandidateAction):", err);
         return null;
@@ -576,27 +586,11 @@ export async function getMyEvaluationForCandidateAction(candidateId: string) {
 export async function getEvaluationsForCandidateAction(candidateId: string) {
     if (!isValidUuid(candidateId)) return [];
     try {
-        const data = await rawGraphQL(`
-            query GetEvals($candId: ID!) {
-                evaluationsByReplicaCandidate(replicaCandidateId: $candId, limit: 50) {
-                    items {
-                        evaluatorAuid
-                        isComplete
-                        scores {
-                            code
-                            value
-                        }
-                        comments {
-                            id
-                            propertyId
-                            text
-                            voiceUrl
-                        }
-                    }
-                }
-            }
-        `, { candId: candidateId });
-        return data?.evaluationsByReplicaCandidate?.items || [];
+        const data = await sdk.GetEvaluationsForCandidate({
+            replicaCandidateId: candidateId,
+            limit: 50,
+        });
+        return data.evaluationsByReplicaCandidate?.items || [];
     } catch (err: any) {
         console.error("Server Action Error (getEvaluationsForCandidateAction):", err);
         throw new Error(err.message || "Failed to fetch evaluations");
@@ -606,12 +600,8 @@ export async function getEvaluationsForCandidateAction(candidateId: string) {
 export async function markCandidateEvaluatedAction(candidateId: string) {
     if (!isValidUuid(candidateId)) return null;
     try {
-        const data = await rawGraphQL(`
-            mutation MarkEvaluated($id: ID!) {
-                markCommissionCandidateAsEvaluated(id: $id) { id status }
-            }
-        `, { id: candidateId });
-        return data?.markCommissionCandidateAsEvaluated;
+        const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId });
+        return data.markCommissionReplicaCandidateAsEvaluated;
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
         throw new Error(err.message || "Failed to mark candidate as evaluated");

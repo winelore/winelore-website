@@ -3,14 +3,13 @@
 import React, { useState, useEffect, useRef } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { 
     markMemberReadyAction, 
     markMemberNotReadyAction, 
     startCommissionAction, 
-    completeCommissionAction,
     getCommissionDataAction
 } from "../actions"
 
@@ -368,19 +367,6 @@ export default function CommissionClientView({
             router.refresh()
         } catch (err) {
             console.error("Failed to start replica tasting session:", err)
-        } finally {
-            setIsMutating(false)
-        }
-    }
-
-    const handleCompleteCommission = async () => {
-        if (!selectedReplica || isMutating) return
-        setIsMutating(true)
-        try {
-            await completeCommissionAction(selectedReplica.id)
-            router.refresh()
-        } catch (err) {
-            console.error("Failed to complete replica tasting session:", err)
         } finally {
             setIsMutating(false)
         }
@@ -818,27 +804,6 @@ export default function CommissionClientView({
                                             </div>
                                         )}
 
-                                        {replicaStatus === "STARTED" && (
-                                            <div className="flex flex-col gap-2.5">
-                                                <p className="text-xs text-slate-500 mb-1">
-                                                    {t("commission.completeDescription")}
-                                                </p>
-                                                <div className="flex flex-wrap gap-3">
-                                                    <button
-                                                        onClick={handleCompleteCommission}
-                                                        disabled={isMutating}
-                                                        className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/15 transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
-                                                    >
-                                                        {isMutating ? (
-                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                        ) : (
-                                                            <StopCircle className="h-5 w-5" />
-                                                        )}
-                                                        <span>{t("commission.completeTasting")}</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
 

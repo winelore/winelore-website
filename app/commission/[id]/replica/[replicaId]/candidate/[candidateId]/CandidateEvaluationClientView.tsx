@@ -23,6 +23,8 @@ interface CandidateEvaluationClientViewProps {
   commissionId: string
   replicaId: string
   originParts: string[]
+  propertyCommentsEnabled: boolean
+  voiceCommentsEnabled: boolean
 }
 
 export default function CandidateEvaluationClientView({
@@ -37,6 +39,8 @@ export default function CandidateEvaluationClientView({
   commissionId,
   replicaId,
   originParts,
+  propertyCommentsEnabled,
+  voiceCommentsEnabled,
 }: CandidateEvaluationClientViewProps) {
   const { t, tCount } = useTranslation()
   const displayReplicaName = replicaName || t("common.standard")
@@ -92,6 +96,8 @@ export default function CandidateEvaluationClientView({
           candidateId={candidateId}
           commissionId={commissionId}
           replicaId={replicaId}
+          propertyCommentsEnabled={propertyCommentsEnabled}
+          voiceCommentsEnabled={voiceCommentsEnabled}
         />
         </div>
       </main>

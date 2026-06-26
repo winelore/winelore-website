@@ -17,6 +17,9 @@ export const GET_COMMISSION = gql(`
         id
         name
         holders
+        wineJumperMiniGameEnabled
+        voiceCommentsEnabled
+        propertyCommentsEnabled
       }
       replicas {
         id
@@ -299,15 +302,6 @@ export const START_COMMISSION = gql(`
   }
 `);
 
-export const COMPLETE_COMMISSION = gql(`
-  mutation CompleteCommissionReplica($id: ID!) {
-    completeCommissionReplica(id: $id) {
-      id
-      status
-    }
-  }
-`);
-
 export const GET_REPLICA_CANDIDATES = gql(`
   query GetReplicaCandidates($replicaId: ID!) {
     commissionReplica(id: $replicaId) {
@@ -439,6 +433,46 @@ export const MARK_CANDIDATE_EVALUATED = gql(`
     markCommissionReplicaCandidateAsEvaluated(id: $id) {
       id
       status
+    }
+  }
+`);
+
+export const GET_MY_EVALUATION_FOR_CANDIDATE = gql(`
+  query GetMyEvaluationForCandidate($replicaCandidateId: ID!) {
+    evaluationByReplicaCandidateAndEvaluator(replicaCandidateId: $replicaCandidateId) {
+      evaluatorAuid
+      isComplete
+      scores {
+        code
+        value
+      }
+      comments {
+        id
+        propertyId
+        text
+        voiceUrl
+      }
+    }
+  }
+`);
+
+export const GET_EVALUATIONS_FOR_CANDIDATE = gql(`
+  query GetEvaluationsForCandidate($replicaCandidateId: ID!, $limit: Int) {
+    evaluationsByReplicaCandidate(replicaCandidateId: $replicaCandidateId, limit: $limit) {
+      items {
+        evaluatorAuid
+        isComplete
+        scores {
+          code
+          value
+        }
+        comments {
+          id
+          propertyId
+          text
+          voiceUrl
+        }
+      }
     }
   }
 `);

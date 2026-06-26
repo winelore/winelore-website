@@ -159,7 +159,7 @@ export type GetCommissionQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, plannedDates: { start: string | null, end: string | null } | null, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null } }> }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, plannedDates: { start: string | null, end: string | null } | null, competition: { id: string, name: string, holders: Array<Array<number>>, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null } }> }> } | null };
 
 export type GetCommissionTemplatesQueryVariables = Exact<{
   id: string | number;
@@ -265,13 +265,6 @@ export type StartCommissionReplicaMutationVariables = Exact<{
 
 export type StartCommissionReplicaMutation = { startCommissionReplica: { id: string, status: Types.CommissionReplicaStatus } };
 
-export type CompleteCommissionReplicaMutationVariables = Exact<{
-  id: string | number;
-}>;
-
-
-export type CompleteCommissionReplicaMutation = { completeCommissionReplica: { id: string, status: Types.CommissionReplicaStatus } };
-
 export type GetReplicaCandidatesQueryVariables = Exact<{
   replicaId: string | number;
 }>;
@@ -330,6 +323,21 @@ export type MarkCommissionReplicaCandidateAsEvaluatedMutationVariables = Exact<{
 
 export type MarkCommissionReplicaCandidateAsEvaluatedMutation = { markCommissionReplicaCandidateAsEvaluated: { id: string, status: Types.CommissionReplicaCandidateStatus } };
 
+export type GetMyEvaluationForCandidateQueryVariables = Exact<{
+  replicaCandidateId: string | number;
+}>;
+
+
+export type GetMyEvaluationForCandidateQuery = { evaluationByReplicaCandidateAndEvaluator: { evaluatorAuid: Array<number>, isComplete: boolean, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> } | null };
+
+export type GetEvaluationsForCandidateQueryVariables = Exact<{
+  replicaCandidateId: string | number;
+  limit?: number | null | undefined;
+}>;
+
+
+export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ evaluatorAuid: Array<number>, isComplete: boolean, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
+
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -350,7 +358,7 @@ export type GetMyBeveragesQueryVariables = Exact<{
 }>;
 
 
-export type GetMyBeveragesQuery = { wines: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, type: Types.WineType, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }> }> } };
+export type GetMyBeveragesQuery = { wines: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, type: Types.WineType, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
 
 export type GetMyCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -385,6 +393,9 @@ export const GetCommissionDocument = gql`
       id
       name
       holders
+      wineJumperMiniGameEnabled
+      voiceCommentsEnabled
+      propertyCommentsEnabled
     }
     replicas {
       id
@@ -661,14 +672,6 @@ export const StartCommissionReplicaDocument = gql`
   }
 }
     `;
-export const CompleteCommissionReplicaDocument = gql`
-    mutation CompleteCommissionReplica($id: ID!) {
-  completeCommissionReplica(id: $id) {
-    id
-    status
-  }
-}
-    `;
 export const GetReplicaCandidatesDocument = gql`
     query GetReplicaCandidates($replicaId: ID!) {
   commissionReplica(id: $replicaId) {
@@ -800,6 +803,49 @@ export const MarkCommissionReplicaCandidateAsEvaluatedDocument = gql`
   }
 }
     `;
+export const GetMyEvaluationForCandidateDocument = gql`
+    query GetMyEvaluationForCandidate($replicaCandidateId: ID!) {
+  evaluationByReplicaCandidateAndEvaluator(
+    replicaCandidateId: $replicaCandidateId
+  ) {
+    evaluatorAuid
+    isComplete
+    scores {
+      code
+      value
+    }
+    comments {
+      id
+      propertyId
+      text
+      voiceUrl
+    }
+  }
+}
+    `;
+export const GetEvaluationsForCandidateDocument = gql`
+    query GetEvaluationsForCandidate($replicaCandidateId: ID!, $limit: Int) {
+  evaluationsByReplicaCandidate(
+    replicaCandidateId: $replicaCandidateId
+    limit: $limit
+  ) {
+    items {
+      evaluatorAuid
+      isComplete
+      scores {
+        code
+        value
+      }
+      comments {
+        id
+        propertyId
+        text
+        voiceUrl
+      }
+    }
+  }
+}
+    `;
 export const GetCompetitionPageDocument = gql`
     query GetCompetitionPage($id: ID!) {
   competition(id: $id) {
@@ -855,6 +901,10 @@ export const GetMyBeveragesDocument = gql`
         id
         auid
         role
+      }
+      origin {
+        latitude
+        longitude
       }
     }
   }
@@ -926,9 +976,6 @@ export function getSdk<C>(requester: Requester<C>) {
     StartCommissionReplica(variables: Types.StartCommissionReplicaMutationVariables, options?: C): Promise<Types.StartCommissionReplicaMutation> {
       return requester<Types.StartCommissionReplicaMutation, Types.StartCommissionReplicaMutationVariables>(StartCommissionReplicaDocument, variables, options) as Promise<Types.StartCommissionReplicaMutation>;
     },
-    CompleteCommissionReplica(variables: Types.CompleteCommissionReplicaMutationVariables, options?: C): Promise<Types.CompleteCommissionReplicaMutation> {
-      return requester<Types.CompleteCommissionReplicaMutation, Types.CompleteCommissionReplicaMutationVariables>(CompleteCommissionReplicaDocument, variables, options) as Promise<Types.CompleteCommissionReplicaMutation>;
-    },
     GetReplicaCandidates(variables: Types.GetReplicaCandidatesQueryVariables, options?: C): Promise<Types.GetReplicaCandidatesQuery> {
       return requester<Types.GetReplicaCandidatesQuery, Types.GetReplicaCandidatesQueryVariables>(GetReplicaCandidatesDocument, variables, options) as Promise<Types.GetReplicaCandidatesQuery>;
     },
@@ -952,6 +999,12 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     MarkCommissionReplicaCandidateAsEvaluated(variables: Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables, options?: C): Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation> {
       return requester<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation, Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables>(MarkCommissionReplicaCandidateAsEvaluatedDocument, variables, options) as Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation>;
+    },
+    GetMyEvaluationForCandidate(variables: Types.GetMyEvaluationForCandidateQueryVariables, options?: C): Promise<Types.GetMyEvaluationForCandidateQuery> {
+      return requester<Types.GetMyEvaluationForCandidateQuery, Types.GetMyEvaluationForCandidateQueryVariables>(GetMyEvaluationForCandidateDocument, variables, options) as Promise<Types.GetMyEvaluationForCandidateQuery>;
+    },
+    GetEvaluationsForCandidate(variables: Types.GetEvaluationsForCandidateQueryVariables, options?: C): Promise<Types.GetEvaluationsForCandidateQuery> {
+      return requester<Types.GetEvaluationsForCandidateQuery, Types.GetEvaluationsForCandidateQueryVariables>(GetEvaluationsForCandidateDocument, variables, options) as Promise<Types.GetEvaluationsForCandidateQuery>;
     },
     GetCompetitionPage(variables: Types.GetCompetitionPageQueryVariables, options?: C): Promise<Types.GetCompetitionPageQuery> {
       return requester<Types.GetCompetitionPageQuery, Types.GetCompetitionPageQueryVariables>(GetCompetitionPageDocument, variables, options) as Promise<Types.GetCompetitionPageQuery>;

@@ -20,6 +20,21 @@ import {
 
 type PropertyMeta = { name: string; isResult: boolean }
 
+type CompetitionFeatureFlags = {
+    propertyCommentsEnabled: boolean
+    voiceCommentsEnabled: boolean
+}
+
+function commentHasVisibleContent(
+    comment: { text?: string | null; voiceUrl?: string | null; propertyId?: string | null },
+    flags: CompetitionFeatureFlags,
+) {
+    if (comment.propertyId && !flags.propertyCommentsEnabled) return false
+    const hasText = Boolean(comment.text?.trim())
+    const hasVoice = flags.voiceCommentsEnabled && Boolean(comment.voiceUrl)
+    return hasText || hasVoice
+}
+
 function isResultOrGeneralComment(
     comment: { propertyId?: string | null },
     propertyMap: Record<string, PropertyMeta>,
@@ -100,14 +115,13 @@ function SubmittedScores({
 }
 
 function hasEvaluationData(
-    evaluation: { scores?: Array<{ code: string; value: string | null }>; comments?: Array<{ text?: string; voiceUrl?: string | null }> },
+    evaluation: { scores?: Array<{ code: string; value: string | null }>; comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
+    flags: CompetitionFeatureFlags,
 ) {
     const hasScores = (evaluation.scores || []).some(
         (s) => s.value != null && String(s.value).trim() !== "",
     )
-    const hasComments = (evaluation.comments || []).some(
-        (c) => c.text?.trim() || c.voiceUrl,
-    )
+    const hasComments = (evaluation.comments || []).some((c) => commentHasVisibleContent(c, flags))
     return hasScores || hasComments
 }
 
@@ -118,10 +132,11 @@ function hasScoreValue(value: string | null | undefined): boolean {
 function hasFullAssessmentDetails(
     evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
     propertyMap: Record<string, PropertyMeta>,
+    flags: CompetitionFeatureFlags,
 ) {
     const scores = evaluation.scores || []
     const hasNonResultScores = scores.some((s) => propertyMap[s.code]?.isResult !== true)
-    const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
+    const allComments = (evaluation.comments || []).filter((c) => commentHasVisibleContent(c, flags))
     const hasHiddenComments = allComments.some((c) => !isResultOrGeneralComment(c, propertyMap))
     return hasNonResultScores || hasHiddenComments
 }
@@ -131,15 +146,20 @@ function MemberEvaluationSection({
     propertyMap,
     accent,
     forceShowAll = false,
+    propertyCommentsEnabled,
+    voiceCommentsEnabled,
 }: {
     evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
     propertyMap: Record<string, PropertyMeta>
     accent: "indigo" | "slate"
     forceShowAll?: boolean
+    propertyCommentsEnabled: boolean
+    voiceCommentsEnabled: boolean
 }) {
     const { t } = useTranslation()
     const [expanded, setExpanded] = useState(forceShowAll)
-    const canExpand = !forceShowAll && hasFullAssessmentDetails(evaluation, propertyMap)
+    const flags = { propertyCommentsEnabled, voiceCommentsEnabled }
+    const canExpand = !forceShowAll && hasFullAssessmentDetails(evaluation, propertyMap, flags)
 
     return (
         <div className="space-y-2">
@@ -148,6 +168,8 @@ function MemberEvaluationSection({
                 propertyMap={propertyMap}
                 accent={accent}
                 showAll={forceShowAll || expanded}
+                propertyCommentsEnabled={propertyCommentsEnabled}
+                voiceCommentsEnabled={voiceCommentsEnabled}
             />
             {canExpand && (
                 <button
@@ -177,16 +199,21 @@ function MemberEvaluationDetails({
     propertyMap,
     accent,
     showAll,
+    propertyCommentsEnabled,
+    voiceCommentsEnabled,
 }: {
     evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
     propertyMap: Record<string, PropertyMeta>
     accent: "indigo" | "slate"
     showAll: boolean
+    propertyCommentsEnabled: boolean
+    voiceCommentsEnabled: boolean
 }) {
     const { t } = useTranslation()
+    const flags = { propertyCommentsEnabled, voiceCommentsEnabled }
 
     const scores = (evaluation.scores || []).filter((s) => hasScoreValue(s.value))
-    const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
+    const allComments = (evaluation.comments || []).filter((c) => commentHasVisibleContent(c, flags))
     const visibleComments = showAll
         ? allComments
         : allComments.filter((c) => isResultOrGeneralComment(c, propertyMap))
@@ -222,7 +249,7 @@ function MemberEvaluationDetails({
                                 <div key={comment.id} className={`text-xs ${commentTextClass} space-y-1`}>
                                     <span className={`font-semibold ${commentLabelClass}`}><TranslatedText text={displayName} />:</span>
                                     {comment.text && <span> {comment.text}</span>}
-                                    {comment.voiceUrl && (
+                                    {voiceCommentsEnabled && comment.voiceUrl && (
                                         <div className="mt-1">
                                             <audio
                                                 src={comment.voiceUrl}
@@ -257,6 +284,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [candidatesLeftAfterCurrent, setCandidatesLeftAfterCurrent] = useState<number>(0);
     const [allDone, setAllDone] = useState(false);
     const [myEvaluation, setMyEvaluation] = useState<any | null>(null);
+    const [wineJumperMiniGameEnabled, setWineJumperMiniGameEnabled] = useState(false);
+    const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
+    const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
 
     // 1. Read AUID from cookie (fallback to 1) and restore cached evaluation from submit
     useEffect(() => {
@@ -275,13 +305,20 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
         const fetchData = async () => {
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
                 setEvaluations(newEvaluations || []);
                 setPropertyMap(newPropertyMap || {});
-                if (newMyEvaluation && hasEvaluationData(newMyEvaluation)) {
+                setWineJumperMiniGameEnabled(newWineJumperEnabled);
+                setVoiceCommentsEnabled(newVoiceCommentsEnabled);
+                setPropertyCommentsEnabled(newPropertyCommentsEnabled);
+                const commentFlags = {
+                    propertyCommentsEnabled: newPropertyCommentsEnabled,
+                    voiceCommentsEnabled: newVoiceCommentsEnabled,
+                };
+                if (newMyEvaluation && hasEvaluationData(newMyEvaluation, commentFlags)) {
                     setMyEvaluation(newMyEvaluation);
                     clearCachedWaitEvaluation(commissionId, replicaId);
                 } else if (newMyEvaluation) {
@@ -333,6 +370,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
     const heads = members.filter(m => m.role === "HEAD");
     const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
+    const commentFlags = { propertyCommentsEnabled, voiceCommentsEnabled };
 
     // ==========================================
     // HEAD OF COMMISSION VIEW
@@ -447,6 +485,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     evaluation={evaluation}
                                                     propertyMap={propertyMap}
                                                     accent="indigo"
+                                                    propertyCommentsEnabled={propertyCommentsEnabled}
+                                                    voiceCommentsEnabled={voiceCommentsEnabled}
                                                 />
                                             )}
                                         </div>
@@ -479,12 +519,14 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                 )}
                                             </div>
                                             
-                                            {evaluation && hasEvaluationData(evaluation) && (
+                                            {evaluation && hasEvaluationData(evaluation, commentFlags) && (
                                                 <MemberEvaluationSection
                                                     evaluation={evaluation}
                                                     propertyMap={propertyMap}
                                                     accent="slate"
                                                     forceShowAll={!isCompleted}
+                                                    propertyCommentsEnabled={propertyCommentsEnabled}
+                                                    voiceCommentsEnabled={voiceCommentsEnabled}
                                                 />
                                             )}
                                         </div>
@@ -493,11 +535,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                             </div>
                         </div>
 
-                        {/* Mini game */}
-                        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col items-center">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{t("commission.boredPlay")}</h3>
-                            <WineJumperGame />
-                        </div>
+                        {wineJumperMiniGameEnabled && (
+                            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col items-center">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{t("commission.boredPlay")}</h3>
+                                <WineJumperGame />
+                            </div>
+                        )}
                     </div>
                 </div>
                 </main>
@@ -532,8 +575,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     )}
                 </div>
 
+                {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
                 <div className="w-full max-w-2xl mb-8 bg-white rounded-2xl shadow-2xl shadow-black/50 border border-slate-200 overflow-hidden text-left">
-                    {myEvaluation && hasEvaluationData(myEvaluation) && (
+                    {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && (
                         <div className="p-5">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
                                 {t("evaluation.submittedScores")}
@@ -543,21 +587,26 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 propertyMap={propertyMap}
                                 accent="slate"
                                 forceShowAll
+                                propertyCommentsEnabled={propertyCommentsEnabled}
+                                voiceCommentsEnabled={voiceCommentsEnabled}
                             />
                         </div>
                     )}
 
-                    {myEvaluation && hasEvaluationData(myEvaluation) && (
+                    {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && wineJumperMiniGameEnabled && (
                         <div className="border-t border-slate-100" />
                     )}
 
+                    {wineJumperMiniGameEnabled && (
                     <div className="p-5">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 text-center">
                             {t("commission.boredPlay")}
                         </p>
                         <WineJumperGame embedded />
                     </div>
+                    )}
                 </div>
+                ) : null}
 
                 <div className="mt-12 flex items-center gap-3 text-slate-400 font-medium">
                     <Loader2 className="w-5 h-5 animate-spin" />
