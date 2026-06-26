@@ -35,10 +35,11 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const evaluatedCount = replicaCandidates.filter((c: any) => c.status === "EVALUATED").length
     const candidatesLeft = replicaCandidates.length - evaluatedCount
 
-    // Fetch candidate origin from coordinates if available
+    // Fetch candidate origin only when the competition allows it during evaluation
+    const originVisible = commission.competition.beverageOriginDuringEvaluationEnabled
     const origin = currentCandidate?.sample?.batch?.beverage?.origin
     let originInfo = null
-    if (origin && typeof origin.latitude === "number" && typeof origin.longitude === "number") {
+    if (originVisible && origin && typeof origin.latitude === "number" && typeof origin.longitude === "number") {
         originInfo = await getGeographicInfo(origin.latitude, origin.longitude)
     }
 

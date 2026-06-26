@@ -359,6 +359,7 @@ export async function getCommissionDataAction(commissionId: string) {
                 wineJumperMiniGameEnabled: commission.competition.wineJumperMiniGameEnabled,
                 voiceCommentsEnabled: commission.competition.voiceCommentsEnabled,
                 propertyCommentsEnabled: commission.competition.propertyCommentsEnabled,
+                beverageOriginDuringEvaluationEnabled: commission.competition.beverageOriginDuringEvaluationEnabled,
                 evaluationTemplateEdition: templateEdition
             },
             candidateCount: countData.commissionCandidateCount ?? 0,

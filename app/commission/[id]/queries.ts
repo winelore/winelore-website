@@ -20,6 +20,7 @@ export const GET_COMMISSION = gql(`
         wineJumperMiniGameEnabled
         voiceCommentsEnabled
         propertyCommentsEnabled
+        beverageOriginDuringEvaluationEnabled
       }
       replicas {
         id
