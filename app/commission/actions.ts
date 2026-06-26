@@ -1,8 +1,41 @@
 "use server"
 
-import { sdk } from '../../lib/apiClient';
+import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
+import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
+import {
+    GET_COMMISSION_TEMPLATES_DEEP_QUERY,
+    type GetCommissionTemplatesDeepResult,
+    type GetCommissionTemplatesDeepVariables,
+} from '../../lib/commissionTemplatesQuery';
+import { cookies } from "next/headers";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id: string | null | undefined): boolean {
+    if (!id) return false;
+    return UUID_REGEX.test(id);
+}
+
+async function getCommissionTemplatesWithResultMarkers(commissionId: string) {
+    try {
+        // Use the deep expression query so SmartProperty formulas (left-leaning weighted
+        // sums that can be many levels deep) are fetched in full rather than truncated.
+        return await fetchGraphQLRaw<GetCommissionTemplatesDeepResult, GetCommissionTemplatesDeepVariables>(
+            GET_COMMISSION_TEMPLATES_DEEP_QUERY,
+            { id: commissionId },
+        );
+    } catch (err: any) {
+        const message = String(err?.message || err);
+        if (!message.includes("isResult")) {
+            throw err;
+        }
+
+        console.warn("Backend does not expose EvaluationProperty.isResult yet; falling back to legacy template query.");
+        return await fetchGraphQL(LegacyGetCommissionTemplatesDocument, { id: commissionId });
+    }
+}
 
 export async function markMemberReadyAction(replicaId: string, memberId: string) {
+    if (!isValidUuid(replicaId) || !isValidUuid(memberId)) throw new Error("Invalid UUID parameter");
     try {
         return await sdk.MarkReplicaMemberReady({ replicaId, memberId });
     } catch (err: any) {
@@ -12,6 +45,7 @@ export async function markMemberReadyAction(replicaId: string, memberId: string)
 }
 
 export async function markMemberNotReadyAction(replicaId: string, memberId: string) {
+    if (!isValidUuid(replicaId) || !isValidUuid(memberId)) throw new Error("Invalid UUID parameter");
     try {
         return await sdk.MarkReplicaMemberNotReady({ replicaId, memberId });
     } catch (err: any) {
@@ -21,6 +55,7 @@ export async function markMemberNotReadyAction(replicaId: string, memberId: stri
 }
 
 export async function startCommissionAction(id: string) {
+    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
         return await sdk.StartCommissionReplica({ id });
     } catch (err: any) {
@@ -30,6 +65,7 @@ export async function startCommissionAction(id: string) {
 }
 
 export async function completeCommissionAction(id: string) {
+    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
         return await sdk.CompleteCommissionReplica({ id });
     } catch (err: any) {
@@ -177,20 +213,55 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
     console.log(`  Linked template edition ${editionId} to commission ${commissionId}`);
 
     // 5. Fetch the template edition using GetCommissionTemplates
-    const result = await sdk.GetCommissionTemplates({ id: commissionId });
+    const result = await getCommissionTemplatesWithResultMarkers(commissionId);
     const commissionWithTemplates = result.commission;
     const link = commissionWithTemplates?.templateEditions?.find(l => l.beverageType === "WINE") || commissionWithTemplates?.templateEditions?.[0];
     return link?.templateEdition || null;
 }
 
-export async function submitEvaluationAction(candidateId: string, scores: { code: string, value: string }[]) {
+export async function getVoiceUploadUrlAction(
+    fileName: string,
+    contentType: string,
+): Promise<{ uploadUrl: string; fileUrl: string } | null> {
+    try {
+        const data = await rawGraphQL(`
+            mutation GetAudioUploadUrl($fileName: String!, $contentType: String!) {
+                getPresignedAudioUploadUrl(fileName: $fileName, contentType: $contentType) {
+                    uploadUrl
+                    fileUrl
+                }
+            }
+        `, { fileName, contentType });
+        return data?.getPresignedAudioUploadUrl ?? null;
+    } catch {
+        return null;
+    }
+}
+
+export async function submitEvaluationAction(
+    candidateId: string,
+    scores: { code: string, value: string }[],
+    comments?: { propertyId?: string | number | null, text?: string, sortOrder: number, voiceUrl?: string }[],
+) {
+    if (!isValidUuid(candidateId)) throw new Error("Invalid candidateId parameter");
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
+        
+        const cookieStore = await cookies();
+        const auid = cookieStore.get("auid")?.value ?? "1";
+        const headers: Record<string, string> = {
+            "actor": auid,
+            "x-actor": auid,
+        };
+
         const submitResponse = await sdk.SubmitEvaluation({
             input: {
                 candidateId,
-                scores
+                scores,
+                ...(comments && comments.length > 0 ? { comments } : {}),
             }
+        }, {
+            headers
         });
         
         try {
@@ -208,6 +279,7 @@ export async function submitEvaluationAction(candidateId: string, scores: { code
 }
 
 export async function getCommissionDataAction(commissionId: string) {
+    if (!isValidUuid(commissionId)) return null;
     try {
         const [commissionData, countData] = await Promise.all([
             sdk.GetCommission({ id: commissionId }),
@@ -220,7 +292,7 @@ export async function getCommissionDataAction(commissionId: string) {
         let templateEdition: any = null;
         try {
             console.log(`🔍 Fetching templates for commission ${commissionId}...`);
-            const templateResult = await sdk.GetCommissionTemplates({ id: commissionId });
+            const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
             const commissionWithTemplates = templateResult.commission;
             
             if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
@@ -303,6 +375,7 @@ export async function getCommissionDataAction(commissionId: string) {
 }
 
 export async function getReplicaCandidatesAction(replicaId: string) {
+    if (!isValidUuid(replicaId)) return [];
     try {
         const response = await sdk.GetReplicaCandidates({ replicaId });
         return response.commissionReplica?.replicaCandidates || [];
@@ -313,11 +386,162 @@ export async function getReplicaCandidatesAction(replicaId: string) {
 }
 
 export async function getReplicaCandidateAction(id: string) {
+    if (!isValidUuid(id)) return null;
     try {
         const response = await sdk.GetReplicaCandidate({ id });
         return response.commissionReplicaCandidate;
     } catch (err: any) {
         console.error("Server Action Error (getReplicaCandidateAction):", err);
         throw new Error(err.message || "Failed to fetch replica candidate");
+    }
+}
+
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:8080/graphql';
+
+async function rawGraphQL(query: string, variables: Record<string, any>) {
+    const res = await fetch(GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+        next: { revalidate: 0 },
+    });
+    const json = await res.json();
+    if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
+    return json.data;
+}
+
+export async function getWaitDataAction(commissionId: string, replicaId: string) {
+    if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
+        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
+    }
+    try {
+        const result = await sdk.GetCommission({ id: commissionId });
+        const commission = result.commission;
+        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
+
+        // Find the specific replica
+        const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
+        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
+
+        // Members of this replica only
+        const members = (replica.members || []).map((m: any) => ({
+            ...m,
+            auid: Array.isArray(m.auid) ? m.auid.flat() : m.auid,
+        }));
+
+        const currentCandidateId = replica.currentCandidateId || null;
+        const currentCandidateObj = (replica.replicaCandidates || []).find((rc: any) => rc.id === currentCandidateId);
+        const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
+
+        // All done when there's no current candidate and all replica candidates are EVALUATED
+        const replicaCandidates = replica.replicaCandidates || [];
+        const totalCandidates = replicaCandidates.length;
+        const evaluatedCount = replicaCandidates.filter((rc: any) => rc.status === 'EVALUATED').length;
+        const currentCandidateIndex = currentCandidateId
+            ? replicaCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
+            : -1;
+        const candidatesLeft = totalCandidates - evaluatedCount;
+        const candidatesLeftAfterCurrent = currentCandidateIndex >= 0
+            ? totalCandidates - currentCandidateIndex - 1
+            : candidatesLeft;
+
+        const allCandidatesEvaluated = replicaCandidates.length > 0
+            && replicaCandidates.every((rc: any) => rc.status === 'EVALUATED');
+
+        let evaluations: any[] = [];
+        const propertyMap: Record<string, { name: string; isResult: boolean }> = {};
+
+        if (currentCandidateId) {
+            try {
+                // Fetch evaluations for this specific replica candidate ID
+                evaluations = await getEvaluationsForCandidateAction(currentCandidateId);
+
+                // Fetch template properties to map codes to user-friendly names
+                const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
+                const commissionWithTemplates = templateResult.commission;
+                if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
+                    const link = commissionWithTemplates.templateEditions.find(l => l.beverageType === "WINE") || commissionWithTemplates.templateEditions[0];
+                    const templateEdition = link?.templateEdition;
+                    if (templateEdition && templateEdition.categories) {
+                        for (const cat of templateEdition.categories) {
+                            if (cat.properties) {
+                                  for (const prop of cat.properties) {
+                                    const meta = {
+                                        name: prop.name,
+                                        isResult: (prop as { isResult?: boolean }).isResult === true,
+                                    };
+                                    propertyMap[prop.code] = meta;
+                                    // Also index by ID so evaluation comments (which use propertyId) resolve correctly
+                                    if (prop.id) propertyMap[String(prop.id)] = meta;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (err: any) {
+                console.error("Failed to fetch evaluations or template details for wait page:", err);
+            }
+        }
+
+        return {
+            members,
+            currentCandidateId,
+            currentCandidateCode,
+            allCandidatesEvaluated,
+            evaluations,
+            propertyMap,
+            totalCandidates,
+            currentCandidateIndex,
+            candidatesLeft,
+            candidatesLeftAfterCurrent,
+        };
+    } catch (err: any) {
+        console.error("Server Action Error (getWaitDataAction):", err);
+        throw new Error(err.message || "Failed to fetch wait data");
+    }
+}
+
+export async function getEvaluationsForCandidateAction(candidateId: string) {
+    if (!isValidUuid(candidateId)) return [];
+    try {
+        const data = await rawGraphQL(`
+            query GetEvals($candId: ID!) {
+                evaluationsByReplicaCandidate(replicaCandidateId: $candId, limit: 50) {
+                    items {
+                        evaluatorAuid
+                        isComplete
+                        scores {
+                            code
+                            value
+                        }
+                        comments {
+                            id
+                            propertyId
+                            text
+                            voiceUrl
+                        }
+                    }
+                }
+            }
+        `, { candId: candidateId });
+        return data?.evaluationsByReplicaCandidate?.items || [];
+    } catch (err: any) {
+        console.error("Server Action Error (getEvaluationsForCandidateAction):", err);
+        throw new Error(err.message || "Failed to fetch evaluations");
+    }
+}
+
+export async function markCandidateEvaluatedAction(candidateId: string) {
+    if (!isValidUuid(candidateId)) return null;
+    try {
+        const data = await rawGraphQL(`
+            mutation MarkEvaluated($id: ID!) {
+                markCommissionCandidateAsEvaluated(id: $id) { id status }
+            }
+        `, { id: candidateId });
+        return data?.markCommissionCandidateAsEvaluated;
+    } catch (err: any) {
+        console.error("Server Action Error (markCandidateEvaluatedAction):", err);
+        throw new Error(err.message || "Failed to mark candidate as evaluated");
     }
 }

@@ -1,0 +1,225 @@
+=== ALL TYPES CONTAINING 'Comment' OR 'Evaluation' OR 'Wine' ===
+- CreateEvaluationTemplateEditionInput (INPUT_OBJECT)
+- CreateEvaluationTemplateInput (INPUT_OBJECT)
+- CreateWineBatchInput (INPUT_OBJECT)
+- CreateWineInput (INPUT_OBJECT)
+- CreateWineSampleInput (INPUT_OBJECT)
+- Evaluation (OBJECT)
+  Fields:
+    - id
+    - replicaCandidate
+    - templateEdition
+    - evaluatorAuid
+    - status
+    - isComplete
+    - scores
+    - comments
+    - createdAt
+- EvaluationComment (OBJECT)
+  Fields:
+    - id
+    - propertyId
+    - text
+    - voiceUrl
+    - sortOrder
+    - createdAt
+- EvaluationCommentInput (INPUT_OBJECT)
+- EvaluationExpression (INTERFACE)
+  Fields:
+    - type
+- EvaluationExpressionInput (INPUT_OBJECT)
+- EvaluationProperty (INTERFACE)
+  Fields:
+    - id
+    - code
+    - name
+    - description
+    - isRequired
+- EvaluationPropertyInput (INPUT_OBJECT)
+- EvaluationTemplate (OBJECT)
+  Fields:
+    - id
+    - name
+    - beverageType
+    - status
+    - owners
+    - createdAt
+- EvaluationTemplateEdition (OBJECT)
+  Fields:
+    - id
+    - template
+    - version
+    - status
+    - categories
+    - createdAt
+- EvaluationTemplateEditionCategory (OBJECT)
+  Fields:
+    - id
+    - name
+    - properties
+- EvaluationTemplateEditionCategoryInput (INPUT_OBJECT)
+- EvaluationTemplateEditionStatus (ENUM)
+- EvaluationTemplateStatus (ENUM)
+- PaginatedEvaluationTemplateEditions (OBJECT)
+  Fields:
+    - items
+- PaginatedEvaluationTemplates (OBJECT)
+  Fields:
+    - items
+- PaginatedEvaluations (OBJECT)
+  Fields:
+    - items
+- PaginatedWineBatches (OBJECT)
+  Fields:
+    - items
+- PaginatedWineSamples (OBJECT)
+  Fields:
+    - items
+- PaginatedWines (OBJECT)
+  Fields:
+    - items
+- SubmitEvaluationInput (INPUT_OBJECT)
+- UpdateEvaluationCommentsInput (INPUT_OBJECT)
+- UpdateEvaluationScoresInput (INPUT_OBJECT)
+- Wine (OBJECT)
+  Fields:
+    - id
+    - name
+    - status
+    - type
+    - producers
+- WineBatch (OBJECT)
+  Fields:
+    - id
+    - beverage
+    - vintage
+    - volumeMl
+    - alcoholByVolume
+    - lotNumber
+- WineFilterInput (INPUT_OBJECT)
+- WineSample (OBJECT)
+  Fields:
+    - id
+    - batch
+    - volumeMl
+- WineType (ENUM)
+
+=== QUERY TYPE ===
+- wines
+- wine
+- beverages
+- beverage
+- competitionSeriesList
+- competitionSeries
+- competition
+- competitions
+- competitionsBySeries
+- commission
+- commissions
+- commissionsByCompetition
+- wineBatch
+- wineBatchesByBeverage
+- wineBatches
+- wineSample
+- wineSamplesByBatch
+- wineSamples
+- commissionCandidate
+- commissionCandidatesByCommission
+- commissionReplica
+- commissionReplicas
+- commissionReplicasByCommission
+- commissionReplicaCandidate
+- evaluationTemplate
+- evaluationTemplates
+- evaluationTemplateEdition
+- evaluationTemplateEditionsByTemplate
+- evaluationTemplateEditions
+- evaluation
+- evaluationsByReplicaCandidate
+- evaluationByReplicaCandidateAndEvaluator
+- wineCount
+- beverageCount
+- competitionSeriesCount
+- competitionCount
+- commissionCount
+- wineBatchCount
+- wineSampleCount
+- commissionCandidateCount
+- commissionReplicaCount
+- evaluationTemplateCount
+- evaluationTemplateEditionCount
+- evaluationCount
+
+=== MUTATION TYPE ===
+- createWine
+- changeWineName
+- submitWineForReview
+- approveWine
+- publishWine
+- suspendWine
+- registerProducer
+- unregisterProducer
+- createCompetitionSeries
+- changeCompetitionSeriesName
+- changeCompetitionSeriesCountries
+- addCompetitionSeriesOwner
+- removeCompetitionSeriesOwner
+- submitCompetitionSeriesForReview
+- approveCompetitionSeries
+- publishCompetitionSeries
+- suspendCompetitionSeries
+- archiveCompetitionSeries
+- createCompetition
+- startCompetition
+- completeCompetition
+- submitCompetitionForReview
+- approveCompetition
+- planCompetition
+- cancelCompetition
+- addCompetitionHolder
+- removeCompetitionHolder
+- updateCompetitionDates
+- createCommission
+- startCommission
+- completeCommission
+- submitCommissionForReview
+- approveCommission
+- planCommission
+- cancelCommission
+- updateCommissionDates
+- setCommissionTemplateEdition
+- removeCommissionTemplateEdition
+- createWineBatch
+- createWineSample
+- addCommissionCandidate
+- removeCommissionCandidate
+- changeCommissionCandidateCode
+- reorderCommissionCandidates
+- createCommissionReplica
+- planCommissionReplica
+- submitCommissionReplicaForReview
+- startCommissionReplica
+- completeCommissionReplica
+- cancelCommissionReplica
+- addCommissionReplicaMember
+- removeCommissionReplicaMember
+- markCommissionReplicaMemberReady
+- markCommissionReplicaMemberNotReady
+- setCommissionReplicaCurrentCandidate
+- markCommissionReplicaCandidateAsEvaluated
+- disqualifyCommissionReplicaCandidate
+- postponeCommissionReplicaCandidate
+- resetCommissionReplicaCandidateToPending
+- createEvaluationTemplate
+- changeEvaluationTemplateName
+- addEvaluationTemplateOwner
+- removeEvaluationTemplateOwner
+- activateEvaluationTemplate
+- deprecateEvaluationTemplate
+- createEvaluationTemplateEdition
+- updateEvaluationTemplateEditionCategories
+- activateEvaluationTemplateEdition
+- archiveEvaluationTemplateEdition
+- submitEvaluation
+- updateEvaluationScores
+- updateEvaluationComments
