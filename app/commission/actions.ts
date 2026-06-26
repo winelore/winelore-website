@@ -617,14 +617,44 @@ export async function getEvaluationsForCandidateAction(candidateId: string) {
     }
 }
 
-export async function markCandidateEvaluatedAction(candidateId: string) {
-    if (!isValidUuid(candidateId)) return null;
+const SET_REPLICA_CURRENT_CANDIDATE_MUTATION = `
+    mutation SetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID) {
+        setCommissionReplicaCurrentCandidate(id: $id, currentCandidateId: $currentCandidateId) {
+            id
+            currentCandidateId
+        }
+    }
+`;
+
+export async function markCandidateEvaluatedAction(replicaId: string, candidateId: string) {
+    if (!isValidUuid(replicaId) || !isValidUuid(candidateId)) return null;
     try {
-        // The backend authorizes this mutation against the acting member (the HEAD),
+        // The backend authorizes these mutations against the acting member (the HEAD),
         // so the actor headers must be forwarded just like for the other mutations.
         const headers = await getActorHeaders();
+
+        // 1. Mark the current candidate as evaluated. This only flips the candidate's
+        //    status; it does NOT move the replica's current candidate pointer.
         const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId }, { headers });
-        return data.markCommissionReplicaCandidateAsEvaluated;
+
+        // 2. Determine the next candidate still awaiting evaluation. The replica
+        //    candidates are returned in evaluation order, so after marking the current
+        //    one evaluated the first remaining PENDING candidate is the next beverage.
+        const candidatesResponse = await sdk.GetReplicaCandidates({ replicaId });
+        const replicaCandidates = candidatesResponse.commissionReplica?.replicaCandidates || [];
+        const nextCandidate = replicaCandidates.find((rc: any) => rc.status === "PENDING");
+        const nextCandidateId = nextCandidate?.id ?? null;
+
+        // 3. Explicitly advance (or clear, when finished) the replica's current candidate.
+        //    The backend treats currentCandidateId as the single source of truth and
+        //    rejects evaluations for any other candidate.
+        await rawGraphQL(
+            SET_REPLICA_CURRENT_CANDIDATE_MUTATION,
+            { id: replicaId, currentCandidateId: nextCandidateId },
+            headers,
+        );
+
+        return { ...data.markCommissionReplicaCandidateAsEvaluated, nextCandidateId };
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
         throw new Error(err.message || "Failed to mark candidate as evaluated");

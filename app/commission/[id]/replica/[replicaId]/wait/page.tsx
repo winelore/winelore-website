@@ -393,8 +393,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         if (!canAdvanceToNextBeverage || isSwitching || !currentCandidateId) return;
         setIsSwitching(true);
         try {
-            await markCandidateEvaluatedAction(currentCandidateId);
-            // Polling will detect the status change and redirect automatically
+            await markCandidateEvaluatedAction(replicaId, currentCandidateId);
+            // Polling will detect the advanced current candidate and redirect automatically
         } catch (err) {
             console.error(err);
             setIsSwitching(false);
