@@ -556,31 +556,31 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // EXPERT VIEW
     // ==========================================
     return (
-        <div className="flex min-h-screen flex-col bg-[#0f172a]">
+        <div className="flex min-h-screen flex-col bg-slate-50">
             <AppHeader activeTab="competitions" />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <div className="relative mb-10 flex justify-center">
-                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center animate-pulse">
-                        <Wine className="w-10 h-10 text-white" />
+                    <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center animate-pulse border border-indigo-100">
+                        <Wine className="w-10 h-10 text-indigo-600" />
                     </div>
                 </div>
 
-                <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+                <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight mb-4">
                     {t("commission.evaluationSubmitted")}
                 </h1>
                 <div className="max-w-md mx-auto mb-8 space-y-4">
-                    <p className="text-slate-400 text-lg">
+                    <p className="text-slate-500 text-lg">
                         {t("commission.waitingNextRound")} {t("commission.autoRefreshNotice")}
                     </p>
                     {candidatesLeftAfterCurrent > 0 && (
-                        <p className="text-indigo-300 text-sm font-semibold">
+                        <p className="text-indigo-600 text-sm font-semibold">
                             {tCount("commission.candidatesLeftToEvaluate", candidatesLeftAfterCurrent)}
                         </p>
                     )}
                 </div>
 
                 {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
-                <div className="w-full max-w-2xl mb-8 bg-white rounded-2xl shadow-2xl shadow-black/50 border border-slate-200 overflow-hidden text-left">
+                <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
                     {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && (
                         <div className="p-5">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
@@ -612,8 +612,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 </div>
                 ) : null}
 
-                <div className="mt-12 flex items-center gap-3 text-slate-400 font-medium">
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                <div className="mt-12 flex items-center gap-3 text-slate-500 font-medium">
+                    <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
                     {t("commission.waitingOtherExperts")}
                 </div>
             </main>
