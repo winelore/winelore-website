@@ -383,16 +383,16 @@ async function rawGraphQL(query: string, variables: Record<string, any>) {
 
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
-        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
+        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
     }
     try {
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
-        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
+        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }> };
+        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
 
         // Members of this replica only
         const members = (replica.members || []).map((m: any) => ({
@@ -406,6 +406,16 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
 
         // All done when there's no current candidate and all replica candidates are EVALUATED
         const replicaCandidates = replica.replicaCandidates || [];
+        const totalCandidates = replicaCandidates.length;
+        const evaluatedCount = replicaCandidates.filter((rc: any) => rc.status === 'EVALUATED').length;
+        const currentCandidateIndex = currentCandidateId
+            ? replicaCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
+            : -1;
+        const candidatesLeft = totalCandidates - evaluatedCount;
+        const candidatesLeftAfterCurrent = currentCandidateIndex >= 0
+            ? totalCandidates - currentCandidateIndex - 1
+            : candidatesLeft;
+
         const allCandidatesEvaluated = replicaCandidates.length > 0
             && replicaCandidates.every((rc: any) => rc.status === 'EVALUATED');
 
@@ -444,7 +454,18 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             }
         }
 
-        return { members, currentCandidateId, currentCandidateCode, allCandidatesEvaluated, evaluations, propertyMap };
+        return {
+            members,
+            currentCandidateId,
+            currentCandidateCode,
+            allCandidatesEvaluated,
+            evaluations,
+            propertyMap,
+            totalCandidates,
+            currentCandidateIndex,
+            candidatesLeft,
+            candidatesLeftAfterCurrent,
+        };
     } catch (err: any) {
         console.error("Server Action Error (getWaitDataAction):", err);
         throw new Error(err.message || "Failed to fetch wait data");

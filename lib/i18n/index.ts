@@ -50,6 +50,18 @@ export function translate(
   )
 }
 
+export function translateWithCount(
+  locale: Locale,
+  key: MessageKey,
+  count: number,
+  params?: Record<string, string | number>
+): string {
+  const pluralKey = `${key}_plural` as MessageKey
+  const hasPlural = getNestedValue(messages[locale] as Record<string, unknown>, pluralKey) !== undefined
+  const resolvedKey = count === 1 || !hasPlural ? key : pluralKey
+  return translate(locale, resolvedKey, { count, ...params })
+}
+
 export function getDateLocale(locale: Locale): string {
   return locale === "uk" ? "uk-UA" : "en-GB"
 }
