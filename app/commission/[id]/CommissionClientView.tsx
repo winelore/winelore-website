@@ -364,7 +364,7 @@ export default function CommissionClientView({
         setIsMutating(true)
         try {
             await startCommissionAction(selectedReplica.id)
-            router.push(`/commission/${initialData.id}/replica/${selectedReplica.id}/wait`)
+            router.push(`/commission/${initialData.id}/replica/${selectedReplica.id}/evaluation`)
             router.refresh()
         } catch (err) {
             console.error("Failed to start replica tasting session:", err)
@@ -741,28 +741,6 @@ export default function CommissionClientView({
                             </h3>
                             
                             <div className="flex flex-col gap-6">
-                                {replicaStatus === "STARTED" && (
-                                    <div className="flex flex-col gap-2">
-                                        <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
-                                            className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
-                                        >
-                                            <FileText className="h-5 w-5" />
-                                            <span>{t("commission.continueEvaluation")}</span>
-                                        </button>
-                                        {selectedReplica?.currentCandidateId && (() => {
-                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
-                                            return (
-                                                <p className="text-xs text-slate-500 font-medium pl-1 flex items-center gap-1.5 flex-wrap">
-                                                    <span>{t("commission.currentCandidate", { code: code || t("common.na") })}</span>
-                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
-                                                </p>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-
                                 {isPreStart && currentUserRole && (
                                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
@@ -885,7 +863,7 @@ export default function CommissionClientView({
                                     </div>
                                 )}
 
-                                {replicaStatus === "STARTED" && currentUserRole !== "HEAD" && (
+                                {replicaStatus === "STARTED" && currentUserRole && (
                                     <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
                                         <div className="flex items-start gap-3">
                                             <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
@@ -901,8 +879,18 @@ export default function CommissionClientView({
                                                 </p>
                                             </div>
                                         </div>
+                                        {selectedReplica?.currentCandidateId && (() => {
+                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
+                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
+                                            return (
+                                                <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
+                                                    <span>{t("commission.currentCandidate", { code: code || t("common.na") })}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
+                                                </p>
+                                            );
+                                        })()}
                                         <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/wait`)}
+                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
                                         >
                                             {t("commission.enterTastingSession")} →

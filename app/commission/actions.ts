@@ -8,6 +8,10 @@ import {
     type GetCommissionTemplatesDeepVariables,
 } from '../../lib/commissionTemplatesQuery';
 import { cookies } from "next/headers";
+import {
+    findEvaluationForMember,
+    memberMatchesActor,
+} from "./auidUtils";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -398,10 +402,14 @@ export async function getReplicaCandidateAction(id: string) {
 
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
 
-async function rawGraphQL(query: string, variables: Record<string, any>) {
+async function rawGraphQL(
+    query: string,
+    variables: Record<string, any>,
+    headers?: Record<string, string>,
+) {
     const res = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 },
     });
@@ -410,18 +418,24 @@ async function rawGraphQL(query: string, variables: Record<string, any>) {
     return json.data;
 }
 
+async function getActorHeaders(): Promise<Record<string, string>> {
+    const cookieStore = await cookies();
+    const auid = cookieStore.get("auid")?.value ?? "1";
+    return { actor: auid, "x-actor": auid };
+}
+
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
-        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
+        return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0, myEvaluation: null };
     }
     try {
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
-        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
+        if (!commission) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0, myEvaluation: null };
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0 };
+        if (!replica) return { members: [], currentCandidateId: null, currentCandidateCode: null, allCandidatesEvaluated: false, evaluations: [], propertyMap: {} as Record<string, { name: string; isResult: boolean }>, totalCandidates: 0, currentCandidateIndex: -1, candidatesLeft: 0, candidatesLeftAfterCurrent: 0, myEvaluation: null };
 
         // Members of this replica only
         const members = (replica.members || []).map((m: any) => ({
@@ -483,6 +497,34 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             }
         }
 
+        const cookieStore = await cookies();
+        const actorAuid = cookieStore.get("auid")?.value ?? "1";
+        const myMember = members.find((m: any) => memberMatchesActor(m.auid, actorAuid));
+
+        let myEvaluation: any = null;
+        if (currentCandidateId) {
+            myEvaluation = await getMyEvaluationForCandidateAction(currentCandidateId);
+        }
+        if (!myEvaluation) {
+            for (const rc of [...replicaCandidates].reverse()) {
+                try {
+                    const candidateEval = await getMyEvaluationForCandidateAction(rc.id);
+                    if (candidateEval) {
+                        myEvaluation = candidateEval;
+                        break;
+                    }
+                } catch {
+                    // try next replica candidate
+                }
+            }
+        }
+        if (!myEvaluation && myMember) {
+            myEvaluation = findEvaluationForMember(evaluations, myMember.auid);
+        }
+        if (!myEvaluation) {
+            myEvaluation = findEvaluationForMember(evaluations, actorAuid);
+        }
+
         return {
             members,
             currentCandidateId,
@@ -494,10 +536,40 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             currentCandidateIndex,
             candidatesLeft,
             candidatesLeftAfterCurrent,
+            myEvaluation: myEvaluation ?? null,
         };
     } catch (err: any) {
         console.error("Server Action Error (getWaitDataAction):", err);
         throw new Error(err.message || "Failed to fetch wait data");
+    }
+}
+
+export async function getMyEvaluationForCandidateAction(candidateId: string) {
+    if (!isValidUuid(candidateId)) return null;
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            query GetMyEval($candId: ID!) {
+                evaluationByReplicaCandidateAndEvaluator(replicaCandidateId: $candId) {
+                    evaluatorAuid
+                    isComplete
+                    scores {
+                        code
+                        value
+                    }
+                    comments {
+                        id
+                        propertyId
+                        text
+                        voiceUrl
+                    }
+                }
+            }
+        `, { candId: candidateId }, headers);
+        return data?.evaluationByReplicaCandidateAndEvaluator ?? null;
+    } catch (err: any) {
+        console.error("Server Action Error (getMyEvaluationForCandidateAction):", err);
+        return null;
     }
 }
 

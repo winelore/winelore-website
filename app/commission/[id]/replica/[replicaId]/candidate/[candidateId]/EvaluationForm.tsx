@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
 import { submitEvaluationAction, getVoiceUploadUrlAction } from "../../../../../actions"
+import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
 import { Mic, Square, Trash2 } from "lucide-react"
 
@@ -528,7 +529,21 @@ export default function EvaluationForm({
                 ? [...perPropertyComments, { text: generalComment.trim() || undefined, voiceUrl: generalVoiceUrl, sortOrder: sortIndex }]
                 : perPropertyComments
 
-            await submitEvaluationAction(candidateId, scores, comments)
+            const submitted = await submitEvaluationAction(candidateId, scores, comments)
+
+            writeCachedWaitEvaluation(commissionId, replicaId, {
+                candidateId,
+                isComplete: submitted?.isComplete ?? true,
+                scores: submitted?.scores ?? scores,
+                comments: comments.map((comment, index) => ({
+                    id: `local-${index}`,
+                    propertyId: "propertyId" in comment && comment.propertyId != null
+                        ? String(comment.propertyId)
+                        : null,
+                    text: comment.text,
+                    voiceUrl: comment.voiceUrl,
+                })),
+            })
 
             setSuccess(true)
             

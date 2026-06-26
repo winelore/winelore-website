@@ -12,6 +12,11 @@ import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
 } from "../../../../actions"
+import { findEvaluationForMember, normalizeAuids } from "../../../../auidUtils"
+import {
+    clearCachedWaitEvaluation,
+    readCachedWaitEvaluation,
+} from "../../../../waitEvaluationCache"
 
 type PropertyMeta = { name: string; isResult: boolean }
 
@@ -95,11 +100,19 @@ function SubmittedScores({
 }
 
 function hasEvaluationData(
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; voiceUrl?: string | null }> },
+    evaluation: { scores?: Array<{ code: string; value: string | null }>; comments?: Array<{ text?: string; voiceUrl?: string | null }> },
 ) {
-    const hasScores = (evaluation.scores || []).some((s) => s.value)
-    const hasComments = (evaluation.comments || []).some((c) => c.text || c.voiceUrl)
+    const hasScores = (evaluation.scores || []).some(
+        (s) => s.value != null && String(s.value).trim() !== "",
+    )
+    const hasComments = (evaluation.comments || []).some(
+        (c) => c.text?.trim() || c.voiceUrl,
+    )
     return hasScores || hasComments
+}
+
+function hasScoreValue(value: string | null | undefined): boolean {
+    return value != null && String(value).trim() !== ""
 }
 
 function hasFullAssessmentDetails(
@@ -172,7 +185,7 @@ function MemberEvaluationDetails({
 }) {
     const { t } = useTranslation()
 
-    const scores = (evaluation.scores || []).filter((s) => s.value)
+    const scores = (evaluation.scores || []).filter((s) => hasScoreValue(s.value))
     const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
     const visibleComments = showAll
         ? allComments
@@ -243,12 +256,18 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [candidatesLeft, setCandidatesLeft] = useState<number>(0);
     const [candidatesLeftAfterCurrent, setCandidatesLeftAfterCurrent] = useState<number>(0);
     const [allDone, setAllDone] = useState(false);
+    const [myEvaluation, setMyEvaluation] = useState<any | null>(null);
 
-    // 1. Read AUID from cookie (fallback to 1)
+    // 1. Read AUID from cookie (fallback to 1) and restore cached evaluation from submit
     useEffect(() => {
         const cookieAuid = Cookies.get("auid");
         setAuid(cookieAuid ? parseInt(cookieAuid, 10) : 1);
-    }, []);
+
+        const cached = readCachedWaitEvaluation(commissionId, replicaId);
+        if (cached) {
+            setMyEvaluation(cached);
+        }
+    }, [commissionId, replicaId]);
 
     // 2. Polling loop every 3 seconds
     useEffect(() => {
@@ -256,12 +275,18 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
         const fetchData = async () => {
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
                 setEvaluations(newEvaluations || []);
                 setPropertyMap(newPropertyMap || {});
+                if (newMyEvaluation && hasEvaluationData(newMyEvaluation)) {
+                    setMyEvaluation(newMyEvaluation);
+                    clearCachedWaitEvaluation(commissionId, replicaId);
+                } else if (newMyEvaluation) {
+                    setMyEvaluation(newMyEvaluation);
+                }
                 setCandidatesLeft(newCandidatesLeft ?? 0);
                 setCandidatesLeftAfterCurrent(newCandidatesLeftAfterCurrent ?? 0);
 
@@ -388,19 +413,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 
                                 {/* 1. Render Heads */}
                                 {heads.map((headMember, i) => {
-                                    const headAuid = Array.isArray(headMember.auid) ? headMember.auid[0] : headMember.auid;
-                                    const headAuidsStr = Array.isArray(headMember.auid) ? headMember.auid.join(", ") : String(headMember.auid);
-                                    
-                                    // Find if there is an evaluation for this head member
-                                    const evaluation = evaluations.find((ev: any) => {
-                                        const evAuid = Array.isArray(ev.evaluatorAuid) ? ev.evaluatorAuid : [ev.evaluatorAuid];
-                                        return evAuid.some((id: any) => String(id) === String(headAuid));
-                                    });
+                                    const headAuidsStr = normalizeAuids(headMember.auid).join(", ");
+                                    const headKeyAuid = normalizeAuids(headMember.auid)[0] ?? i;
+
+                                    const evaluation = findEvaluationForMember(evaluations, headMember.auid);
 
                                     const isCompleted = evaluation?.isComplete || false;
 
                                     return (
-                                        <div key={`${currentCandidateId}-head-${headAuid}`} className="flex flex-col p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 space-y-3">
+                                        <div key={`${currentCandidateId}-head-${headKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold text-indigo-950">
@@ -434,19 +455,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                                 {/* 2. Render Experts */}
                                 {experts.map((expert, i) => {
-                                    const expertAuid = Array.isArray(expert.auid) ? expert.auid[0] : expert.auid;
-                                    const expertAuidsStr = Array.isArray(expert.auid) ? expert.auid.join(", ") : String(expert.auid);
-                                    
-                                    // Find if there is an evaluation for this expert
-                                    const evaluation = evaluations.find((ev: any) => {
-                                        const evAuid = Array.isArray(ev.evaluatorAuid) ? ev.evaluatorAuid : [ev.evaluatorAuid];
-                                        return evAuid.some((id: any) => String(id) === String(expertAuid));
-                                    });
+                                    const expertAuidsStr = normalizeAuids(expert.auid).join(", ");
+                                    const expertKeyAuid = normalizeAuids(expert.auid)[0] ?? i;
+
+                                    const evaluation = findEvaluationForMember(evaluations, expert.auid);
 
                                     const isCompleted = evaluation?.isComplete || false;
 
                                     return (
-                                        <div key={`${currentCandidateId}-expert-${expertAuid}`} className="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                                        <div key={`${currentCandidateId}-expert-${expertKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <span className="font-semibold text-slate-700">
                                                     {expertAuidsStr} {expert.role === "TRAINEE_EXPERT" ? `(${t("commission.roleTrainee")})` : ""}
@@ -491,11 +508,6 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // ==========================================
     // EXPERT VIEW
     // ==========================================
-    const myEvaluation = evaluations.find((ev: any) => {
-        const evAuid = Array.isArray(ev.evaluatorAuid) ? ev.evaluatorAuid : [ev.evaluatorAuid]
-        return evAuid.some((id: any) => String(id) === String(auid))
-    })
-
     return (
         <div className="flex min-h-screen flex-col bg-[#0f172a]">
             <AppHeader activeTab="competitions" />
@@ -520,19 +532,31 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     )}
                 </div>
 
-                {myEvaluation && hasEvaluationData(myEvaluation) && (
-                    <div className="w-full max-w-2xl mb-8 bg-white rounded-2xl p-5 shadow-2xl shadow-black/50 border border-slate-200 text-left">
-                        <MemberEvaluationSection
-                            evaluation={myEvaluation}
-                            propertyMap={propertyMap}
-                            accent="slate"
-                            forceShowAll
-                        />
-                    </div>
-                )}
+                <div className="w-full max-w-2xl mb-8 bg-white rounded-2xl shadow-2xl shadow-black/50 border border-slate-200 overflow-hidden text-left">
+                    {myEvaluation && hasEvaluationData(myEvaluation) && (
+                        <div className="p-5">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                                {t("evaluation.submittedScores")}
+                            </p>
+                            <MemberEvaluationSection
+                                evaluation={myEvaluation}
+                                propertyMap={propertyMap}
+                                accent="slate"
+                                forceShowAll
+                            />
+                        </div>
+                    )}
 
-                <div className="w-full max-w-2xl bg-white p-2 rounded-[2.5rem] shadow-2xl shadow-black/50 border border-slate-800">
-                    <WineJumperGame />
+                    {myEvaluation && hasEvaluationData(myEvaluation) && (
+                        <div className="border-t border-slate-100" />
+                    )}
+
+                    <div className="p-5">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 text-center">
+                            {t("commission.boredPlay")}
+                        </p>
+                        <WineJumperGame embedded />
+                    </div>
                 </div>
 
                 <div className="mt-12 flex items-center gap-3 text-slate-400 font-medium">
