@@ -94,6 +94,14 @@ function SubmittedScores({
     )
 }
 
+function hasEvaluationData(
+    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; voiceUrl?: string | null }> },
+) {
+    const hasScores = (evaluation.scores || []).some((s) => s.value)
+    const hasComments = (evaluation.comments || []).some((c) => c.text || c.voiceUrl)
+    return hasScores || hasComments
+}
+
 function hasFullAssessmentDetails(
     evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
     propertyMap: Record<string, PropertyMeta>,
@@ -109,14 +117,16 @@ function MemberEvaluationSection({
     evaluation,
     propertyMap,
     accent,
+    forceShowAll = false,
 }: {
     evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
     propertyMap: Record<string, PropertyMeta>
     accent: "indigo" | "slate"
+    forceShowAll?: boolean
 }) {
     const { t } = useTranslation()
-    const [expanded, setExpanded] = useState(false)
-    const canExpand = hasFullAssessmentDetails(evaluation, propertyMap)
+    const [expanded, setExpanded] = useState(forceShowAll)
+    const canExpand = !forceShowAll && hasFullAssessmentDetails(evaluation, propertyMap)
 
     return (
         <div className="space-y-2">
@@ -124,7 +134,7 @@ function MemberEvaluationSection({
                 evaluation={evaluation}
                 propertyMap={propertyMap}
                 accent={accent}
-                showAll={expanded}
+                showAll={forceShowAll || expanded}
             />
             {canExpand && (
                 <button
@@ -162,7 +172,7 @@ function MemberEvaluationDetails({
 }) {
     const { t } = useTranslation()
 
-    const scores = evaluation.scores || []
+    const scores = (evaluation.scores || []).filter((s) => s.value)
     const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
     const visibleComments = showAll
         ? allComments
@@ -452,11 +462,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                 )}
                                             </div>
                                             
-                                            {isCompleted && evaluation && (
+                                            {evaluation && hasEvaluationData(evaluation) && (
                                                 <MemberEvaluationSection
                                                     evaluation={evaluation}
                                                     propertyMap={propertyMap}
                                                     accent="slate"
+                                                    forceShowAll={!isCompleted}
                                                 />
                                             )}
                                         </div>
@@ -480,6 +491,11 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // ==========================================
     // EXPERT VIEW
     // ==========================================
+    const myEvaluation = evaluations.find((ev: any) => {
+        const evAuid = Array.isArray(ev.evaluatorAuid) ? ev.evaluatorAuid : [ev.evaluatorAuid]
+        return evAuid.some((id: any) => String(id) === String(auid))
+    })
+
     return (
         <div className="flex min-h-screen flex-col bg-[#0f172a]">
             <AppHeader activeTab="competitions" />
@@ -493,7 +509,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
                     {t("commission.evaluationSubmitted")}
                 </h1>
-                <div className="max-w-md mx-auto mb-14 space-y-4">
+                <div className="max-w-md mx-auto mb-8 space-y-4">
                     <p className="text-slate-400 text-lg">
                         {t("commission.waitingNextRound")} {t("commission.autoRefreshNotice")}
                     </p>
@@ -503,6 +519,17 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </p>
                     )}
                 </div>
+
+                {myEvaluation && hasEvaluationData(myEvaluation) && (
+                    <div className="w-full max-w-2xl mb-8 bg-white rounded-2xl p-5 shadow-2xl shadow-black/50 border border-slate-200 text-left">
+                        <MemberEvaluationSection
+                            evaluation={myEvaluation}
+                            propertyMap={propertyMap}
+                            accent="slate"
+                            forceShowAll
+                        />
+                    </div>
+                )}
 
                 <div className="w-full max-w-2xl bg-white p-2 rounded-[2.5rem] shadow-2xl shadow-black/50 border border-slate-800">
                     <WineJumperGame />

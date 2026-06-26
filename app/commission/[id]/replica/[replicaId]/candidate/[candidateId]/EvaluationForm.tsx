@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useRef, useEffect } from "react"
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
@@ -104,6 +104,107 @@ function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel
     const translatedLabel = formatEnumLabel(value)
     const backendTranslated = useBackendTranslation(translatedLabel)
     return <option value={value}>{backendTranslated}</option>
+}
+
+const DISCRETE_BUBBLE_MAX_OPTIONS = 20
+const DISCRETE_BUBBLE_MAX_ROWS = 2
+
+function DiscreteNumbersInput({
+    allowedValues,
+    currentValue,
+    onChange,
+    selectPlaceholder,
+}: {
+    allowedValues: number[]
+    currentValue: number | undefined
+    onChange: (val: number | undefined) => void
+    selectPlaceholder: string
+}) {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const measureRef = useRef<HTMLDivElement>(null)
+    const [useBubbles, setUseBubbles] = useState(() =>
+        allowedValues.length > 0 && allowedValues.length <= DISCRETE_BUBBLE_MAX_OPTIONS
+    )
+
+    useLayoutEffect(() => {
+        const container = containerRef.current
+        const measure = measureRef.current
+        if (!container || !measure || allowedValues.length === 0) {
+            setUseBubbles(false)
+            return
+        }
+        if (allowedValues.length > DISCRETE_BUBBLE_MAX_OPTIONS) {
+            setUseBubbles(false)
+            return
+        }
+
+        const checkFit = () => {
+            const width = container.offsetWidth
+            if (width === 0) return
+
+            measure.style.width = `${width}px`
+            const firstButton = measure.querySelector("button")
+            const rowHeight = firstButton?.offsetHeight ?? 36
+            const maxHeight = rowHeight * DISCRETE_BUBBLE_MAX_ROWS + 8
+            setUseBubbles(measure.scrollHeight <= maxHeight)
+        }
+
+        checkFit()
+        const observer = new ResizeObserver(checkFit)
+        observer.observe(container)
+        return () => observer.disconnect()
+    }, [allowedValues])
+
+    const bubbleButtonClass = (selected: boolean) =>
+        `min-w-[2.25rem] h-9 px-2.5 rounded-full text-xs font-bold border transition-colors ${
+            selected
+                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+        }`
+
+    return (
+        <div ref={containerRef} className="relative w-full">
+            <div
+                ref={measureRef}
+                aria-hidden
+                className="pointer-events-none invisible absolute inset-x-0 top-0 flex flex-wrap gap-2"
+            >
+                {allowedValues.map((opt) => (
+                    <button key={opt} type="button" tabIndex={-1} className={bubbleButtonClass(false)}>
+                        {opt}
+                    </button>
+                ))}
+            </div>
+            {useBubbles ? (
+                <div className="flex flex-wrap gap-2 justify-end">
+                    {allowedValues.map((opt) => (
+                        <button
+                            key={opt}
+                            type="button"
+                            onClick={() => onChange(opt)}
+                            className={bubbleButtonClass(currentValue === opt)}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <select
+                    value={currentValue ?? ""}
+                    onChange={(e) => {
+                        const val = e.target.value
+                        onChange(val === "" ? undefined : Number(val))
+                    }}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                >
+                    <option value="">{selectPlaceholder}</option>
+                    {allowedValues.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            )}
+        </div>
+    )
 }
 
 function VoiceCommentButton({
@@ -590,25 +691,29 @@ export default function EvaluationForm({
                                              )
                                          })()}
 
-                                        {(prop.__typename === "EnumProperty" || prop.__typename === "DiscreteNumbersProperty") && (
+                                        {prop.__typename === "EnumProperty" && (
                                             <select
                                                 value={currentValue ?? ""}
                                                 onChange={(e) => {
                                                     const val = e.target.value
-                                                    handleValueChange(prop.code, prop.__typename === "DiscreteNumbersProperty" ? (val === "" ? undefined : Number(val)) : val)
+                                                    handleValueChange(prop.code, val === "" ? undefined : val)
                                                 }}
                                                 className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
                                             >
                                                 <option value="">{t("evaluation.selectOption")}</option>
-                                                {prop.__typename === "EnumProperty" 
-                                                    ? prop.enumAllowedValues?.map((opt) => (
-                                                        <EnumOption key={opt} value={opt} formatEnumLabel={formatEnumLabel} />
-                                                    ))
-                                                    : prop.discreteAllowedValues?.map((opt) => (
-                                                        <option key={opt} value={opt}>{opt}</option>
-                                                    ))
-                                                }
+                                                {prop.enumAllowedValues?.map((opt) => (
+                                                    <EnumOption key={opt} value={opt} formatEnumLabel={formatEnumLabel} />
+                                                ))}
                                             </select>
+                                        )}
+
+                                        {prop.__typename === "DiscreteNumbersProperty" && (
+                                            <DiscreteNumbersInput
+                                                allowedValues={prop.discreteAllowedValues ?? []}
+                                                currentValue={currentValue}
+                                                onChange={(val) => handleValueChange(prop.code, val)}
+                                                selectPlaceholder={t("evaluation.selectOption")}
+                                            />
                                         )}
 
                                         {prop.__typename === "SmartProperty" && (() => {
