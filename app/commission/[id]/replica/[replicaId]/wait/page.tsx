@@ -355,9 +355,17 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         return () => clearInterval(interval);
     }, [commissionId, replicaId, auid, currentCandidateId, router]);
 
+    const heads = members.filter(m => m.role === "HEAD");
+    const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
+    const commentFlags = { propertyCommentsEnabled, voiceCommentsEnabled };
+    const canAdvanceToNextBeverage =
+        Boolean(currentCandidateId) &&
+        members.length > 0 &&
+        members.every((member) => findEvaluationForMember(evaluations, member.auid)?.isComplete === true);
+
     // HEAD action: advance to next beverage
     const handleNextBeverage = async () => {
-        if (!currentCandidateId || isSwitching) return;
+        if (!canAdvanceToNextBeverage || isSwitching || !currentCandidateId) return;
         setIsSwitching(true);
         try {
             await markCandidateEvaluatedAction(currentCandidateId);
@@ -367,10 +375,6 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             setIsSwitching(false);
         }
     };
-
-    const heads = members.filter(m => m.role === "HEAD");
-    const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
-    const commentFlags = { propertyCommentsEnabled, voiceCommentsEnabled };
 
     // ==========================================
     // HEAD OF COMMISSION VIEW
@@ -426,7 +430,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </div>
                         <button
                             onClick={handleNextBeverage}
-                            disabled={!currentCandidateId || isSwitching}
+                            disabled={!canAdvanceToNextBeverage || isSwitching}
                             className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
                         >
                             {isSwitching ? (
