@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { parseJwt } from "@/lib/pkce";
+import { axusSdk } from "@/lib/axusClient";
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
@@ -53,6 +54,32 @@ export async function GET(request: NextRequest) {
     const auid = idTokenPayload.sub;
     const username = idTokenPayload.preferred_username || "axus_user";
 
+    // Fetch display name from AXUS GraphQL API
+    let displayName = `@${username}`;
+    try {
+      const res = await axusSdk.UserDetails({ auid: String(auid) });
+      const defaultUsername = res?.usernames?.defaultUsername || username;
+      let defaultVar = null;
+      if (res?.defaultVariation?.variationId) {
+        defaultVar = res.variations?.find(v => v.id === res.defaultVariation?.variationId);
+      }
+      if (!defaultVar && res?.variations && res.variations.length > 0) {
+        defaultVar = res.variations[0];
+      }
+
+      const fName = defaultVar?.firstName?.trim();
+      const lName = defaultVar?.lastName?.trim();
+      const isPlaceholder = fName === "Default" && lName === "Variation";
+
+      if ((fName || lName) && !isPlaceholder) {
+        displayName = [fName, lName].filter(Boolean).join(" ");
+      } else {
+        displayName = `@${defaultUsername}`;
+      }
+    } catch (err) {
+      console.error("Failed to fetch user details during callback:", err);
+    }
+
     // Set cookies (secure: false as requested by user)
     cookieStore.set("auid", String(auid), {
       httpOnly: false, // accessible client-side (e.g. by js-cookie)
@@ -63,6 +90,14 @@ export async function GET(request: NextRequest) {
     });
 
     cookieStore.set("username", String(username), {
+      httpOnly: false, // accessible client-side
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      maxAge: tokens.expires_in || 3600
+    });
+
+    cookieStore.set("displayName", String(displayName), {
       httpOnly: false, // accessible client-side
       sameSite: "lax",
       secure: false,

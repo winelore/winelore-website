@@ -9,6 +9,7 @@ import { useTranslation } from "@/lib/i18n/context"
 
 import { useEffect, useState } from "react"
 import Cookies from "js-cookie"
+import { getUsernamesAction } from "@/app/userActions"
 
 export type AppTabId = "feed" | "competitions" | "wines" | "beverages"
 
@@ -33,8 +34,25 @@ export function AppHeader({
     setMounted(true)
     const storedAuid = Cookies.get("auid")
     const storedUsername = Cookies.get("username")
+    const storedDisplayName = Cookies.get("displayName")
+    
     if (storedAuid) {
-      setCurrentUser(storedUsername || storedAuid)
+      if (storedDisplayName) {
+        setCurrentUser(storedDisplayName)
+      } else {
+        setCurrentUser(storedUsername ? `@${storedUsername}` : storedAuid)
+        
+        getUsernamesAction([storedAuid])
+          .then((res) => {
+            if (res[storedAuid]) {
+              setCurrentUser(res[storedAuid])
+              Cookies.set("displayName", res[storedAuid], { path: "/", secure: false, sameSite: "lax" })
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to fetch display name in header:", err)
+          })
+      }
     }
   }, [])
 
