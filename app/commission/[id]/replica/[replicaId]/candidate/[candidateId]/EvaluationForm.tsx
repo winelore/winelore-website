@@ -658,14 +658,13 @@ export default function EvaluationForm({
                                                             )
 
                                                             const stepCount = Math.round((max - min) / step)
-                                                            const showTicks = stepCount > 0 && stepCount <= 20
-                                                            const showLabels = stepCount > 0 && stepCount <= 10
+                                                            const showSliderTicks = stepCount > 0 && stepCount <= 100
 
                                                             return (
                                                                 <div className="w-full flex flex-col">
                                                                     <div className="flex items-center gap-3 w-full">
                                                                         <div
-                                                                            className={`flex-1 relative flex flex-col ${showLabels ? "pb-5" : "py-1"}`}>
+                                                                            className={`flex-1 relative flex flex-col ${showSliderTicks ? "pb-5" : "py-1"}`}>
                                                                             <Slider
                                                                                 min={min}
                                                                                 max={max}
@@ -687,17 +686,17 @@ export default function EvaluationForm({
                                                                             placeholder={t("evaluation.val")}
                                                                         />
                                                                     </div>
-                                                                    <div
-                                                                        className="flex justify-between text-[9px] text-slate-400 px-0.5 mt-0.5">
-                                                                        {!showLabels ?
-                                                                            <span>{t("evaluation.min", {value: min})}</span> :
-                                                                            <span/>}
-                                                                        {isOutOfRange && <span
-                                                                            className="text-rose-500 font-medium animate-pulse">{t("evaluation.outOfRange")}</span>}
-                                                                        {!showLabels ?
-                                                                            <span>{t("evaluation.max", {value: max})}</span> :
-                                                                            <span/>}
-                                                                    </div>
+                                                                    {(!showSliderTicks || isOutOfRange) && (
+                                                                        <div
+                                                                            className="flex justify-between text-[9px] text-slate-400 px-0.5 mt-0.5">
+                                                                            {!showSliderTicks &&
+                                                                                <span>{t("evaluation.min", {value: min})}</span>}
+                                                                            {isOutOfRange && <span
+                                                                                className="text-rose-500 font-medium animate-pulse mx-auto">{t("evaluation.outOfRange")}</span>}
+                                                                            {!showSliderTicks &&
+                                                                                <span>{t("evaluation.max", {value: max})}</span>}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )
                                                         })()}
