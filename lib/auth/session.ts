@@ -1,7 +1,5 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { parseJwt } from "@/lib/pkce";
-import { authRefreshPath } from "@/lib/auth/paths";
 
 const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30;
 const TOKEN_REFRESH_BUFFER_SECONDS = 5 * 60;
@@ -130,40 +128,16 @@ export async function clearSessionCookies(cookieStore: CookieStore) {
   cookieStore.delete("axus_refresh_token");
 }
 
-function sessionNeedsRefresh(
-  auid: string | undefined,
-  accessToken: string | undefined,
-  refreshToken: string | undefined,
-): boolean {
-  return !auid || (accessToken ? isTokenExpiringSoon(accessToken) : Boolean(refreshToken));
-}
-
-/** Safe for Server Components: redirects to /auth/refresh instead of mutating cookies. */
-export async function ensureAuthenticatedPage(returnTo: string): Promise<string | null> {
-  const cookieStore = await cookies();
-  const auid = cookieStore.get("auid")?.value;
-  const refreshToken = cookieStore.get("axus_refresh_token")?.value;
-  const accessToken = cookieStore.get("axus_access_token")?.value;
-
-  if (!sessionNeedsRefresh(auid, accessToken, refreshToken) && auid) {
-    return auid;
-  }
-
-  if (refreshToken) {
-    redirect(authRefreshPath(returnTo));
-  }
-
-  return auid ?? null;
-}
-
-/** For Server Actions and Route Handlers where cookie mutation is allowed. */
 export async function ensureAuthenticated(): Promise<string | null> {
   const cookieStore = await cookies();
   const auid = cookieStore.get("auid")?.value;
   const refreshToken = cookieStore.get("axus_refresh_token")?.value;
   const accessToken = cookieStore.get("axus_access_token")?.value;
 
-  if (!sessionNeedsRefresh(auid, accessToken, refreshToken) && auid) {
+  const needsRefresh =
+    !auid || (accessToken ? isTokenExpiringSoon(accessToken) : Boolean(refreshToken));
+
+  if (!needsRefresh && auid) {
     return auid;
   }
 
