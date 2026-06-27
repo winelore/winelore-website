@@ -17,7 +17,12 @@ export async function GET(request: NextRequest) {
   const expectedState = cookieStore.get("axus_oauth_state")?.value;
   const codeVerifier = cookieStore.get("axus_code_verifier")?.value;
 
-  if (!code || !state || !expectedState || state !== expectedState || !codeVerifier) {
+  if (!code || !state) {
+    // Missing OAuth parameters, likely a direct navigation to this route
+    return NextResponse.redirect(new URL("/?error=missing_oauth_params", request.url));
+  }
+
+  if (!expectedState || state !== expectedState || !codeVerifier) {
     console.error("Invalid state or verifier", { code, state, expectedState, codeVerifier });
     return NextResponse.redirect(new URL("/?error=invalid_state", request.url));
   }
@@ -86,7 +91,7 @@ export async function GET(request: NextRequest) {
       sameSite: "lax",
       secure: false,
       path: "/",
-      maxAge: tokens.expires_in || 3600
+      maxAge: tokens.expires_in || 43200
     });
 
     cookieStore.set("username", String(username), {
@@ -94,7 +99,7 @@ export async function GET(request: NextRequest) {
       sameSite: "lax",
       secure: false,
       path: "/",
-      maxAge: tokens.expires_in || 3600
+      maxAge: tokens.expires_in || 43200
     });
 
     cookieStore.set("displayName", String(displayName), {
@@ -102,7 +107,7 @@ export async function GET(request: NextRequest) {
       sameSite: "lax",
       secure: false,
       path: "/",
-      maxAge: tokens.expires_in || 3600
+      maxAge: tokens.expires_in || 43200
     });
 
     cookieStore.set("axus_access_token", tokens.axus_access_token || tokens.access_token, {
@@ -110,7 +115,7 @@ export async function GET(request: NextRequest) {
       sameSite: "lax",
       secure: false,
       path: "/",
-      maxAge: tokens.expires_in || 3600
+      maxAge: tokens.expires_in || 43200
     });
 
     if (tokens.refresh_token) {

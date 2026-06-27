@@ -66,10 +66,10 @@ export async function refreshTokens(refreshToken: string): Promise<RefreshResult
   const auid = tokenPayload.sub;
   const username = tokenPayload.preferred_username || tokenPayload.username || "axus_user";
   
-  let expiresIn = 3600;
+  let expiresIn = 43200;
   if (tokenPayload.exp) {
     expiresIn = Math.floor(tokenPayload.exp - (Date.now() / 1000));
-    if (expiresIn <= 0) expiresIn = 3600;
+    if (expiresIn <= 0) expiresIn = 43200;
   }
 
   // Fetch user details raw GraphQL query to avoid dependencies in Edge runtime
