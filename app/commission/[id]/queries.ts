@@ -13,6 +13,9 @@ export const GET_COMMISSION = gql(`
       startedAt
       endedAt
       createdAt
+      candidates {
+        id
+      }
       competition {
         id
         name
@@ -308,6 +311,12 @@ export const GET_REPLICA_CANDIDATES = gql(`
     commissionReplica(id: $replicaId) {
       id
       status
+      commission {
+        id
+        candidates {
+          id
+        }
+      }
       replicaCandidates {
         id
         status

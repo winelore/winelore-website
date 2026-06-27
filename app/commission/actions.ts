@@ -321,6 +321,8 @@ export async function getCommissionDataAction(commissionId: string) {
             }
         }
 
+        const candidatesOrder = (commission.candidates || []).map((c: any) => c.id);
+
         const replicas = (commission.replicas || []).map((r: any) => ({
             id: r.id,
             name: r.name || `${r.type} Replica`,
@@ -341,7 +343,11 @@ export async function getCommissionDataAction(commissionId: string) {
                     id: rc.candidate.id,
                     anonymizedCode: rc.candidate.anonymizedCode || null
                 } : null
-            }))
+            })).sort((a: any, b: any) => {
+                const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
+                const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
+                return idxA - idxB;
+            })
         }));
 
         // Backwards compatible members representation (from first standard replica or first replica)
@@ -380,7 +386,16 @@ export async function getReplicaCandidatesAction(replicaId: string) {
     if (!isValidUuid(replicaId)) return [];
     try {
         const response = await sdk.GetReplicaCandidates({ replicaId });
-        return response.commissionReplica?.replicaCandidates || [];
+        const replicaCandidates = response.commissionReplica?.replicaCandidates || [];
+        const candidatesOrder = response.commissionReplica?.commission?.candidates?.map((c: any) => c.id) || [];
+        if (candidatesOrder.length > 0) {
+            return [...replicaCandidates].sort((a: any, b: any) => {
+                const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
+                const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
+                return idxA - idxB;
+            });
+        }
+        return replicaCandidates;
     } catch (err: any) {
         console.error("Server Action Error (getReplicaCandidatesAction):", err);
         throw new Error(err.message || "Failed to fetch replica candidates");
@@ -476,7 +491,12 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             auid: Array.isArray(m.auid) ? m.auid.flat() : m.auid,
         }));
 
-        const replicaCandidates = replica.replicaCandidates || [];
+        const candidatesOrder = (commission.candidates || []).map((c: any) => c.id);
+        const replicaCandidates = [...(replica.replicaCandidates || [])].sort((a: any, b: any) => {
+            const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
+            const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
+            return idxA - idxB;
+        });
         // The backend is the single source of truth for which candidate is current.
         // Never compute a "next" candidate on the frontend: the backend advances
         // currentCandidateId itself when the HEAD marks a candidate as evaluated, and
@@ -635,12 +655,18 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
         //    status; it does NOT move the replica's current candidate pointer.
         const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId }, { headers });
 
-        // 2. Determine the next candidate still awaiting evaluation. The replica
-        //    candidates are returned in evaluation order, so after marking the current
-        //    one evaluated the first remaining PENDING candidate is the next beverage.
         const candidatesResponse = await sdk.GetReplicaCandidates({ replicaId });
         const replicaCandidates = candidatesResponse.commissionReplica?.replicaCandidates || [];
-        const nextCandidate = replicaCandidates.find((rc: any) => rc.status === "PENDING");
+        const candidatesOrder = candidatesResponse.commissionReplica?.commission?.candidates?.map((c: any) => c.id) || [];
+        let sortedCandidates = replicaCandidates;
+        if (candidatesOrder.length > 0) {
+            sortedCandidates = [...replicaCandidates].sort((a: any, b: any) => {
+                const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
+                const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
+                return idxA - idxB;
+            });
+        }
+        const nextCandidate = sortedCandidates.find((rc: any) => rc.status === "PENDING");
         const nextCandidateId = nextCandidate?.id ?? null;
 
         // 3. Explicitly advance (or clear, when finished) the replica's current candidate.
