@@ -520,15 +520,21 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
 
         let evaluations: any[] = [];
         const propertyMap: Record<string, { name: string; isResult: boolean }> = {};
+        let myCurrentCandidateEvaluation: any = null;
 
         if (currentCandidateId) {
             try {
-                // Fetch evaluations for this specific replica candidate ID
-                evaluations = await getEvaluationsForCandidateAction(currentCandidateId);
+                // Fetch evaluations, template details, and my current evaluation in parallel
+                const [evalsRes, templateResult, myCurrentEvalRes] = await Promise.all([
+                    getEvaluationsForCandidateAction(currentCandidateId),
+                    getCommissionTemplatesWithResultMarkers(commissionId),
+                    getMyEvaluationForCandidateAction(currentCandidateId),
+                ]);
 
-                // Fetch template properties to map codes to user-friendly names
-                const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
-                const commissionWithTemplates = templateResult.commission;
+                evaluations = evalsRes || [];
+                myCurrentCandidateEvaluation = myCurrentEvalRes;
+
+                const commissionWithTemplates = templateResult?.commission;
                 if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
                     const link = commissionWithTemplates.templateEditions.find(l => l.beverageType === "WINE") || commissionWithTemplates.templateEditions[0];
                     const templateEdition = link?.templateEdition;
@@ -557,26 +563,8 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const actorAuid = cookieStore.get("auid")?.value;
         const myMember = actorAuid ? members.find((m: any) => memberMatchesActor(m.auid, actorAuid)) : null;
 
-        let myEvaluation: any = null;
-        let myCurrentCandidateEvaluation: any = null;
-        if (currentCandidateId) {
-            myCurrentCandidateEvaluation = await getMyEvaluationForCandidateAction(currentCandidateId);
-            myEvaluation = myCurrentCandidateEvaluation;
-        }
+        let myEvaluation = myCurrentCandidateEvaluation;
         const hasCompletedCurrentCandidate = myCurrentCandidateEvaluation?.isComplete === true;
-        if (!myEvaluation) {
-            for (const rc of [...replicaCandidates].reverse()) {
-                try {
-                    const candidateEval = await getMyEvaluationForCandidateAction(rc.id);
-                    if (candidateEval) {
-                        myEvaluation = candidateEval;
-                        break;
-                    }
-                } catch {
-                    // try next replica candidate
-                }
-            }
-        }
         if (!myEvaluation && myMember) {
             myEvaluation = findEvaluationForMember(evaluations, myMember.auid);
         }
