@@ -424,7 +424,7 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     return { actor: auid, "x-actor": auid };
 }
 
-function isReplicaCandidateFinished(status: string): boolean {
+export function isReplicaCandidateFinished(status: string): boolean {
     return status === "EVALUATED" || status === "DISQUALIFIED";
 }
 

@@ -109,6 +109,7 @@ function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel
 
 const DISCRETE_BUBBLE_MAX_OPTIONS = 20
 const DISCRETE_BUBBLE_MAX_ROWS = 2
+const EMPTY_DISCRETE_VALUES: number[] = []
 
 function DiscreteNumbersInput({
                                   allowedValues,
@@ -124,8 +125,10 @@ function DiscreteNumbersInput({
     const containerRef = useRef<HTMLDivElement>(null)
     const measureRef = useRef<HTMLDivElement>(null)
 
-    // Створюємо відсортовану копію масиву за зростанням
-    const sortedValues = [...allowedValues].sort((a, b) => a - b)
+    const sortedValues = useMemo(
+        () => [...allowedValues].sort((a, b) => a - b),
+        [allowedValues]
+    )
 
     const [useBubbles, setUseBubbles] = useState(() =>
         sortedValues.length > 0 && sortedValues.length <= DISCRETE_BUBBLE_MAX_OPTIONS
@@ -134,11 +137,11 @@ function DiscreteNumbersInput({
     useLayoutEffect(() => {
         const container = containerRef.current
         const measure = measureRef.current
-        if (!container || !measure || sortedValues.length === 0) {
+        if (!container || !measure || allowedValues.length === 0) {
             setUseBubbles(false)
             return
         }
-        if (sortedValues.length > DISCRETE_BUBBLE_MAX_OPTIONS) {
+        if (allowedValues.length > DISCRETE_BUBBLE_MAX_OPTIONS) {
             setUseBubbles(false)
             return
         }
@@ -158,7 +161,7 @@ function DiscreteNumbersInput({
         const observer = new ResizeObserver(checkFit)
         observer.observe(container)
         return () => observer.disconnect()
-    }, [sortedValues])
+    }, [allowedValues])
 
     const bubbleButtonClass = (selected: boolean) =>
         `min-w-[2.25rem] h-9 px-2.5 rounded-full text-xs font-bold border transition-colors ${
@@ -174,7 +177,6 @@ function DiscreteNumbersInput({
                 aria-hidden
                 className="pointer-events-none invisible absolute inset-x-0 top-0 flex flex-wrap gap-2"
             >
-                {/* Використовуємо sortedValues замість allowedValues */}
                 {sortedValues.map((opt) => (
                     <button key={opt} type="button" tabIndex={-1} className={bubbleButtonClass(false)}>
                         {opt}
@@ -183,7 +185,6 @@ function DiscreteNumbersInput({
             </div>
             {useBubbles ? (
                 <div className="flex flex-wrap gap-2 justify-end">
-                    {/* Використовуємо sortedValues */}
                     {sortedValues.map((opt) => (
                         <button
                             key={opt}
@@ -205,7 +206,6 @@ function DiscreteNumbersInput({
                     className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
                 >
                     <option value="">{selectPlaceholder}</option>
-                    {/* Використовуємо sortedValues */}
                     {sortedValues.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
                     ))}
@@ -771,7 +771,7 @@ export default function EvaluationForm({
 
                                                         {prop.__typename === "DiscreteNumbersProperty" && (
                                                             <DiscreteNumbersInput
-                                                                allowedValues={prop.discreteAllowedValues ?? []}
+                                                                allowedValues={prop.discreteAllowedValues ?? EMPTY_DISCRETE_VALUES}
                                                                 currentValue={currentValue}
                                                                 onChange={(val) => handleValueChange(prop.code, val)}
                                                                 selectPlaceholder={t("evaluation.selectOption")}

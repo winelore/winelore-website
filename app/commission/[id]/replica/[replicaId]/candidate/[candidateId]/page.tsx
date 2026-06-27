@@ -1,4 +1,4 @@
-import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
+import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction, isReplicaCandidateFinished } from "../../../../../actions"
 import { notFound, redirect } from "next/navigation"
 import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
@@ -25,7 +25,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const currentReplicaId = replicaCandidate.replica.id
 
     // If this candidate round is finished, send the user to the wait page
-    if (replicaCandidate.status === "EVALUATED" || replicaCandidate.status === "DISQUALIFIED") {
+    if (isReplicaCandidateFinished(replicaCandidate.status)) {
         redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
     }
 
@@ -44,7 +44,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const currentIndex = replicaCandidates.findIndex((c: any) => c.id === candidateId)
     const currentReplicaCandidate = replicaCandidates[currentIndex] || replicaCandidate
     const currentCandidate = currentReplicaCandidate.candidate
-    const evaluatedCount = replicaCandidates.filter((c: any) => c.status === "EVALUATED").length
+    const evaluatedCount = replicaCandidates.filter((c: any) => isReplicaCandidateFinished(c.status)).length
     const candidatesLeft = replicaCandidates.length - evaluatedCount
 
     // Fetch candidate origin only when the competition allows it during evaluation
