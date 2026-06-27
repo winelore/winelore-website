@@ -13,6 +13,7 @@ import {
     startCommissionAction, 
     getCommissionDataAction
 } from "../actions"
+import { isReplicaCandidateFinished } from "../replicaUtils"
 
 const tabs = (t: any) => [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -397,12 +398,57 @@ export default function CommissionClientView({
     const isCommissionCompleted = initialData.status === "COMPLETED"
     const isCompetitionHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
     const showResultsBanner = isCompetitionHolder
+    const isUserReplicaMember = selectedReplica?.members.some(
+        (m) => currentAuid !== null && m.auid.includes(currentAuid),
+    ) ?? false
+    const myReplica = localReplicas.find((r) =>
+        r.members.some((m) => currentAuid !== null && m.auid.includes(currentAuid)),
+    ) ?? null
+    const allCandidatesEvaluated =
+        (selectedReplica?.replicaCandidates?.length ?? 0) > 0 &&
+        selectedReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status))
+    const selectedReplicaReadyForSummary =
+        isUserReplicaMember &&
+        selectedReplica &&
+        (replicaStatus === "COMPLETED" || allCandidatesEvaluated)
+    const myReplicaReadyForSummary =
+        myReplica?.status === "COMPLETED" ||
+        ((myReplica?.replicaCandidates?.length ?? 0) > 0 &&
+            myReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status)))
+    const summaryReplica = selectedReplicaReadyForSummary
+        ? selectedReplica
+        : myReplicaReadyForSummary
+          ? myReplica
+          : null
+    const showMyTastingSummary = summaryReplica != null
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+                {showMyTastingSummary && (
+                    <div className="w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
+                        <div className="flex items-center gap-3">
+                            <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
+                            <div>
+                                <p className="text-sm font-bold text-indigo-900">
+                                    {t("commission.myRankingTitle")}
+                                </p>
+                                <p className="text-xs mt-0.5 text-indigo-600">
+                                    {t("commission.myRankingDesc")}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
+                            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                        >
+                            <Wine className="w-4 h-4" />
+                            {t("commission.viewMyTastingSummary")}
+                        </button>
+                    </div>
+                )}
                 {showResultsBanner && (
                     <div className={`w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
                         isCommissionCompleted

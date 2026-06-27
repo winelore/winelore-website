@@ -15,9 +15,12 @@ import {
 import { isReplicaCandidateFinished } from "./replicaUtils";
 import { buildPropertyMapFromCommissionTemplates } from "./propertyMap";
 import {
-    buildExpertBeverageRanking,
-    type ExpertBeverageRankEntry,
+    buildExpertBeverageSummary,
+    type MyTastingSummaryData,
 } from "./expertRanking";
+import type { PropertyMeta } from "./propertyMap";
+
+export type { MyTastingSummaryData } from "./expertRanking";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -429,6 +432,61 @@ export async function getReplicaCandidateAction(id: string) {
     }
 }
 
+async function fetchMyTastingSummary(
+    replicaId: string,
+    commissionId: string,
+    featureFlags: {
+        propertyCommentsEnabled: boolean;
+        voiceCommentsEnabled: boolean;
+    },
+): Promise<MyTastingSummaryData> {
+    const [candidatesWithBeverage, templateResult] = await Promise.all([
+        getReplicaCandidatesAction(replicaId),
+        getCommissionTemplatesWithResultMarkers(commissionId),
+    ]);
+    const myEvaluations = await Promise.all(
+        candidatesWithBeverage.map((rc) => getMyEvaluationForCandidateAction(rc.id)),
+    );
+    const evalMap = new Map<string, any>();
+    candidatesWithBeverage.forEach((rc, index) => {
+        evalMap.set(rc.id, myEvaluations[index]);
+    });
+    const propertyMap = buildPropertyMapFromCommissionTemplates(templateResult);
+    const entries = buildExpertBeverageSummary(
+        candidatesWithBeverage,
+        evalMap,
+        "Unknown Beverage",
+    );
+    return {
+        entries,
+        propertyMap,
+        propertyCommentsEnabled: featureFlags.propertyCommentsEnabled,
+        voiceCommentsEnabled: featureFlags.voiceCommentsEnabled,
+    };
+}
+
+export async function getMyTastingSummaryAction(replicaId: string): Promise<MyTastingSummaryData> {
+    const empty: MyTastingSummaryData = {
+        entries: [],
+        propertyMap: {},
+        propertyCommentsEnabled: false,
+        voiceCommentsEnabled: false,
+    };
+    if (!isValidUuid(replicaId)) return empty;
+    try {
+        const response = await sdk.GetReplicaCandidates({ replicaId });
+        const commissionId = response.commissionReplica?.commission?.id;
+        if (!commissionId) return empty;
+
+        const commission = await sdk.GetCommission({ id: commissionId });
+        const featureFlags = getCompetitionFeatureFlags(commission.commission?.competition);
+        return await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
+    } catch (err: any) {
+        console.error("Server Action Error (getMyTastingSummaryAction):", err);
+        return empty;
+    }
+}
+
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
 
 async function rawGraphQL(
@@ -484,7 +542,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         candidatesLeftAfterCurrent: 0,
         myEvaluation: null as any,
         hasCompletedCurrentCandidate: false,
-        myRankedBeverages: null as ExpertBeverageRankEntry[] | null,
+        myTastingSummary: null as MyTastingSummaryData | null,
         ...emptyFeatureFlags,
     };
 
@@ -570,25 +628,18 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         }
         const hasCompletedCurrentCandidate = myEvaluation?.isComplete === true;
 
-        let myRankedBeverages: ExpertBeverageRankEntry[] | null = null;
+        let myTastingSummary: MyTastingSummaryData | null = null;
         if (allCandidatesEvaluated) {
             try {
-                const candidatesWithBeverage = await getReplicaCandidatesAction(replicaId);
-                const myEvaluations = await Promise.all(
-                    candidatesWithBeverage.map((rc) => getMyEvaluationForCandidateAction(rc.id)),
-                );
-                const evalMap = new Map<string, any>();
-                candidatesWithBeverage.forEach((rc, index) => {
-                    evalMap.set(rc.id, myEvaluations[index]);
-                });
-                myRankedBeverages = buildExpertBeverageRanking(
-                    candidatesWithBeverage,
-                    evalMap,
-                    "Unknown Beverage",
-                );
+                myTastingSummary = await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
             } catch (err: any) {
-                console.error("Failed to fetch expert beverage ranking:", err);
-                myRankedBeverages = [];
+                console.error("Failed to fetch expert tasting summary:", err);
+                myTastingSummary = {
+                    entries: [],
+                    propertyMap: {},
+                    propertyCommentsEnabled: featureFlags.propertyCommentsEnabled,
+                    voiceCommentsEnabled: featureFlags.voiceCommentsEnabled,
+                };
             }
         }
 
@@ -598,14 +649,14 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             currentCandidateCode,
             allCandidatesEvaluated,
             evaluations,
-            propertyMap,
+            propertyMap: myTastingSummary?.propertyMap ?? propertyMap,
             totalCandidates,
             currentCandidateIndex,
             candidatesLeft,
             candidatesLeftAfterCurrent,
             myEvaluation: myEvaluation ?? null,
             hasCompletedCurrentCandidate,
-            myRankedBeverages,
+            myTastingSummary,
             ...featureFlags,
         };
     } catch (err: any) {

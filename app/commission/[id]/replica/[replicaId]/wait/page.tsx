@@ -22,7 +22,8 @@ import {
     MemberEvaluationSection,
 } from "../../../../EvaluationCommentsDisplay"
 import type { PropertyMeta } from "../../../../propertyMap"
-import type { ExpertBeverageRankEntry } from "../../../../expertRanking"
+import type { MyTastingSummaryData } from "../../../../expertRanking"
+import { MyTastingSummary } from "../../../../MyTastingSummary"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -44,7 +45,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
-    const [myRankedBeverages, setMyRankedBeverages] = useState<ExpertBeverageRankEntry[] | null>(null);
+    const [myTastingSummary, setMyTastingSummary] = useState<MyTastingSummaryData | null>(null);
 
     // Fetch usernames for commission members
     const allMemberAuids = useMemo(() => {
@@ -74,7 +75,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         const fetchData = async () => {
             if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myRankedBeverages: newMyRankedBeverages } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -102,8 +103,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 if (allCandidatesEvaluated) {
                     setAllDone(true);
-                    if (newMyRankedBeverages != null) {
-                        setMyRankedBeverages(newMyRankedBeverages);
+                    if (newMyTastingSummary != null) {
+                        setMyTastingSummary(newMyTastingSummary);
                     }
                     return;
                 }
@@ -172,64 +173,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             <div className="flex min-h-screen flex-col bg-slate-50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
-                    <div className="max-w-3xl mx-auto space-y-8">
-                        <header className="text-center space-y-3">
-                            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
-                                <Wine className="w-10 h-10 text-emerald-600" />
-                            </div>
-                            <h1 className="text-3xl font-extrabold text-slate-800">{t("commission.myRankingTitle")}</h1>
-                            <p className="text-slate-500 max-w-md mx-auto">{t("commission.myRankingDesc")}</p>
-                        </header>
-
-                        <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                            {myRankedBeverages === null ? (
-                                <div className="flex items-center justify-center gap-3 py-16 text-slate-500">
-                                    <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
-                                    <span>{t("common.loading")}</span>
-                                </div>
-                            ) : myRankedBeverages.length === 0 ? (
-                                <p className="py-16 text-center text-slate-500">{t("commission.myRankingEmpty")}</p>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="bg-slate-50/80 border-b border-slate-100">
-                                                <th className="py-4 px-4 font-semibold text-slate-600 text-sm w-16 text-center">
-                                                    {t("commission.results.candidateOrder")}
-                                                </th>
-                                                <th className="py-4 px-4 font-semibold text-slate-600 text-sm w-24">
-                                                    {t("commission.results.candidateCode")}
-                                                </th>
-                                                <th className="py-4 px-6 font-semibold text-slate-600 text-sm">
-                                                    {t("commission.results.codeBeverage")}
-                                                </th>
-                                                <th className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 bg-indigo-50/30 w-32">
-                                                    {t("commission.myScore")}
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {myRankedBeverages.map((entry) => (
-                                                <tr key={`${entry.code}-${entry.order}`} className="hover:bg-slate-50/50">
-                                                    <td className="py-4 px-4 text-center font-bold text-slate-700">
-                                                        {entry.order}
-                                                    </td>
-                                                    <td className="py-4 px-4 font-mono text-sm text-slate-600">
-                                                        {entry.code}
-                                                    </td>
-                                                    <td className="py-4 px-6 font-semibold text-slate-800">
-                                                        {entry.beverageName}
-                                                    </td>
-                                                    <td className="py-4 px-6 text-center font-bold text-indigo-700 border-l border-slate-100 bg-indigo-50/20">
-                                                        {entry.totalScore}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
+                    <div className="max-w-4xl mx-auto">
+                        <MyTastingSummary
+                            data={myTastingSummary}
+                            commissionId={commissionId}
+                            showBackLink
+                        />
                     </div>
                 </main>
             </div>

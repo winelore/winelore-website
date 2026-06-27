@@ -333,6 +333,9 @@ export const GET_REPLICA_CANDIDATES = gql(`
                 id
                 name
                 status
+                producers {
+                  auid
+                }
                 ... on Wine {
                   origin {
                     latitude
