@@ -49,10 +49,8 @@ import {
 } from "@/lib/outcomePolicy/resolveBeverageOutcomes"
 import { isReplicaCandidateFinished } from "../../replicaUtils"
 import {
-    CALCULATED_TOTAL_SCORE_CODE,
     hasEvaluationTotalScore,
     parseEvaluationTotal,
-    TOTAL_SCORE_CODE,
 } from "@/lib/evaluationTotals"
 
 const AUTO_REFRESH_MS = 10000
@@ -308,10 +306,7 @@ export default function CommissionResultsClientView({
                 if (ev.isComplete) completeWithTotalCount++
 
                 ev.scores?.forEach((score: any) => {
-                    if (
-                        score.code === TOTAL_SCORE_CODE ||
-                        score.code === CALCULATED_TOTAL_SCORE_CODE
-                    ) {
+                    if (propertyMap[score.code]?.isResult) {
                         return
                     }
                     if (!ev.isComplete && !score.value) return
@@ -354,11 +349,11 @@ export default function CommissionResultsClientView({
                     expectedEvaluators > 0
                         ? completeWithTotalCount < expectedEvaluators
                         : rc.evaluations.some(
-                              (ev: any) => !ev.isComplete && hasEvaluationTotalScore(ev),
+                              (ev: any) => !ev.isComplete && hasEvaluationTotalScore(ev, propertyMap),
                           ),
             }
         },
-        [commission.candidates, replicaBeverageOutcomes, hasPolicyEdition, policyOutputProperties],
+        [commission.candidates, replicaBeverageOutcomes, hasPolicyEdition, policyOutputProperties, propertyMap],
     )
 
     const getExpertBreakdown = useCallback(
@@ -369,7 +364,7 @@ export default function CommissionResultsClientView({
                 if (rc?.evaluations) {
                     rc.evaluations.forEach((ev: any, idx: number) => {
                         if (ev.isComplete) {
-                            const totalVal = parseEvaluationTotal(ev.scores)
+                            const totalVal = parseEvaluationTotal(ev.scores, propertyMap)
                             const evaluatorAuids = normalizeAuids(ev.evaluatorAuid)
                             breakdown.push({
                                 key: `${r.id}-${evaluatorAuids.join("-")}-${idx}`,
@@ -389,7 +384,7 @@ export default function CommissionResultsClientView({
             })
             return breakdown
         },
-        [commission.replicas, formatReplicaType],
+        [commission.replicas, formatReplicaType, propertyMap],
     )
 
     const candidateRows = useMemo((): CandidateRow[] => {
@@ -1630,11 +1625,33 @@ export default function CommissionResultsClientView({
                                                                                                     )}
                                                                                                 </span>
                                                                                             </div>
-                                                                                            <div className="text-xl font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">
-                                                                                                {
-                                                                                                    expert.totalScore
-                                                                                                }
-                                                                                            </div>
+                                                                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                                                {(() => {
+                                                                    const results = expert.evaluation.scores?.filter((s) => propertyMap[s.code]?.isResult) || []
+                                                                    if (results.length === 1) {
+                                                                        return (
+                                                                            <div className="text-xl font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">
+                                                                                {results[0].value}
+                                                                            </div>
+                                                                        )
+                                                                    }
+                                                                    if (results.length > 1) {
+                                                                        return results.map((s) => (
+                                                                            <div
+                                                                                key={s.code}
+                                                                                className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg whitespace-nowrap"
+                                                                            >
+                                                                                {propertyMap[s.code]?.name ?? s.code}: {s.value}
+                                                                            </div>
+                                                                        ))
+                                                                    }
+                                                                    return (
+                                                                        <div className="text-xl font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-lg shrink-0">
+                                                                            -
+                                                                        </div>
+                                                                    )
+                                                                })()}
+                                                            </div>
                                                                                         </div>
                                                                                         <MemberEvaluationSection
                                                                                             evaluation={

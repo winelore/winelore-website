@@ -1,5 +1,5 @@
 import { normalizeAuids } from "./auidUtils"
-import { parseEvaluationTotal } from "@/lib/evaluationTotals"
+import { hasEvaluationTotalScore } from "@/lib/evaluationTotals"
 
 import type { PropertyMeta } from "./propertyMap";
 
@@ -7,13 +7,13 @@ export interface ExpertBeverageSummaryEntry {
     order: number
     code: string
     beverageName: string
-    totalScore: number | null
+    totalScores: Array<{ code: string; name: string; value: string }>
     producerAuids: string[]
     evaluation: {
         scores: Array<{ code: string; value: string }>
         comments: Array<{
             id: string
-            text?: string | null
+            text?: string
             voiceUrl?: string | null
             propertyId?: string | null
         }>
@@ -75,7 +75,7 @@ function normalizeEvaluation(evaluation: MyEvaluation): ExpertBeverageSummaryEnt
             .map((s) => ({ code: s.code, value: String(s.value) })),
         comments: (evaluation.comments || []).map((c) => ({
             id: c.id,
-            text: c.text,
+            text: c.text ?? undefined,
             voiceUrl: c.voiceUrl,
             propertyId: c.propertyId,
         })),
@@ -91,22 +91,36 @@ export function buildExpertBeverageSummary(
     replicaCandidates: ReplicaCandidateWithBeverage[],
     myEvaluationsByReplicaCandidateId: Map<string, MyEvaluation | null>,
     unknownBeverageLabel: string,
+    propertyMap: Record<string, PropertyMeta>,
 ): ExpertBeverageSummaryEntry[] {
     const entries: ExpertBeverageSummaryEntry[] = []
 
     replicaCandidates.forEach((rc, index) => {
         const evaluation = myEvaluationsByReplicaCandidateId.get(rc.id)
         if (!evaluation?.isComplete) return
-        if (!evaluationHasDisplayData(evaluation) && parseEvaluationTotal(evaluation.scores) === null) {
+
+        const normalizedScores = (evaluation.scores || [])
+            .filter((s) => s.value != null && String(s.value).trim() !== "")
+            .map((s) => ({ code: s.code, value: String(s.value) }))
+
+        if (!evaluationHasDisplayData(evaluation) && !hasEvaluationTotalScore({ scores: normalizedScores }, propertyMap)) {
             return
         }
+
+        const totalScores = normalizedScores
+            .filter((s) => propertyMap[s.code]?.isResult === true)
+            .map((s) => ({
+                code: s.code,
+                name: propertyMap[s.code]?.name ?? s.code,
+                value: s.value,
+            }))
 
         entries.push({
             order: index + 1,
             code: rc.candidate?.anonymizedCode || "N/A",
             beverageName:
                 rc.candidate?.sample?.batch?.beverage?.name || unknownBeverageLabel,
-            totalScore: parseEvaluationTotal(evaluation.scores),
+            totalScores,
             producerAuids: getBeverageProducerAuids(rc.candidate),
             evaluation: normalizeEvaluation(evaluation),
         })

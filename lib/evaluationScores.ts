@@ -24,7 +24,7 @@ export interface RawEvaluation {
     scores?: RawEvaluationScore[] | null
 }
 
-function parseRawScoreValue(value: string | null | undefined): number | boolean | null {
+function parseRawScoreValue(value: string | null | undefined): number | boolean | string | null {
     if (value == null || String(value).trim() === "") return null
     const trimmed = String(value).trim()
     if (trimmed === "true") return true

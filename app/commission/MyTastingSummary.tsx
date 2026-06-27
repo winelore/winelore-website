@@ -59,14 +59,18 @@ function BeverageSummaryCard({
                     </div>
                 </div>
                 <div className="shrink-0 sm:text-right pl-9 sm:pl-0 flex flex-col items-start sm:items-end gap-2">
-                    {entry.totalScore != null && (
-                        <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                {t("commission.myScore")}
-                            </p>
-                            <p className="text-2xl font-extrabold text-indigo-700">
-                                {entry.totalScore}
-                            </p>
+                    {entry.totalScores && entry.totalScores.length > 0 && (
+                        <div className="space-y-2">
+                            {entry.totalScores.map((score) => (
+                                <div key={score.code} className="sm:text-right">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        {score.name}
+                                    </p>
+                                    <p className="text-2xl font-extrabold text-indigo-700">
+                                        {score.value}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     )}
                     {hasDetails && (

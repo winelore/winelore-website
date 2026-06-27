@@ -169,7 +169,8 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
                     isRequired: true,
                     defaultValue: "25.0",
                     minLimit: 1.0,
-                    maxLimit: 50.0
+                    maxLimit: 50.0,
+                    isResult: true
                 },
                 {
                     type: "Smart",
@@ -177,6 +178,7 @@ async function bootstrapTemplateEditionForCommission(commissionId: string) {
                     name: "Total Score",
                     description: "Automatically calculated weighted score",
                     isRequired: true,
+                    isResult: true,
                     expression: {
                         type: "ADD",
                         left: {
@@ -456,6 +458,7 @@ async function fetchMyTastingSummary(
         candidatesWithBeverage,
         evalMap,
         "Unknown Beverage",
+        propertyMap,
     );
     return {
         entries,

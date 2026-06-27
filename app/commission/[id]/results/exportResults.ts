@@ -1,29 +1,11 @@
 import { commentHasVisibleContent } from "../../EvaluationCommentsDisplay"
 import type { PropertyMeta } from "../../propertyMap"
 
-const TOTAL_SCORE_CODE = "taste_score"
-const CALCULATED_TOTAL_SCORE_CODE = "total_score"
-
-function isTotalScoreCode(code: string): boolean {
-    return code === TOTAL_SCORE_CODE || code === CALCULATED_TOTAL_SCORE_CODE
-}
-
 function shouldIncludeInExpertExport(
     code: string,
     propertyMap: Record<string, PropertyMeta>,
 ): boolean {
-    if (isTotalScoreCode(code)) return false
     return propertyMap[code]?.isResult === true
-}
-
-function extractTotalScore(scores: Array<{ code: string; value: string }>): string {
-    const calculated = scores.find((s) => s.code === CALCULATED_TOTAL_SCORE_CODE)
-    if (calculated && hasScoreValue(calculated.value)) return calculated.value
-
-    const taste = scores.find((s) => s.code === TOTAL_SCORE_CODE)
-    if (taste && hasScoreValue(taste.value)) return taste.value
-
-    return "-"
 }
 
 function escapeCsvCell(value: string): string {
@@ -49,7 +31,6 @@ export interface ExpertScoreExportRow {
     replicaName: string
     replicaType: string
     evaluator: string
-    totalScore: string
     scores: Record<string, string>
 }
 
@@ -144,7 +125,6 @@ function buildExpertScoreSheetData(
         "Replica",
         "Replica Type",
         "Evaluator",
-        "Total Score",
         ...scoreCodes.map((code) => getPropertyLabel(code, propertyMap)),
     ]
 
@@ -157,7 +137,6 @@ function buildExpertScoreSheetData(
             row.replicaName,
             row.replicaType,
             row.evaluator,
-            row.totalScore,
             ...scoreCodes.map((code) => row.scores[code] ?? ""),
         ]),
     ]
@@ -198,8 +177,6 @@ export function buildExpertScoreExportRows(
             scoreMap[s.code] = s.value
         })
 
-    const totalScore = extractTotalScore(scores)
-
     return {
         code,
         beverage,
@@ -207,7 +184,6 @@ export function buildExpertScoreExportRows(
         replicaName,
         replicaType,
         evaluator,
-        totalScore,
         scores: scoreMap,
     }
 }
