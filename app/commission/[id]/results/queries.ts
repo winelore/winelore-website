@@ -5,6 +5,7 @@ export const GET_COMMISSION_RESULTS = `
       name
       status
       competition {
+        holders
         voiceCommentsEnabled
         propertyCommentsEnabled
       }

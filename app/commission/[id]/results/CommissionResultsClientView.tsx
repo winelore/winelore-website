@@ -42,9 +42,13 @@ import {
     type OverallOutcomeByProperty,
 } from "@/lib/outcomePolicy/resolveBeverageOutcomes"
 import { isReplicaCandidateFinished } from "../../replicaUtils"
+import {
+    CALCULATED_TOTAL_SCORE_CODE,
+    hasEvaluationTotalScore,
+    parseEvaluationTotal,
+    TOTAL_SCORE_CODE,
+} from "@/lib/evaluationTotals"
 
-const TOTAL_SCORE_CODE = "taste_score"
-const CALCULATED_TOTAL_SCORE_CODE = "total_score"
 const AUTO_REFRESH_MS = 10000
 
 interface ReplicaCandidateDetails {
@@ -96,25 +100,6 @@ function getBeverageProducerAuids(candidate: any): string[] {
 
 function getPropertyLabel(code: string, propertyMap: Record<string, PropertyMeta>): string {
     return propertyMap[code]?.name ?? code
-}
-
-function hasTotalScore(ev: { scores?: Array<{ code: string; value: string }> }): boolean {
-    return parseEvaluationTotal(ev.scores) !== null
-}
-
-function parseEvaluationTotal(
-    scores: Array<{ code: string; value: string }> | undefined | null,
-): number | null {
-    if (!scores?.length) return null
-    const calculated = scores.find((s) => s.code === CALCULATED_TOTAL_SCORE_CODE)
-    if (calculated?.value != null && !isNaN(parseFloat(calculated.value))) {
-        return parseFloat(calculated.value)
-    }
-    const taste = scores.find((s) => s.code === TOTAL_SCORE_CODE)
-    if (taste?.value != null && !isNaN(parseFloat(taste.value))) {
-        return parseFloat(taste.value)
-    }
-    return null
 }
 
 function computeEvaluationProgress(commission: { replicas: any[]; candidates: any[] }) {
@@ -372,7 +357,7 @@ export default function CommissionResultsClientView({
             const isPreview =
                 expectedEvaluators > 0
                     ? completeWithTotalCount < expectedEvaluators
-                    : rc.evaluations.some((ev: any) => !ev.isComplete && hasTotalScore(ev))
+                    : rc.evaluations.some((ev: any) => !ev.isComplete && hasEvaluationTotalScore(ev))
 
             return {
                 total: totalCount > 0 ? (totalSum / totalCount).toFixed(2) : "-",

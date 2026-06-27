@@ -395,7 +395,8 @@ export default function CommissionClientView({
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = initialData.status === "COMPLETED"
-    const showResultsBanner = isCommissionCompleted || (currentAuid !== null && initialData.competition.holders.includes(currentAuid))
+    const isCompetitionHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
+    const showResultsBanner = isCompetitionHolder
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
@@ -826,13 +827,15 @@ export default function CommissionClientView({
                                             <p className="text-xs text-emerald-600/90 mt-1">
                                                 {t("commission.sessionCompletedDesc")}
                                             </p>
-                                            <button
-                                                onClick={() => router.push(`/commission/${localData.id}/results`)}
-                                                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
-                                            >
-                                                <Trophy className="w-3.5 h-3.5" />
-                                                {t("commission.viewResults")}
-                                            </button>
+                                            {isCompetitionHolder && (
+                                                <button
+                                                    onClick={() => router.push(`/commission/${localData.id}/results`)}
+                                                    className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
+                                                >
+                                                    <Trophy className="w-3.5 h-3.5" />
+                                                    {t("commission.viewResults")}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}

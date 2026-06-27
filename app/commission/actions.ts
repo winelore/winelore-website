@@ -14,6 +14,10 @@ import {
 } from "./auidUtils";
 import { isReplicaCandidateFinished } from "./replicaUtils";
 import { buildPropertyMapFromCommissionTemplates } from "./propertyMap";
+import {
+    buildExpertBeverageRanking,
+    type ExpertBeverageRankEntry,
+} from "./expertRanking";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -480,6 +484,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         candidatesLeftAfterCurrent: 0,
         myEvaluation: null as any,
         hasCompletedCurrentCandidate: false,
+        myRankedBeverages: null as ExpertBeverageRankEntry[] | null,
         ...emptyFeatureFlags,
     };
 
@@ -565,6 +570,28 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         }
         const hasCompletedCurrentCandidate = myEvaluation?.isComplete === true;
 
+        let myRankedBeverages: ExpertBeverageRankEntry[] | null = null;
+        if (allCandidatesEvaluated) {
+            try {
+                const candidatesWithBeverage = await getReplicaCandidatesAction(replicaId);
+                const myEvaluations = await Promise.all(
+                    candidatesWithBeverage.map((rc) => getMyEvaluationForCandidateAction(rc.id)),
+                );
+                const evalMap = new Map<string, any>();
+                candidatesWithBeverage.forEach((rc, index) => {
+                    evalMap.set(rc.id, myEvaluations[index]);
+                });
+                myRankedBeverages = buildExpertBeverageRanking(
+                    candidatesWithBeverage,
+                    evalMap,
+                    "Unknown Beverage",
+                );
+            } catch (err: any) {
+                console.error("Failed to fetch expert beverage ranking:", err);
+                myRankedBeverages = [];
+            }
+        }
+
         return {
             members,
             currentCandidateId,
@@ -578,6 +605,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             candidatesLeftAfterCurrent,
             myEvaluation: myEvaluation ?? null,
             hasCompletedCurrentCandidate,
+            myRankedBeverages,
             ...featureFlags,
         };
     } catch (err: any) {

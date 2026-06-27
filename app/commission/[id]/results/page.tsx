@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import { cookies } from "next/headers"
 import { fetchGraphQLRaw } from "@/lib/apiClient"
 import { getCommissionTemplatesWithResultMarkers, getEvaluationsForCandidateAction } from "../../actions"
 import { buildPropertyMapFromCommissionTemplates } from "../../propertyMap"
@@ -16,6 +17,10 @@ interface PageProps {
 export default async function CommissionResultsPage({ params }: PageProps) {
     const resolvedParams = await params
     const commissionId = resolvedParams.id
+
+    const cookieStore = await cookies()
+    const auidStr = cookieStore.get("auid")?.value
+    const currentAuid = auidStr ? parseInt(auidStr, 10) : null
 
     let commission = null
     const awardsMap: Record<string, any[]> = {}
@@ -37,6 +42,11 @@ export default async function CommissionResultsPage({ params }: PageProps) {
         commission = response?.commission
 
         if (commission) {
+            const holders = commission.competition?.holders?.flat() ?? []
+            const isHolder = currentAuid !== null && holders.includes(currentAuid)
+            if (!isHolder) {
+                return <ResultsErrorView commissionId={commissionId} variant="forbidden" />
+            }
             propertyCommentsEnabled = commission.competition?.propertyCommentsEnabled ?? false
             voiceCommentsEnabled = commission.competition?.voiceCommentsEnabled ?? false
 
