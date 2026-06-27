@@ -7,9 +7,10 @@ import {
     type GetCommissionTemplatesDeepResult,
     type GetCommissionTemplatesDeepVariables,
 } from '../../lib/commissionTemplatesQuery';
-import { cookies } from "next/headers";
+import { ensureAuthenticated, requireAuthenticated } from "@/lib/auth/session";
 import {
     findEvaluationForMember,
+    isReplicaCandidateFinished,
     memberMatchesActor,
 } from "./auidUtils";
 
@@ -70,8 +71,7 @@ export async function startCommissionAction(id: string) {
 
 async function bootstrapTemplateEditionForCommission(commissionId: string) {
     console.log(`🚀 Bootstrapping real template edition for commission ${commissionId}...`);
-    const cookieStore = await cookies();
-    const auidStr = cookieStore.get("auid")?.value;
+    const auidStr = await ensureAuthenticated();
     const currentAuid = auidStr ? parseInt(auidStr, 10) : 1;
     // 1. Create a new evaluation template
     const templateName = `Wine Evaluation Template ${Date.now()}`;
@@ -244,11 +244,7 @@ export async function submitEvaluationAction(
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
         
-        const cookieStore = await cookies();
-        const auid = cookieStore.get("auid")?.value;
-        if (!auid) {
-            throw new Error("Unauthorized: Please sign in");
-        }
+        const auid = await requireAuthenticated();
         const headers: Record<string, string> = {
             "actor": auid,
             "x-actor": auid,
@@ -416,16 +412,8 @@ async function rawGraphQL(
 }
 
 async function getActorHeaders(): Promise<Record<string, string>> {
-    const cookieStore = await cookies();
-    const auid = cookieStore.get("auid")?.value;
-    if (!auid) {
-        throw new Error("Unauthorized: Please sign in");
-    }
+    const auid = await requireAuthenticated();
     return { actor: auid, "x-actor": auid };
-}
-
-export function isReplicaCandidateFinished(status: string): boolean {
-    return status === "EVALUATED" || status === "DISQUALIFIED";
 }
 
 function getCompetitionFeatureFlags(competition: {
@@ -441,6 +429,9 @@ function getCompetitionFeatureFlags(competition: {
 }
 
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
+    // #region agent log
+    const waitDataStart = Date.now();
+    // #endregion
     const emptyFeatureFlags = getCompetitionFeatureFlags(null);
     const emptyResult = {
         members: [] as any[],
@@ -535,12 +526,14 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             }
         }
 
-        const cookieStore = await cookies();
-        const actorAuid = cookieStore.get("auid")?.value;
+        const actorAuid = await ensureAuthenticated();
         const myMember = actorAuid ? members.find((m: any) => memberMatchesActor(m.auid, actorAuid)) : null;
 
         let myEvaluation: any = null;
         let myCurrentCandidateEvaluation: any = null;
+        // #region agent log
+        let myEvalLoopIterations = 0;
+        // #endregion
         if (currentCandidateId) {
             myCurrentCandidateEvaluation = await getMyEvaluationForCandidateAction(currentCandidateId);
             myEvaluation = myCurrentCandidateEvaluation;
@@ -548,6 +541,9 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const hasCompletedCurrentCandidate = myCurrentCandidateEvaluation?.isComplete === true;
         if (!myEvaluation) {
             for (const rc of [...replicaCandidates].reverse()) {
+                // #region agent log
+                myEvalLoopIterations++;
+                // #endregion
                 try {
                     const candidateEval = await getMyEvaluationForCandidateAction(rc.id);
                     if (candidateEval) {
@@ -566,6 +562,9 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             myEvaluation = findEvaluationForMember(evaluations, actorAuid);
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7486/ingest/bc73aa2d-b9fc-430b-9a03-8af2ecbbe1c4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'57b8c8'},body:JSON.stringify({sessionId:'57b8c8',location:'actions.ts:getWaitDataAction',message:'getWaitDataAction complete',data:{durationMs:Date.now()-waitDataStart,totalCandidates,evaluationsCount:evaluations.length,myEvalLoopIterations},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         return {
             members,
             currentCandidateId,
@@ -628,6 +627,9 @@ const SET_REPLICA_CURRENT_CANDIDATE_MUTATION = `
 
 export async function markCandidateEvaluatedAction(replicaId: string, candidateId: string) {
     if (!isValidUuid(replicaId) || !isValidUuid(candidateId)) return null;
+    // #region agent log
+    const actionStart = Date.now();
+    // #endregion
     try {
         // The backend authorizes these mutations against the acting member (the HEAD),
         // so the actor headers must be forwarded just like for the other mutations.
@@ -635,24 +637,43 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
 
         // 1. Mark the current candidate as evaluated. This only flips the candidate's
         //    status; it does NOT move the replica's current candidate pointer.
+        // #region agent log
+        const step1Start = Date.now();
+        // #endregion
         const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId }, { headers });
+        // #region agent log
+        const step1Ms = Date.now() - step1Start;
+        // #endregion
 
         // 2. Determine the next candidate still awaiting evaluation. The replica
         //    candidates are returned in evaluation order, so after marking the current
         //    one evaluated the first remaining PENDING candidate is the next beverage.
+        // #region agent log
+        const step2Start = Date.now();
+        // #endregion
         const candidatesResponse = await sdk.GetReplicaCandidates({ replicaId });
         const replicaCandidates = candidatesResponse.commissionReplica?.replicaCandidates || [];
         const nextCandidate = replicaCandidates.find((rc: any) => rc.status === "PENDING");
         const nextCandidateId = nextCandidate?.id ?? null;
+        // #region agent log
+        const step2Ms = Date.now() - step2Start;
+        // #endregion
 
         // 3. Explicitly advance (or clear, when finished) the replica's current candidate.
         //    The backend treats currentCandidateId as the single source of truth and
         //    rejects evaluations for any other candidate.
+        // #region agent log
+        const step3Start = Date.now();
+        // #endregion
         await rawGraphQL(
             SET_REPLICA_CURRENT_CANDIDATE_MUTATION,
             { id: replicaId, currentCandidateId: nextCandidateId },
             headers,
         );
+        // #region agent log
+        const step3Ms = Date.now() - step3Start;
+        fetch('http://127.0.0.1:7486/ingest/bc73aa2d-b9fc-430b-9a03-8af2ecbbe1c4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'57b8c8'},body:JSON.stringify({sessionId:'57b8c8',location:'actions.ts:markCandidateEvaluatedAction',message:'markCandidateEvaluatedAction complete',data:{totalMs:Date.now()-actionStart,step1MarkEvaluatedMs:step1Ms,step2GetReplicaCandidatesMs:step2Ms,step3SetCurrentMs:step3Ms,candidateCount:replicaCandidates.length,nextCandidateId},timestamp:Date.now(),hypothesisId:'A-B'})}).catch(()=>{});
+        // #endregion
 
         return { ...data.markCommissionReplicaCandidateAsEvaluated, nextCandidateId };
     } catch (err: any) {

@@ -23,3 +23,7 @@ export function findEvaluationForMember<T extends { evaluatorAuid?: unknown }>(
 export function memberMatchesActor(memberAuids: unknown, actorAuid: string): boolean {
     return normalizeAuids(memberAuids).includes(String(actorAuid))
 }
+
+export function isReplicaCandidateFinished(status: string): boolean {
+    return status === "EVALUATED" || status === "DISQUALIFIED";
+}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { clearSessionCookies } from "@/lib/auth/session";
 
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
@@ -18,11 +19,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Clear session cookies
-  cookieStore.delete("auid");
-  cookieStore.delete("username");
-  cookieStore.delete("axus_access_token");
-  cookieStore.delete("axus_refresh_token");
+  await clearSessionCookies(cookieStore);
 
   return NextResponse.redirect(new URL("/", request.url));
 }

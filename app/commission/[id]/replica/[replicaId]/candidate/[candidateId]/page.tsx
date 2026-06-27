@@ -1,8 +1,9 @@
-import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction, isReplicaCandidateFinished } from "../../../../../actions"
+import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
+import { isReplicaCandidateFinished } from "../../../../../auidUtils"
 import { notFound, redirect } from "next/navigation"
 import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
-import { cookies } from "next/headers"
+import { ensureAuthenticated } from "@/lib/auth/session"
 
 interface Props {
     params: Promise<{ id: string; replicaId: string; candidateId: string }>
@@ -11,8 +12,7 @@ interface Props {
 export default async function CandidateEvaluationPage({ params }: Props) {
     const { id: routeCommissionId, replicaId, candidateId } = await params
 
-    const cookieStore = await cookies()
-    const auidStr = cookieStore.get("auid")?.value
+    const auidStr = await ensureAuthenticated()
     if (!auidStr) {
         redirect("/auth/login")
     }

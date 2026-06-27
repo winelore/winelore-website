@@ -3,7 +3,7 @@
 import { fetchGraphQL } from '@/lib/apiClient';
 import { GET_COMPETITION_PAGE } from './queries';
 import CompetitionClientView from './CompetitionClientView';
-import { cookies } from 'next/headers';
+import { ensureAuthenticated } from '@/lib/auth/session';
 
 interface PageProps {
     params: Promise<{
@@ -15,8 +15,7 @@ export default async function CompetitionStartPage({ params }: PageProps) {
     const resolvedParams = await params;
     const competitionId = resolvedParams.id;
 
-    const cookieStore = await cookies();
-    const auidStr = cookieStore.get("auid")?.value;
+    const auidStr = await ensureAuthenticated();
     const serverAuid = auidStr ? parseInt(auidStr, 10) : null;
 
     let competition: any = null;

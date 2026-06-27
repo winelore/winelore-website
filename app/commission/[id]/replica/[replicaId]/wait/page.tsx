@@ -18,6 +18,7 @@ import {
     clearCachedWaitEvaluation,
     readCachedWaitEvaluation,
 } from "../../../../waitEvaluationCache"
+import { authRefreshPath } from "@/lib/auth/paths"
 
 type PropertyMeta = { name: string; isResult: boolean }
 
@@ -299,7 +300,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     useEffect(() => {
         const cookieAuid = Cookies.get("auid");
         if (!cookieAuid) {
-            router.push("/auth/login");
+            router.push(authRefreshPath(window.location.pathname + window.location.search));
             return;
         }
         setAuid(parseInt(cookieAuid, 10));
@@ -362,6 +363,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 // If candidate changed (HEAD advanced) — redirect everyone to evaluation
                 if (currentCandidateId && currentCandidateId !== newCandidateId) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7486/ingest/bc73aa2d-b9fc-430b-9a03-8af2ecbbe1c4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'57b8c8'},body:JSON.stringify({sessionId:'57b8c8',location:'wait/page.tsx:poll',message:'poll detected candidate change, redirecting',data:{fromCandidateId:currentCandidateId,toCandidateId:newCandidateId,isSwitching},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+                    // #endregion
                     router.push(`/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`);
                     return;
                 }
@@ -391,9 +395,16 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // HEAD action: advance to next beverage
     const handleNextBeverage = async () => {
         if (!canAdvanceToNextBeverage || isSwitching || !currentCandidateId) return;
+        // #region agent log
+        const clickTs = Date.now();
+        fetch('http://127.0.0.1:7486/ingest/bc73aa2d-b9fc-430b-9a03-8af2ecbbe1c4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'57b8c8'},body:JSON.stringify({sessionId:'57b8c8',location:'wait/page.tsx:handleNextBeverage',message:'next beverage clicked',data:{currentCandidateId,candidatesLeft},timestamp:clickTs,hypothesisId:'C-E'})}).catch(()=>{});
+        // #endregion
         setIsSwitching(true);
         try {
-            await markCandidateEvaluatedAction(replicaId, currentCandidateId);
+            const result = await markCandidateEvaluatedAction(replicaId, currentCandidateId);
+            // #region agent log
+            fetch('http://127.0.0.1:7486/ingest/bc73aa2d-b9fc-430b-9a03-8af2ecbbe1c4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'57b8c8'},body:JSON.stringify({sessionId:'57b8c8',location:'wait/page.tsx:handleNextBeverage',message:'markCandidateEvaluatedAction resolved',data:{actionMs:Date.now()-clickTs,nextCandidateId:(result as {nextCandidateId?:string|null}|null)?.nextCandidateId??null},timestamp:Date.now(),hypothesisId:'A-B'})}).catch(()=>{});
+            // #endregion
             // Polling will detect the advanced current candidate and redirect automatically
         } catch (err) {
             console.error(err);
