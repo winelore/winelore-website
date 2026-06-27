@@ -20,14 +20,23 @@ function isValidUuid(id: string | null | undefined): boolean {
     return UUID_REGEX.test(id);
 }
 
-async function getCommissionTemplatesWithResultMarkers(commissionId: string) {
+const templatesCache = new Map<string, { data: GetCommissionTemplatesDeepResult; expiresAt: number }>();
+
+async function getCommissionTemplatesWithResultMarkers(commissionId: string): Promise<GetCommissionTemplatesDeepResult> {
+    const cached = templatesCache.get(commissionId);
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.data;
+    }
+
     try {
         // Use the deep expression query so SmartProperty formulas (left-leaning weighted
         // sums that can be many levels deep) are fetched in full rather than truncated.
-        return await fetchGraphQLRaw<GetCommissionTemplatesDeepResult, GetCommissionTemplatesDeepVariables>(
+        const res = await fetchGraphQLRaw<GetCommissionTemplatesDeepResult, GetCommissionTemplatesDeepVariables>(
             GET_COMMISSION_TEMPLATES_DEEP_QUERY,
             { id: commissionId },
         );
+        templatesCache.set(commissionId, { data: res, expiresAt: Date.now() + 5 * 60 * 1000 }); // 5 minutes TTL
+        return res;
     } catch (err: any) {
         const message = String(err?.message || err);
         if (!message.includes("isResult")) {
@@ -35,7 +44,9 @@ async function getCommissionTemplatesWithResultMarkers(commissionId: string) {
         }
 
         console.warn("Backend does not expose EvaluationProperty.isResult yet; falling back to legacy template query.");
-        return await fetchGraphQL(LegacyGetCommissionTemplatesDocument, { id: commissionId });
+        const res = await fetchGraphQL(LegacyGetCommissionTemplatesDocument, { id: commissionId });
+        templatesCache.set(commissionId, { data: res, expiresAt: Date.now() + 5 * 60 * 1000 }); // 5 minutes TTL
+        return res as unknown as GetCommissionTemplatesDeepResult;
     }
 }
 
