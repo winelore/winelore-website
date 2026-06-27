@@ -42,6 +42,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [wineJumperMiniGameEnabled, setWineJumperMiniGameEnabled] = useState(false);
     const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
 
     // Fetch usernames for commission members
     const allMemberAuids = useMemo(() => {
@@ -66,9 +67,10 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
     // 2. Polling loop every 3 seconds
     useEffect(() => {
-        if (auid === null) return;
+        if (auid === null || isRedirecting) return;
 
         const fetchData = async () => {
+            if (isRedirecting) return;
             try {
                 const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled } =
                     await getWaitDataAction(commissionId, replicaId);
@@ -110,15 +112,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     cached?.candidateId === newCandidateId && cached?.isComplete !== false;
 
                 if (!hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
-                    router.push(`/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`);
-                    router.refresh();
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
                 }
 
                 // If candidate changed (HEAD advanced) — redirect everyone to evaluation
                 if (currentCandidateId && currentCandidateId !== newCandidateId) {
-                    router.push(`/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`);
-                    router.refresh();
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
                 }
 
@@ -134,7 +136,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         fetchData();
         const interval = setInterval(fetchData, 3000);
         return () => clearInterval(interval);
-    }, [commissionId, replicaId, auid, currentCandidateId, router]);
+    }, [commissionId, replicaId, auid, currentCandidateId, router, isRedirecting]);
 
     const heads = members.filter(m => m.role === "HEAD");
     const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");

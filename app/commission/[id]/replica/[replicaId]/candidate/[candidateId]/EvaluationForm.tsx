@@ -584,8 +584,7 @@ export default function EvaluationForm({
             setSuccess(true)
 
             setTimeout(() => {
-                router.push(`/commission/${commissionId}/replica/${replicaId}/wait`)
-                router.refresh()
+                window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
             }, 1000)
         } catch {
             setError(t("evaluation.submitError"))
