@@ -27,32 +27,50 @@ export interface RefreshResult {
   expiresIn: number;
 }
 
+const REFRESH_MUTATION = `
+  mutation RefreshCredentials($refreshToken: String!) {
+    refreshCredentials(refreshToken: $refreshToken) {
+      accessToken
+      refreshToken
+      accessTokenExpiresAt
+    }
+  }
+`;
+
 export async function refreshTokens(refreshToken: string): Promise<RefreshResult> {
-  const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";
-  const tokenResponse = await fetch(`${issuer}/oauth/token`, {
+  const refreshResponse = await fetch(AXUS_GRAPHQL_ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: REFRESH_MUTATION,
+      variables: { refreshToken },
     }),
   });
 
-  if (!tokenResponse.ok) {
-    throw new Error(`Failed to refresh token: ${tokenResponse.status} ${tokenResponse.statusText}`);
+  if (!refreshResponse.ok) {
+    throw new Error(`Failed to refresh token network error: ${refreshResponse.status} ${refreshResponse.statusText}`);
   }
 
-  const tokens = await tokenResponse.json();
-  // Fall back to parsing the access token if id_token is not present in the refresh response
-  const rawTokenToParse = tokens.id_token || tokens.axus_access_token || tokens.access_token;
-  const tokenPayload = parseJwt(rawTokenToParse);
+  const refreshData = await refreshResponse.json();
+  if (refreshData.errors || !refreshData.data?.refreshCredentials) {
+    throw new Error(`GraphQL Error during refresh: ${JSON.stringify(refreshData.errors || "Unknown error")}`);
+  }
+
+  const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshData.data.refreshCredentials;
+  
+  const tokenPayload = parseJwt(newAccessToken);
   if (!tokenPayload || !tokenPayload.sub) {
     throw new Error("Invalid token payload during refresh (missing sub/auid)");
   }
 
   const auid = tokenPayload.sub;
   const username = tokenPayload.preferred_username || tokenPayload.username || "axus_user";
+  
+  let expiresIn = 3600;
+  if (tokenPayload.exp) {
+    expiresIn = Math.floor(tokenPayload.exp - (Date.now() / 1000));
+    if (expiresIn <= 0) expiresIn = 3600;
+  }
 
   // Fetch user details raw GraphQL query to avoid dependencies in Edge runtime
   let displayName = `@${username}`;
@@ -96,8 +114,8 @@ export async function refreshTokens(refreshToken: string): Promise<RefreshResult
     auid,
     username,
     displayName,
-    accessToken: tokens.axus_access_token || tokens.access_token,
-    refreshToken: tokens.refresh_token || refreshToken,
-    expiresIn: tokens.expires_in || 3600,
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken || refreshToken,
+    expiresIn,
   };
 }
