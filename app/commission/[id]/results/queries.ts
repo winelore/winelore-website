@@ -9,10 +9,15 @@ export const GET_COMMISSION_RESULTS = `
         voiceCommentsEnabled
         propertyCommentsEnabled
       }
-      policyEdition {
+      outcomePolicyEdition {
         id
         scriptCode
         calculationScope
+        outputProperties {
+          code
+          name
+          isResult
+        }
       }
       candidates {
         id

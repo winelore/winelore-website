@@ -232,7 +232,7 @@ export default function CommissionResultsClientView({
         [usernames, t],
     )
 
-    const hasPolicyEdition = Boolean(commission.policyEdition)
+    const hasPolicyEdition = Boolean(commission.outcomePolicyEdition)
 
     const isReplicaBeverageIncomplete = useCallback(
         (replicaId: string, beverageId: string): boolean => {
@@ -272,7 +272,7 @@ export default function CommissionResultsClientView({
         }
         return resolveReplicaBeverageOutcomes({
             commission,
-            policyEdition: commission.policyEdition,
+            policyEdition: commission.outcomePolicyEdition,
             templateEditionById,
             templatePropertyMap: propertyMap,
             isReplicaBeverageIncomplete,
@@ -283,8 +283,8 @@ export default function CommissionResultsClientView({
     const policyOutputProperties = resolvedOutcomes.outputProperties
 
     const outcomePropertyMap = useMemo(
-        () => buildOutcomePropertyMap(commission.policyEdition, policyOutputProperties, propertyMap),
-        [commission.policyEdition, policyOutputProperties, propertyMap],
+        () => buildOutcomePropertyMap(commission.outcomePolicyEdition, policyOutputProperties, propertyMap),
+        [commission.outcomePolicyEdition, policyOutputProperties, propertyMap],
     )
 
     const getReplicaCandidateDetails = useCallback(

@@ -160,7 +160,7 @@ export function getReplicaBeverageOutcome(
 }
 
 export function commissionUsesOutcomePolicy(
-    commission: { policyEdition?: OutcomePolicyEditionData | null },
+    commission: { outcomePolicyEdition?: OutcomePolicyEditionData | null },
 ): boolean {
-    return Boolean(commission.policyEdition)
+    return Boolean(commission.outcomePolicyEdition)
 }
