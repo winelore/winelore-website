@@ -20,9 +20,12 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
     const { data, errors } = await response.json();
 
     if (errors) {
-        // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error (fetchGraphQLRaw):', JSON.stringify(errors, null, 2));
-        throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
+        const filteredErrors = errors.filter((err: any) => err.extensions?.code !== 'EVALUATION_NOT_FOUND');
+        if (filteredErrors.length > 0) {
+            // eslint-disable-next-line no-console
+            console.error('GraphQL Pipeline Error (fetchGraphQLRaw):', JSON.stringify(filteredErrors, null, 2));
+            throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
+        }
     }
 
     return data;
@@ -45,9 +48,12 @@ export async function fetchGraphQL<TResult, TVariables>(
     const { data, errors } = await response.json();
 
     if (errors) {
-        // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error (fetchGraphQL):', JSON.stringify(errors, null, 2));
-        throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
+        const filteredErrors = errors.filter((err: any) => err.extensions?.code !== 'EVALUATION_NOT_FOUND');
+        if (filteredErrors.length > 0) {
+            // eslint-disable-next-line no-console
+            console.error('GraphQL Pipeline Error (fetchGraphQL):', JSON.stringify(filteredErrors, null, 2));
+            throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
+        }
     }
 
     return data;
@@ -78,9 +84,12 @@ const requester = async <R, V>(
     const { data, errors } = await response.json();
 
     if (errors) {
-        // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error (SDK requester):', JSON.stringify(errors, null, 2));
-        throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
+        const filteredErrors = errors.filter((err: any) => err.extensions?.code !== 'EVALUATION_NOT_FOUND');
+        if (filteredErrors.length > 0) {
+            // eslint-disable-next-line no-console
+            console.error('GraphQL Pipeline Error (SDK requester):', JSON.stringify(filteredErrors, null, 2));
+            throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
+        }
     }
 
     return data;
