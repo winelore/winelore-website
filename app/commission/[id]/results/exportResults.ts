@@ -22,6 +22,11 @@ export interface ExportRow {
     producer: string
     outcomes: Record<string, string>
     awards: string
+    beverageType?: string
+    wineType?: string
+    vintage?: string
+    volume?: string
+    origin?: string
 }
 
 export interface ExpertScoreExportRow {
@@ -32,6 +37,11 @@ export interface ExpertScoreExportRow {
     replicaType: string
     evaluator: string
     scores: Record<string, string>
+    beverageType?: string
+    wineType?: string
+    vintage?: string
+    volume?: string
+    origin?: string
 }
 
 export interface CommentExportRow {
@@ -43,6 +53,11 @@ export interface CommentExportRow {
     property: string
     commentText: string
     voiceUrl: string
+    beverageType?: string
+    wineType?: string
+    vintage?: string
+    volume?: string
+    origin?: string
 }
 
 export interface DetailedExportContext {
@@ -93,6 +108,11 @@ function buildOverviewSheetData(rows: ExportRow[], layout: ExportLayoutOptions):
         "Order",
         "Code",
         "Beverage",
+        "Beverage Type",
+        "Wine Type",
+        "Vintage",
+        "Volume (ml)",
+        "Origin",
         "Producer",
         ...layout.outcomePropertyCodes.map((code) => getOutcomeLabel(code)),
         "Awards",
@@ -106,6 +126,11 @@ function buildOverviewSheetData(rows: ExportRow[], layout: ExportLayoutOptions):
                 : "-",
             row.code,
             row.beverage,
+            row.beverageType ?? "-",
+            row.wineType ?? "-",
+            row.vintage ?? "-",
+            row.volume ?? "-",
+            row.origin ?? "-",
             row.producer,
             ...layout.outcomePropertyCodes.map((code) => row.outcomes[code] ?? "-"),
             row.awards,
@@ -121,6 +146,11 @@ function buildExpertScoreSheetData(
     const headers = [
         "Code",
         "Beverage",
+        "Beverage Type",
+        "Wine Type",
+        "Vintage",
+        "Volume (ml)",
+        "Origin",
         "Producer",
         "Replica",
         "Replica Type",
@@ -133,6 +163,11 @@ function buildExpertScoreSheetData(
         ...rows.map((row) => [
             row.code,
             row.beverage,
+            row.beverageType ?? "-",
+            row.wineType ?? "-",
+            row.vintage ?? "-",
+            row.volume ?? "-",
+            row.origin ?? "-",
             row.producer,
             row.replicaName,
             row.replicaType,
@@ -143,13 +178,32 @@ function buildExpertScoreSheetData(
 }
 
 function buildCommentSheetData(rows: CommentExportRow[]): string[][] {
-    const headers = ["Code", "Beverage", "Producer", "Replica", "Evaluator", "Property", "Comment Text", "Voice URL"]
+    const headers = [
+        "Code",
+        "Beverage",
+        "Beverage Type",
+        "Wine Type",
+        "Vintage",
+        "Volume (ml)",
+        "Origin",
+        "Producer",
+        "Replica",
+        "Evaluator",
+        "Property",
+        "Comment Text",
+        "Voice URL"
+    ]
 
     return [
         headers,
         ...rows.map((row) => [
             row.code,
             row.beverage,
+            row.beverageType ?? "-",
+            row.wineType ?? "-",
+            row.vintage ?? "-",
+            row.volume ?? "-",
+            row.origin ?? "-",
             row.producer,
             row.replicaName,
             row.evaluator,
@@ -169,6 +223,11 @@ export function buildExpertScoreExportRows(
     evaluator: string,
     scores: Array<{ code: string; value: string }>,
     propertyMap: Record<string, PropertyMeta>,
+    beverageType?: string,
+    wineType?: string,
+    vintage?: string,
+    volume?: string,
+    origin?: string,
 ): ExpertScoreExportRow {
     const scoreMap: Record<string, string> = {}
     scores
@@ -185,6 +244,11 @@ export function buildExpertScoreExportRows(
         replicaType,
         evaluator,
         scores: scoreMap,
+        beverageType,
+        wineType,
+        vintage,
+        volume,
+        origin,
     }
 }
 
@@ -197,6 +261,11 @@ export function buildCommentExportRows(
     comments: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }>,
     propertyMap: Record<string, PropertyMeta>,
     options: BuildDetailedExportOptions,
+    beverageType?: string,
+    wineType?: string,
+    vintage?: string,
+    volume?: string,
+    origin?: string,
 ): CommentExportRow[] {
     const flags = {
         propertyCommentsEnabled: options.propertyCommentsEnabled,
@@ -216,6 +285,11 @@ export function buildCommentExportRows(
                 : options.generalCommentLabel,
             commentText: comment.text?.trim() ?? "",
             voiceUrl: options.voiceCommentsEnabled && comment.voiceUrl ? comment.voiceUrl : "",
+            beverageType,
+            wineType,
+            vintage,
+            volume,
+            origin,
         }))
 }
 

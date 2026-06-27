@@ -277,6 +277,11 @@ const en = {
     ROSE: "Rosé",
     SPARKLING: "Sparkling",
     WHITE: "White",
+    WINE: "Wine",
+    BEER: "Beer",
+    CIDER: "Cider",
+    SPIRIT: "Spirit",
+    OTHER: "Other",
   },
   replicaType: {
     STANDARD: "Standard",

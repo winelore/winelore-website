@@ -277,6 +277,11 @@ const hu = {
         ROSE: "Rozé",
         SPARKLING: "Gyöngyöző / Pezsgő",
         WHITE: "Fehér",
+        WINE: "Bor",
+        BEER: "Sör",
+        CIDER: "Cider",
+        SPIRIT: "Párlat",
+        OTHER: "Egyéb",
     },
     replicaType: {
         STANDARD: "Standard",

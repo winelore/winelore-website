@@ -24,6 +24,7 @@ import { MemberEvaluationSection } from "../../EvaluationCommentsDisplay"
 import { normalizeAuids } from "../../auidUtils"
 import type { PropertyMeta } from "../../propertyMap"
 import { useTranslation } from "@/lib/i18n/context"
+import { getGeographicInfo } from "@/lib/geocoding"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import { useUsernames } from "@/hooks/useUsernames"
 import {
@@ -164,7 +165,7 @@ export default function CommissionResultsClientView({
     voiceCommentsEnabled,
 }: CommissionResultsClientViewProps) {
     const router = useRouter()
-    const { t, tCount, formatReplicaType, formatShortDateTime } = useTranslation()
+    const { t, tCount, formatReplicaType, formatShortDateTime, formatBeverageType } = useTranslation()
 
     const [showCompare, setShowCompare] = useState(false)
     const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null)
@@ -176,6 +177,7 @@ export default function CommissionResultsClientView({
     const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date())
     const [isPrinting, setIsPrinting] = useState(false)
     const [isExportingXlsx, setIsExportingXlsx] = useState(false)
+    const [exportProgress, setExportProgress] = useState("")
 
     useEffect(() => {
         if (commission?.replicas?.length >= 2) {
@@ -565,11 +567,32 @@ export default function CommissionResultsClientView({
         orderByCandidateId: candidateOrderIndex,
     })
 
-    const buildExportContext = (): DetailedExportContext => {
+    const buildExportContext = (geocodeResults: Map<string, string[]>): DetailedExportContext => {
         const overviewRows: ExportRow[] = filteredAndSortedRows.map((row: CandidateRow) => {
             const outcomes: Record<string, string> = {}
             for (const prop of policyOutputProperties) {
                 outcomes[prop.code] = row.outcomeOverall?.[prop.code]?.average ?? "-"
+            }
+
+            const candidate = row.candidate
+            const beverage = candidate.sample?.batch?.beverage
+            const beverageType = candidate.beverageType ? formatBeverageType(candidate.beverageType) : "-"
+            const wineType = beverage?.type ? formatBeverageType(beverage.type) : "-"
+            const vintage = candidate.sample?.batch?.vintage ? String(candidate.sample.batch.vintage) : "-"
+            const volume = candidate.sample?.volumeMl ? `${candidate.sample.volumeMl} ml` : "-"
+
+            let origin = "-"
+            const originObj = beverage?.origin
+            if (originObj && typeof originObj.latitude === "number" && typeof originObj.longitude === "number") {
+                const key = `${originObj.latitude},${originObj.longitude}`
+                const parts = geocodeResults.get(key)
+                if (parts && parts.length > 0) {
+                    const uniqueParts: string[] = []
+                    parts.forEach((p) => {
+                        if (!uniqueParts.includes(p)) uniqueParts.push(p)
+                    })
+                    origin = uniqueParts.join(", ")
+                }
             }
 
             return {
@@ -579,6 +602,11 @@ export default function CommissionResultsClientView({
                 producer: resolveProducerName(row.producerAuids),
                 outcomes,
                 awards: row.awards.map((a: any) => a.award?.name || "").filter(Boolean).join("; "),
+                beverageType,
+                wineType,
+                vintage,
+                volume,
+                origin,
             }
         })
 
@@ -594,6 +622,28 @@ export default function CommissionResultsClientView({
         filteredAndSortedRows.forEach((row: CandidateRow) => {
             const code = row.candidate.anonymizedCode || "N/A"
             const producer = resolveProducerName(row.producerAuids)
+
+            const candidate = row.candidate
+            const beverage = candidate.sample?.batch?.beverage
+            const beverageType = candidate.beverageType ? formatBeverageType(candidate.beverageType) : "-"
+            const wineType = beverage?.type ? formatBeverageType(beverage.type) : "-"
+            const vintage = candidate.sample?.batch?.vintage ? String(candidate.sample.batch.vintage) : "-"
+            const volume = candidate.sample?.volumeMl ? `${candidate.sample.volumeMl} ml` : "-"
+
+            let origin = "-"
+            const originObj = beverage?.origin
+            if (originObj && typeof originObj.latitude === "number" && typeof originObj.longitude === "number") {
+                const key = `${originObj.latitude},${originObj.longitude}`
+                const parts = geocodeResults.get(key)
+                if (parts && parts.length > 0) {
+                    const uniqueParts: string[] = []
+                    parts.forEach((p) => {
+                        if (!uniqueParts.includes(p)) uniqueParts.push(p)
+                    })
+                    origin = uniqueParts.join(", ")
+                }
+            }
+
             row.expertBreakdown.forEach((expert) => {
                 const evaluator = resolveEvaluatorName(expert.evaluatorAuids)
                 expertScoreRows.push(
@@ -606,6 +656,11 @@ export default function CommissionResultsClientView({
                         evaluator,
                         expert.evaluation.scores || [],
                         propertyMap,
+                        beverageType,
+                        wineType,
+                        vintage,
+                        volume,
+                        origin,
                     ),
                 )
                 commentRows.push(
@@ -618,6 +673,11 @@ export default function CommissionResultsClientView({
                         expert.evaluation.comments || [],
                         propertyMap,
                         exportOptions,
+                        beverageType,
+                        wineType,
+                        vintage,
+                        volume,
+                        origin,
                     ),
                 )
             })
@@ -627,24 +687,66 @@ export default function CommissionResultsClientView({
     }
 
     const handleExport = async (format: "csv" | "xlsx") => {
-        if (format === "csv") {
-            const { overviewRows } = buildExportContext()
-            const csv = buildResultsCsv(overviewRows, buildExportLayout())
-            downloadCsv(csv, `${sanitizeFilename(commission.name)}-results.csv`)
-            return
-        }
-
         setIsExportingXlsx(true)
+        setExportProgress("Preparing export...")
+
         try {
-            const context = buildExportContext()
-            await downloadResultsXlsx(
-                context,
-                propertyMap,
-                `${sanitizeFilename(commission.name)}-results.xlsx`,
-                buildExportLayout(),
-            )
+            // Find all unique coordinates in candidates
+            const uniqueCoords = new Map<string, { lat: number; lon: number }>()
+            filteredAndSortedRows.forEach((row) => {
+                const beverage = row.candidate.sample?.batch?.beverage
+                const origin = beverage?.origin
+                if (origin && typeof origin.latitude === "number" && typeof origin.longitude === "number") {
+                    const key = `${origin.latitude},${origin.longitude}`
+                    uniqueCoords.set(key, { lat: origin.latitude, lon: origin.longitude })
+                }
+            })
+
+            const geocodeResults = new Map<string, string[]>()
+            const coordsList = Array.from(uniqueCoords.entries())
+
+            for (let i = 0; i < coordsList.length; i++) {
+                const [key, coords] = coordsList[i]
+                setExportProgress(`Geocoding (${i + 1}/${coordsList.length})`)
+
+                try {
+                    const info = await getGeographicInfo(coords.lat, coords.lon)
+                    if (info) {
+                        const parts = [
+                            info.country,
+                            info.districtDetail,
+                            info.regionDetail,
+                            info.cityDetail
+                        ].filter(Boolean) as string[]
+                        geocodeResults.set(key, parts)
+                    }
+                } catch (err) {
+                    console.error(`Failed to geocode coordinate ${key}:`, err)
+                }
+
+                // Respect Nominatim's 1 req/sec policy
+                if (i < coordsList.length - 1) {
+                    await new Promise((resolve) => setTimeout(resolve, 1000))
+                }
+            }
+
+            setExportProgress("Generating file...")
+            const context = buildExportContext(geocodeResults)
+
+            if (format === "csv") {
+                const csv = buildResultsCsv(context.overviewRows, buildExportLayout())
+                downloadCsv(csv, `${sanitizeFilename(commission.name)}-results.csv`)
+            } else {
+                await downloadResultsXlsx(
+                    context,
+                    propertyMap,
+                    `${sanitizeFilename(commission.name)}-results.xlsx`,
+                    buildExportLayout(),
+                )
+            }
         } finally {
             setIsExportingXlsx(false)
+            setExportProgress("")
         }
     }
 
@@ -817,13 +919,20 @@ export default function CommissionResultsClientView({
                                             disabled={isExportingXlsx}
                                             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                         >
-                                            {isExportingXlsx ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <Download className="w-4 h-4" />
-                                            )}
-                                            {t("commission.results.export")}
-                                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                             {isExportingXlsx ? (
+                                                 <>
+                                                     <Loader2 className="w-4 h-4 animate-spin" />
+                                                     <span className="text-[13px] text-slate-600 font-medium">
+                                                         {exportProgress || "Exporting..."}
+                                                     </span>
+                                                 </>
+                                             ) : (
+                                                 <>
+                                                     <Download className="w-4 h-4" />
+                                                     {t("commission.results.export")}
+                                                 </>
+                                             )}
+                                             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="min-w-[10rem]">

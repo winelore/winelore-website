@@ -20,7 +20,10 @@ export const GET_COMMISSION_RESULTS = `
         beverageType
         sample {
           id
+          volumeMl
           batch {
+            id
+            vintage
             beverage {
               id
               name
@@ -28,6 +31,13 @@ export const GET_COMMISSION_RESULTS = `
                 id
                 auid
                 role
+              }
+              ... on Wine {
+                type
+                origin {
+                  latitude
+                  longitude
+                }
               }
             }
           }

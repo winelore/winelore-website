@@ -279,6 +279,11 @@ const uk: TranslationKey = {
     ROSE: "Рожеве",
     SPARKLING: "Ігристе",
     WHITE: "Біле",
+    WINE: "Вино",
+    BEER: "Пиво",
+    CIDER: "Сидр",
+    SPIRIT: "Міцний напій",
+    OTHER: "Інше",
   },
   replicaType: {
     STANDARD: "Стандартна",

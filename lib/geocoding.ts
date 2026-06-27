@@ -2,6 +2,9 @@ export interface GeographicInfo {
     country?: string;
     region?: string;
     district?: string;
+    districtDetail?: string;
+    regionDetail?: string;
+    cityDetail?: string;
 }
 
 /**
@@ -52,6 +55,15 @@ export async function getGeographicInfo(latitude: number, longitude: number): Pr
         if (country) result.country = country;
         if (region && region !== country) result.region = region;
         if (district && district !== region && district !== country) result.district = district;
+
+        // Specific fields for detailed address (country, district, region, city/village)
+        const detailedDistrict = address.county || address.district || address.state_district;
+        const detailedRegion = address.state || address.region || address.province || address.territory;
+        const detailedCity = address.city || address.town || address.village || address.hamlet || address.isolated_dwelling;
+
+        if (detailedDistrict && detailedDistrict !== country) result.districtDetail = detailedDistrict;
+        if (detailedRegion && detailedRegion !== country) result.regionDetail = detailedRegion;
+        if (detailedCity && detailedCity !== detailedRegion && detailedCity !== detailedDistrict) result.cityDetail = detailedCity;
 
         return result;
     } catch (error: any) {
