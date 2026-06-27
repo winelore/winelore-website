@@ -4,10 +4,10 @@ export const GET_COMMISSION_RESULTS = `
       id
       name
       status
+      voiceCommentsEnabled
+      propertyCommentsEnabled
       competition {
         holders
-        voiceCommentsEnabled
-        propertyCommentsEnabled
       }
       outcomePolicyEdition {
         id

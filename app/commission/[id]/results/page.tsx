@@ -47,8 +47,8 @@ export default async function CommissionResultsPage({ params }: PageProps) {
             if (!isHolder) {
                 return <ResultsErrorView commissionId={commissionId} variant="forbidden" />
             }
-            propertyCommentsEnabled = commission.competition?.propertyCommentsEnabled ?? false
-            voiceCommentsEnabled = commission.competition?.voiceCommentsEnabled ?? false
+            propertyCommentsEnabled = commission.propertyCommentsEnabled ?? false
+            voiceCommentsEnabled = commission.voiceCommentsEnabled ?? false
 
             try {
                 const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId)

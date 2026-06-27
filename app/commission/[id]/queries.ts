@@ -13,6 +13,10 @@ export const GET_COMMISSION = gql(`
       startedAt
       endedAt
       createdAt
+      wineJumperMiniGameEnabled
+      voiceCommentsEnabled
+      propertyCommentsEnabled
+      beverageOriginDuringEvaluationEnabled
       candidates {
         id
       }
@@ -20,10 +24,6 @@ export const GET_COMMISSION = gql(`
         id
         name
         holders
-        wineJumperMiniGameEnabled
-        voiceCommentsEnabled
-        propertyCommentsEnabled
-        beverageOriginDuringEvaluationEnabled
       }
       replicas {
         id

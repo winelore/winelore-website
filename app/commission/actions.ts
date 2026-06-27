@@ -387,10 +387,10 @@ export async function getCommissionDataAction(commissionId: string) {
                 id: commission.competition.id,
                 name: commission.competition.name,
                 holders: commission.competition.holders.flat(),
-                wineJumperMiniGameEnabled: commission.competition.wineJumperMiniGameEnabled,
-                voiceCommentsEnabled: commission.competition.voiceCommentsEnabled,
-                propertyCommentsEnabled: commission.competition.propertyCommentsEnabled,
-                beverageOriginDuringEvaluationEnabled: commission.competition.beverageOriginDuringEvaluationEnabled,
+                wineJumperMiniGameEnabled: commission.wineJumperMiniGameEnabled,
+                voiceCommentsEnabled: commission.voiceCommentsEnabled,
+                propertyCommentsEnabled: commission.propertyCommentsEnabled,
+                beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
                 evaluationTemplateEdition: templateEdition
             },
             candidateCount: countData.commissionCandidateCount ?? 0,
@@ -482,7 +482,7 @@ export async function getMyTastingSummaryAction(replicaId: string): Promise<MyTa
         if (!commissionId) return empty;
 
         const commission = await sdk.GetCommission({ id: commissionId });
-        const featureFlags = getCompetitionFeatureFlags(commission.commission?.competition);
+        const featureFlags = getCompetitionFeatureFlags(commission.commission);
         return await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
     } catch (err: any) {
         console.error("Server Action Error (getMyTastingSummaryAction):", err);
@@ -557,7 +557,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const commission = result.commission;
         if (!commission) return emptyResult;
 
-        const featureFlags = getCompetitionFeatureFlags(commission.competition);
+        const featureFlags = getCompetitionFeatureFlags(commission);
 
         // Find the specific replica
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
