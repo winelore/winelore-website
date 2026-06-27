@@ -13,11 +13,6 @@ export const GET_COMMISSION_RESULTS = `
         id
         scriptCode
         calculationScope
-        outputProperties {
-          code
-          name
-          isResult
-        }
       }
       candidates {
         id
