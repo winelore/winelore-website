@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { parseJwt } from "@/lib/pkce";
 import { axusSdk } from "@/lib/axusClient";
-import { applySessionCookies } from "@/lib/auth/session";
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
@@ -81,7 +80,48 @@ export async function GET(request: NextRequest) {
       console.error("Failed to fetch user details during callback:", err);
     }
 
-    await applySessionCookies(cookieStore, tokens, displayName);
+    // Set cookies (secure: false as requested by user)
+    cookieStore.set("auid", String(auid), {
+      httpOnly: false, // accessible client-side (e.g. by js-cookie)
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      maxAge: tokens.expires_in || 3600
+    });
+
+    cookieStore.set("username", String(username), {
+      httpOnly: false, // accessible client-side
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      maxAge: tokens.expires_in || 3600
+    });
+
+    cookieStore.set("displayName", String(displayName), {
+      httpOnly: false, // accessible client-side
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      maxAge: tokens.expires_in || 3600
+    });
+
+    cookieStore.set("axus_access_token", tokens.axus_access_token || tokens.access_token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      maxAge: tokens.expires_in || 3600
+    });
+
+    if (tokens.refresh_token) {
+      cookieStore.set("axus_refresh_token", tokens.refresh_token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+    }
 
     // Clean up temporary OAuth cookies
     cookieStore.delete("axus_oauth_state");

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { ensureAuthenticated } from "@/lib/auth/session"
+import { cookies } from "next/headers"
 import { getCommissionDataAction } from "../../../../actions"
 
 interface Props {
@@ -8,7 +8,8 @@ interface Props {
 
 export default async function EvaluationProxyPage({ params }: Props) {
     const { id, replicaId } = await params
-    const auidStr = await ensureAuthenticated()
+    const cookieStore = await cookies()
+    const auidStr = cookieStore.get("auid")?.value
     if (!auidStr) {
         redirect("/auth/login")
     }

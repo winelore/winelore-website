@@ -1,14 +1,15 @@
 export const dynamic = "force-dynamic"
 
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { ensureAuthenticated } from "@/lib/auth/session"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { getGeographicInfo } from "@/lib/geocoding"
 import { GET_MY_BEVERAGES } from "./queries"
 import MyBeveragesClientView from "./MyBeveragesClientView"
 
 export default async function MyBeveragesPage() {
-    const currentAuidStr = await ensureAuthenticated()
+    const cookieStore = await cookies()
+    const currentAuidStr = cookieStore.get("auid")?.value
     if (!currentAuidStr) {
         redirect("/auth/login")
     }
