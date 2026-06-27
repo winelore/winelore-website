@@ -44,13 +44,15 @@ export async function refreshTokens(refreshToken: string): Promise<RefreshResult
   }
 
   const tokens = await tokenResponse.json();
-  const idTokenPayload = parseJwt(tokens.id_token);
-  if (!idTokenPayload || !idTokenPayload.sub) {
-    throw new Error("Invalid ID Token payload during refresh");
+  // Fall back to parsing the access token if id_token is not present in the refresh response
+  const rawTokenToParse = tokens.id_token || tokens.axus_access_token || tokens.access_token;
+  const tokenPayload = parseJwt(rawTokenToParse);
+  if (!tokenPayload || !tokenPayload.sub) {
+    throw new Error("Invalid token payload during refresh (missing sub/auid)");
   }
 
-  const auid = idTokenPayload.sub;
-  const username = idTokenPayload.preferred_username || "axus_user";
+  const auid = tokenPayload.sub;
+  const username = tokenPayload.preferred_username || tokenPayload.username || "axus_user";
 
   // Fetch user details raw GraphQL query to avoid dependencies in Edge runtime
   let displayName = `@${username}`;

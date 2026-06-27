@@ -4,6 +4,13 @@ import { parseJwt } from "@/lib/pkce";
 import { refreshTokens } from "@/lib/authRefresh";
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Do not intercept or try to refresh tokens on auth-related endpoints
+  if (pathname.startsWith("/auth/") || pathname === "/callback") {
+    return NextResponse.next();
+  }
+
   const refreshToken = request.cookies.get("axus_refresh_token")?.value;
   const accessToken = request.cookies.get("axus_access_token")?.value;
   const auid = request.cookies.get("auid")?.value;
