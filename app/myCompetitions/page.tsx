@@ -1,13 +1,13 @@
 export const dynamic = "force-dynamic"
 
 import { redirect } from "next/navigation"
-import { ensureAuthenticated } from "@/lib/auth/session"
+import { ensureAuthenticatedPage } from "@/lib/auth/session"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { GET_MY_COMPETITIONS } from "./queries"
 import MyCompetitionsClientView from "./MyCompetitionsClientView"
 
 export default async function MyCompetitionsPage() {
-    const currentAuidStr = await ensureAuthenticated()
+    const currentAuidStr = await ensureAuthenticatedPage("/myCompetitions")
     if (!currentAuidStr) {
         redirect("/auth/login")
     }

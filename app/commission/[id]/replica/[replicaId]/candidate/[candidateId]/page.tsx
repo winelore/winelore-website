@@ -3,7 +3,7 @@ import { isReplicaCandidateFinished } from "../../../../../auidUtils"
 import { notFound, redirect } from "next/navigation"
 import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
-import { ensureAuthenticated } from "@/lib/auth/session"
+import { ensureAuthenticatedPage } from "@/lib/auth/session"
 
 interface Props {
     params: Promise<{ id: string; replicaId: string; candidateId: string }>
@@ -12,7 +12,9 @@ interface Props {
 export default async function CandidateEvaluationPage({ params }: Props) {
     const { id: routeCommissionId, replicaId, candidateId } = await params
 
-    const auidStr = await ensureAuthenticated()
+    const auidStr = await ensureAuthenticatedPage(
+        `/commission/${routeCommissionId}/replica/${replicaId}/candidate/${candidateId}`,
+    )
     if (!auidStr) {
         redirect("/auth/login")
     }

@@ -1,7 +1,7 @@
 import { getCommissionDataAction } from '../actions';
 import CommissionClientView from './CommissionClientView';
 import CommissionNotFound from './CommissionNotFound';
-import { ensureAuthenticated } from '@/lib/auth/session';
+import { ensureAuthenticatedPage } from '@/lib/auth/session';
 
 interface PageProps {
     params: Promise<{
@@ -13,7 +13,7 @@ export default async function CommissionStartPage({ params }: PageProps) {
     const resolvedParams = await params;
     const commissionId = resolvedParams.id;
 
-    const auidStr = await ensureAuthenticated();
+    const auidStr = await ensureAuthenticatedPage(`/commission/${commissionId}`);
     const currentAuid = auidStr ? parseInt(auidStr, 10) : null;
 
     let commission = null;
