@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import { EvaluationCommentsSection } from "../../EvaluationCommentsDisplay"
+import type { PropertyMeta } from "../../propertyMap"
 
 const TOTAL_SCORE_CODE = "taste_score"
 
@@ -47,9 +49,18 @@ function hasTotalScore(ev: any): boolean {
 interface CommissionResultsClientViewProps {
     commission: any
     awardsMap: Record<string, any[]>
+    propertyMap: Record<string, PropertyMeta>
+    propertyCommentsEnabled: boolean
+    voiceCommentsEnabled: boolean
 }
 
-export default function CommissionResultsClientView({ commission, awardsMap }: CommissionResultsClientViewProps) {
+export default function CommissionResultsClientView({
+    commission,
+    awardsMap,
+    propertyMap,
+    propertyCommentsEnabled,
+    voiceCommentsEnabled,
+}: CommissionResultsClientViewProps) {
     const router = useRouter()
 
     const [showCompare, setShowCompare] = useState<boolean>(false)
@@ -171,7 +182,8 @@ export default function CommissionResultsClientView({ commission, awardsMap }: C
                             replicaName: r.name || r.type,
                             evaluatorId: ev.evaluatorAuid?.join(", ") || "Unknown",
                             totalScore: totalScoreObj ? totalScoreObj.value : "-",
-                            scores: categoryScores
+                            scores: categoryScores,
+                            comments: ev.comments || [],
                         })
                     }
                 })
@@ -455,6 +467,13 @@ export default function CommissionResultsClientView({ commission, awardsMap }: C
                                                                                     </div>
                                                                                 ))}
                                                                             </div>
+                                                                            <EvaluationCommentsSection
+                                                                                evaluation={{ comments: expert.comments }}
+                                                                                propertyMap={propertyMap}
+                                                                                accent="indigo"
+                                                                                propertyCommentsEnabled={propertyCommentsEnabled}
+                                                                                voiceCommentsEnabled={voiceCommentsEnabled}
+                                                                            />
                                                                         </div>
                                                                     ))}
                                                                 </div>

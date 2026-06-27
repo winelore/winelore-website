@@ -13,6 +13,7 @@ import {
     memberMatchesActor,
 } from "./auidUtils";
 import { isReplicaCandidateFinished } from "./replicaUtils";
+import { buildPropertyMapFromCommissionTemplates } from "./propertyMap";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -22,7 +23,7 @@ function isValidUuid(id: string | null | undefined): boolean {
 
 const templatesCache = new Map<string, { data: GetCommissionTemplatesDeepResult; expiresAt: number }>();
 
-async function getCommissionTemplatesWithResultMarkers(commissionId: string): Promise<GetCommissionTemplatesDeepResult> {
+export async function getCommissionTemplatesWithResultMarkers(commissionId: string): Promise<GetCommissionTemplatesDeepResult> {
     const cached = templatesCache.get(commissionId);
     if (cached && cached.expiresAt > Date.now()) {
         return cached.data;
@@ -545,26 +546,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
                 evaluations = evalsRes || [];
                 myCurrentCandidateEvaluation = myCurrentEvalRes;
 
-                const commissionWithTemplates = templateResult?.commission;
-                if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
-                    const link = commissionWithTemplates.templateEditions.find(l => l.beverageType === "WINE") || commissionWithTemplates.templateEditions[0];
-                    const templateEdition = link?.templateEdition;
-                    if (templateEdition && templateEdition.categories) {
-                        for (const cat of templateEdition.categories) {
-                            if (cat.properties) {
-                                  for (const prop of cat.properties) {
-                                    const meta = {
-                                        name: prop.name,
-                                        isResult: (prop as { isResult?: boolean }).isResult === true,
-                                    };
-                                    propertyMap[prop.code] = meta;
-                                    // Also index by ID so evaluation comments (which use propertyId) resolve correctly
-                                    if (prop.id) propertyMap[String(prop.id)] = meta;
-                                }
-                            }
-                        }
-                    }
-                }
+                Object.assign(propertyMap, buildPropertyMapFromCommissionTemplates(templateResult));
             } catch (err: any) {
                 console.error("Failed to fetch evaluations or template details for wait page:", err);
             }
@@ -575,13 +557,13 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const myMember = actorAuid ? members.find((m: any) => memberMatchesActor(m.auid, actorAuid)) : null;
 
         let myEvaluation = myCurrentCandidateEvaluation;
-        const hasCompletedCurrentCandidate = myCurrentCandidateEvaluation?.isComplete === true;
         if (!myEvaluation && myMember) {
             myEvaluation = findEvaluationForMember(evaluations, myMember.auid);
         }
         if (!myEvaluation && actorAuid) {
             myEvaluation = findEvaluationForMember(evaluations, actorAuid);
         }
+        const hasCompletedCurrentCandidate = myEvaluation?.isComplete === true;
 
         return {
             members,

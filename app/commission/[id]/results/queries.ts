@@ -4,6 +4,10 @@ export const GET_COMMISSION_RESULTS = `
       id
       name
       status
+      competition {
+        voiceCommentsEnabled
+        propertyCommentsEnabled
+      }
       candidates {
         id
         anonymizedCode
@@ -38,6 +42,12 @@ export const GET_COMMISSION_RESULTS = `
             scores {
               code
               value
+            }
+            comments {
+              id
+              propertyId
+              text
+              voiceUrl
             }
           }
         }

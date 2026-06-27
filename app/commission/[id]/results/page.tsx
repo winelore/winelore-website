@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic"
 
 import { fetchGraphQLRaw } from "@/lib/apiClient"
+import { getCommissionTemplatesWithResultMarkers } from "../../actions"
+import { buildPropertyMapFromCommissionTemplates } from "../../propertyMap"
 import { GET_COMMISSION_RESULTS, GET_BEVERAGE_AWARDS } from "./queries"
 import CommissionResultsClientView from "./CommissionResultsClientView"
 
@@ -14,6 +16,9 @@ export default async function CommissionResultsPage({ params }: PageProps) {
 
     let commission = null;
     const awardsMap: Record<string, any[]> = {};
+    let propertyMap = {};
+    let propertyCommentsEnabled = false;
+    let voiceCommentsEnabled = false;
 
     console.log(`\n\n=== [СЕРВЕР] ПОЧАТОК ЗАВАНТАЖЕННЯ РЕЗУЛЬТАТІВ ДЛЯ КОМІСІЇ ${commissionId} ===`);
 
@@ -31,6 +36,18 @@ export default async function CommissionResultsPage({ params }: PageProps) {
         console.log(`[СЕРВЕР] Відповідь GET_COMMISSION_RESULTS (урізано):`, JSON.stringify(response));
 
         commission = response?.commission;
+
+        if (commission) {
+            propertyCommentsEnabled = commission.competition?.propertyCommentsEnabled ?? false;
+            voiceCommentsEnabled = commission.competition?.voiceCommentsEnabled ?? false;
+
+            try {
+                const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
+                propertyMap = buildPropertyMapFromCommissionTemplates(templateResult);
+            } catch (err) {
+                console.error("[СЕРВЕР] Failed to fetch template metadata for results:", err);
+            }
+        }
 
         if (commission?.candidates) {
             const beverageIds = Array.from(
@@ -88,5 +105,13 @@ export default async function CommissionResultsPage({ params }: PageProps) {
         )
     }
 
-    return <CommissionResultsClientView commission={commission} awardsMap={awardsMap} />
+    return (
+        <CommissionResultsClientView
+            commission={commission}
+            awardsMap={awardsMap}
+            propertyMap={propertyMap}
+            propertyCommentsEnabled={propertyCommentsEnabled}
+            voiceCommentsEnabled={voiceCommentsEnabled}
+        />
+    )
 }

@@ -3,11 +3,10 @@
 import React, { useState, useEffect, use, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
-import { Users, Wine, Loader2, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
+import { Users, Wine, Loader2, ArrowRight } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import { useUsernames } from "@/hooks/useUsernames"
 import {
     getWaitDataAction,
@@ -18,256 +17,11 @@ import {
     clearCachedWaitEvaluation,
     readCachedWaitEvaluation,
 } from "../../../../waitEvaluationCache"
-
-type PropertyMeta = { name: string; isResult: boolean }
-
-type CompetitionFeatureFlags = {
-    propertyCommentsEnabled: boolean
-    voiceCommentsEnabled: boolean
-}
-
-function commentHasVisibleContent(
-    comment: { text?: string | null; voiceUrl?: string | null; propertyId?: string | null },
-    flags: CompetitionFeatureFlags,
-) {
-    if (comment.propertyId && !flags.propertyCommentsEnabled) return false
-    const hasText = Boolean(comment.text?.trim())
-    const hasVoice = flags.voiceCommentsEnabled && Boolean(comment.voiceUrl)
-    return hasText || hasVoice
-}
-
-function isResultOrGeneralComment(
-    comment: { propertyId?: string | null },
-    propertyMap: Record<string, PropertyMeta>,
-) {
-    if (!comment.propertyId) return true
-    return propertyMap[comment.propertyId]?.isResult === true
-}
-
-function SubmittedScores({
-    scores,
-    propertyMap,
-    accent = "slate",
-    resultsOnly = false,
-}: {
-    scores: Array<{ code: string; value: string }>
-    propertyMap: Record<string, PropertyMeta>
-    accent?: "indigo" | "slate"
-    resultsOnly?: boolean
-}) {
-    const { t } = useTranslation()
-
-    const regularScores = resultsOnly
-        ? []
-        : scores.filter((score) => propertyMap[score.code]?.isResult !== true)
-    const resultScores = scores.filter((score) => propertyMap[score.code]?.isResult === true)
-
-    const borderClass = accent === "indigo" ? "border-indigo-300" : "border-indigo-200"
-
-    const renderScoreChip = (score: { code: string; value: string }, isResult: boolean) => {
-        const displayName = propertyMap[score.code]?.name || score.code
-
-        return (
-            <div
-                key={score.code}
-                className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs shadow-sm ${
-                    isResult
-                        ? "border border-indigo-300 bg-indigo-600 text-white"
-                        : "border border-slate-200 bg-white"
-                }`}
-            >
-                <span className={`mr-1 ${isResult ? "text-indigo-100" : "text-slate-500"}`}>
-                    <TranslatedText text={displayName} />
-                </span>
-                <span className={`font-bold ${isResult ? "text-white" : "text-slate-800"}`}>
-                    {score.value}
-                </span>
-            </div>
-        )
-    }
-
-    if (regularScores.length === 0 && resultScores.length === 0) return null
-
-    return (
-        <div className={`pl-3 border-l-2 ${borderClass} mt-2 space-y-3`}>
-            {regularScores.length > 0 && (
-                <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        {t("evaluation.submittedScores")}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {regularScores.map((score) => renderScoreChip(score, false))}
-                    </div>
-                </div>
-            )}
-
-            {resultScores.length > 0 && (
-                <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
-                        {t("evaluation.resultsSection")}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {resultScores.map((score) => renderScoreChip(score, true))}
-                    </div>
-                </div>
-            )}
-        </div>
-    )
-}
-
-function hasEvaluationData(
-    evaluation: { scores?: Array<{ code: string; value: string | null }>; comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
-    flags: CompetitionFeatureFlags,
-) {
-    const hasScores = (evaluation.scores || []).some(
-        (s) => s.value != null && String(s.value).trim() !== "",
-    )
-    const hasComments = (evaluation.comments || []).some((c) => commentHasVisibleContent(c, flags))
-    return hasScores || hasComments
-}
-
-function hasScoreValue(value: string | null | undefined): boolean {
-    return value != null && String(value).trim() !== ""
-}
-
-function hasFullAssessmentDetails(
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
-    propertyMap: Record<string, PropertyMeta>,
-    flags: CompetitionFeatureFlags,
-) {
-    const scores = evaluation.scores || []
-    const hasNonResultScores = scores.some((s) => propertyMap[s.code]?.isResult !== true)
-    const allComments = (evaluation.comments || []).filter((c) => commentHasVisibleContent(c, flags))
-    const hasHiddenComments = allComments.some((c) => !isResultOrGeneralComment(c, propertyMap))
-    return hasNonResultScores || hasHiddenComments
-}
-
-function MemberEvaluationSection({
-    evaluation,
-    propertyMap,
-    accent,
-    forceShowAll = false,
-    propertyCommentsEnabled,
-    voiceCommentsEnabled,
-}: {
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
-    propertyMap: Record<string, PropertyMeta>
-    accent: "indigo" | "slate"
-    forceShowAll?: boolean
-    propertyCommentsEnabled: boolean
-    voiceCommentsEnabled: boolean
-}) {
-    const { t } = useTranslation()
-    const [expanded, setExpanded] = useState(forceShowAll)
-    const flags = { propertyCommentsEnabled, voiceCommentsEnabled }
-    const canExpand = !forceShowAll && hasFullAssessmentDetails(evaluation, propertyMap, flags)
-
-    return (
-        <div className="space-y-2">
-            <MemberEvaluationDetails
-                evaluation={evaluation}
-                propertyMap={propertyMap}
-                accent={accent}
-                showAll={forceShowAll || expanded}
-                propertyCommentsEnabled={propertyCommentsEnabled}
-                voiceCommentsEnabled={voiceCommentsEnabled}
-            />
-            {canExpand && (
-                <button
-                    type="button"
-                    onClick={() => setExpanded((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
-                >
-                    {expanded ? (
-                        <>
-                            <ChevronUp className="w-3.5 h-3.5 shrink-0" />
-                            <span>{t("commission.showResultsOnly")}</span>
-                        </>
-                    ) : (
-                        <>
-                            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
-                            <span>{t("commission.showAllAssessments")}</span>
-                        </>
-                    )}
-                </button>
-            )}
-        </div>
-    )
-}
-
-function MemberEvaluationDetails({
-    evaluation,
-    propertyMap,
-    accent,
-    showAll,
-    propertyCommentsEnabled,
-    voiceCommentsEnabled,
-}: {
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
-    propertyMap: Record<string, PropertyMeta>
-    accent: "indigo" | "slate"
-    showAll: boolean
-    propertyCommentsEnabled: boolean
-    voiceCommentsEnabled: boolean
-}) {
-    const { t } = useTranslation()
-    const flags = { propertyCommentsEnabled, voiceCommentsEnabled }
-
-    const scores = (evaluation.scores || []).filter((s) => hasScoreValue(s.value))
-    const allComments = (evaluation.comments || []).filter((c) => commentHasVisibleContent(c, flags))
-    const visibleComments = showAll
-        ? allComments
-        : allComments.filter((c) => isResultOrGeneralComment(c, propertyMap))
-
-    const visibleScores = showAll
-        ? scores
-        : scores.filter((s) => propertyMap[s.code]?.isResult === true)
-
-    const commentAccentClass = accent === "indigo" ? "border-slate-300" : "border-slate-200"
-    const commentLabelClass = accent === "indigo" ? "text-indigo-500" : "text-slate-500"
-    const commentTextClass = accent === "indigo" ? "text-indigo-950" : "text-slate-600"
-
-    return (
-        <>
-            {visibleScores.length > 0 && (
-                <SubmittedScores
-                    scores={visibleScores}
-                    propertyMap={propertyMap}
-                    accent={accent}
-                    resultsOnly={!showAll}
-                />
-            )}
-
-            {visibleComments.length > 0 && (
-                <div className={`pl-2 border-l-2 ${commentAccentClass} mt-2`}>
-                    <p className="text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">{t("commission.comments")}</p>
-                    <div className="space-y-1.5">
-                        {visibleComments.map((comment) => {
-                            const displayName = comment.propertyId
-                                ? propertyMap[comment.propertyId]?.name || comment.propertyId
-                                : t("evaluation.generalCommentLabel")
-                            return (
-                                <div key={comment.id} className={`text-xs ${commentTextClass} space-y-1`}>
-                                    <span className={`font-semibold ${commentLabelClass}`}><TranslatedText text={displayName} />:</span>
-                                    {comment.text && <span> {comment.text}</span>}
-                                    {voiceCommentsEnabled && comment.voiceUrl && (
-                                        <div className="mt-1">
-                                            <audio
-                                                src={comment.voiceUrl}
-                                                controls
-                                                className="h-7 w-full max-w-xs"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            )}
-        </>
-    )
-}
+import {
+    hasEvaluationData,
+    MemberEvaluationSection,
+} from "../../../../EvaluationCommentsDisplay"
+import type { PropertyMeta } from "../../../../propertyMap"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -357,12 +111,14 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 if (!hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
                     router.push(`/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`);
+                    router.refresh();
                     return;
                 }
 
                 // If candidate changed (HEAD advanced) — redirect everyone to evaluation
                 if (currentCandidateId && currentCandidateId !== newCandidateId) {
                     router.push(`/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`);
+                    router.refresh();
                     return;
                 }
 
