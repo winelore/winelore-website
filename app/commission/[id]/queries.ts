@@ -470,8 +470,12 @@ export const GET_EVALUATIONS_FOR_CANDIDATE = gql(`
   query GetEvaluationsForCandidate($replicaCandidateId: ID!, $limit: Int) {
     evaluationsByReplicaCandidate(replicaCandidateId: $replicaCandidateId, limit: $limit) {
       items {
+        id
         evaluatorAuid
         isComplete
+        templateEdition {
+          id
+        }
         scores {
           code
           value

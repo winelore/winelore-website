@@ -8,15 +8,26 @@ export const GET_COMMISSION_RESULTS = `
         voiceCommentsEnabled
         propertyCommentsEnabled
       }
+      policyEdition {
+        id
+        scriptCode
+        calculationScope
+      }
       candidates {
         id
         anonymizedCode
         beverageType
         sample {
+          id
           batch {
             beverage {
               id
               name
+              producers {
+                id
+                auid
+                role
+              }
             }
           }
         }
@@ -29,26 +40,15 @@ export const GET_COMMISSION_RESULTS = `
         members {
           id
         }
+        outcomes {
+          beverageId
+          scores
+        }
         replicaCandidates {
           id
           status
           candidate {
             id
-          }
-          evaluations {
-            id
-            isComplete
-            evaluatorAuid
-            scores {
-              code
-              value
-            }
-            comments {
-              id
-              propertyId
-              text
-              voiceUrl
-            }
           }
         }
       }

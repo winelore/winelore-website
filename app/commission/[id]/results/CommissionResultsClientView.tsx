@@ -20,9 +20,29 @@ import type { PropertyMeta } from "../../propertyMap"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import { useUsernames } from "@/hooks/useUsernames"
-import { buildResultsCsv, downloadCsv, sanitizeFilename, type ExportRow } from "./exportResults"
+import {
+    buildCommentExportRows,
+    buildExpertScoreExportRows,
+    buildResultsCsv,
+    downloadCsv,
+    downloadResultsXlsx,
+    sanitizeFilename,
+    type CommentExportRow,
+    type DetailedExportContext,
+    type ExpertScoreExportRow,
+    type ExportRow,
+} from "./exportResults"
+import type { TemplateEdition } from "@/lib/evaluationScores"
+import { buildOutcomePropertyMap } from "@/lib/outcomePolicy/outcomePropertyMap"
+import {
+    aggregateOverallFromReplicas,
+    commissionUsesOutcomePolicy,
+    getReplicaBeverageOutcome,
+    resolveReplicaBeverageOutcomes,
+} from "@/lib/outcomePolicy/resolveBeverageOutcomes"
 
 const TOTAL_SCORE_CODE = "taste_score"
+const CALCULATED_TOTAL_SCORE_CODE = "total_score"
 const AUTO_REFRESH_MS = 10000
 
 interface ReplicaCandidateDetails {
@@ -39,6 +59,7 @@ interface OverallAverage {
 
 interface ExpertBreakdownEntry {
     key: string
+    replicaId: string
     replicaName: string
     replicaType: string
     evaluatorAuids: string[]
@@ -52,9 +73,21 @@ interface ExpertBreakdownEntry {
 interface CandidateRow {
     candidate: any
     beverageName: string
+    producerAuids: string[]
     overall: OverallAverage
     awards: any[]
     expertBreakdown: ExpertBreakdownEntry[]
+}
+
+function getBeverageProducerAuids(candidate: any): string[] {
+    const producers = candidate.sample?.batch?.beverage?.producers
+    if (!Array.isArray(producers)) return []
+
+    const auids = new Set<string>()
+    producers.forEach((producer: { auid?: unknown }) => {
+        normalizeAuids(producer.auid).forEach((id) => auids.add(id))
+    })
+    return Array.from(auids)
 }
 
 function getPropertyLabel(code: string, propertyMap: Record<string, PropertyMeta>): string {
@@ -62,9 +95,22 @@ function getPropertyLabel(code: string, propertyMap: Record<string, PropertyMeta
 }
 
 function hasTotalScore(ev: { scores?: Array<{ code: string; value: string }> }): boolean {
-    const score = ev.scores?.find((s) => s.code === TOTAL_SCORE_CODE)
-    if (!score) return false
-    return !isNaN(parseFloat(score.value))
+    return parseEvaluationTotal(ev.scores) !== null
+}
+
+function parseEvaluationTotal(
+    scores: Array<{ code: string; value: string }> | undefined | null,
+): number | null {
+    if (!scores?.length) return null
+    const calculated = scores.find((s) => s.code === CALCULATED_TOTAL_SCORE_CODE)
+    if (calculated?.value != null && !isNaN(parseFloat(calculated.value))) {
+        return parseFloat(calculated.value)
+    }
+    const taste = scores.find((s) => s.code === TOTAL_SCORE_CODE)
+    if (taste?.value != null && !isNaN(parseFloat(taste.value))) {
+        return parseFloat(taste.value)
+    }
+    return null
 }
 
 function computeEvaluationProgress(commission: { replicas: any[]; candidates: any[] }) {
@@ -110,6 +156,7 @@ interface CommissionResultsClientViewProps {
     commission: any
     awardsMap: Record<string, any[]>
     propertyMap: Record<string, PropertyMeta>
+    templateEditionById: Record<string, TemplateEdition>
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
 }
@@ -118,6 +165,7 @@ export default function CommissionResultsClientView({
     commission,
     awardsMap,
     propertyMap,
+    templateEditionById,
     propertyCommentsEnabled,
     voiceCommentsEnabled,
 }: CommissionResultsClientViewProps) {
@@ -129,10 +177,11 @@ export default function CommissionResultsClientView({
     const [expandedCompareCandidateId, setExpandedCompareCandidateId] = useState<string | null>(null)
     const [replicaAId, setReplicaAId] = useState("")
     const [replicaBId, setReplicaBId] = useState("")
-    const [sortMode, setSortMode] = useState<"score" | "code">("score")
+    const [sortMode, setSortMode] = useState<"score" | "order">("score")
     const [searchQuery, setSearchQuery] = useState("")
     const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date())
     const [isPrinting, setIsPrinting] = useState(false)
+    const [isExportingXlsx, setIsExportingXlsx] = useState(false)
 
     useEffect(() => {
         if (commission?.replicas?.length >= 2) {
@@ -158,7 +207,7 @@ export default function CommissionResultsClientView({
         return () => window.removeEventListener("afterprint", onAfterPrint)
     }, [])
 
-    const allEvaluatorAuids = useMemo(() => {
+    const allPersonAuids = useMemo(() => {
         const auids = new Set<string>()
         commission.replicas?.forEach((r: any) => {
             r.replicaCandidates?.forEach((rc: any) => {
@@ -167,19 +216,89 @@ export default function CommissionResultsClientView({
                 })
             })
         })
+        commission.candidates?.forEach((candidate: any) => {
+            getBeverageProducerAuids(candidate).forEach((id) => auids.add(id))
+        })
         return Array.from(auids)
     }, [commission])
-    const { usernames } = useUsernames(allEvaluatorAuids)
+    const { usernames } = useUsernames(allPersonAuids)
 
     const resolveEvaluatorName = useCallback(
         (auids: string[]) => auids.map((id) => usernames[id] || id).join(", "),
         [usernames],
     )
 
+    const resolveProducerName = useCallback(
+        (auids: string[]) => {
+            if (auids.length === 0) return t("commission.results.unknownProducer")
+            return auids.map((id) => usernames[id] || id).join(", ")
+        },
+        [usernames, t],
+    )
+
+    const usesOutcomePolicy = commissionUsesOutcomePolicy(commission)
+
+    const isReplicaBeverageIncomplete = useCallback(
+        (replicaId: string, beverageId: string): boolean => {
+            const candidateIds = commission.candidates
+                .filter((c: any) => c.sample?.batch?.beverage?.id === beverageId)
+                .map((c: any) => c.id)
+
+            const replica = commission.replicas.find((r: any) => r.id === replicaId)
+            if (!replica) return false
+
+            const expectedEvaluators = replica.members?.length ?? 0
+            for (const candidateId of candidateIds) {
+                const rc = replica.replicaCandidates?.find(
+                    (item: any) => item.candidate.id === candidateId,
+                )
+                if (!rc) {
+                    if (expectedEvaluators > 0) return true
+                    continue
+                }
+                let completeCount = 0
+                rc.evaluations?.forEach((ev: any) => {
+                    if (ev.isComplete) completeCount++
+                })
+                if (expectedEvaluators > 0 && completeCount < expectedEvaluators) return true
+            }
+            return false
+        },
+        [commission],
+    )
+
+    const resolvedOutcomes = useMemo(() => {
+        if (!usesOutcomePolicy) {
+            return { replicaOutcomes: new Map(), outputProperties: [] }
+        }
+        return resolveReplicaBeverageOutcomes({
+            commission,
+            policyEdition: commission.policyEdition,
+            templateEditionById,
+            isReplicaBeverageIncomplete,
+        })
+    }, [commission, templateEditionById, usesOutcomePolicy, isReplicaBeverageIncomplete])
+
+    const replicaBeverageOutcomes = resolvedOutcomes.replicaOutcomes
+    const policyOutputProperties = resolvedOutcomes.outputProperties
+
+    const outcomePropertyMap = useMemo(
+        () => buildOutcomePropertyMap(commission.policyEdition, policyOutputProperties),
+        [commission.policyEdition, policyOutputProperties],
+    )
+
     const getReplicaCandidateDetails = useCallback(
         (replica: any, candidateId: string): ReplicaCandidateDetails | null => {
             const rc = replica.replicaCandidates.find((c: any) => c.candidate.id === candidateId)
-            if (!rc || !rc.evaluations || rc.evaluations.length === 0) return null
+            const candidate = commission.candidates.find((c: any) => c.id === candidateId)
+            const beverageId = candidate?.sample?.batch?.beverage?.id
+            const replicaOutcome =
+                usesOutcomePolicy && beverageId
+                    ? getReplicaBeverageOutcome(replicaBeverageOutcomes, replica.id, beverageId)
+                    : undefined
+
+            if (!rc) return null
+            if (!rc.evaluations?.length && !replicaOutcome) return null
 
             let totalSum = 0
             let totalCount = 0
@@ -187,25 +306,27 @@ export default function CommissionResultsClientView({
             const categoryValues: Record<string, string[]> = {}
             const expectedEvaluators = replica.members?.length ?? 0
 
-            rc.evaluations.forEach((ev: any) => {
-                const totalScoreObj = ev.scores?.find((s: any) => s.code === TOTAL_SCORE_CODE)
-                const totalVal = totalScoreObj ? parseFloat(totalScoreObj.value) : NaN
+            rc.evaluations?.forEach((ev: any) => {
+                const totalVal = parseEvaluationTotal(ev.scores)
 
-                if (!isNaN(totalVal)) {
+                if (totalVal !== null) {
                     totalSum += totalVal
                     totalCount++
                     if (ev.isComplete) completeWithTotalCount++
                 }
 
                 ev.scores?.forEach((score: any) => {
-                    if (score.code === TOTAL_SCORE_CODE) return
+                    if (
+                        score.code === TOTAL_SCORE_CODE ||
+                        score.code === CALCULATED_TOTAL_SCORE_CODE
+                    ) {
+                        return
+                    }
                     if (!ev.isComplete && !score.value) return
                     if (!categoryValues[score.code]) categoryValues[score.code] = []
                     categoryValues[score.code].push(score.value)
                 })
             })
-
-            if (totalCount === 0 && Object.keys(categoryValues).length === 0) return null
 
             const categories: Record<string, string> = {}
             Object.keys(categoryValues).forEach((code) => {
@@ -220,6 +341,16 @@ export default function CommissionResultsClientView({
                 }
             })
 
+            if (replicaOutcome) {
+                return {
+                    total: replicaOutcome.average,
+                    categories,
+                    isPreview: replicaOutcome.isPreview,
+                }
+            }
+
+            if (totalCount === 0 && Object.keys(categoryValues).length === 0) return null
+
             const isPreview =
                 expectedEvaluators > 0
                     ? completeWithTotalCount < expectedEvaluators
@@ -231,7 +362,7 @@ export default function CommissionResultsClientView({
                 isPreview,
             }
         },
-        [],
+        [commission.candidates, replicaBeverageOutcomes, usesOutcomePolicy],
     )
 
     const getOverallCandidateAverage = useCallback(
@@ -272,14 +403,15 @@ export default function CommissionResultsClientView({
                 if (rc?.evaluations) {
                     rc.evaluations.forEach((ev: any, idx: number) => {
                         if (ev.isComplete) {
-                            const totalScoreObj = ev.scores?.find((s: any) => s.code === TOTAL_SCORE_CODE)
+                            const totalVal = parseEvaluationTotal(ev.scores)
                             const evaluatorAuids = normalizeAuids(ev.evaluatorAuid)
                             breakdown.push({
                                 key: `${r.id}-${evaluatorAuids.join("-")}-${idx}`,
+                                replicaId: r.id,
                                 replicaName: r.name || formatReplicaType(r.type),
                                 replicaType: r.type,
                                 evaluatorAuids,
-                                totalScore: totalScoreObj ? totalScoreObj.value : "-",
+                                totalScore: totalVal !== null ? String(totalVal) : "-",
                                 evaluation: {
                                     scores: ev.scores || [],
                                     comments: ev.comments || [],
@@ -299,7 +431,17 @@ export default function CommissionResultsClientView({
             const beverageId = candidate.sample?.batch?.beverage?.id
             const beverageName =
                 candidate.sample?.batch?.beverage?.name || t("commission.results.unknownBeverage")
-            const overall = getOverallCandidateAverage(candidate.id)
+
+            const overall: OverallAverage =
+                usesOutcomePolicy && beverageId
+                    ? aggregateOverallFromReplicas(
+                          replicaBeverageOutcomes,
+                          beverageId,
+                          commission.replicas,
+                          policyOutputProperties,
+                      )
+                    : getOverallCandidateAverage(candidate.id)
+
             const allBeverageAwards = awardsMap[beverageId] || []
             const currentCommissionAwards = allBeverageAwards.filter(
                 (a: any) => a.commissionId === commission.id,
@@ -308,6 +450,7 @@ export default function CommissionResultsClientView({
             return {
                 candidate,
                 beverageName,
+                producerAuids: getBeverageProducerAuids(candidate),
                 overall,
                 awards: currentCommissionAwards,
                 expertBreakdown: getExpertBreakdown(candidate.id),
@@ -317,6 +460,8 @@ export default function CommissionResultsClientView({
         commission.candidates,
         commission.id,
         awardsMap,
+        replicaBeverageOutcomes,
+        policyOutputProperties,
         getOverallCandidateAverage,
         getExpertBreakdown,
         t,
@@ -343,6 +488,14 @@ export default function CommissionResultsClientView({
         return max
     }, [candidateRows])
 
+    const candidateOrderIndex = useMemo(() => {
+        const map = new Map<string, number>()
+        commission.candidates.forEach((candidate: any, index: number) => {
+            map.set(candidate.id, index + 1)
+        })
+        return map
+    }, [commission.candidates])
+
     const filteredAndSortedRows = useMemo(() => {
         const query = searchQuery.trim().toLowerCase()
         let rows: CandidateRow[] = candidateRows
@@ -351,7 +504,12 @@ export default function CommissionResultsClientView({
             rows = rows.filter((row) => {
                 const code = (row.candidate.anonymizedCode || "").toLowerCase()
                 const beverage = row.beverageName.toLowerCase()
-                return code.includes(query) || beverage.includes(query)
+                const producer = resolveProducerName(row.producerAuids).toLowerCase()
+                return (
+                    code.includes(query) ||
+                    beverage.includes(query) ||
+                    producer.includes(query)
+                )
             })
         }
 
@@ -364,10 +522,16 @@ export default function CommissionResultsClientView({
                 if (bScore === null) return -1
                 return bScore - aScore
             })
+        } else {
+            rows = [...rows].sort((a, b) => {
+                const idxA = candidateOrderIndex.get(a.candidate.id) ?? Number.MAX_SAFE_INTEGER
+                const idxB = candidateOrderIndex.get(b.candidate.id) ?? Number.MAX_SAFE_INTEGER
+                return idxA - idxB
+            })
         }
 
         return rows
-    }, [candidateRows, searchQuery, sortMode])
+    }, [candidateRows, searchQuery, sortMode, candidateOrderIndex, resolveProducerName])
 
     const { expected: expectedEvaluations, complete: completeEvaluations } = useMemo(
         () => computeEvaluationProgress(commission),
@@ -400,26 +564,43 @@ export default function CommissionResultsClientView({
         return Array.from(cats)
     }, [replicaA, replicaB, commission.candidates, getReplicaCandidateDetails])
 
+    const candidateRowById = useMemo(() => {
+        const map = new Map<string, CandidateRow>()
+        candidateRows.forEach((row) => map.set(row.candidate.id, row))
+        return map
+    }, [candidateRows])
+
     const getReplicaLabel = (replica: any) => replica.name || formatReplicaType(replica.type)
 
-    const handleExportCsv = () => {
+    const buildExportContext = (): DetailedExportContext => {
         const nonTraineeReplicas = commission.replicas.filter((r: any) => r.type !== "TRAINEE")
         const replicaLabels = nonTraineeReplicas.map((r: any) => ({
             id: r.id,
             label: getReplicaLabel(r),
         }))
 
-        const exportRows: ExportRow[] = filteredAndSortedRows.map((row: CandidateRow) => {
+        const overviewRows: ExportRow[] = filteredAndSortedRows.map((row: CandidateRow) => {
+            const beverageId = row.candidate.sample?.batch?.beverage?.id
             const replicaTotals: Record<string, string> = {}
             nonTraineeReplicas.forEach((r: any) => {
-                const details = getReplicaCandidateDetails(r, row.candidate.id)
-                replicaTotals[r.id] = details?.total ?? "-"
+                if (usesOutcomePolicy && beverageId) {
+                    const replicaOutcome = getReplicaBeverageOutcome(
+                        replicaBeverageOutcomes,
+                        r.id,
+                        beverageId,
+                    )
+                    replicaTotals[r.id] = replicaOutcome?.average ?? "-"
+                } else {
+                    const details = getReplicaCandidateDetails(r, row.candidate.id)
+                    replicaTotals[r.id] = details?.total ?? "-"
+                }
             })
 
             const rank = ranks.get(row.candidate.id)
             return {
                 code: row.candidate.anonymizedCode || "N/A",
                 beverage: row.beverageName,
+                producer: resolveProducerName(row.producerAuids),
                 overallAverage: row.overall.average,
                 rank: rank != null ? String(rank) : "-",
                 awards: row.awards.map((a: any) => a.award?.name || "").filter(Boolean).join("; "),
@@ -427,8 +608,89 @@ export default function CommissionResultsClientView({
             }
         })
 
-        const csv = buildResultsCsv(commission.name, replicaLabels, exportRows)
+        const expertScoreRows: ExpertScoreExportRow[] = []
+        const commentRows: CommentExportRow[] = []
+        const exportOptions = {
+            propertyMap,
+            propertyCommentsEnabled,
+            voiceCommentsEnabled,
+            generalCommentLabel: t("evaluation.generalCommentLabel"),
+            usesOutcomePolicy,
+            outcomePropertyMap,
+        }
+
+        filteredAndSortedRows.forEach((row: CandidateRow) => {
+            const code = row.candidate.anonymizedCode || "N/A"
+            const producer = resolveProducerName(row.producerAuids)
+            const beverageId = row.candidate.sample?.batch?.beverage?.id
+            row.expertBreakdown.forEach((expert) => {
+                const evaluator = resolveEvaluatorName(expert.evaluatorAuids)
+                const replicaOutcome =
+                    usesOutcomePolicy && beverageId
+                        ? getReplicaBeverageOutcome(
+                              replicaBeverageOutcomes,
+                              expert.replicaId,
+                              beverageId,
+                          )
+                        : undefined
+                expertScoreRows.push(
+                    buildExpertScoreExportRows(
+                        code,
+                        row.beverageName,
+                        producer,
+                        expert.replicaName,
+                        expert.replicaType,
+                        evaluator,
+                        expert.evaluation.scores || [],
+                        propertyMap,
+                        replicaOutcome
+                            ? {
+                                  outcomeTotalScore: replicaOutcome.average,
+                                  outcomeScores: replicaOutcome.scores,
+                                  outcomePropertyMap,
+                              }
+                            : undefined,
+                    ),
+                )
+                commentRows.push(
+                    ...buildCommentExportRows(
+                        code,
+                        row.beverageName,
+                        producer,
+                        expert.replicaName,
+                        evaluator,
+                        expert.evaluation.comments || [],
+                        propertyMap,
+                        exportOptions,
+                    ),
+                )
+            })
+        })
+
+        return { replicaLabels, overviewRows, expertScoreRows, commentRows }
+    }
+
+    const handleExportCsv = () => {
+        const { replicaLabels, overviewRows } = buildExportContext()
+        const csv = buildResultsCsv(commission.name, replicaLabels, overviewRows)
         downloadCsv(csv, `${sanitizeFilename(commission.name)}-results.csv`)
+    }
+
+    const handleExportXlsx = async () => {
+        setIsExportingXlsx(true)
+        try {
+            const context = buildExportContext()
+            await downloadResultsXlsx(
+                context,
+                propertyMap,
+                `${sanitizeFilename(commission.name)}-results.xlsx`,
+                {
+                    outcomePropertyMap: usesOutcomePolicy ? outcomePropertyMap : undefined,
+                },
+            )
+        } finally {
+            setIsExportingXlsx(false)
+        }
     }
 
     const handlePrint = () => {
@@ -437,6 +699,36 @@ export default function CommissionResultsClientView({
     }
 
     const showSearch = commission.candidates.length > 5
+
+    function CandidateIdentityCell({
+        code,
+        beverageName,
+        producerAuids,
+    }: {
+        code: string | null
+        beverageName: string
+        producerAuids: string[]
+    }) {
+        const producerName = resolveProducerName(producerAuids)
+        return (
+            <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="font-bold text-slate-800 text-sm leading-snug">
+                    {beverageName}
+                </span>
+                <span className="text-xs text-slate-600">
+                    <span className="font-medium text-slate-500">
+                        {t("commission.results.producer")}:
+                    </span>{" "}
+                    {producerName}
+                </span>
+                {code && (
+                    <span className="text-[11px] font-mono text-slate-400">
+                        {t("commission.results.candidateCode")}: {code}
+                    </span>
+                )}
+            </div>
+        )
+    }
 
     function PreviewScoreBadge({ className = "" }: { className?: string }) {
         return (
@@ -536,6 +828,19 @@ export default function CommissionResultsClientView({
                                 >
                                     <Download className="w-4 h-4" />
                                     {t("commission.results.exportCsv")}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleExportXlsx}
+                                    disabled={isExportingXlsx}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {isExportingXlsx ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Download className="w-4 h-4" />
+                                    )}
+                                    {t("commission.results.exportXlsx")}
                                 </button>
                                 <button
                                     type="button"
@@ -698,6 +1003,7 @@ export default function CommissionResultsClientView({
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {commission.candidates.map((candidate: any) => {
+                                                const rowInfo = candidateRowById.get(candidate.id)
                                                 const detA = getReplicaCandidateDetails(
                                                     replicaA,
                                                     candidate.id,
@@ -754,7 +1060,27 @@ export default function CommissionResultsClientView({
                                                                     ) : (
                                                                         <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 print:hidden" />
                                                                     )}
-                                                                    {candidate.anonymizedCode || "N/A"}
+                                                                    <div className="flex flex-col gap-1 min-w-0">
+                                                                        {rowInfo ? (
+                                                                            <CandidateIdentityCell
+                                                                                code={
+                                                                                    candidate.anonymizedCode ||
+                                                                                    null
+                                                                                }
+                                                                                beverageName={
+                                                                                    rowInfo.beverageName
+                                                                                }
+                                                                                producerAuids={
+                                                                                    rowInfo.producerAuids
+                                                                                }
+                                                                            />
+                                                                        ) : (
+                                                                            <span className="font-mono text-xs text-slate-400">
+                                                                                {candidate.anonymizedCode ||
+                                                                                    "N/A"}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             </td>
                                                             <td className="py-4 px-6 text-center">
@@ -972,20 +1298,41 @@ export default function CommissionResultsClientView({
                                             />
                                         </div>
                                     )}
-                                    <select
-                                        value={sortMode}
-                                        onChange={(e) =>
-                                            setSortMode(e.target.value as "score" | "code")
-                                        }
-                                        className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    >
-                                        <option value="score">
-                                            {t("commission.results.sortByScore")}
-                                        </option>
-                                        <option value="code">
-                                            {t("commission.results.sortByCode")}
-                                        </option>
-                                    </select>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-medium text-slate-500">
+                                            {t("commission.results.sortLabel")}
+                                        </span>
+                                        <div
+                                            className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5"
+                                            role="group"
+                                            aria-label={t("commission.results.sortLabel")}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => setSortMode("score")}
+                                                aria-pressed={sortMode === "score"}
+                                                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                    sortMode === "score"
+                                                        ? "bg-indigo-600 text-white shadow-sm"
+                                                        : "text-slate-600 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                {t("commission.results.sortByScore")}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSortMode("order")}
+                                                aria-pressed={sortMode === "order"}
+                                                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                    sortMode === "order"
+                                                        ? "bg-indigo-600 text-white shadow-sm"
+                                                        : "text-slate-600 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                {t("commission.results.sortByOrder")}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -997,9 +1344,11 @@ export default function CommissionResultsClientView({
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-slate-50/80 border-b border-slate-100">
-                                            {sortMode === "score" && (
+                                            {(sortMode === "score" || sortMode === "order") && (
                                                 <th className="py-4 px-4 font-semibold text-slate-600 text-sm w-16 text-center">
-                                                    {t("commission.results.rank")}
+                                                    {sortMode === "score"
+                                                        ? t("commission.results.rank")
+                                                        : t("commission.results.candidateOrder")}
                                                 </th>
                                             )}
                                             <th className="py-4 px-6 font-semibold text-slate-600 text-sm">
@@ -1019,6 +1368,7 @@ export default function CommissionResultsClientView({
                                                 expandedCandidateId === row.candidate.id ||
                                                 isPrinting
                                             const rank = ranks.get(row.candidate.id)
+                                            const sessionOrder = candidateOrderIndex.get(row.candidate.id)
                                             const scoreBarWidth =
                                                 row.overall.numeric !== null && maxScore > 0
                                                     ? (row.overall.numeric / maxScore) * 100
@@ -1037,9 +1387,15 @@ export default function CommissionResultsClientView({
                                                             )
                                                         }
                                                     >
-                                                        {sortMode === "score" && (
+                                                        {(sortMode === "score" || sortMode === "order") && (
                                                             <td className="py-4 px-4 text-center font-bold text-slate-500 text-sm">
-                                                                {rank != null ? `#${rank}` : "—"}
+                                                                {sortMode === "score"
+                                                                    ? rank != null
+                                                                        ? `#${rank}`
+                                                                        : "—"
+                                                                    : sessionOrder != null
+                                                                      ? `#${sessionOrder}`
+                                                                      : "—"}
                                                             </td>
                                                         )}
                                                         <td className="py-4 px-6">
@@ -1049,15 +1405,14 @@ export default function CommissionResultsClientView({
                                                                 ) : (
                                                                     <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 print:hidden" />
                                                                 )}
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-bold text-slate-800">
-                                                                        {row.candidate
-                                                                            .anonymizedCode || "N/A"}
-                                                                    </span>
-                                                                    <span className="text-xs text-slate-500">
-                                                                        {row.beverageName}
-                                                                    </span>
-                                                                </div>
+                                                                <CandidateIdentityCell
+                                                                    code={
+                                                                        row.candidate.anonymizedCode ||
+                                                                        null
+                                                                    }
+                                                                    beverageName={row.beverageName}
+                                                                    producerAuids={row.producerAuids}
+                                                                />
                                                             </div>
                                                         </td>
 
@@ -1130,7 +1485,10 @@ export default function CommissionResultsClientView({
                                                         <tr>
                                                             <td
                                                                 colSpan={
-                                                                    sortMode === "score" ? 4 : 3
+                                                                    sortMode === "score" ||
+                                                                    sortMode === "order"
+                                                                        ? 4
+                                                                        : 3
                                                                 }
                                                                 className="p-0 border-b border-slate-200 bg-slate-50/80 shadow-inner"
                                                             >
@@ -1214,7 +1572,11 @@ export default function CommissionResultsClientView({
                                         {commission.candidates.length === 0 && (
                                             <tr>
                                                 <td
-                                                    colSpan={sortMode === "score" ? 4 : 3}
+                                                    colSpan={
+                                                        sortMode === "score" || sortMode === "order"
+                                                            ? 4
+                                                            : 3
+                                                    }
                                                     className="py-12 text-center text-slate-400 text-sm"
                                                 >
                                                     {t("commission.results.noCandidates")}
@@ -1226,7 +1588,11 @@ export default function CommissionResultsClientView({
                                             filteredAndSortedRows.length === 0 && (
                                                 <tr>
                                                     <td
-                                                        colSpan={sortMode === "score" ? 4 : 3}
+                                                        colSpan={
+                                                        sortMode === "score" || sortMode === "order"
+                                                            ? 4
+                                                            : 3
+                                                    }
                                                         className="py-12 text-center text-slate-400 text-sm"
                                                     >
                                                         {t("commission.results.noSearchResults")}

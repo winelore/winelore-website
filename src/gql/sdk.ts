@@ -336,7 +336,7 @@ export type GetEvaluationsForCandidateQueryVariables = Exact<{
 }>;
 
 
-export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ evaluatorAuid: Array<number>, isComplete: boolean, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
+export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ id: string, evaluatorAuid: Array<number>, isComplete: boolean, templateEdition: { id: string }, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
 
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
@@ -840,8 +840,12 @@ export const GetEvaluationsForCandidateDocument = gql`
     limit: $limit
   ) {
     items {
+      id
       evaluatorAuid
       isComplete
+      templateEdition {
+        id
+      }
       scores {
         code
         value

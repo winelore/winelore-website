@@ -1,8 +1,10 @@
 export const dynamic = "force-dynamic"
 
 import { fetchGraphQLRaw } from "@/lib/apiClient"
-import { getCommissionTemplatesWithResultMarkers } from "../../actions"
+import { getCommissionTemplatesWithResultMarkers, getEvaluationsForCandidateAction } from "../../actions"
 import { buildPropertyMapFromCommissionTemplates } from "../../propertyMap"
+import { buildTemplateEditionById } from "@/lib/templateEditionMap"
+import type { TemplateEdition } from "@/lib/evaluationScores"
 import { GET_COMMISSION_RESULTS, GET_BEVERAGE_AWARDS } from "./queries"
 import CommissionResultsClientView from "./CommissionResultsClientView"
 import ResultsErrorView from "./ResultsErrorView"
@@ -18,6 +20,7 @@ export default async function CommissionResultsPage({ params }: PageProps) {
     let commission = null
     const awardsMap: Record<string, any[]> = {}
     let propertyMap = {}
+    let templateEditionById: Record<string, TemplateEdition> = {}
     let propertyCommentsEnabled = false
     let voiceCommentsEnabled = false
 
@@ -40,8 +43,28 @@ export default async function CommissionResultsPage({ params }: PageProps) {
             try {
                 const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId)
                 propertyMap = buildPropertyMapFromCommissionTemplates(templateResult)
+                templateEditionById = buildTemplateEditionById(templateResult)
             } catch (err) {
                 console.error("[results] Failed to fetch template metadata:", err)
+            }
+
+            // Fetch evaluations for each replica candidate
+            if (commission.replicas) {
+                const allReplicaCandidates = commission.replicas.flatMap(
+                    (r: { replicaCandidates?: any[] }) => r.replicaCandidates || []
+                )
+
+                await Promise.all(
+                    allReplicaCandidates.map(async (rc: any) => {
+                        try {
+                            const evs = await getEvaluationsForCandidateAction(rc.id)
+                            rc.evaluations = evs
+                        } catch (err) {
+                            console.error(`[results] Failed to fetch evaluations for replica candidate ${rc.id}:`, err)
+                            rc.evaluations = []
+                        }
+                    })
+                )
             }
         }
 
@@ -97,6 +120,7 @@ export default async function CommissionResultsPage({ params }: PageProps) {
             commission={commission}
             awardsMap={awardsMap}
             propertyMap={propertyMap}
+            templateEditionById={templateEditionById}
             propertyCommentsEnabled={propertyCommentsEnabled}
             voiceCommentsEnabled={voiceCommentsEnabled}
         />
