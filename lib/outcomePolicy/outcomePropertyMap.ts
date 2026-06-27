@@ -14,9 +14,23 @@ export interface OutcomePolicyEditionData {
     outputProperties?: OutcomeOutputProperty[]
 }
 
+export type OutcomePropertyNameLookup = Record<string, { name: string; isResult?: boolean }>
+
+export function resolveOutcomePropertyName(
+    code: string,
+    policyName?: string | null,
+    templatePropertyMap?: OutcomePropertyNameLookup,
+): string {
+    if (policyName && policyName.trim() !== "" && policyName !== code) {
+        return policyName
+    }
+    return templatePropertyMap?.[code]?.name ?? policyName ?? code
+}
+
 export function buildOutcomePropertyMap(
     policyEdition: OutcomePolicyEditionData | null | undefined,
     outputProperties?: OutcomeOutputProperty[],
+    templatePropertyMap?: OutcomePropertyNameLookup,
 ): Record<string, OutcomePropertyMeta> {
     const map: Record<string, OutcomePropertyMeta> = {}
     const props =
@@ -26,9 +40,10 @@ export function buildOutcomePropertyMap(
 
     for (const prop of props) {
         if (!prop.code) continue
+        const templateMeta = templatePropertyMap?.[prop.code]
         map[prop.code] = {
-            name: prop.name || prop.code,
-            isResult: prop.isResult === true,
+            name: resolveOutcomePropertyName(prop.code, prop.name, templatePropertyMap),
+            isResult: prop.isResult === true || templateMeta?.isResult === true,
         }
     }
     return map
@@ -100,11 +115,16 @@ function collectScoreKeysFromMaps(
 export function resolveOutputProperties(
     policyEdition: OutcomePolicyEditionData | null | undefined,
     rawScoreMaps: Map<string, Map<string, Record<string, unknown>>>,
+    templatePropertyMap?: OutcomePropertyNameLookup,
 ): OutcomeOutputProperty[] {
-    const fromPolicy = (policyEdition?.outputProperties ?? []).filter(
-        (p) => p.code && p.name,
-    )
-    if (fromPolicy.length > 0) return fromPolicy
+    const fromPolicy = (policyEdition?.outputProperties ?? []).filter((p) => p.code)
+    if (fromPolicy.length > 0) {
+        return fromPolicy.map((p) => ({
+            code: p.code,
+            name: resolveOutcomePropertyName(p.code, p.name, templatePropertyMap),
+            isResult: p.isResult === true,
+        }))
+    }
 
     const codes = collectScoreKeysFromMaps(rawScoreMaps)
     if (codes.length === 0) return []
@@ -113,7 +133,7 @@ export function resolveOutputProperties(
         const policyMeta = policyEdition?.outputProperties?.find((p) => p.code === code)
         return {
             code,
-            name: policyMeta?.name || code,
+            name: resolveOutcomePropertyName(code, policyMeta?.name, templatePropertyMap),
             isResult: policyMeta?.isResult === true,
         }
     })

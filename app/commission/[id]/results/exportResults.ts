@@ -1,18 +1,18 @@
 import { commentHasVisibleContent } from "../../EvaluationCommentsDisplay"
 import type { PropertyMeta } from "../../propertyMap"
-import {
-    formatOutcomeValue,
-    type OutcomePropertyMeta,
-} from "@/lib/outcomePolicy/outcomePropertyMap"
 
 const TOTAL_SCORE_CODE = "taste_score"
 const CALCULATED_TOTAL_SCORE_CODE = "total_score"
 
-function shouldExcludeFromCategoryColumns(
+function isTotalScoreCode(code: string): boolean {
+    return code === TOTAL_SCORE_CODE || code === CALCULATED_TOTAL_SCORE_CODE
+}
+
+function shouldIncludeInExpertExport(
     code: string,
     propertyMap: Record<string, PropertyMeta>,
 ): boolean {
-    if (code === TOTAL_SCORE_CODE || code === CALCULATED_TOTAL_SCORE_CODE) return true
+    if (isTotalScoreCode(code)) return false
     return propertyMap[code]?.isResult === true
 }
 
@@ -34,15 +34,12 @@ function escapeCsvCell(value: string): string {
 }
 
 export interface ExportRow {
+    candidateId: string
     code: string
     beverage: string
     producer: string
-    overallAverage: string
-    overallOutcomes: Record<string, string>
-    rank: string
+    outcomes: Record<string, string>
     awards: string
-    replicaTotals: Record<string, string>
-    replicaOutcomes: Record<string, Record<string, string>>
 }
 
 export interface ExpertScoreExportRow {
@@ -68,10 +65,16 @@ export interface CommentExportRow {
 }
 
 export interface DetailedExportContext {
-    replicaLabels: { id: string; label: string }[]
     overviewRows: ExportRow[]
     expertScoreRows: ExpertScoreExportRow[]
     commentRows: CommentExportRow[]
+}
+
+export interface ExportLayoutOptions {
+    sortMode: "score" | "order"
+    outcomePropertyCodes: string[]
+    outcomePropertyNames: Record<string, string>
+    orderByCandidateId: Map<string, number>
 }
 
 export interface BuildDetailedExportOptions {
@@ -79,13 +82,6 @@ export interface BuildDetailedExportOptions {
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
     generalCommentLabel: string
-    usesOutcomePolicy?: boolean
-    outcomePropertyMap?: Record<string, OutcomePropertyMeta>
-}
-
-export interface ExpertScoreExportOptions {
-    outcomeScores?: Record<string, unknown>
-    outcomePropertyMap?: Record<string, OutcomePropertyMeta>
 }
 
 function getPropertyLabel(code: string, propertyMap: Record<string, PropertyMeta>): string {
@@ -99,63 +95,39 @@ function hasScoreValue(value: string | null | undefined): boolean {
 export function collectScoreCodes(
     rows: ExpertScoreExportRow[],
     propertyMap: Record<string, PropertyMeta>,
-    outcomePropertyMap?: Record<string, OutcomePropertyMeta>,
 ): string[] {
     const codes = new Set<string>()
     rows.forEach((row) => {
         Object.keys(row.scores).forEach((code) => {
-            if (!shouldExcludeFromCategoryColumns(code, propertyMap)) codes.add(code)
+            if (shouldIncludeInExpertExport(code, propertyMap)) codes.add(code)
         })
     })
-    if (outcomePropertyMap) {
-        Object.keys(outcomePropertyMap).forEach((code) => codes.add(code))
-    }
     return Array.from(codes).sort()
 }
 
-function buildOverviewSheetData(
-    replicaLabels: { id: string; label: string }[],
-    rows: ExportRow[],
-    outcomePropertyCodes?: string[],
-    outcomePropertyNames?: Record<string, string>,
-): string[][] {
-    const useOutcomes = outcomePropertyCodes && outcomePropertyCodes.length > 0
-    const getOutcomeLabel = (code: string) => outcomePropertyNames?.[code] ?? code
+function buildOverviewSheetData(rows: ExportRow[], layout: ExportLayoutOptions): string[][] {
+    const getOutcomeLabel = (code: string) => layout.outcomePropertyNames[code] ?? code
 
     const headers = [
+        "Order",
         "Code",
         "Beverage",
         "Producer",
-        ...(useOutcomes
-            ? outcomePropertyCodes!.map((code) => `${getOutcomeLabel(code)} (overall)`)
-            : ["Overall Average"]),
-        "Rank",
+        ...layout.outcomePropertyCodes.map((code) => getOutcomeLabel(code)),
         "Awards",
-        ...(useOutcomes
-            ? replicaLabels.flatMap((r) =>
-                  outcomePropertyCodes!.map((code) => `${r.label}: ${getOutcomeLabel(code)}`),
-              )
-            : replicaLabels.map((r) => r.label)),
     ]
 
     return [
         headers,
         ...rows.map((row) => [
+            layout.orderByCandidateId.get(row.candidateId) != null
+                ? String(layout.orderByCandidateId.get(row.candidateId))
+                : "-",
             row.code,
             row.beverage,
             row.producer,
-            ...(useOutcomes
-                ? outcomePropertyCodes!.map((code) => row.overallOutcomes[code] ?? "-")
-                : [row.overallAverage]),
-            row.rank,
+            ...layout.outcomePropertyCodes.map((code) => row.outcomes[code] ?? "-"),
             row.awards,
-            ...(useOutcomes
-                ? replicaLabels.flatMap((r) =>
-                      outcomePropertyCodes!.map(
-                          (code) => row.replicaOutcomes[r.id]?.[code] ?? "-",
-                      ),
-                  )
-                : replicaLabels.map((r) => row.replicaTotals[r.id] ?? "-")),
         ]),
     ]
 }
@@ -164,12 +136,7 @@ function buildExpertScoreSheetData(
     rows: ExpertScoreExportRow[],
     propertyMap: Record<string, PropertyMeta>,
     scoreCodes: string[],
-    outcomePropertyMap?: Record<string, OutcomePropertyMeta>,
-    usesOutcomePolicy?: boolean,
 ): string[][] {
-    const getLabel = (code: string) =>
-        outcomePropertyMap?.[code]?.name ?? getPropertyLabel(code, propertyMap)
-
     const headers = [
         "Code",
         "Beverage",
@@ -177,8 +144,8 @@ function buildExpertScoreSheetData(
         "Replica",
         "Replica Type",
         "Evaluator",
-        ...(usesOutcomePolicy ? [] : ["Total Score"]),
-        ...scoreCodes.map((code) => getLabel(code)),
+        "Total Score",
+        ...scoreCodes.map((code) => getPropertyLabel(code, propertyMap)),
     ]
 
     return [
@@ -190,7 +157,7 @@ function buildExpertScoreSheetData(
             row.replicaName,
             row.replicaType,
             row.evaluator,
-            ...(usesOutcomePolicy ? [] : [row.totalScore]),
+            row.totalScore,
             ...scoreCodes.map((code) => row.scores[code] ?? ""),
         ]),
     ]
@@ -223,23 +190,13 @@ export function buildExpertScoreExportRows(
     evaluator: string,
     scores: Array<{ code: string; value: string }>,
     propertyMap: Record<string, PropertyMeta>,
-    outcomeOptions?: ExpertScoreExportOptions,
 ): ExpertScoreExportRow {
     const scoreMap: Record<string, string> = {}
     scores
-        .filter((s) => hasScoreValue(s.value) && !shouldExcludeFromCategoryColumns(s.code, propertyMap))
+        .filter((s) => hasScoreValue(s.value) && shouldIncludeInExpertExport(s.code, propertyMap))
         .forEach((s) => {
             scoreMap[s.code] = s.value
         })
-
-    if (outcomeOptions?.outcomeScores && outcomeOptions.outcomePropertyMap) {
-        for (const [outcomeCode] of Object.entries(outcomeOptions.outcomePropertyMap)) {
-            const value = outcomeOptions.outcomeScores[outcomeCode]
-            if (value !== null && value !== undefined) {
-                scoreMap[outcomeCode] = formatOutcomeValue(value)
-            }
-        }
-    }
 
     const totalScore = extractTotalScore(scores)
 
@@ -286,19 +243,10 @@ export function buildCommentExportRows(
         }))
 }
 
-export function buildResultsCsv(
-    commissionName: string,
-    replicaLabels: { id: string; label: string }[],
-    rows: ExportRow[],
-    outcomePropertyCodes?: string[],
-    outcomePropertyNames?: Record<string, string>,
-): string {
-    const lines = buildOverviewSheetData(
-        replicaLabels,
-        rows,
-        outcomePropertyCodes,
-        outcomePropertyNames,
-    ).map((row) => row.map((cell) => escapeCsvCell(cell)).join(","))
+export function buildResultsCsv(rows: ExportRow[], layout: ExportLayoutOptions): string {
+    const lines = buildOverviewSheetData(rows, layout).map((row) =>
+        row.map((cell) => escapeCsvCell(cell)).join(","),
+    )
 
     return lines.join("\n")
 }
@@ -317,50 +265,22 @@ export async function downloadResultsXlsx(
     context: DetailedExportContext,
     propertyMap: Record<string, PropertyMeta>,
     filename: string,
-    options?: {
-        outcomePropertyMap?: Record<string, OutcomePropertyMeta>
-        usesOutcomePolicy?: boolean
-        outcomePropertyCodes?: string[]
-    },
+    layout: ExportLayoutOptions,
 ): Promise<void> {
     const XLSX = await import("xlsx")
     const wb = XLSX.utils.book_new()
-    const outcomePropertyMap = options?.outcomePropertyMap
-    const outcomePropertyCodes = options?.outcomePropertyCodes
-    const outcomePropertyNames = outcomePropertyMap
-        ? Object.fromEntries(
-              Object.entries(outcomePropertyMap).map(([code, meta]) => [code, meta.name]),
-          )
-        : undefined
 
     XLSX.utils.book_append_sheet(
         wb,
-        XLSX.utils.aoa_to_sheet(
-            buildOverviewSheetData(
-                context.replicaLabels,
-                context.overviewRows,
-                outcomePropertyCodes,
-                outcomePropertyNames,
-            ),
-        ),
+        XLSX.utils.aoa_to_sheet(buildOverviewSheetData(context.overviewRows, layout)),
         "Overview",
     )
 
-    const scoreCodes = collectScoreCodes(
-        context.expertScoreRows,
-        propertyMap,
-        outcomePropertyMap,
-    )
+    const scoreCodes = collectScoreCodes(context.expertScoreRows, propertyMap)
     XLSX.utils.book_append_sheet(
         wb,
         XLSX.utils.aoa_to_sheet(
-            buildExpertScoreSheetData(
-                context.expertScoreRows,
-                propertyMap,
-                scoreCodes,
-                outcomePropertyMap,
-                options?.usesOutcomePolicy,
-            ),
+            buildExpertScoreSheetData(context.expertScoreRows, propertyMap, scoreCodes),
         ),
         "Expert Scores",
     )

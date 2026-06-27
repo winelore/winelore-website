@@ -5,8 +5,8 @@ import {
     buildOutcomePropertyValues,
     type OutcomeOutputProperty,
     type OutcomePolicyEditionData,
+    type OutcomePropertyNameLookup,
     type OutcomeValueDisplay,
-    parseStoredOutcomeScores,
     resolveOutputProperties,
 } from "./outcomePropertyMap"
 
@@ -22,6 +22,7 @@ export interface ResolveReplicaBeverageOutcomesInput {
     commission: CommissionForScriptContext
     policyEdition: OutcomePolicyEditionData | null | undefined
     templateEditionById: Record<string, TemplateEdition>
+    templatePropertyMap?: OutcomePropertyNameLookup
     isReplicaBeverageIncomplete: (replicaId: string, beverageId: string) => boolean
 }
 
@@ -30,28 +31,15 @@ export interface ResolvedReplicaOutcomes {
     outputProperties: OutcomeOutputProperty[]
 }
 
-function isReplicaCompleted(status: string | undefined): boolean {
-    return status === "COMPLETED"
-}
-
-function parseStoredOutcomesByBeverage(
-    outcomes: Array<{ beverageId: string; scores: string }> | null | undefined,
-): Map<string, Record<string, unknown>> {
-    const map = new Map<string, Record<string, unknown>>()
-    if (!outcomes?.length) return map
-    for (const outcome of outcomes) {
-        map.set(outcome.beverageId, parseStoredOutcomeScores(outcome.scores))
-    }
-    return map
-}
-
 /**
- * Resolve per-replica, per-beverage outcome scores: stored when replica COMPLETED, else client JS preview.
+ * Resolve per-replica, per-beverage outcome scores by running the policy script
+ * against current evaluation data (never backend-stored replica outcomes).
  */
 export function resolveReplicaBeverageOutcomes(
     input: ResolveReplicaBeverageOutcomesInput,
 ): ResolvedReplicaOutcomes {
-    const { commission, policyEdition, templateEditionById, isReplicaBeverageIncomplete } = input
+    const { commission, policyEdition, templateEditionById, templatePropertyMap, isReplicaBeverageIncomplete } =
+        input
     const replicaOutcomes: ReplicaBeverageOutcomesMap = new Map()
     const rawScoreMaps = new Map<string, Map<string, Record<string, unknown>>>()
 
@@ -69,44 +57,36 @@ export function resolveReplicaBeverageOutcomes(
 
     for (const replica of commission.replicas) {
         const replicaRaw = new Map<string, Record<string, unknown>>()
-        const storedByBeverage = parseStoredOutcomesByBeverage(replica.outcomes)
-        const useStored = isReplicaCompleted(replica.status)
-
-        let previewScores = new Map<string, Record<string, unknown>>()
-        if (!useStored) {
-            const replicaContext = buildReplicaScriptContext(replica, commission, templateEditionById)
-            previewScores = evaluateOutcomePolicy({
-                policyEdition,
-                scriptReplicas: replicaContext.scriptReplicas,
-                scriptCandidates: replicaContext.scriptCandidates,
-                scriptEvaluations: replicaContext.scriptEvaluations,
-                beverageIds: replicaContext.beverageIds,
-            })
-        }
+        const replicaContext = buildReplicaScriptContext(replica, commission, templateEditionById)
+        const computedScores = evaluateOutcomePolicy({
+            policyEdition,
+            scriptReplicas: replicaContext.scriptReplicas,
+            scriptCandidates: replicaContext.scriptCandidates,
+            scriptEvaluations: replicaContext.scriptEvaluations,
+            beverageIds: replicaContext.beverageIds,
+        })
 
         for (const beverageId of allBeverageIds) {
-            const scores = useStored
-                ? storedByBeverage.get(beverageId) ?? {}
-                : previewScores.get(beverageId) ?? {}
-            replicaRaw.set(beverageId, scores)
+            replicaRaw.set(beverageId, computedScores.get(beverageId) ?? {})
         }
 
         rawScoreMaps.set(replica.id, replicaRaw)
     }
 
-    const outputProperties = resolveOutputProperties(policyEdition, rawScoreMaps)
+    const outputProperties = resolveOutputProperties(
+        policyEdition,
+        rawScoreMaps,
+        templatePropertyMap,
+    )
 
     for (const replica of commission.replicas) {
         const replicaMap = new Map<string, ReplicaBeverageOutcomeDisplay>()
         const replicaRaw = rawScoreMaps.get(replica.id)
-        const useStored = isReplicaCompleted(replica.status)
 
         for (const beverageId of allBeverageIds) {
             const scores = replicaRaw?.get(beverageId) ?? {}
             const values = buildOutcomePropertyValues(scores, outputProperties)
-            const isPreview = useStored
-                ? false
-                : isReplicaBeverageIncomplete(replica.id, beverageId)
+            const isPreview = isReplicaBeverageIncomplete(replica.id, beverageId)
 
             replicaMap.set(beverageId, {
                 scores,
