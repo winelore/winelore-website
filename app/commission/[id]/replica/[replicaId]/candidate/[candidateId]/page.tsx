@@ -1,4 +1,5 @@
-import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction, isReplicaCandidateFinished } from "../../../../../actions"
+import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
+import { isReplicaCandidateFinished } from "../../../../../replicaUtils"
 import { notFound, redirect } from "next/navigation"
 import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"

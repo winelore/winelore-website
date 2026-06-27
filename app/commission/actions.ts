@@ -12,6 +12,7 @@ import {
     findEvaluationForMember,
     memberMatchesActor,
 } from "./auidUtils";
+import { isReplicaCandidateFinished } from "./replicaUtils";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -424,9 +425,6 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     return { actor: auid, "x-actor": auid };
 }
 
-export function isReplicaCandidateFinished(status: string): boolean {
-    return status === "EVALUATED" || status === "DISQUALIFIED";
-}
 
 function getCompetitionFeatureFlags(competition: {
     wineJumperMiniGameEnabled?: boolean;
