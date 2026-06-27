@@ -39,7 +39,9 @@ import {
     commissionUsesOutcomePolicy,
     getReplicaBeverageOutcome,
     resolveReplicaBeverageOutcomes,
+    type OverallOutcomeByProperty,
 } from "@/lib/outcomePolicy/resolveBeverageOutcomes"
+import { isReplicaCandidateFinished } from "../../replicaUtils"
 
 const TOTAL_SCORE_CODE = "taste_score"
 const CALCULATED_TOTAL_SCORE_CODE = "total_score"
@@ -47,6 +49,7 @@ const AUTO_REFRESH_MS = 10000
 
 interface ReplicaCandidateDetails {
     total: string
+    outcomeScores: Record<string, string>
     categories: Record<string, string>
     isPreview: boolean
 }
@@ -74,7 +77,8 @@ interface CandidateRow {
     candidate: any
     beverageName: string
     producerAuids: string[]
-    overall: OverallAverage
+    overall: OverallAverage | null
+    outcomeOverall: OverallOutcomeByProperty | null
     awards: any[]
     expertBreakdown: ExpertBreakdownEntry[]
 }
@@ -134,6 +138,15 @@ function computeEvaluationProgress(commission: { replicas: any[]; candidates: an
     return { expected, complete }
 }
 
+function computeReplicaBeverageProgress(replicas: any[]) {
+    return replicas.map((replica) => {
+        const left = (replica.replicaCandidates ?? []).filter(
+            (rc: { status: string }) => !isReplicaCandidateFinished(rc.status),
+        ).length
+        return { replica, left }
+    })
+}
+
 function computeRanks(
     candidates: Array<{ id: string; numericScore: number | null }>,
 ): Map<string, number> {
@@ -170,7 +183,7 @@ export default function CommissionResultsClientView({
     voiceCommentsEnabled,
 }: CommissionResultsClientViewProps) {
     const router = useRouter()
-    const { t, formatReplicaType, formatShortDateTime } = useTranslation()
+    const { t, tCount, formatReplicaType, formatShortDateTime } = useTranslation()
 
     const [showCompare, setShowCompare] = useState(false)
     const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null)
@@ -342,8 +355,13 @@ export default function CommissionResultsClientView({
             })
 
             if (replicaOutcome) {
+                const outcomeScores: Record<string, string> = {}
+                for (const prop of policyOutputProperties) {
+                    outcomeScores[prop.code] = replicaOutcome.values[prop.code]?.display ?? "-"
+                }
                 return {
-                    total: replicaOutcome.average,
+                    total: "-",
+                    outcomeScores,
                     categories,
                     isPreview: replicaOutcome.isPreview,
                 }
@@ -358,11 +376,12 @@ export default function CommissionResultsClientView({
 
             return {
                 total: totalCount > 0 ? (totalSum / totalCount).toFixed(2) : "-",
+                outcomeScores: {},
                 categories,
                 isPreview,
             }
         },
-        [commission.candidates, replicaBeverageOutcomes, usesOutcomePolicy],
+        [commission.candidates, replicaBeverageOutcomes, usesOutcomePolicy, policyOutputProperties],
     )
 
     const getOverallCandidateAverage = useCallback(
@@ -432,7 +451,7 @@ export default function CommissionResultsClientView({
             const beverageName =
                 candidate.sample?.batch?.beverage?.name || t("commission.results.unknownBeverage")
 
-            const overall: OverallAverage =
+            const outcomeOverall: OverallOutcomeByProperty | null =
                 usesOutcomePolicy && beverageId
                     ? aggregateOverallFromReplicas(
                           replicaBeverageOutcomes,
@@ -440,7 +459,10 @@ export default function CommissionResultsClientView({
                           commission.replicas,
                           policyOutputProperties,
                       )
-                    : getOverallCandidateAverage(candidate.id)
+                    : null
+
+            const overall: OverallAverage | null =
+                usesOutcomePolicy ? null : getOverallCandidateAverage(candidate.id)
 
             const allBeverageAwards = awardsMap[beverageId] || []
             const currentCommissionAwards = allBeverageAwards.filter(
@@ -452,6 +474,7 @@ export default function CommissionResultsClientView({
                 beverageName,
                 producerAuids: getBeverageProducerAuids(candidate),
                 overall,
+                outcomeOverall,
                 awards: currentCommissionAwards,
                 expertBreakdown: getExpertBreakdown(candidate.id),
             }
@@ -465,28 +488,58 @@ export default function CommissionResultsClientView({
         getOverallCandidateAverage,
         getExpertBreakdown,
         t,
+        usesOutcomePolicy,
     ])
 
-    const ranks = useMemo(
-        () =>
-            computeRanks(
+    const sortScorePropertyCode = usesOutcomePolicy ? policyOutputProperties[0]?.code : null
+
+    const ranks = useMemo(() => {
+        if (usesOutcomePolicy) {
+            const byProperty: Record<string, Map<string, number>> = {}
+            for (const prop of policyOutputProperties) {
+                byProperty[prop.code] = computeRanks(
+                    candidateRows.map((row) => ({
+                        id: row.candidate.id,
+                        numericScore: row.outcomeOverall?.[prop.code]?.numeric ?? null,
+                    })),
+                )
+            }
+            return byProperty
+        }
+        return {
+            __legacy__: computeRanks(
                 candidateRows.map((row) => ({
                     id: row.candidate.id,
-                    numericScore: row.overall.numeric,
+                    numericScore: row.overall?.numeric ?? null,
                 })),
             ),
-        [candidateRows],
-    )
+        }
+    }, [candidateRows, usesOutcomePolicy, policyOutputProperties])
 
-    const maxScore = useMemo(() => {
-        let max = 0
-        candidateRows.forEach((row) => {
-            if (row.overall.numeric !== null && row.overall.numeric > max) {
-                max = row.overall.numeric
+    const maxScoreByProperty = useMemo(() => {
+        const maxes: Record<string, number> = {}
+        if (usesOutcomePolicy) {
+            for (const prop of policyOutputProperties) {
+                let max = 0
+                candidateRows.forEach((row) => {
+                    const numeric = row.outcomeOverall?.[prop.code]?.numeric
+                    if (numeric !== null && numeric !== undefined && numeric > max) max = numeric
+                })
+                maxes[prop.code] = max
             }
-        })
-        return max
-    }, [candidateRows])
+        } else {
+            let max = 0
+            candidateRows.forEach((row) => {
+                if (row.overall?.numeric !== null && row.overall.numeric > max) {
+                    max = row.overall.numeric
+                }
+            })
+            maxes.__legacy__ = max
+        }
+        return maxes
+    }, [candidateRows, usesOutcomePolicy, policyOutputProperties])
+
+    const maxScore = maxScoreByProperty.__legacy__ ?? 0
 
     const candidateOrderIndex = useMemo(() => {
         const map = new Map<string, number>()
@@ -515,8 +568,16 @@ export default function CommissionResultsClientView({
 
         if (sortMode === "score") {
             rows = [...rows].sort((a, b) => {
-                const aScore = a.overall.numeric
-                const bScore = b.overall.numeric
+                if (usesOutcomePolicy && sortScorePropertyCode) {
+                    const aScore = a.outcomeOverall?.[sortScorePropertyCode]?.numeric
+                    const bScore = b.outcomeOverall?.[sortScorePropertyCode]?.numeric
+                    if (aScore === null && bScore === null) return 0
+                    if (aScore === null || aScore === undefined) return 1
+                    if (bScore === null || bScore === undefined) return -1
+                    return bScore - aScore
+                }
+                const aScore = a.overall?.numeric
+                const bScore = b.overall?.numeric
                 if (aScore === null && bScore === null) return 0
                 if (aScore === null) return 1
                 if (bScore === null) return -1
@@ -531,15 +592,33 @@ export default function CommissionResultsClientView({
         }
 
         return rows
-    }, [candidateRows, searchQuery, sortMode, candidateOrderIndex, resolveProducerName])
+    }, [
+        candidateRows,
+        searchQuery,
+        sortMode,
+        candidateOrderIndex,
+        resolveProducerName,
+        usesOutcomePolicy,
+        sortScorePropertyCode,
+    ])
 
     const { expected: expectedEvaluations, complete: completeEvaluations } = useMemo(
         () => computeEvaluationProgress(commission),
         [commission],
     )
 
+    const replicaBeverageProgress = useMemo(
+        () => computeReplicaBeverageProgress(commission.replicas ?? []),
+        [commission.replicas],
+    )
+
     const hasPreviewScores = useMemo(
-        () => candidateRows.some((row) => row.overall.isPreview),
+        () =>
+            candidateRows.some(
+                (row) =>
+                    row.overall?.isPreview ||
+                    Object.values(row.outcomeOverall ?? {}).some((o) => o.isPreview),
+            ),
         [candidateRows],
     )
 
@@ -582,29 +661,49 @@ export default function CommissionResultsClientView({
         const overviewRows: ExportRow[] = filteredAndSortedRows.map((row: CandidateRow) => {
             const beverageId = row.candidate.sample?.batch?.beverage?.id
             const replicaTotals: Record<string, string> = {}
-            nonTraineeReplicas.forEach((r: any) => {
-                if (usesOutcomePolicy && beverageId) {
-                    const replicaOutcome = getReplicaBeverageOutcome(
-                        replicaBeverageOutcomes,
-                        r.id,
-                        beverageId,
-                    )
-                    replicaTotals[r.id] = replicaOutcome?.average ?? "-"
-                } else {
+            const replicaOutcomes: Record<string, Record<string, string>> = {}
+            const overallOutcomes: Record<string, string> = {}
+
+            if (usesOutcomePolicy) {
+                for (const prop of policyOutputProperties) {
+                    overallOutcomes[prop.code] = row.outcomeOverall?.[prop.code]?.average ?? "-"
+                }
+                nonTraineeReplicas.forEach((r: any) => {
+                    replicaOutcomes[r.id] = {}
+                    if (beverageId) {
+                        const replicaOutcome = getReplicaBeverageOutcome(
+                            replicaBeverageOutcomes,
+                            r.id,
+                            beverageId,
+                        )
+                        for (const prop of policyOutputProperties) {
+                            replicaOutcomes[r.id][prop.code] =
+                                replicaOutcome?.values[prop.code]?.display ?? "-"
+                        }
+                    }
+                })
+            } else {
+                nonTraineeReplicas.forEach((r: any) => {
                     const details = getReplicaCandidateDetails(r, row.candidate.id)
                     replicaTotals[r.id] = details?.total ?? "-"
-                }
-            })
+                })
+            }
 
-            const rank = ranks.get(row.candidate.id)
+            const rank =
+                usesOutcomePolicy && sortScorePropertyCode
+                    ? ranks[sortScorePropertyCode]?.get(row.candidate.id)
+                    : ranks.__legacy__?.get(row.candidate.id)
+
             return {
                 code: row.candidate.anonymizedCode || "N/A",
                 beverage: row.beverageName,
                 producer: resolveProducerName(row.producerAuids),
-                overallAverage: row.overall.average,
+                overallAverage: row.overall?.average ?? "-",
+                overallOutcomes,
                 rank: rank != null ? String(rank) : "-",
                 awards: row.awards.map((a: any) => a.award?.name || "").filter(Boolean).join("; "),
                 replicaTotals,
+                replicaOutcomes,
             }
         })
 
@@ -645,7 +744,6 @@ export default function CommissionResultsClientView({
                         propertyMap,
                         replicaOutcome
                             ? {
-                                  outcomeTotalScore: replicaOutcome.average,
                                   outcomeScores: replicaOutcome.scores,
                                   outcomePropertyMap,
                               }
@@ -672,7 +770,16 @@ export default function CommissionResultsClientView({
 
     const handleExportCsv = () => {
         const { replicaLabels, overviewRows } = buildExportContext()
-        const csv = buildResultsCsv(commission.name, replicaLabels, overviewRows)
+        const outcomePropertyNames = Object.fromEntries(
+            policyOutputProperties.map((p) => [p.code, p.name || p.code]),
+        )
+        const csv = buildResultsCsv(
+            commission.name,
+            replicaLabels,
+            overviewRows,
+            usesOutcomePolicy ? policyOutputProperties.map((p) => p.code) : undefined,
+            usesOutcomePolicy ? outcomePropertyNames : undefined,
+        )
         downloadCsv(csv, `${sanitizeFilename(commission.name)}-results.csv`)
     }
 
@@ -686,6 +793,10 @@ export default function CommissionResultsClientView({
                 `${sanitizeFilename(commission.name)}-results.xlsx`,
                 {
                     outcomePropertyMap: usesOutcomePolicy ? outcomePropertyMap : undefined,
+                    usesOutcomePolicy,
+                    outcomePropertyCodes: usesOutcomePolicy
+                        ? policyOutputProperties.map((p) => p.code)
+                        : undefined,
                 },
             )
         } finally {
@@ -741,6 +852,11 @@ export default function CommissionResultsClientView({
         )
     }
 
+    function OutcomePropertyLabel({ code }: { code: string }) {
+        const label = outcomePropertyMap[code]?.name ?? code
+        return <TranslatedText text={label} />
+    }
+
     function ScoreCell({
         value,
         isPreview,
@@ -765,6 +881,35 @@ export default function CommissionResultsClientView({
             <div className="flex flex-col items-center gap-1">
                 <span className={highlightClass}>{value}</span>
                 {isPreview && <PreviewScoreBadge />}
+            </div>
+        )
+    }
+
+    function OutcomeScoresStack({
+        scores,
+        isPreview,
+        highlight,
+    }: {
+        scores: Record<string, string>
+        isPreview?: boolean
+        highlight?: Record<string, "winner" | "loser" | null>
+    }) {
+        if (policyOutputProperties.length === 0) return <>-</>
+
+        return (
+            <div className="flex flex-col gap-2">
+                {policyOutputProperties.map((prop) => (
+                    <div key={prop.code} className="flex flex-col items-center gap-0.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                            <OutcomePropertyLabel code={prop.code} />
+                        </span>
+                        <ScoreCell
+                            value={scores[prop.code] ?? "-"}
+                            isPreview={isPreview}
+                            highlight={highlight?.[prop.code]}
+                        />
+                    </div>
+                ))}
             </div>
         )
     }
@@ -903,6 +1048,25 @@ export default function CommissionResultsClientView({
                                     ? t("commission.results.progressFinal")
                                     : t("commission.results.progressNote")}
                             </p>
+                            {!isSessionComplete &&
+                                replicaBeverageProgress.some(({ left }) => left > 0) && (
+                                    <ul className="mt-2 space-y-0.5">
+                                        {replicaBeverageProgress.map(({ replica, left }) =>
+                                            left > 0 ? (
+                                                <li
+                                                    key={replica.id}
+                                                    className="text-xs text-indigo-700"
+                                                >
+                                                    {tCount(
+                                                        "commission.results.replicaBeveragesLeft",
+                                                        left,
+                                                        { name: getReplicaLabel(replica) },
+                                                    )}
+                                                </li>
+                                            ) : null,
+                                        )}
+                                    </ul>
+                                )}
                         </div>
                     </div>
 
@@ -1013,8 +1177,14 @@ export default function CommissionResultsClientView({
                                                     candidate.id,
                                                 )
 
-                                                const totalA = detA ? parseFloat(detA.total) : null
-                                                const totalB = detB ? parseFloat(detB.total) : null
+                                                const totalA =
+                                                    !usesOutcomePolicy && detA
+                                                        ? parseFloat(detA.total)
+                                                        : null
+                                                const totalB =
+                                                    !usesOutcomePolicy && detB
+                                                        ? parseFloat(detB.total)
+                                                        : null
                                                 const totalDiff =
                                                     totalA !== null && totalB !== null
                                                         ? (totalA - totalB).toFixed(2)
@@ -1022,7 +1192,54 @@ export default function CommissionResultsClientView({
 
                                                 let highlightA: "winner" | "loser" | null = null
                                                 let highlightB: "winner" | "loser" | null = null
-                                                if (
+                                                const highlightAByProp: Record<
+                                                    string,
+                                                    "winner" | "loser" | null
+                                                > = {}
+                                                const highlightBByProp: Record<
+                                                    string,
+                                                    "winner" | "loser" | null
+                                                > = {}
+                                                const outcomeDiffs: Record<string, string> = {}
+
+                                                if (usesOutcomePolicy) {
+                                                    for (const prop of policyOutputProperties) {
+                                                        const valA = detA?.outcomeScores[prop.code]
+                                                        const valB = detB?.outcomeScores[prop.code]
+                                                        const numA =
+                                                            valA && valA !== "-"
+                                                                ? parseFloat(valA)
+                                                                : null
+                                                        const numB =
+                                                            valB && valB !== "-"
+                                                                ? parseFloat(valB)
+                                                                : null
+                                                        if (
+                                                            numA !== null &&
+                                                            numB !== null &&
+                                                            numA !== numB
+                                                        ) {
+                                                            if (numA > numB) {
+                                                                highlightAByProp[prop.code] =
+                                                                    "winner"
+                                                                highlightBByProp[prop.code] =
+                                                                    "loser"
+                                                            } else {
+                                                                highlightBByProp[prop.code] =
+                                                                    "winner"
+                                                                highlightAByProp[prop.code] =
+                                                                    "loser"
+                                                            }
+                                                            const diff = numA - numB
+                                                            outcomeDiffs[prop.code] =
+                                                                diff > 0
+                                                                    ? `+${diff.toFixed(2)}`
+                                                                    : diff.toFixed(2)
+                                                        } else {
+                                                            outcomeDiffs[prop.code] = "-"
+                                                        }
+                                                    }
+                                                } else if (
                                                     totalA !== null &&
                                                     totalB !== null &&
                                                     totalA !== totalB
@@ -1084,35 +1301,114 @@ export default function CommissionResultsClientView({
                                                                 </div>
                                                             </td>
                                                             <td className="py-4 px-6 text-center">
-                                                                <ScoreCell
-                                                                    value={totalA}
-                                                                    isPreview={detA?.isPreview}
-                                                                    highlight={highlightA}
-                                                                />
+                                                                {usesOutcomePolicy ? (
+                                                                    <OutcomeScoresStack
+                                                                        scores={
+                                                                            detA?.outcomeScores ?? {}
+                                                                        }
+                                                                        isPreview={detA?.isPreview}
+                                                                        highlight={highlightAByProp}
+                                                                    />
+                                                                ) : (
+                                                                    <ScoreCell
+                                                                        value={totalA}
+                                                                        isPreview={detA?.isPreview}
+                                                                        highlight={highlightA}
+                                                                    />
+                                                                )}
                                                             </td>
                                                             <td className="py-4 px-6 text-center">
-                                                                <ScoreCell
-                                                                    value={totalB}
-                                                                    isPreview={detB?.isPreview}
-                                                                    highlight={highlightB}
-                                                                />
+                                                                {usesOutcomePolicy ? (
+                                                                    <OutcomeScoresStack
+                                                                        scores={
+                                                                            detB?.outcomeScores ?? {}
+                                                                        }
+                                                                        isPreview={detB?.isPreview}
+                                                                        highlight={highlightBByProp}
+                                                                    />
+                                                                ) : (
+                                                                    <ScoreCell
+                                                                        value={totalB}
+                                                                        isPreview={detB?.isPreview}
+                                                                        highlight={highlightB}
+                                                                    />
+                                                                )}
                                                             </td>
-                                                            <td
-                                                                className={`py-4 px-6 text-center font-bold ${
-                                                                    totalDiff !== "-" &&
-                                                                    parseFloat(totalDiff) > 0
-                                                                        ? "text-emerald-600"
-                                                                        : totalDiff !== "-" &&
-                                                                            parseFloat(totalDiff) < 0
-                                                                          ? "text-rose-600"
-                                                                          : "text-slate-500"
-                                                                }`}
-                                                            >
-                                                                {totalDiff !== "-"
-                                                                    ? parseFloat(totalDiff) > 0
-                                                                        ? `+${totalDiff}`
-                                                                        : totalDiff
-                                                                    : "-"}
+                                                            <td className="py-4 px-6 text-center">
+                                                                {usesOutcomePolicy ? (
+                                                                    <div className="flex flex-col gap-2">
+                                                                        {policyOutputProperties.map(
+                                                                            (prop) => {
+                                                                                const diff =
+                                                                                    outcomeDiffs[
+                                                                                        prop.code
+                                                                                    ] ?? "-"
+                                                                                const diffNum =
+                                                                                    diff !== "-"
+                                                                                        ? parseFloat(
+                                                                                              diff,
+                                                                                          )
+                                                                                        : null
+                                                                                return (
+                                                                                    <div
+                                                                                        key={
+                                                                                            prop.code
+                                                                                        }
+                                                                                        className="flex flex-col items-center gap-0.5"
+                                                                                    >
+                                                                                        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                                                                            <OutcomePropertyLabel
+                                                                                                code={
+                                                                                                    prop.code
+                                                                                                }
+                                                                                            />
+                                                                                        </span>
+                                                                                        <span
+                                                                                            className={`font-bold ${
+                                                                                                diffNum !==
+                                                                                                    null &&
+                                                                                                diffNum >
+                                                                                                    0
+                                                                                                    ? "text-emerald-600"
+                                                                                                    : diffNum !==
+                                                                                                          null &&
+                                                                                                        diffNum <
+                                                                                                            0
+                                                                                                      ? "text-rose-600"
+                                                                                                      : "text-slate-500"
+                                                                                            }`}
+                                                                                        >
+                                                                                            {diff}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )
+                                                                            },
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span
+                                                                        className={`font-bold ${
+                                                                            totalDiff !== "-" &&
+                                                                            parseFloat(totalDiff) >
+                                                                                0
+                                                                                ? "text-emerald-600"
+                                                                                : totalDiff !==
+                                                                                      "-" &&
+                                                                                    parseFloat(
+                                                                                        totalDiff,
+                                                                                    ) < 0
+                                                                                  ? "text-rose-600"
+                                                                                  : "text-slate-500"
+                                                                        }`}
+                                                                    >
+                                                                        {totalDiff !== "-"
+                                                                            ? parseFloat(totalDiff) >
+                                                                              0
+                                                                                ? `+${totalDiff}`
+                                                                                : totalDiff
+                                                                            : "-"}
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                         </tr>
 
@@ -1344,7 +1640,8 @@ export default function CommissionResultsClientView({
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-slate-50/80 border-b border-slate-100">
-                                            {(sortMode === "score" || sortMode === "order") && (
+                                            {(sortMode === "order" ||
+                                                (sortMode === "score" && !usesOutcomePolicy)) && (
                                                 <th className="py-4 px-4 font-semibold text-slate-600 text-sm w-16 text-center">
                                                     {sortMode === "score"
                                                         ? t("commission.results.rank")
@@ -1354,9 +1651,20 @@ export default function CommissionResultsClientView({
                                             <th className="py-4 px-6 font-semibold text-slate-600 text-sm">
                                                 {t("commission.results.codeBeverage")}
                                             </th>
-                                            <th className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 bg-indigo-50/30 w-48">
-                                                {t("commission.results.overallAverage")}
-                                            </th>
+                                            {usesOutcomePolicy ? (
+                                                policyOutputProperties.map((prop) => (
+                                                    <th
+                                                        key={prop.code}
+                                                        className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 bg-indigo-50/30 min-w-[8rem]"
+                                                    >
+                                                        <OutcomePropertyLabel code={prop.code} />
+                                                    </th>
+                                                ))
+                                            ) : (
+                                                <th className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 bg-indigo-50/30 w-48">
+                                                    {t("commission.results.overallAverage")}
+                                                </th>
+                                            )}
                                             <th className="py-4 px-6 font-semibold text-slate-600 text-sm border-l border-slate-100 w-1/2">
                                                 {t("commission.results.awards")}
                                             </th>
@@ -1367,12 +1675,21 @@ export default function CommissionResultsClientView({
                                             const isExpanded =
                                                 expandedCandidateId === row.candidate.id ||
                                                 isPrinting
-                                            const rank = ranks.get(row.candidate.id)
-                                            const sessionOrder = candidateOrderIndex.get(row.candidate.id)
-                                            const scoreBarWidth =
-                                                row.overall.numeric !== null && maxScore > 0
-                                                    ? (row.overall.numeric / maxScore) * 100
-                                                    : 0
+                                            const legacyRank = ranks.__legacy__?.get(
+                                                row.candidate.id,
+                                            )
+                                            const sessionOrder = candidateOrderIndex.get(
+                                                row.candidate.id,
+                                            )
+                                            const overviewTableColSpan =
+                                                2 +
+                                                (usesOutcomePolicy
+                                                    ? policyOutputProperties.length
+                                                    : 1) +
+                                                (sortMode === "order" ||
+                                                (sortMode === "score" && !usesOutcomePolicy)
+                                                    ? 1
+                                                    : 0)
 
                                             return (
                                                 <React.Fragment key={row.candidate.id}>
@@ -1387,11 +1704,13 @@ export default function CommissionResultsClientView({
                                                             )
                                                         }
                                                     >
-                                                        {(sortMode === "score" || sortMode === "order") && (
+                                                        {(sortMode === "order" ||
+                                                            (sortMode === "score" &&
+                                                                !usesOutcomePolicy)) && (
                                                             <td className="py-4 px-4 text-center font-bold text-slate-500 text-sm">
                                                                 {sortMode === "score"
-                                                                    ? rank != null
-                                                                        ? `#${rank}`
+                                                                    ? legacyRank != null
+                                                                        ? `#${legacyRank}`
                                                                         : "—"
                                                                     : sessionOrder != null
                                                                       ? `#${sessionOrder}`
@@ -1416,28 +1735,94 @@ export default function CommissionResultsClientView({
                                                             </div>
                                                         </td>
 
-                                                        <td
-                                                            className={`py-4 px-6 text-center border-l border-slate-50 font-bold bg-indigo-50/10 text-lg relative ${
-                                                                row.overall.isPreview
-                                                                    ? "text-amber-700"
-                                                                    : "text-indigo-700"
-                                                            }`}
-                                                        >
-                                                            {scoreBarWidth > 0 && (
-                                                                <div
-                                                                    className="absolute inset-y-2 left-2 bg-indigo-100/60 rounded-md -z-0 print:hidden"
-                                                                    style={{
-                                                                        width: `calc(${scoreBarWidth}% - 1rem)`,
-                                                                    }}
-                                                                />
-                                                            )}
-                                                            <div className="relative z-10">
-                                                                <ScoreCell
-                                                                    value={row.overall.average}
-                                                                    isPreview={row.overall.isPreview}
-                                                                />
-                                                            </div>
-                                                        </td>
+                                                        {usesOutcomePolicy
+                                                            ? policyOutputProperties.map((prop) => {
+                                                                  const outcome =
+                                                                      row.outcomeOverall?.[prop.code]
+                                                                  const propMax =
+                                                                      maxScoreByProperty[prop.code] ??
+                                                                      0
+                                                                  const scoreBarWidth =
+                                                                      outcome?.numeric !== null &&
+                                                                      outcome?.numeric !== undefined &&
+                                                                      propMax > 0
+                                                                          ? (outcome.numeric /
+                                                                                propMax) *
+                                                                            100
+                                                                          : 0
+                                                                  const propRank = ranks[
+                                                                      prop.code
+                                                                  ]?.get(row.candidate.id)
+
+                                                                  return (
+                                                                      <td
+                                                                          key={prop.code}
+                                                                          className={`py-4 px-6 text-center border-l border-slate-50 font-bold bg-indigo-50/10 text-lg relative ${
+                                                                              outcome?.isPreview
+                                                                                  ? "text-amber-700"
+                                                                                  : "text-indigo-700"
+                                                                          }`}
+                                                                      >
+                                                                          {scoreBarWidth > 0 && (
+                                                                              <div
+                                                                                  className="absolute inset-y-2 left-2 bg-indigo-100/60 rounded-md -z-0 print:hidden"
+                                                                                  style={{
+                                                                                      width: `calc(${scoreBarWidth}% - 1rem)`,
+                                                                                  }}
+                                                                              />
+                                                                          )}
+                                                                          <div className="relative z-10 flex flex-col items-center gap-1">
+                                                                              <ScoreCell
+                                                                                  value={
+                                                                                      outcome?.average ??
+                                                                                      "-"
+                                                                                  }
+                                                                                  isPreview={
+                                                                                      outcome?.isPreview
+                                                                                  }
+                                                                              />
+                                                                              {sortMode === "score" &&
+                                                                                  propRank != null && (
+                                                                                      <span className="text-xs font-semibold text-slate-400">
+                                                                                          #{propRank}
+                                                                                      </span>
+                                                                                  )}
+                                                                          </div>
+                                                                      </td>
+                                                                  )
+                                                              })
+                                                            : (
+                                                                  <td
+                                                                      className={`py-4 px-6 text-center border-l border-slate-50 font-bold bg-indigo-50/10 text-lg relative ${
+                                                                          row.overall?.isPreview
+                                                                              ? "text-amber-700"
+                                                                              : "text-indigo-700"
+                                                                      }`}
+                                                                  >
+                                                                      {row.overall?.numeric !== null &&
+                                                                          row.overall.numeric !==
+                                                                              undefined &&
+                                                                          maxScore > 0 && (
+                                                                              <div
+                                                                                  className="absolute inset-y-2 left-2 bg-indigo-100/60 rounded-md -z-0 print:hidden"
+                                                                                  style={{
+                                                                                      width: `calc(${(row.overall.numeric / maxScore) * 100}% - 1rem)`,
+                                                                                  }}
+                                                                              />
+                                                                          )}
+                                                                      <div className="relative z-10">
+                                                                          <ScoreCell
+                                                                              value={
+                                                                                  row.overall?.average ??
+                                                                                  "-"
+                                                                              }
+                                                                              isPreview={
+                                                                                  row.overall?.isPreview
+                                                                              }
+                                                                          />
+                                                                      </div>
+                                                                  </td>
+                                                              )}
 
                                                         <td className="py-4 px-6 border-l border-slate-50">
                                                             <div className="flex flex-wrap gap-1.5">
@@ -1484,12 +1869,7 @@ export default function CommissionResultsClientView({
                                                     {isExpanded && (
                                                         <tr>
                                                             <td
-                                                                colSpan={
-                                                                    sortMode === "score" ||
-                                                                    sortMode === "order"
-                                                                        ? 4
-                                                                        : 3
-                                                                }
+                                                                colSpan={overviewTableColSpan}
                                                                 className="p-0 border-b border-slate-200 bg-slate-50/80 shadow-inner"
                                                             >
                                                                 <div className="p-6">
@@ -1573,9 +1953,14 @@ export default function CommissionResultsClientView({
                                             <tr>
                                                 <td
                                                     colSpan={
-                                                        sortMode === "score" || sortMode === "order"
-                                                            ? 4
-                                                            : 3
+                                                        2 +
+                                                        (usesOutcomePolicy
+                                                            ? policyOutputProperties.length
+                                                            : 1) +
+                                                        (sortMode === "order" ||
+                                                        (sortMode === "score" && !usesOutcomePolicy)
+                                                            ? 1
+                                                            : 0)
                                                     }
                                                     className="py-12 text-center text-slate-400 text-sm"
                                                 >
@@ -1589,10 +1974,16 @@ export default function CommissionResultsClientView({
                                                 <tr>
                                                     <td
                                                         colSpan={
-                                                        sortMode === "score" || sortMode === "order"
-                                                            ? 4
-                                                            : 3
-                                                    }
+                                                            2 +
+                                                            (usesOutcomePolicy
+                                                                ? policyOutputProperties.length
+                                                                : 1) +
+                                                            (sortMode === "order" ||
+                                                            (sortMode === "score" &&
+                                                                !usesOutcomePolicy)
+                                                                ? 1
+                                                                : 0)
+                                                        }
                                                         className="py-12 text-center text-slate-400 text-sm"
                                                     >
                                                         {t("commission.results.noSearchResults")}

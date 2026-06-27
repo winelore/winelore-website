@@ -151,6 +151,8 @@ const hu = {
             progressComplete: "{{complete}} / {{expected}} értékelés kész",
             progressNote: "A pontszámok változhatnak, amíg a szakértők befejezik az értékelést.",
             progressFinal: "Minden értékelés kész. Végleges pontszámok láthatók.",
+            replicaBeveragesLeft: "{{name}}: még {{count}} ital értékelése hátra van",
+            replicaBeveragesLeft_plural: "{{name}}: még {{count}} ital értékelése hátra van",
             autoRefresh: "Automatikus frissítés 10 mp-ként",
             lastUpdated: "Frissítve: {{time}}",
             compareReplicas: "Minták összehasonlítása",

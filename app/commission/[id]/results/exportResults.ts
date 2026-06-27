@@ -38,9 +38,11 @@ export interface ExportRow {
     beverage: string
     producer: string
     overallAverage: string
+    overallOutcomes: Record<string, string>
     rank: string
     awards: string
     replicaTotals: Record<string, string>
+    replicaOutcomes: Record<string, Record<string, string>>
 }
 
 export interface ExpertScoreExportRow {
@@ -82,7 +84,6 @@ export interface BuildDetailedExportOptions {
 }
 
 export interface ExpertScoreExportOptions {
-    outcomeTotalScore?: string
     outcomeScores?: Record<string, unknown>
     outcomePropertyMap?: Record<string, OutcomePropertyMeta>
 }
@@ -115,15 +116,26 @@ export function collectScoreCodes(
 function buildOverviewSheetData(
     replicaLabels: { id: string; label: string }[],
     rows: ExportRow[],
+    outcomePropertyCodes?: string[],
+    outcomePropertyNames?: Record<string, string>,
 ): string[][] {
+    const useOutcomes = outcomePropertyCodes && outcomePropertyCodes.length > 0
+    const getOutcomeLabel = (code: string) => outcomePropertyNames?.[code] ?? code
+
     const headers = [
         "Code",
         "Beverage",
         "Producer",
-        "Overall Average",
+        ...(useOutcomes
+            ? outcomePropertyCodes!.map((code) => `${getOutcomeLabel(code)} (overall)`)
+            : ["Overall Average"]),
         "Rank",
         "Awards",
-        ...replicaLabels.map((r) => r.label),
+        ...(useOutcomes
+            ? replicaLabels.flatMap((r) =>
+                  outcomePropertyCodes!.map((code) => `${r.label}: ${getOutcomeLabel(code)}`),
+              )
+            : replicaLabels.map((r) => r.label)),
     ]
 
     return [
@@ -132,10 +144,18 @@ function buildOverviewSheetData(
             row.code,
             row.beverage,
             row.producer,
-            row.overallAverage,
+            ...(useOutcomes
+                ? outcomePropertyCodes!.map((code) => row.overallOutcomes[code] ?? "-")
+                : [row.overallAverage]),
             row.rank,
             row.awards,
-            ...replicaLabels.map((r) => row.replicaTotals[r.id] ?? "-"),
+            ...(useOutcomes
+                ? replicaLabels.flatMap((r) =>
+                      outcomePropertyCodes!.map(
+                          (code) => row.replicaOutcomes[r.id]?.[code] ?? "-",
+                      ),
+                  )
+                : replicaLabels.map((r) => row.replicaTotals[r.id] ?? "-")),
         ]),
     ]
 }
@@ -145,6 +165,7 @@ function buildExpertScoreSheetData(
     propertyMap: Record<string, PropertyMeta>,
     scoreCodes: string[],
     outcomePropertyMap?: Record<string, OutcomePropertyMeta>,
+    usesOutcomePolicy?: boolean,
 ): string[][] {
     const getLabel = (code: string) =>
         outcomePropertyMap?.[code]?.name ?? getPropertyLabel(code, propertyMap)
@@ -156,7 +177,7 @@ function buildExpertScoreSheetData(
         "Replica",
         "Replica Type",
         "Evaluator",
-        "Total Score",
+        ...(usesOutcomePolicy ? [] : ["Total Score"]),
         ...scoreCodes.map((code) => getLabel(code)),
     ]
 
@@ -169,7 +190,7 @@ function buildExpertScoreSheetData(
             row.replicaName,
             row.replicaType,
             row.evaluator,
-            row.totalScore,
+            ...(usesOutcomePolicy ? [] : [row.totalScore]),
             ...scoreCodes.map((code) => row.scores[code] ?? ""),
         ]),
     ]
@@ -212,7 +233,7 @@ export function buildExpertScoreExportRows(
         })
 
     if (outcomeOptions?.outcomeScores && outcomeOptions.outcomePropertyMap) {
-        for (const [outcomeCode, meta] of Object.entries(outcomeOptions.outcomePropertyMap)) {
+        for (const [outcomeCode] of Object.entries(outcomeOptions.outcomePropertyMap)) {
             const value = outcomeOptions.outcomeScores[outcomeCode]
             if (value !== null && value !== undefined) {
                 scoreMap[outcomeCode] = formatOutcomeValue(value)
@@ -220,10 +241,7 @@ export function buildExpertScoreExportRows(
         }
     }
 
-    const totalScore =
-        outcomeOptions?.outcomeTotalScore && outcomeOptions.outcomeTotalScore !== "-"
-            ? outcomeOptions.outcomeTotalScore
-            : extractTotalScore(scores)
+    const totalScore = extractTotalScore(scores)
 
     return {
         code,
@@ -272,10 +290,15 @@ export function buildResultsCsv(
     commissionName: string,
     replicaLabels: { id: string; label: string }[],
     rows: ExportRow[],
+    outcomePropertyCodes?: string[],
+    outcomePropertyNames?: Record<string, string>,
 ): string {
-    const lines = buildOverviewSheetData(replicaLabels, rows).map((row) =>
-        row.map((cell) => escapeCsvCell(cell)).join(","),
-    )
+    const lines = buildOverviewSheetData(
+        replicaLabels,
+        rows,
+        outcomePropertyCodes,
+        outcomePropertyNames,
+    ).map((row) => row.map((cell) => escapeCsvCell(cell)).join(","))
 
     return lines.join("\n")
 }
@@ -294,15 +317,32 @@ export async function downloadResultsXlsx(
     context: DetailedExportContext,
     propertyMap: Record<string, PropertyMeta>,
     filename: string,
-    options?: { outcomePropertyMap?: Record<string, OutcomePropertyMeta> },
+    options?: {
+        outcomePropertyMap?: Record<string, OutcomePropertyMeta>
+        usesOutcomePolicy?: boolean
+        outcomePropertyCodes?: string[]
+    },
 ): Promise<void> {
     const XLSX = await import("xlsx")
     const wb = XLSX.utils.book_new()
     const outcomePropertyMap = options?.outcomePropertyMap
+    const outcomePropertyCodes = options?.outcomePropertyCodes
+    const outcomePropertyNames = outcomePropertyMap
+        ? Object.fromEntries(
+              Object.entries(outcomePropertyMap).map(([code, meta]) => [code, meta.name]),
+          )
+        : undefined
 
     XLSX.utils.book_append_sheet(
         wb,
-        XLSX.utils.aoa_to_sheet(buildOverviewSheetData(context.replicaLabels, context.overviewRows)),
+        XLSX.utils.aoa_to_sheet(
+            buildOverviewSheetData(
+                context.replicaLabels,
+                context.overviewRows,
+                outcomePropertyCodes,
+                outcomePropertyNames,
+            ),
+        ),
         "Overview",
     )
 
@@ -319,6 +359,7 @@ export async function downloadResultsXlsx(
                 propertyMap,
                 scoreCodes,
                 outcomePropertyMap,
+                options?.usesOutcomePolicy,
             ),
         ),
         "Expert Scores",

@@ -157,6 +157,8 @@ const en = {
       progressComplete: "{{complete}} of {{expected}} evaluations complete",
       progressNote: "Scores may change as experts finish evaluating.",
       progressFinal: "All evaluations are complete. Final scores are shown.",
+      replicaBeveragesLeft: "{{name}}: {{count}} beverage left to evaluate",
+      replicaBeveragesLeft_plural: "{{name}}: {{count}} beverages left to evaluate",
       autoRefresh: "Auto-refreshes every 10s",
       lastUpdated: "Last updated {{time}}",
       compareReplicas: "Compare Replicas",

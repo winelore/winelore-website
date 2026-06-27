@@ -48,28 +48,26 @@ export function formatOutcomeValue(value: unknown): string {
     return String(value)
 }
 
-/**
- * Pick the primary display score using only policy output property definitions.
- */
-export function selectPrimaryOutcomeScore(
+export interface OutcomeValueDisplay {
+    display: string
+    numeric: number | null
+}
+
+/** Format every policy output property from a score map. */
+export function buildOutcomePropertyValues(
     scores: Record<string, unknown>,
     outputProperties: OutcomeOutputProperty[],
-): { display: string; numeric: number | null } {
-    if (outputProperties.length === 0) {
-        return { display: "-", numeric: null }
-    }
-
+): Record<string, OutcomeValueDisplay> {
+    const values: Record<string, OutcomeValueDisplay> = {}
     for (const prop of outputProperties) {
-        if (prop.isResult) {
-            const num = parseNumericOutcomeValue(scores[prop.code])
-            if (num !== null) return { display: num.toFixed(2), numeric: num }
+        const raw = scores[prop.code]
+        const numeric = parseNumericOutcomeValue(raw)
+        values[prop.code] = {
+            display: numeric !== null ? numeric.toFixed(2) : formatOutcomeValue(raw),
+            numeric,
         }
     }
-    for (const prop of outputProperties) {
-        const num = parseNumericOutcomeValue(scores[prop.code])
-        if (num !== null) return { display: num.toFixed(2), numeric: num }
-    }
-    return { display: "-", numeric: null }
+    return values
 }
 
 export function parseStoredOutcomeScores(scoresJson: string): Record<string, unknown> {
@@ -111,21 +109,12 @@ export function resolveOutputProperties(
     const codes = collectScoreKeysFromMaps(rawScoreMaps)
     if (codes.length === 0) return []
 
-    const resultMarked = codes.filter((code) =>
-        (policyEdition?.outputProperties ?? []).some((p) => p.code === code && p.isResult),
-    )
-
     return codes.map((code) => {
         const policyMeta = policyEdition?.outputProperties?.find((p) => p.code === code)
-        const isResult =
-            policyMeta?.isResult === true ||
-            (resultMarked.length === 0 && codes.length === 1 && code === codes[0]) ||
-            (resultMarked.length === 1 && code === resultMarked[0])
-
         return {
             code,
             name: policyMeta?.name || code,
-            isResult,
+            isResult: policyMeta?.isResult === true,
         }
     })
 }

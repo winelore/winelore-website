@@ -2,17 +2,17 @@ import type { TemplateEdition } from "@/lib/evaluationScores"
 import { buildReplicaScriptContext, type CommissionForScriptContext } from "./buildScriptContext"
 import { evaluateOutcomePolicy } from "./evaluateOutcomePolicy"
 import {
+    buildOutcomePropertyValues,
     type OutcomeOutputProperty,
     type OutcomePolicyEditionData,
+    type OutcomeValueDisplay,
     parseStoredOutcomeScores,
     resolveOutputProperties,
-    selectPrimaryOutcomeScore,
 } from "./outcomePropertyMap"
 
 export interface ReplicaBeverageOutcomeDisplay {
     scores: Record<string, unknown>
-    average: string
-    numeric: number | null
+    values: Record<string, OutcomeValueDisplay>
     isPreview: boolean
 }
 
@@ -103,15 +103,14 @@ export function resolveReplicaBeverageOutcomes(
 
         for (const beverageId of allBeverageIds) {
             const scores = replicaRaw?.get(beverageId) ?? {}
-            const { display, numeric } = selectPrimaryOutcomeScore(scores, outputProperties)
+            const values = buildOutcomePropertyValues(scores, outputProperties)
             const isPreview = useStored
                 ? false
                 : isReplicaBeverageIncomplete(replica.id, beverageId)
 
             replicaMap.set(beverageId, {
                 scores,
-                average: display,
-                numeric,
+                values,
                 isPreview,
             })
         }
@@ -128,43 +127,48 @@ export interface OverallOutcomeDisplay {
     isPreview: boolean
 }
 
+export type OverallOutcomeByProperty = Record<string, OverallOutcomeDisplay>
+
 /**
- * Average primary outcome scores across non-TRAINEE replicas for a beverage.
+ * Average each outcome property across non-TRAINEE replicas for a beverage.
  */
 export function aggregateOverallFromReplicas(
     replicaOutcomes: ReplicaBeverageOutcomesMap,
     beverageId: string,
     replicas: Array<{ id: string; type: string }>,
     outputProperties: OutcomeOutputProperty[],
-): OverallOutcomeDisplay {
-    const scores: number[] = []
-    let isPreview = false
+): OverallOutcomeByProperty {
+    const result: OverallOutcomeByProperty = {}
+    const nonTraineeReplicas = replicas.filter((r) => r.type !== "TRAINEE")
 
-    replicas
-        .filter((r) => r.type !== "TRAINEE")
-        .forEach((replica) => {
+    for (const prop of outputProperties) {
+        const numericScores: number[] = []
+        let isPreview = false
+
+        nonTraineeReplicas.forEach((replica) => {
             const display = replicaOutcomes.get(replica.id)?.get(beverageId)
             if (!display) return
 
-            const primary =
-                display.numeric !== null
-                    ? display.numeric
-                    : selectPrimaryOutcomeScore(display.scores, outputProperties).numeric
-
-            if (primary !== null) scores.push(primary)
+            const value = display.values[prop.code]
+            if (value?.numeric !== null && value?.numeric !== undefined) {
+                numericScores.push(value.numeric)
+            }
             if (display.isPreview) isPreview = true
         })
 
-    if (scores.length === 0) {
-        return { average: "-", numeric: null, isPreview: false }
+        if (numericScores.length === 0) {
+            result[prop.code] = { average: "-", numeric: null, isPreview: isPreview }
+        } else {
+            const avg = numericScores.reduce((a, b) => a + b, 0) / numericScores.length
+            result[prop.code] = {
+                average: avg.toFixed(2),
+                numeric: avg,
+                isPreview,
+            }
+        }
     }
 
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-    return {
-        average: avg.toFixed(2),
-        numeric: avg,
-        isPreview,
-    }
+    return result
 }
 
 export function getReplicaBeverageOutcome(

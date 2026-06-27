@@ -159,6 +159,8 @@ const uk: TranslationKey = {
       progressComplete: "{{complete}} з {{expected}} оцінок завершено",
       progressNote: "Бали можуть змінюватися, поки експерти завершують оцінювання.",
       progressFinal: "Усі оцінки завершено. Показано фінальні бали.",
+      replicaBeveragesLeft: "{{name}}: {{count}} напій залишився для оцінювання",
+      replicaBeveragesLeft_plural: "{{name}}: {{count}} напоїв залишилось для оцінювання",
       autoRefresh: "Автооновлення кожні 10 с",
       lastUpdated: "Оновлено о {{time}}",
       compareReplicas: "Порівняти репліки",
