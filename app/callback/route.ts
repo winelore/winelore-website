@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       maxAge: tokens.expires_in || 43200
     });
 
-    cookieStore.set("axus_access_token", tokens.axus_access_token || tokens.access_token, {
+    cookieStore.set("axus_access_token", tokens.access_token, {
       httpOnly: true,
       sameSite: "lax",
       secure: false,

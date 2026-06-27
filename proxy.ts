@@ -76,13 +76,36 @@ export async function proxy(request: NextRequest) {
     } catch (error) {
       console.error("Failed to refresh tokens in middleware:", error);
 
+      // Check if the access token in the request is already expired by a significant margin (e.g. more than 1 minute)
+      // If it is NOT expired by much (or not expired at all), it might be a race condition from a concurrent request that just refreshed it.
+      // In that case, we do NOT delete the cookies to prevent logging out the user.
+      let shouldDeleteCookies = true;
+      if (accessToken) {
+        try {
+          const payload = parseJwt(accessToken);
+          if (payload && payload.exp) {
+            const currentTime = Math.floor(Date.now() / 1000);
+            const expiredAge = currentTime - payload.exp;
+            // If the token expired less than 60 seconds ago, it is likely a race condition.
+            if (expiredAge < 60) {
+              shouldDeleteCookies = false;
+              console.warn("Possible token refresh race condition detected. Retaining cookies.");
+            }
+          }
+        } catch (e) {
+          // If JWT parsing fails, it's a truly invalid token, so we should delete cookies.
+        }
+      }
+
       // If refresh fails (e.g. token revoked/expired), clean up the invalid cookies so the user is logged out
       const response = NextResponse.next();
-      response.cookies.delete("auid");
-      response.cookies.delete("username");
-      response.cookies.delete("displayName");
-      response.cookies.delete("axus_access_token");
-      response.cookies.delete("axus_refresh_token");
+      if (shouldDeleteCookies) {
+        response.cookies.delete("auid");
+        response.cookies.delete("username");
+        response.cookies.delete("displayName");
+        response.cookies.delete("axus_access_token");
+        response.cookies.delete("axus_refresh_token");
+      }
       return response;
     }
   }
