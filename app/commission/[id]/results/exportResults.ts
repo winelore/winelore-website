@@ -1,5 +1,6 @@
 import { commentHasVisibleContent } from "../../EvaluationCommentsDisplay"
 import type { PropertyMeta } from "../../propertyMap"
+import { formatPropertyScoreValue, type BooleanScoreLabels, hasStoredScoreValue } from "@/lib/formatPropertyScore"
 
 function shouldIncludeInExpertExport(
     code: string,
@@ -78,14 +79,18 @@ export interface BuildDetailedExportOptions {
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
     generalCommentLabel: string
+    booleanLabels: BooleanScoreLabels
 }
 
 function getPropertyLabel(code: string, propertyMap: Record<string, PropertyMeta>): string {
     return propertyMap[code]?.name ?? code
 }
 
-function hasScoreValue(value: string | null | undefined): boolean {
-    return value != null && String(value).trim() !== ""
+function hasScoreValue(
+    value: string | null | undefined,
+    kind?: PropertyMeta["kind"],
+): boolean {
+    return hasStoredScoreValue(value, kind);
 }
 
 export function collectScoreCodes(
@@ -223,6 +228,7 @@ export function buildExpertScoreExportRows(
     evaluator: string,
     scores: Array<{ code: string; value: string }>,
     propertyMap: Record<string, PropertyMeta>,
+    booleanLabels: BooleanScoreLabels,
     beverageType?: string,
     wineType?: string,
     vintage?: string,
@@ -231,9 +237,17 @@ export function buildExpertScoreExportRows(
 ): ExpertScoreExportRow {
     const scoreMap: Record<string, string> = {}
     scores
-        .filter((s) => hasScoreValue(s.value) && shouldIncludeInExpertExport(s.code, propertyMap))
+        .filter(
+            (s) =>
+                hasScoreValue(s.value, propertyMap[s.code]?.kind) &&
+                shouldIncludeInExpertExport(s.code, propertyMap),
+        )
         .forEach((s) => {
-            scoreMap[s.code] = s.value
+            scoreMap[s.code] = formatPropertyScoreValue(
+                s.value,
+                propertyMap[s.code],
+                booleanLabels,
+            )
         })
 
     return {

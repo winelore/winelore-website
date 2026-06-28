@@ -10,6 +10,7 @@ import {
     MemberEvaluationSection,
 } from "./EvaluationCommentsDisplay"
 import type { ExpertBeverageSummaryEntry, MyTastingSummaryData } from "./expertRanking"
+import { formatPropertyScoreValue } from "@/lib/formatPropertyScore"
 
 interface MyTastingSummaryProps {
     data: MyTastingSummaryData | null
@@ -33,6 +34,7 @@ function BeverageSummaryCard({
         voiceCommentsEnabled: data.voiceCommentsEnabled,
     }
     const hasDetails = hasEvaluationData(entry.evaluation, commentFlags)
+    const booleanLabels = { yesLabel: t("common.yes"), noLabel: t("common.no") }
 
     return (
         <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
@@ -67,7 +69,11 @@ function BeverageSummaryCard({
                                         {score.name}
                                     </p>
                                     <p className="text-2xl font-extrabold text-indigo-700">
-                                        {score.value}
+                                        {formatPropertyScoreValue(
+                                            score.value,
+                                            data.propertyMap[score.code],
+                                            booleanLabels,
+                                        )}
                                     </p>
                                 </div>
                             ))}

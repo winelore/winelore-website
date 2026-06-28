@@ -538,7 +538,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         currentCandidateCode: null as string | null,
         allCandidatesEvaluated: false,
         evaluations: [] as any[],
-        propertyMap: {} as Record<string, { name: string; isResult: boolean }>,
+        propertyMap: {} as Record<string, PropertyMeta>,
         totalCandidates: 0,
         currentCandidateIndex: -1,
         candidatesLeft: 0,
@@ -597,7 +597,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             && replicaCandidates.every((rc: any) => isReplicaCandidateFinished(rc.status));
 
         let evaluations: any[] = [];
-        const propertyMap: Record<string, { name: string; isResult: boolean }> = {};
+        const propertyMap: Record<string, PropertyMeta> = {};
         let myCurrentCandidateEvaluation: any = null;
 
         if (currentCandidateId) {

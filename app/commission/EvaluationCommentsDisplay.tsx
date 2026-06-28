@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
 import type { PropertyMeta } from "./propertyMap";
+import { formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore";
 
 export type CompetitionFeatureFlags = {
     propertyCommentsEnabled: boolean;
@@ -29,8 +30,11 @@ export function isResultOrGeneralComment(
     return propertyMap[comment.propertyId]?.isResult === true;
 }
 
-function hasScoreValue(value: string | null | undefined): boolean {
-    return value != null && String(value).trim() !== "";
+function hasScoreValue(
+    value: string | null | undefined,
+    kind?: PropertyMeta["kind"],
+): boolean {
+    return hasStoredScoreValue(value, kind);
 }
 
 export function hasEvaluationData(
@@ -40,9 +44,7 @@ export function hasEvaluationData(
     },
     flags: CompetitionFeatureFlags,
 ) {
-    const hasScores = (evaluation.scores || []).some(
-        (s) => s.value != null && String(s.value).trim() !== "",
-    );
+    const hasScores = (evaluation.scores || []).some((s) => hasStoredScoreValue(s.value));
     const hasComments = (evaluation.comments || []).some((c) => commentHasVisibleContent(c, flags));
     return hasScores || hasComments;
 }
@@ -91,8 +93,15 @@ function SubmittedScores({
 
     const borderClass = accent === "indigo" ? "border-indigo-300" : "border-indigo-200";
 
+    const booleanLabels = { yesLabel: t("common.yes"), noLabel: t("common.no") };
+
     const renderScoreChip = (score: { code: string; value: string }, isResult: boolean) => {
         const displayName = propertyMap[score.code]?.name || score.code;
+        const displayValue = formatPropertyScoreValue(
+            score.value,
+            propertyMap[score.code],
+            booleanLabels,
+        );
 
         return (
             <div
@@ -107,7 +116,7 @@ function SubmittedScores({
                     <TranslatedText text={displayName} />
                 </span>
                 <span className={`font-bold ${isResult ? "text-white" : "text-slate-800"}`}>
-                    {score.value}
+                    {displayValue}
                 </span>
             </div>
         );
@@ -282,7 +291,9 @@ function MemberEvaluationDetails({
     propertyCommentsEnabled: boolean;
     voiceCommentsEnabled: boolean;
 }) {
-    const scores = (evaluation.scores || []).filter((s) => hasScoreValue(s.value));
+    const scores = (evaluation.scores || []).filter((s) =>
+        hasScoreValue(s.value, propertyMap[s.code]?.kind),
+    );
     const visibleScores = showAll
         ? scores
         : scores.filter((s) => propertyMap[s.code]?.isResult === true);

@@ -23,6 +23,7 @@ import {
 import { MemberEvaluationSection } from "../../EvaluationCommentsDisplay"
 import { normalizeAuids } from "../../auidUtils"
 import type { PropertyMeta } from "../../propertyMap"
+import { aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore"
 import { useTranslation } from "@/lib/i18n/context"
 import { getGeographicInfo } from "@/lib/geocoding"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
@@ -287,6 +288,15 @@ export default function CommissionResultsClientView({
         [commission.outcomePolicyEdition, policyOutputProperties, propertyMap],
     )
 
+    const candidateHasEvaluations = useCallback(
+        (candidateId: string): boolean =>
+            commission.replicas.some((replica: any) => {
+                const rc = replica.replicaCandidates?.find((item: any) => item.candidate.id === candidateId)
+                return (rc?.evaluations?.length ?? 0) > 0
+            }),
+        [commission.replicas],
+    )
+
     const getReplicaCandidateDetails = useCallback(
         (replica: any, candidateId: string): ReplicaCandidateDetails | null => {
             const rc = replica.replicaCandidates.find((c: any) => c.candidate.id === candidateId)
@@ -298,7 +308,7 @@ export default function CommissionResultsClientView({
                     : undefined
 
             if (!rc) return null
-            if (!rc.evaluations?.length && !replicaOutcome) return null
+            if ((rc.evaluations?.length ?? 0) === 0) return null
 
             let completeWithTotalCount = 0
             const categoryValues: Record<string, string[]> = {}
@@ -311,23 +321,26 @@ export default function CommissionResultsClientView({
                     if (propertyMap[score.code]?.isResult) {
                         return
                     }
-                    if (!ev.isComplete && !score.value) return
+                    if (
+                        !ev.isComplete &&
+                        !hasStoredScoreValue(score.value, propertyMap[score.code]?.kind)
+                    ) {
+                        return
+                    }
                     if (!categoryValues[score.code]) categoryValues[score.code] = []
                     categoryValues[score.code].push(score.value)
                 })
             })
 
             const categories: Record<string, string> = {}
+            const booleanLabels = { yesLabel: t("common.yes"), noLabel: t("common.no") }
             Object.keys(categoryValues).forEach((code) => {
                 const vals = categoryValues[code]
-                const isNumeric = vals.length > 0 && vals.every((v) => !isNaN(parseFloat(v)))
-
-                if (isNumeric) {
-                    const sum = vals.reduce((acc, curr) => acc + parseFloat(curr), 0)
-                    categories[code] = (sum / vals.length).toFixed(2)
-                } else {
-                    categories[code] = Array.from(new Set(vals)).join(" | ")
-                }
+                categories[code] = aggregatePropertyScores(
+                    vals,
+                    propertyMap[code]?.kind,
+                    booleanLabels,
+                )
             })
 
             if (hasPolicyEdition && beverageId) {
@@ -355,7 +368,7 @@ export default function CommissionResultsClientView({
                           ),
             }
         },
-        [commission.candidates, replicaBeverageOutcomes, hasPolicyEdition, policyOutputProperties, propertyMap],
+        [commission.candidates, replicaBeverageOutcomes, hasPolicyEdition, policyOutputProperties, propertyMap, t],
     )
 
     const getExpertBreakdown = useCallback(
@@ -394,9 +407,10 @@ export default function CommissionResultsClientView({
             const beverageId = candidate.sample?.batch?.beverage?.id
             const beverageName =
                 candidate.sample?.batch?.beverage?.name || t("commission.results.unknownBeverage")
+            const hasEvaluations = candidateHasEvaluations(candidate.id)
 
             const outcomeOverall: OverallOutcomeByProperty | null =
-                hasPolicyEdition && beverageId
+                hasPolicyEdition && beverageId && hasEvaluations
                     ? aggregateOverallFromReplicas(
                           replicaBeverageOutcomes,
                           beverageId,
@@ -427,6 +441,7 @@ export default function CommissionResultsClientView({
         replicaBeverageOutcomes,
         policyOutputProperties,
         getExpertBreakdown,
+        candidateHasEvaluations,
         t,
         hasPolicyEdition,
     ])
@@ -617,6 +632,7 @@ export default function CommissionResultsClientView({
             propertyCommentsEnabled,
             voiceCommentsEnabled,
             generalCommentLabel: t("evaluation.generalCommentLabel"),
+            booleanLabels: { yesLabel: t("common.yes"), noLabel: t("common.no") },
         }
 
         filteredAndSortedRows.forEach((row: CandidateRow) => {
@@ -656,6 +672,7 @@ export default function CommissionResultsClientView({
                         evaluator,
                         expert.evaluation.scores || [],
                         propertyMap,
+                        exportOptions.booleanLabels,
                         beverageType,
                         wineType,
                         vintage,
@@ -1736,11 +1753,21 @@ export default function CommissionResultsClientView({
                                                                                             </div>
                                                                                             <div className="flex flex-col items-end gap-1 shrink-0">
                                                                 {(() => {
+                                                                    const booleanLabels = {
+                                                                        yesLabel: t("common.yes"),
+                                                                        noLabel: t("common.no"),
+                                                                    }
+                                                                    const formatScore = (s: { code: string; value: string }) =>
+                                                                        formatPropertyScoreValue(
+                                                                            s.value,
+                                                                            propertyMap[s.code],
+                                                                            booleanLabels,
+                                                                        )
                                                                     const results = expert.evaluation.scores?.filter((s) => propertyMap[s.code]?.isResult) || []
                                                                     if (results.length === 1) {
                                                                         return (
                                                                             <div className="text-xl font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">
-                                                                                {results[0].value}
+                                                                                {formatScore(results[0])}
                                                                             </div>
                                                                         )
                                                                     }
@@ -1750,7 +1777,7 @@ export default function CommissionResultsClientView({
                                                                                 key={s.code}
                                                                                 className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg whitespace-nowrap"
                                                                             >
-                                                                                {propertyMap[s.code]?.name ?? s.code}: {s.value}
+                                                                                {propertyMap[s.code]?.name ?? s.code}: {formatScore(s)}
                                                                             </div>
                                                                         ))
                                                                     }

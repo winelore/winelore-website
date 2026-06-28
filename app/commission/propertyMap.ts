@@ -1,6 +1,30 @@
 import type { GetCommissionTemplatesDeepResult } from "@/lib/commissionTemplatesQuery";
 
-export type PropertyMeta = { name: string; isResult: boolean };
+export type PropertyValueKind = "boolean" | "numeric" | "enum" | "discrete" | "text" | "smart";
+
+export type PropertyMeta = {
+    name: string;
+    isResult: boolean;
+    kind: PropertyValueKind;
+};
+
+function kindFromTypename(typename: string | undefined): PropertyValueKind {
+    switch (typename) {
+        case "BooleanProperty":
+            return "boolean";
+        case "IntProperty":
+        case "DoubleProperty":
+            return "numeric";
+        case "DiscreteNumbersProperty":
+            return "discrete";
+        case "EnumProperty":
+            return "enum";
+        case "SmartProperty":
+            return "smart";
+        default:
+            return "text";
+    }
+}
 
 export function buildPropertyMapFromCommissionTemplates(
     templateResult: GetCommissionTemplatesDeepResult | null | undefined,
@@ -22,9 +46,10 @@ export function buildPropertyMapFromCommissionTemplates(
     for (const cat of templateEdition.categories) {
         if (!cat.properties) continue;
         for (const prop of cat.properties) {
-            const meta = {
+            const meta: PropertyMeta = {
                 name: prop.name,
                 isResult: (prop as { isResult?: boolean }).isResult === true,
+                kind: kindFromTypename((prop as { __typename?: string }).__typename),
             };
             propertyMap[prop.code] = meta;
             if (prop.id) propertyMap[String(prop.id)] = meta;

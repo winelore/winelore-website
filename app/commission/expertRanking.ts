@@ -1,5 +1,6 @@
 import { normalizeAuids } from "./auidUtils"
 import { hasEvaluationTotalScore } from "@/lib/evaluationTotals"
+import { hasStoredScoreValue } from "@/lib/formatPropertyScore"
 
 import type { PropertyMeta } from "./propertyMap";
 
@@ -68,11 +69,14 @@ function getBeverageProducerAuids(candidate: ReplicaCandidateWithBeverage["candi
     return Array.from(auids)
 }
 
-function normalizeEvaluation(evaluation: MyEvaluation): ExpertBeverageSummaryEntry["evaluation"] {
+function normalizeEvaluation(
+    evaluation: MyEvaluation,
+    propertyMap: Record<string, PropertyMeta>,
+): ExpertBeverageSummaryEntry["evaluation"] {
     return {
         scores: (evaluation.scores || [])
-            .filter((s) => s.value != null && String(s.value).trim() !== "")
-            .map((s) => ({ code: s.code, value: String(s.value) })),
+            .filter((s) => hasStoredScoreValue(s.value, propertyMap[s.code]?.kind))
+            .map((s) => ({ code: s.code, value: s.value == null ? "" : String(s.value) })),
         comments: (evaluation.comments || []).map((c) => ({
             id: c.id,
             text: c.text ?? undefined,
@@ -82,8 +86,11 @@ function normalizeEvaluation(evaluation: MyEvaluation): ExpertBeverageSummaryEnt
     }
 }
 
-function evaluationHasDisplayData(evaluation: MyEvaluation): boolean {
-    const normalized = normalizeEvaluation(evaluation)
+function evaluationHasDisplayData(
+    evaluation: MyEvaluation,
+    propertyMap: Record<string, PropertyMeta>,
+): boolean {
+    const normalized = normalizeEvaluation(evaluation, propertyMap)
     return normalized.scores.length > 0 || normalized.comments.length > 0
 }
 
@@ -100,10 +107,10 @@ export function buildExpertBeverageSummary(
         if (!evaluation?.isComplete) return
 
         const normalizedScores = (evaluation.scores || [])
-            .filter((s) => s.value != null && String(s.value).trim() !== "")
-            .map((s) => ({ code: s.code, value: String(s.value) }))
+            .filter((s) => hasStoredScoreValue(s.value, propertyMap[s.code]?.kind))
+            .map((s) => ({ code: s.code, value: s.value == null ? "" : String(s.value) }))
 
-        if (!evaluationHasDisplayData(evaluation) && !hasEvaluationTotalScore({ scores: normalizedScores }, propertyMap)) {
+        if (!evaluationHasDisplayData(evaluation, propertyMap) && !hasEvaluationTotalScore({ scores: normalizedScores }, propertyMap)) {
             return
         }
 
@@ -122,7 +129,7 @@ export function buildExpertBeverageSummary(
                 rc.candidate?.sample?.batch?.beverage?.name || unknownBeverageLabel,
             totalScores,
             producerAuids: getBeverageProducerAuids(rc.candidate),
-            evaluation: normalizeEvaluation(evaluation),
+            evaluation: normalizeEvaluation(evaluation, propertyMap),
         })
     })
 

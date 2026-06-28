@@ -51,6 +51,29 @@ const BOOLEAN_OPERATORS = new Set([
     "OR",
 ])
 
+function buildPropertyByCode(categories: EvaluationCategory[]): Map<string, EvaluationProperty> {
+    const map = new Map<string, EvaluationProperty>()
+    categories.forEach((category) => {
+        category.properties.forEach((prop) => map.set(prop.code, prop))
+    })
+    return map
+}
+
+function isBooleanSmartProperty(
+    prop: EvaluationProperty,
+    propertyByCode: Map<string, EvaluationProperty>,
+): boolean {
+    const expression = prop.expression
+    if (!expression) return false
+    if (BOOLEAN_OPERATORS.has(expression.type)) return true
+    const isVariable =
+        expression.__typename === "VariableExpression" || expression.type === "VARIABLE"
+    if (isVariable && expression.code) {
+        return propertyByCode.get(expression.code)?.__typename === "BooleanProperty"
+    }
+    return false
+}
+
 import { evaluateAST } from "@/lib/evaluationExpression"
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
@@ -396,6 +419,8 @@ export default function EvaluationForm({
         setCommentValues(prev => ({...prev, [propId]: text}))
     }
 
+    const propertyByCode = useMemo(() => buildPropertyByCode(categories), [categories])
+
     const computedSmartValues = useMemo(() => {
         const smartProps: EvaluationProperty[] = []
         categories.forEach(category => {
@@ -729,7 +754,7 @@ export default function EvaluationForm({
 
                                                         {prop.__typename === "SmartProperty" && (() => {
                                                             const raw = computedSmartValues[prop.code]
-                                                            const isBooleanResult = BOOLEAN_OPERATORS.has(prop.expression?.type)
+                                                            const isBooleanResult = isBooleanSmartProperty(prop, propertyByCode)
                                                             return (
                                                                 <div
                                                                     className={`px-4 py-1 rounded-lg text-[13px] font-bold w-full text-center ${isResult ? "border border-indigo-200 bg-white text-indigo-800 shadow-sm" : "border border-indigo-100 bg-indigo-50/50 text-indigo-700"}`}>
