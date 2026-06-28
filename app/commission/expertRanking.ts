@@ -19,6 +19,11 @@ export interface ExpertBeverageSummaryEntry {
             propertyId?: string | null
         }>
     }
+    beverageType?: string
+    wineType?: string
+    vintage?: string
+    volume?: string
+    origin?: { latitude: number; longitude: number } | null
 }
 
 /** @deprecated Use ExpertBeverageSummaryEntry */
@@ -29,6 +34,7 @@ export interface MyTastingSummaryData {
     propertyMap: Record<string, PropertyMeta>
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
+    commissionName?: string
 }
 
 export interface ReplicaCandidateWithBeverage {
@@ -36,11 +42,22 @@ export interface ReplicaCandidateWithBeverage {
     candidate?: {
         id: string
         anonymizedCode?: string | null
+        beverageType?: string | null
         sample?: {
+            id?: string | null
+            volumeMl?: number | null
             batch?: {
+                id?: string | null
+                vintage?: number | null
                 beverage?: {
+                    id?: string | null
                     name?: string | null
                     producers?: Array<{ auid?: unknown }> | null
+                    type?: string | null
+                    origin?: {
+                        latitude: number
+                        longitude: number
+                    } | null
                 } | null
             } | null
         } | null
@@ -130,6 +147,11 @@ export function buildExpertBeverageSummary(
             totalScores,
             producerAuids: getBeverageProducerAuids(rc.candidate),
             evaluation: normalizeEvaluation(evaluation, propertyMap),
+            beverageType: rc.candidate?.beverageType || undefined,
+            wineType: rc.candidate?.sample?.batch?.beverage?.type || undefined,
+            vintage: rc.candidate?.sample?.batch?.vintage ? String(rc.candidate.sample.batch.vintage) : undefined,
+            volume: rc.candidate?.sample?.volumeMl ? `${rc.candidate.sample.volumeMl} ml` : undefined,
+            origin: rc.candidate?.sample?.batch?.beverage?.origin || undefined,
         })
     })
 

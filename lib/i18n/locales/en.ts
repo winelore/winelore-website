@@ -236,6 +236,8 @@ const en = {
     min: "Min: {{value}}",
     max: "Max: {{value}}",
     outOfRange: "Out of range!",
+    wholeNumbersOnly: "Whole numbers only",
+    invalidNumber: "Enter a valid number",
     val: "Score",
     scoreLabelPrefix: "",
     scoreLabelSuffix: "",

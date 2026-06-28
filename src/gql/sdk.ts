@@ -270,7 +270,7 @@ export type GetReplicaCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, candidates: Array<{ id: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null, producers: Array<{ auid: Array<number> }> } } } } }> } | null };
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, candidates: Array<{ id: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: Types.BeverageType, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { type: Types.WineType, id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null, producers: Array<{ auid: Array<number> }> } } } } }> } | null };
 
 export type GetReplicaCandidateQueryVariables = Exact<{
   id: string | number;
@@ -693,6 +693,7 @@ export const GetReplicaCandidatesDocument = gql`
       candidate {
         id
         anonymizedCode
+        beverageType
         sample {
           id
           volumeMl
@@ -707,6 +708,7 @@ export const GetReplicaCandidatesDocument = gql`
                 auid
               }
               ... on Wine {
+                type
                 origin {
                   latitude
                   longitude

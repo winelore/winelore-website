@@ -323,6 +323,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
         candidate {
           id
           anonymizedCode
+          beverageType
           sample {
             id
             volumeMl
@@ -337,6 +338,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
                   auid
                 }
                 ... on Wine {
+                  type
                   origin {
                     latitude
                     longitude

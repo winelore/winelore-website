@@ -236,6 +236,8 @@ const hu = {
         min: "Min: {{value}}",
         max: "Max: {{value}}",
         outOfRange: "Értéken kívül!",
+        wholeNumbersOnly: "Csak egész számok",
+        invalidNumber: "Adjon meg érvényes számot",
         val: "Pontszám",
         scoreLabelPrefix: "",
         scoreLabelSuffix: "",

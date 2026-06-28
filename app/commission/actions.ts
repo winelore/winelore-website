@@ -483,7 +483,11 @@ export async function getMyTastingSummaryAction(replicaId: string): Promise<MyTa
 
         const commission = await sdk.GetCommission({ id: commissionId });
         const featureFlags = getCompetitionFeatureFlags(commission.commission);
-        return await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
+        const summary = await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
+        return {
+            ...summary,
+            commissionName: commission.commission?.name || undefined
+        };
     } catch (err: any) {
         console.error("Server Action Error (getMyTastingSummaryAction):", err);
         return empty;
@@ -635,6 +639,9 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         if (allCandidatesEvaluated) {
             try {
                 myTastingSummary = await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
+                if (myTastingSummary) {
+                    myTastingSummary.commissionName = commission.name || undefined;
+                }
             } catch (err: any) {
                 console.error("Failed to fetch expert tasting summary:", err);
                 myTastingSummary = {
@@ -642,6 +649,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
                     propertyMap: {},
                     propertyCommentsEnabled: featureFlags.propertyCommentsEnabled,
                     voiceCommentsEnabled: featureFlags.voiceCommentsEnabled,
+                    commissionName: commission.name || undefined,
                 };
             }
         }

@@ -8,6 +8,7 @@ import { submitEvaluationAction, getVoiceUploadUrlAction } from "../../../../../
 import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
 import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
+import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
 import { Mic, Square, Trash2 } from "lucide-react"
 
 interface EvaluationProperty {
@@ -307,6 +308,8 @@ export default function EvaluationForm({
         return initial
     })
     const [commentValues, setCommentValues] = useState<Record<string, string>>({})
+    const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({})
+    const [numericErrors, setNumericErrors] = useState<Record<string, NumericInputErrorReason | null>>({})
     const [generalComment, setGeneralComment] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -412,6 +415,59 @@ export default function EvaluationForm({
         setValues(prev => ({...prev, [code]: val}))
     }
 
+    const handleNumericInputChange = (code: string, raw: string, isDouble: boolean) => {
+        setNumericDrafts(prev => ({...prev, [code]: raw}))
+        const result = parseEvaluationNumericInput(raw, isDouble)
+        if (!result.ok) {
+            const { reason } = result
+            if (reason === "empty") {
+                handleValueChange(code, undefined)
+                setNumericErrors(prev => ({...prev, [code]: null}))
+                return
+            }
+            setNumericErrors(prev => ({...prev, [code]: reason}))
+            return
+        }
+        setNumericErrors(prev => ({...prev, [code]: null}))
+        handleValueChange(code, result.value)
+    }
+
+    const commitNumericValue = (
+        code: string,
+        raw: string,
+        isDouble: boolean,
+        normalize: (value: number) => number,
+    ) => {
+        setNumericDrafts(prev => {
+            const next = {...prev}
+            delete next[code]
+            return next
+        })
+        const result = parseEvaluationNumericInput(raw, isDouble)
+        if (!result.ok) {
+            const { reason } = result
+            if (reason === "empty") {
+                handleValueChange(code, undefined)
+                setNumericErrors(prev => ({...prev, [code]: null}))
+            } else {
+                setNumericErrors(prev => ({...prev, [code]: reason}))
+                handleValueChange(code, undefined)
+            }
+            return
+        }
+        setNumericErrors(prev => ({...prev, [code]: null}))
+        handleValueChange(code, normalize(result.value))
+    }
+
+    const getNumericInputDisplayValue = (code: string, currentValue: number | undefined) =>
+        numericDrafts[code] ?? (currentValue ?? "")
+
+    const getNumericErrorMessage = (reason: NumericInputErrorReason | null | undefined) => {
+        if (reason === "not_whole_number") return t("evaluation.wholeNumbersOnly")
+        if (reason === "invalid") return t("evaluation.invalidNumber")
+        return null
+    }
+
     const handleCommentChange = (propId: string, text: string) => {
         setCommentValues(prev => ({...prev, [propId]: text}))
     }
@@ -462,6 +518,8 @@ export default function EvaluationForm({
     }, [categories])
 
     const isFormValid = useMemo(() => {
+        if (Object.values(numericErrors).some(Boolean)) return false
+
         for (const category of categories) {
             for (const prop of category.properties) {
                 const val = values[prop.code]
@@ -487,7 +545,7 @@ export default function EvaluationForm({
             }
         }
         return true
-    }, [categories, values])
+    }, [categories, values, numericErrors])
 
     const handleSubmit = async () => {
         setIsSubmitting(true)
@@ -660,24 +718,12 @@ export default function EvaluationForm({
                                                             const rawMax = prop.__typename === "IntProperty" ? prop.intMaxLimit : prop.doubleMaxLimit
                                                             const normalizeNumericValue = (raw: number) =>
                                                                 isDouble ? roundScoreToTwoDecimals(raw) : raw
-                                                            const commitNumericValue = (raw: string) => {
-                                                                if (raw === "") {
-                                                                    handleValueChange(prop.code, undefined)
-                                                                    return
-                                                                }
-                                                                const parsed = Number(raw)
-                                                                if (Number.isNaN(parsed)) return
-                                                                handleValueChange(prop.code, normalizeNumericValue(parsed))
-                                                            }
-                                                            const handleNumericInputChange = (raw: string) => {
-                                                                if (raw === "") {
-                                                                    handleValueChange(prop.code, undefined)
-                                                                    return
-                                                                }
-                                                                const parsed = Number(raw)
-                                                                if (Number.isNaN(parsed)) return
-                                                                handleValueChange(prop.code, parsed)
-                                                            }
+                                                            const numericError = numericErrors[prop.code]
+                                                            const numericErrorMessage = getNumericErrorMessage(numericError)
+                                                            const inputDisplayValue = getNumericInputDisplayValue(prop.code, currentValue)
+                                                            const inputErrorClass = numericError
+                                                                ? "border-rose-500 bg-rose-50 text-rose-700"
+                                                                : "border-slate-200 bg-white text-slate-800"
 
                                                             if (rawMin === null || rawMin === undefined || rawMax === null || rawMax === undefined) {
                                                                 return (
@@ -685,12 +731,18 @@ export default function EvaluationForm({
                                                                         <input
                                                                             type="number"
                                                                             step={isDouble ? "0.01" : "1"}
-                                                                            value={currentValue ?? ""}
-                                                                            onChange={(e) => handleNumericInputChange(e.target.value)}
-                                                                            onBlur={(e) => commitNumericValue(e.target.value)}
-                                                                            className="w-full px-3 py-1 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-colors"
+                                                                            inputMode={isDouble ? "decimal" : "numeric"}
+                                                                            value={inputDisplayValue}
+                                                                            onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
+                                                                            onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
+                                                                            className={`w-full px-3 py-1 border rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${inputErrorClass}`}
                                                                             placeholder={t("evaluation.enterValue")}
                                                                         />
+                                                                        {numericErrorMessage && (
+                                                                            <span className="text-[10px] text-rose-500 font-medium">
+                                                                                {numericErrorMessage}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                 )
                                                             }
@@ -706,6 +758,7 @@ export default function EvaluationForm({
                                                             const isOutOfRange = currentValue !== undefined && currentValue !== null && currentValue !== "" && (
                                                                 currentValue < min || currentValue > max
                                                             )
+                                                            const hasInputIssue = Boolean(numericError) || isOutOfRange
 
                                                             const stepCount = Math.round((max - min) / step)
                                                             const showSliderTicks = stepCount > 0 && stepCount <= 100
@@ -721,7 +774,15 @@ export default function EvaluationForm({
                                                                                 step={step}
                                                                                 showSteps={true}
                                                                                 value={[sliderValue]}
-                                                                                onValueChange={(val) => handleValueChange(prop.code, normalizeNumericValue(val[0]))}
+                                                                                onValueChange={(val) => {
+                                                                                    setNumericDrafts(prev => {
+                                                                                        const next = {...prev}
+                                                                                        delete next[prop.code]
+                                                                                        return next
+                                                                                    })
+                                                                                    setNumericErrors(prev => ({...prev, [prop.code]: null}))
+                                                                                    handleValueChange(prop.code, normalizeNumericValue(val[0]))
+                                                                                }}
                                                                                 className="cursor-pointer relative z-10"
                                                                             />
                                                                         </div>
@@ -730,20 +791,27 @@ export default function EvaluationForm({
                                                                             step={step}
                                                                             min={min}
                                                                             max={max}
-                                                                            value={currentValue ?? ""}
-                                                                            onChange={(e) => handleNumericInputChange(e.target.value)}
-                                                                            onBlur={(e) => commitNumericValue(e.target.value)}
-                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${isOutOfRange ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
+                                                                            inputMode={isDouble ? "decimal" : "numeric"}
+                                                                            value={inputDisplayValue}
+                                                                            onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
+                                                                            onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
+                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
                                                                             placeholder={t("evaluation.val")}
                                                                         />
                                                                     </div>
-                                                                    {(!showSliderTicks || isOutOfRange) && (
+                                                                    {(numericErrorMessage || !showSliderTicks || isOutOfRange) && (
                                                                         <div
                                                                             className="flex justify-between text-[9px] text-slate-400 px-0.5 mt-0.5">
                                                                             {!showSliderTicks &&
                                                                                 <span>{t("evaluation.min", {value: min})}</span>}
-                                                                            {isOutOfRange && <span
-                                                                                className="text-rose-500 font-medium animate-pulse mx-auto">{t("evaluation.outOfRange")}</span>}
+                                                                            {numericErrorMessage ? (
+                                                                                <span className="text-rose-500 font-medium animate-pulse mx-auto">
+                                                                                    {numericErrorMessage}
+                                                                                </span>
+                                                                            ) : isOutOfRange ? (
+                                                                                <span
+                                                                                    className="text-rose-500 font-medium animate-pulse mx-auto">{t("evaluation.outOfRange")}</span>
+                                                                            ) : null}
                                                                             {!showSliderTicks &&
                                                                                 <span>{t("evaluation.max", {value: max})}</span>}
                                                                         </div>

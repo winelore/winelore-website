@@ -238,6 +238,8 @@ const uk: TranslationKey = {
     min: "Мін: {{value}}",
     max: "Макс: {{value}}",
     outOfRange: "Поза діапазоном!",
+    wholeNumbersOnly: "Лише цілі числа",
+    invalidNumber: "Введіть коректне число",
     val: "Бал",
     scoreLabelPrefix: "Оцінка ",
     scoreLabelSuffix: "",
