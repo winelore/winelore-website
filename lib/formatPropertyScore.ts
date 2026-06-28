@@ -38,6 +38,18 @@ export function hasStoredScoreValue(value: unknown, _kind?: PropertyValueKind): 
     return String(value).trim() !== "";
 }
 
+export function roundScoreToTwoDecimals(value: number): number {
+    return Math.round(value * 100) / 100;
+}
+
+function formatNumericScoreDisplay(value: unknown): string | null {
+    if (value == null) return null;
+    if (typeof value === "string" && value.trim() === "") return null;
+    const num = typeof value === "number" ? value : parseFloat(String(value).trim());
+    if (Number.isNaN(num)) return null;
+    return num.toFixed(2);
+}
+
 export function formatPropertyScoreValue(
     value: unknown,
     meta: PropertyMeta | undefined,
@@ -53,6 +65,11 @@ export function formatPropertyScoreValue(
     // Auto-detect literal booleans even without type metadata.
     const asBoolean = parseStoredBoolean(value);
     if (asBoolean !== null) return asBoolean ? labels.yesLabel : labels.noLabel;
+
+    if (meta?.kind === "numeric" || meta?.kind === "discrete" || meta?.kind === "smart") {
+        const formatted = formatNumericScoreDisplay(value);
+        if (formatted !== null) return formatted;
+    }
 
     if (value == null || String(value).trim() === "") return "-";
     return String(value);

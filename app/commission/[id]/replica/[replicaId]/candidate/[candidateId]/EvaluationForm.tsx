@@ -7,6 +7,7 @@ import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText
 import { submitEvaluationAction, getVoiceUploadUrlAction } from "../../../../../actions"
 import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
+import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
 import { Mic, Square, Trash2 } from "lucide-react"
 
 interface EvaluationProperty {
@@ -280,20 +281,16 @@ export default function EvaluationForm({
                             initial[prop.code] = prop.boolDefaultValue
                         }
                         break
-                    case "IntProperty": {
-                        const hasRange = prop.intMinLimit !== null && prop.intMinLimit !== undefined
-                            && prop.intMaxLimit !== null && prop.intMaxLimit !== undefined
-                        const seeded = prop.intDefaultValue ?? (hasRange ? prop.intMinLimit : undefined)
-                        if (seeded !== null && seeded !== undefined) initial[prop.code] = seeded
+                    case "IntProperty":
+                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
+                            initial[prop.code] = prop.intDefaultValue
+                        }
                         break
-                    }
-                    case "DoubleProperty": {
-                        const hasRange = prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined
-                            && prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined
-                        const seeded = prop.doubleDefaultValue ?? (hasRange ? prop.doubleMinLimit : undefined)
-                        if (seeded !== null && seeded !== undefined) initial[prop.code] = seeded
+                    case "DoubleProperty":
+                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
+                            initial[prop.code] = prop.doubleDefaultValue
+                        }
                         break
-                    }
                     case "EnumProperty":
                         if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
                             initial[prop.code] = prop.enumDefaultValue
@@ -499,10 +496,14 @@ export default function EvaluationForm({
         try {
             const scores = Object.entries(values)
                 .filter(([code, val]) => val !== undefined && val !== null && !smartPropertyCodes.has(code))
-                .map(([code, val]) => ({
-                    code,
-                    value: String(val)
-                }))
+                .map(([code, val]) => {
+                    const prop = propertyByCode.get(code)
+                    const value =
+                        prop?.__typename === "DoubleProperty" && typeof val === "number"
+                            ? roundScoreToTwoDecimals(val).toFixed(2)
+                            : String(val)
+                    return { code, value }
+                })
 
             // Collect per-property comments when enabled
             let perPropertyComments: Array<{
@@ -654,17 +655,39 @@ export default function EvaluationForm({
                                                         )}
 
                                                         {(prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty") && (() => {
+                                                            const isDouble = prop.__typename === "DoubleProperty"
                                                             const rawMin = prop.__typename === "IntProperty" ? prop.intMinLimit : prop.doubleMinLimit
                                                             const rawMax = prop.__typename === "IntProperty" ? prop.intMaxLimit : prop.doubleMaxLimit
+                                                            const normalizeNumericValue = (raw: number) =>
+                                                                isDouble ? roundScoreToTwoDecimals(raw) : raw
+                                                            const commitNumericValue = (raw: string) => {
+                                                                if (raw === "") {
+                                                                    handleValueChange(prop.code, undefined)
+                                                                    return
+                                                                }
+                                                                const parsed = Number(raw)
+                                                                if (Number.isNaN(parsed)) return
+                                                                handleValueChange(prop.code, normalizeNumericValue(parsed))
+                                                            }
+                                                            const handleNumericInputChange = (raw: string) => {
+                                                                if (raw === "") {
+                                                                    handleValueChange(prop.code, undefined)
+                                                                    return
+                                                                }
+                                                                const parsed = Number(raw)
+                                                                if (Number.isNaN(parsed)) return
+                                                                handleValueChange(prop.code, parsed)
+                                                            }
 
                                                             if (rawMin === null || rawMin === undefined || rawMax === null || rawMax === undefined) {
                                                                 return (
                                                                     <div className="w-full flex flex-col gap-1">
                                                                         <input
                                                                             type="number"
-                                                                            step={prop.__typename === "DoubleProperty" ? "0.1" : "1"}
+                                                                            step={isDouble ? "0.01" : "1"}
                                                                             value={currentValue ?? ""}
-                                                                            onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
+                                                                            onChange={(e) => handleNumericInputChange(e.target.value)}
+                                                                            onBlur={(e) => commitNumericValue(e.target.value)}
                                                                             className="w-full px-3 py-1 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-colors"
                                                                             placeholder={t("evaluation.enterValue")}
                                                                         />
@@ -675,9 +698,11 @@ export default function EvaluationForm({
                                                             const min = rawMin
                                                             const max = rawMax
                                                             const step = prop.__typename === "DoubleProperty" ? 0.1 : 1
-                                                            const defaultValue = (prop.__typename === "IntProperty" ? prop.intDefaultValue : prop.doubleDefaultValue) ?? min
-
-                                                            const sliderValue = currentValue !== undefined && currentValue !== null && currentValue !== "" ? currentValue : defaultValue
+                                                            const configuredDefault = prop.__typename === "IntProperty" ? prop.intDefaultValue : prop.doubleDefaultValue
+                                                            const hasValue = currentValue !== undefined && currentValue !== null && currentValue !== ""
+                                                            const sliderValue = hasValue
+                                                                ? currentValue
+                                                                : configuredDefault ?? (min + max) / 2
                                                             const isOutOfRange = currentValue !== undefined && currentValue !== null && currentValue !== "" && (
                                                                 currentValue < min || currentValue > max
                                                             )
@@ -696,7 +721,7 @@ export default function EvaluationForm({
                                                                                 step={step}
                                                                                 showSteps={true}
                                                                                 value={[sliderValue]}
-                                                                                onValueChange={(val) => handleValueChange(prop.code, val[0])}
+                                                                                onValueChange={(val) => handleValueChange(prop.code, normalizeNumericValue(val[0]))}
                                                                                 className="cursor-pointer relative z-10"
                                                                             />
                                                                         </div>
@@ -706,7 +731,8 @@ export default function EvaluationForm({
                                                                             min={min}
                                                                             max={max}
                                                                             value={currentValue ?? ""}
-                                                                            onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
+                                                                            onChange={(e) => handleNumericInputChange(e.target.value)}
+                                                                            onBlur={(e) => commitNumericValue(e.target.value)}
                                                                             className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${isOutOfRange ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
                                                                             placeholder={t("evaluation.val")}
                                                                         />
@@ -762,7 +788,7 @@ export default function EvaluationForm({
                                                                         ? t("evaluation.waitingDependencies")
                                                                         : isBooleanResult
                                                                             ? (raw !== 0 ? t("common.yes") : t("common.no"))
-                                                                            : raw.toFixed(2)}
+                                                                            : roundScoreToTwoDecimals(raw).toFixed(2)}
                                                                 </div>
                                                             )
                                                         })()}
