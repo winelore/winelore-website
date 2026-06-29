@@ -77,18 +77,16 @@ function SubmittedScores({
     scores,
     propertyMap,
     accent = "slate",
-    resultsOnly = false,
+    collapseRegularScores = false,
 }: {
     scores: Array<{ code: string; value: string }>;
     propertyMap: Record<string, PropertyMeta>;
     accent?: "indigo" | "slate";
-    resultsOnly?: boolean;
+    collapseRegularScores?: boolean;
 }) {
     const { t } = useTranslation();
 
-    const regularScores = resultsOnly
-        ? []
-        : scores.filter((score) => propertyMap[score.code]?.isResult !== true);
+    const regularScores = scores.filter((score) => propertyMap[score.code]?.isResult !== true);
     const resultScores = scores.filter((score) => propertyMap[score.code]?.isResult === true);
 
     const borderClass = accent === "indigo" ? "border-indigo-300" : "border-indigo-200";
@@ -127,7 +125,9 @@ function SubmittedScores({
     return (
         <div className={`pl-3 border-l-2 ${borderClass} mt-2 space-y-3`}>
             {regularScores.length > 0 && (
-                <div className="space-y-1.5">
+                <div
+                    className={`space-y-1.5${collapseRegularScores ? " hidden print:block" : ""}`}
+                >
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         {t("evaluation.submittedScores")}
                     </p>
@@ -170,11 +170,8 @@ function EvaluationCommentsDetails({
     const flags = { propertyCommentsEnabled, voiceCommentsEnabled };
 
     const allComments = comments.filter((c) => commentHasVisibleContent(c, flags));
-    const visibleComments = showAll
-        ? allComments
-        : allComments.filter((c) => isResultOrGeneralComment(c, propertyMap));
 
-    if (visibleComments.length === 0) return null;
+    if (allComments.length === 0) return null;
 
     const commentAccentClass = accent === "indigo" ? "border-slate-300" : "border-slate-200";
     const commentLabelClass = accent === "indigo" ? "text-indigo-500" : "text-slate-500";
@@ -186,12 +183,17 @@ function EvaluationCommentsDetails({
                 {t("commission.comments")}
             </p>
             <div className="space-y-1.5">
-                {visibleComments.map((comment) => {
+                {allComments.map((comment) => {
                     const displayName = comment.propertyId
                         ? propertyMap[comment.propertyId]?.name || comment.propertyId
                         : t("evaluation.generalCommentLabel");
+                    const collapsed =
+                        !showAll && !isResultOrGeneralComment(comment, propertyMap);
                     return (
-                        <div key={comment.id} className={`text-xs ${commentTextClass} space-y-1`}>
+                        <div
+                            key={comment.id}
+                            className={`text-xs ${commentTextClass} space-y-1${collapsed ? " hidden print:block" : ""}`}
+                        >
                             <span className={`font-semibold ${commentLabelClass}`}>
                                 <TranslatedText text={displayName} />:
                             </span>
@@ -254,7 +256,7 @@ export function EvaluationCommentsSection({
                 <button
                     type="button"
                     onClick={() => setExpanded((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors print:hidden"
                 >
                     {expanded ? (
                         <>
@@ -294,18 +296,15 @@ function MemberEvaluationDetails({
     const scores = (evaluation.scores || []).filter((s) =>
         hasScoreValue(s.value, propertyMap[s.code]?.kind),
     );
-    const visibleScores = showAll
-        ? scores
-        : scores.filter((s) => propertyMap[s.code]?.isResult === true);
 
     return (
         <>
-            {visibleScores.length > 0 && (
+            {scores.length > 0 && (
                 <SubmittedScores
-                    scores={visibleScores}
+                    scores={scores}
                     propertyMap={propertyMap}
                     accent={accent}
-                    resultsOnly={!showAll}
+                    collapseRegularScores={!showAll}
                 />
             )}
 
@@ -358,7 +357,7 @@ export function MemberEvaluationSection({
                 <button
                     type="button"
                     onClick={() => setExpanded((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors print:hidden"
                 >
                     {expanded ? (
                         <>

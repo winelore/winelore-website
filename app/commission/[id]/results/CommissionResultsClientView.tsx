@@ -176,7 +176,6 @@ export default function CommissionResultsClientView({
     const [sortMode, setSortMode] = useState<"score" | "order">("score")
     const [searchQuery, setSearchQuery] = useState("")
     const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date())
-    const [isPrinting, setIsPrinting] = useState(false)
     const [isExportingXlsx, setIsExportingXlsx] = useState(false)
     const [exportProgress, setExportProgress] = useState("")
 
@@ -197,12 +196,6 @@ export default function CommissionResultsClientView({
         const intervalId = setInterval(() => router.refresh(), AUTO_REFRESH_MS)
         return () => clearInterval(intervalId)
     }, [router])
-
-    useEffect(() => {
-        const onAfterPrint = () => setIsPrinting(false)
-        window.addEventListener("afterprint", onAfterPrint)
-        return () => window.removeEventListener("afterprint", onAfterPrint)
-    }, [])
 
     const allPersonAuids = useMemo(() => {
         const auids = new Set<string>()
@@ -768,8 +761,7 @@ export default function CommissionResultsClientView({
     }
 
     const handlePrint = () => {
-        setIsPrinting(true)
-        requestAnimationFrame(() => window.print())
+        window.print()
     }
 
     const showSearch = commission.candidates.length > 5
@@ -1195,8 +1187,7 @@ export default function CommissionResultsClientView({
                                                 }
 
                                                 const isExpanded =
-                                                    expandedCompareCandidateId === candidate.id ||
-                                                    isPrinting
+                                                    expandedCompareCandidateId === candidate.id
 
                                                 return (
                                                     <React.Fragment key={candidate.id}>
@@ -1310,18 +1301,23 @@ export default function CommissionResultsClientView({
                                                             </td>
                                                         </tr>
 
-                                                        {isExpanded && (
-                                                            <tr>
-                                                                <td
-                                                                    colSpan={4}
-                                                                    className="p-0 border-b border-slate-200 bg-slate-50/80 shadow-inner"
-                                                                >
-                                                                    <div className="p-6">
-                                                                        <h4 className="text-sm font-bold text-slate-700 mb-4">
-                                                                            {t(
-                                                                                "commission.results.categoryComparison",
-                                                                            )}
-                                                                        </h4>
+                                                        <tr
+                                                            className={
+                                                                isExpanded
+                                                                    ? undefined
+                                                                    : "hidden print:table-row"
+                                                            }
+                                                        >
+                                                            <td
+                                                                colSpan={4}
+                                                                className="p-0 border-b border-slate-200 bg-slate-50/80 shadow-inner"
+                                                            >
+                                                                <div className="p-6">
+                                                                    <h4 className="text-sm font-bold text-slate-700 mb-4">
+                                                                        {t(
+                                                                            "commission.results.categoryComparison",
+                                                                        )}
+                                                                    </h4>
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                                                             {allCategoriesKeys.map(
                                                                                 (cat) => {
@@ -1453,7 +1449,6 @@ export default function CommissionResultsClientView({
                                                                     </div>
                                                                 </td>
                                                             </tr>
-                                                        )}
                                                     </React.Fragment>
                                                 )
                                             })}
@@ -1562,8 +1557,7 @@ export default function CommissionResultsClientView({
                                     <tbody className="divide-y divide-slate-100">
                                         {filteredAndSortedRows.map((row: CandidateRow) => {
                                             const isExpanded =
-                                                expandedCandidateId === row.candidate.id ||
-                                                isPrinting
+                                                expandedCandidateId === row.candidate.id
                                             const sessionOrder = candidateOrderIndex.get(
                                                 row.candidate.id,
                                             )
@@ -1708,18 +1702,23 @@ export default function CommissionResultsClientView({
                                                         </td>
                                                     </tr>
 
-                                                    {isExpanded && (
-                                                        <tr>
-                                                            <td
-                                                                colSpan={overviewTableColSpan}
-                                                                className="p-0 border-b border-slate-200 bg-slate-50/80 shadow-inner"
-                                                            >
-                                                                <div className="p-6">
-                                                                    <h4 className="text-sm font-bold text-slate-700 mb-4">
-                                                                        {t(
-                                                                            "commission.results.expertBreakdown",
-                                                                        )}
-                                                                    </h4>
+                                                    <tr
+                                                        className={
+                                                            isExpanded
+                                                                ? undefined
+                                                                : "hidden print:table-row"
+                                                        }
+                                                    >
+                                                        <td
+                                                            colSpan={overviewTableColSpan}
+                                                            className="p-0 border-b border-slate-200 bg-slate-50/80 shadow-inner"
+                                                        >
+                                                            <div className="p-6">
+                                                                <h4 className="text-sm font-bold text-slate-700 mb-4">
+                                                                    {t(
+                                                                        "commission.results.expertBreakdown",
+                                                                    )}
+                                                                </h4>
                                                                     {row.expertBreakdown.length >
                                                                     0 ? (
                                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1818,7 +1817,6 @@ export default function CommissionResultsClientView({
                                                                 </div>
                                                             </td>
                                                         </tr>
-                                                    )}
                                                 </React.Fragment>
                                             )
                                         })}

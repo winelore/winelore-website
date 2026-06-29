@@ -90,7 +90,7 @@ function BeverageSummaryCard({
                         <button
                             type="button"
                             onClick={() => setExpanded((prev) => !prev)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors print:hidden"
                         >
                             {expanded ? (
                                 <>
@@ -108,8 +108,10 @@ function BeverageSummaryCard({
                 </div>
             </div>
 
-            {expanded && hasDetails && (
-                <div className="px-5 py-4 border-t border-slate-100">
+            {hasDetails && (
+                <div
+                    className={`px-5 py-4 border-t border-slate-100${expanded ? "" : " hidden print:block"}`}
+                >
                     <MemberEvaluationSection
                         evaluation={entry.evaluation}
                         propertyMap={data.propertyMap}
