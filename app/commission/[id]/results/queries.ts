@@ -13,31 +13,38 @@ export const GET_COMMISSION_RESULTS = `
         id
         scriptCode
         calculationScope
+        outputProperties {
+          code
+          name
+          isResult
+        }
       }
       candidates {
         id
         anonymizedCode
-        beverageType
+        beverageType {
+          id
+          code
+          name
+        }
         sample {
           id
           volumeMl
           batch {
             id
-            vintage
+            attributes
             beverage {
               id
               name
+              attributes
               producers {
                 id
                 auid
                 role
               }
-              ... on Wine {
-                type
-                origin {
-                  latitude
-                  longitude
-                }
+              origin {
+                latitude
+                longitude
               }
             }
           }

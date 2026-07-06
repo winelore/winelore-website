@@ -21,7 +21,7 @@ export default async function MyBeveragesPage() {
         const response = await fetchGraphQL(GET_MY_BEVERAGES, {
             filter: { producers: [[currentAuid]] }
         });
-        const rawBeverages = response.wines?.items || [];
+        const rawBeverages = response.beverages?.items || [];
 
         myBeverages = await Promise.all(
             rawBeverages.map(async (bev: any) => {
@@ -33,7 +33,21 @@ export default async function MyBeveragesPage() {
                         originParts = [info.country, info.district].filter(Boolean) as string[];
                     }
                 }
-                return { ...bev, originParts };
+                
+                // Parse attributes for color to keep type formatting happy
+                let colorVal = "WINE";
+                if (bev.attributes) {
+                    try {
+                        const parsed = JSON.parse(bev.attributes);
+                        if (parsed && parsed.color) {
+                            colorVal = parsed.color;
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse beverage attributes in myBeverages page.tsx:", e);
+                    }
+                }
+
+                return { ...bev, type: colorVal, originParts };
             })
         );
     } catch (error) {

@@ -42,18 +42,22 @@ export interface ReplicaCandidateWithBeverage {
     candidate?: {
         id: string
         anonymizedCode?: string | null
-        beverageType?: string | null
+        beverageType?: {
+            id?: string | null
+            code?: string | null
+            name?: string | null
+        } | null
         sample?: {
             id?: string | null
             volumeMl?: number | null
             batch?: {
                 id?: string | null
-                vintage?: number | null
+                attributes?: string | null
                 beverage?: {
                     id?: string | null
                     name?: string | null
                     producers?: Array<{ auid?: unknown }> | null
-                    type?: string | null
+                    attributes?: string | null
                     origin?: {
                         latitude: number
                         longitude: number
@@ -139,6 +143,34 @@ export function buildExpertBeverageSummary(
                 value: s.value,
             }))
 
+        // Extract vintage from batch attributes
+        let vintageVal = undefined;
+        const batchAttrs = rc.candidate?.sample?.batch?.attributes;
+        if (batchAttrs) {
+            try {
+                const parsed = JSON.parse(batchAttrs);
+                if (parsed && parsed.vintage) {
+                    vintageVal = String(parsed.vintage);
+                }
+            } catch (e) {
+                console.error("Failed to parse batch attributes in expertRanking:", e);
+            }
+        }
+
+        // Extract color/wineType from beverage attributes
+        let wineTypeVal = undefined;
+        const bevAttrs = rc.candidate?.sample?.batch?.beverage?.attributes;
+        if (bevAttrs) {
+            try {
+                const parsed = JSON.parse(bevAttrs);
+                if (parsed && parsed.color) {
+                    wineTypeVal = parsed.color;
+                }
+            } catch (e) {
+                console.error("Failed to parse beverage attributes in expertRanking:", e);
+            }
+        }
+
         entries.push({
             order: index + 1,
             code: rc.candidate?.anonymizedCode || "N/A",
@@ -147,9 +179,9 @@ export function buildExpertBeverageSummary(
             totalScores,
             producerAuids: getBeverageProducerAuids(rc.candidate),
             evaluation: normalizeEvaluation(evaluation, propertyMap),
-            beverageType: rc.candidate?.beverageType || undefined,
-            wineType: rc.candidate?.sample?.batch?.beverage?.type || undefined,
-            vintage: rc.candidate?.sample?.batch?.vintage ? String(rc.candidate.sample.batch.vintage) : undefined,
+            beverageType: rc.candidate?.beverageType?.code || undefined,
+            wineType: wineTypeVal,
+            vintage: vintageVal,
             volume: rc.candidate?.sample?.volumeMl ? `${rc.candidate.sample.volumeMl} ml` : undefined,
             origin: rc.candidate?.sample?.batch?.beverage?.origin || undefined,
         })

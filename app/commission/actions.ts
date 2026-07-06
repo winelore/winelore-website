@@ -87,157 +87,6 @@ export async function startCommissionAction(id: string) {
         throw new Error(err.message || "Failed to start commission replica");
     }
 }
-
-async function bootstrapTemplateEditionForCommission(commissionId: string) {
-    console.log(`🚀 Bootstrapping real template edition for commission ${commissionId}...`);
-    const cookieStore = await cookies();
-    const auidStr = cookieStore.get("auid")?.value;
-    const currentAuid = auidStr ? parseInt(auidStr, 10) : 1;
-    // 1. Create a new evaluation template
-    const templateName = `Wine Evaluation Template ${Date.now()}`;
-    const templateRes = await sdk.CreateEvaluationTemplate({
-        input: {
-            name: templateName,
-            beverageType: "WINE",
-            owners: [[currentAuid]]
-        }
-    });
-    const templateId = templateRes.createEvaluationTemplate.id;
-    console.log(`  Created template: ${templateId}`);
-
-    // 2. Create the template edition
-    const categoriesInput = [
-        {
-            name: "Visual Assessment",
-            properties: [
-                {
-                    type: "Boolean",
-                    code: "clarity",
-                    name: "Clarity",
-                    description: "Color and clarity characteristics of the wine",
-                    isRequired: true,
-                    defaultValue: "true"
-                },
-                {
-                    type: "Int",
-                    code: "color_intensity",
-                    name: "Color Intensity",
-                    description: "Depth of color from 1 to 10",
-                    isRequired: true,
-                    defaultValue: "5",
-                    minLimit: 1,
-                    maxLimit: 10
-                }
-            ]
-        },
-        {
-            name: "Sensory & Overall Evaluation",
-            properties: [
-                {
-                    type: "Double",
-                    code: "aroma_score",
-                    name: "Aroma Score",
-                    description: "Fragrance quality and balance (1.0 to 20.0)",
-                    isRequired: true,
-                    defaultValue: "10.0",
-                    minLimit: 1.0,
-                    maxLimit: 20.0
-                },
-                {
-                    type: "Discrete",
-                    code: "off_odors",
-                    name: "Off-odors count",
-                    description: "Count of perceived defects",
-                    isRequired: true,
-                    defaultValue: "0",
-                    allowedValues: ["0", "1", "2", "3", "5"]
-                },
-                {
-                    type: "Enum",
-                    code: "sweetness",
-                    name: "Sweetness Level",
-                    description: "Residual sugar perception",
-                    isRequired: true,
-                    defaultValue: "DRY",
-                    allowedValues: ["DRY", "MEDIUM_DRY", "SWEET"]
-                },
-                {
-                    type: "Double",
-                    code: "taste_score",
-                    name: "Taste Score",
-                    description: "Overall palate balance (1.0 to 50.0)",
-                    isRequired: true,
-                    defaultValue: "25.0",
-                    minLimit: 1.0,
-                    maxLimit: 50.0,
-                    isResult: true
-                },
-                {
-                    type: "Smart",
-                    code: "total_score",
-                    name: "Total Score",
-                    description: "Automatically calculated weighted score",
-                    isRequired: true,
-                    isResult: true,
-                    expression: {
-                        type: "ADD",
-                        left: {
-                            type: "MULTIPLY",
-                            left: {
-                                type: "VARIABLE",
-                                variableCode: "aroma_score"
-                            },
-                            right: {
-                                type: "CONSTANT",
-                                constantValue: "0.4"
-                            }
-                        },
-                        right: {
-                            type: "MULTIPLY",
-                            left: {
-                                type: "VARIABLE",
-                                variableCode: "taste_score"
-                            },
-                            right: {
-                                type: "CONSTANT",
-                                constantValue: "0.6"
-                            }
-                        }
-                    }
-                }
-            ]
-        }
-    ];
-
-    const editionRes = await sdk.CreateEvaluationTemplateEdition({
-        input: {
-            templateId,
-            version: 1,
-            categories: categoriesInput
-        }
-    });
-    const editionId = editionRes.createEvaluationTemplateEdition.id;
-    console.log(`  Created template edition: ${editionId}`);
-
-    // 3. Activate the edition
-    await sdk.ActivateEvaluationTemplateEdition({ id: editionId });
-    console.log(`  Activated template edition: ${editionId}`);
-
-    // 4. Link it to the commission
-    await sdk.SetCommissionTemplateEdition({
-        id: commissionId,
-        beverageType: "WINE",
-        templateEditionId: editionId
-    });
-    console.log(`  Linked template edition ${editionId} to commission ${commissionId}`);
-
-    // 5. Fetch the template edition using GetCommissionTemplates
-    const result = await getCommissionTemplatesWithResultMarkers(commissionId);
-    const commissionWithTemplates = result.commission;
-    const link = commissionWithTemplates?.templateEditions?.find(l => l.beverageType === "WINE") || commissionWithTemplates?.templateEditions?.[0];
-    return link?.templateEdition || null;
-}
-
 export async function getVoiceUploadUrlAction(
     fileName: string,
     contentType: string,
@@ -316,7 +165,7 @@ export async function getCommissionDataAction(commissionId: string) {
             
             if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
                 // Find WINE template or default to the first template link
-                const link = commissionWithTemplates.templateEditions.find(l => l.beverageType === "WINE") || commissionWithTemplates.templateEditions[0];
+                const link = commissionWithTemplates.templateEditions.find(l => l.beverageType.code === "WINE") || commissionWithTemplates.templateEditions[0];
                 templateEdition = link?.templateEdition || null;
                 console.log(`✅ Found template edition: ${templateEdition?.id}`);
             }
@@ -330,12 +179,8 @@ export async function getCommissionDataAction(commissionId: string) {
 
         if (!isValidTemplate) {
             if (commission.status === "DRAFT" || commission.status === "PLANNED") {
-                try {
-                    templateEdition = await bootstrapTemplateEditionForCommission(commissionId);
-                } catch (bootstrapErr: any) {
-                    console.error("❌ Failed to bootstrap template edition:", bootstrapErr.message);
-                    templateEdition = null;
-                }
+                console.error("❌ Failed to bootstrap template edition:", bootstrapErr.message);
+                templateEdition = null;
             } else {
                 console.warn(`⚠️ Skipping template bootstrap: commission is in ${commission.status} status and cannot accept new templates.`);
                 templateEdition = null;

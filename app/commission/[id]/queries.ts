@@ -56,7 +56,11 @@ export const GET_COMMISSION_TEMPLATES = gql(`
       id
       templateEditions {
         id
-        beverageType
+        beverageType {
+          id
+          code
+          name
+        }
         templateEdition {
           id
           version
@@ -323,26 +327,28 @@ export const GET_REPLICA_CANDIDATES = gql(`
         candidate {
           id
           anonymizedCode
-          beverageType
+          beverageType {
+            id
+            code
+            name
+          }
           sample {
             id
             volumeMl
             batch {
               id
-              vintage
+              attributes
               beverage {
                 id
                 name
                 status
+                attributes
                 producers {
                   auid
                 }
-                ... on Wine {
-                  type
-                  origin {
-                    latitude
-                    longitude
-                  }
+                origin {
+                  latitude
+                  longitude
                 }
               }
             }
@@ -376,16 +382,15 @@ export const GET_REPLICA_CANDIDATE = gql(`
           volumeMl
           batch {
             id
-            vintage
+            attributes
             beverage {
               id
               name
               status
-              ... on Wine {
-                origin {
-                  latitude
-                  longitude
-                }
+              attributes
+              origin {
+                latitude
+                longitude
               }
             }
           }
@@ -423,8 +428,8 @@ export const ACTIVATE_EVALUATION_TEMPLATE_EDITION = gql(`
 `);
 
 export const SET_COMMISSION_TEMPLATE_EDITION = gql(`
-  mutation SetCommissionTemplateEdition($id: ID!, $beverageType: BeverageType!, $templateEditionId: ID!) {
-    setCommissionTemplateEdition(id: $id, beverageType: $beverageType, templateEditionId: $templateEditionId) {
+  mutation SetCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!, $templateEditionId: ID!) {
+    setCommissionTemplateEdition(id: $id, beverageTypeId: $beverageTypeId, templateEditionId: $templateEditionId) {
       id
     }
   }

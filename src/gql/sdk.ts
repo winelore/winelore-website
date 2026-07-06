@@ -6,19 +6,18 @@ import * as Types from './graphql';
 
 import { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
+export type BeverageFilterInput = {
+  producers?: Array<Array<number>> | null | undefined;
+  status?: BeverageStatus | null | undefined;
+  typeId?: string | number | null | undefined;
+};
+
 export type BeverageStatus =
   | 'APPROVED'
   | 'DRAFT'
+  | 'IN_REVIEW'
   | 'PUBLISHED'
-  | 'SUBMITTED'
   | 'SUSPENDED';
-
-export type BeverageType =
-  | 'BEER'
-  | 'CIDER'
-  | 'OTHER'
-  | 'SPIRIT'
-  | 'WINE';
 
 export type CommissionReplicaCandidateStatus =
   | 'DISQUALIFIED'
@@ -80,7 +79,7 @@ export type CreateEvaluationTemplateEditionInput = {
 };
 
 export type CreateEvaluationTemplateInput = {
-  beverageType: BeverageType;
+  beverageTypeId: string | number;
   name: string;
   owners: Array<Array<number>>;
 };
@@ -141,19 +140,6 @@ export type SubmitEvaluationInput = {
   scores: Array<EvaluatedPropertyScoreInput>;
 };
 
-export type WineFilterInput = {
-  producers?: Array<Array<number>> | null | undefined;
-  status?: BeverageStatus | null | undefined;
-  type?: WineType | null | undefined;
-};
-
-export type WineType =
-  | 'FORTIFIED'
-  | 'RED'
-  | 'ROSE'
-  | 'SPARKLING'
-  | 'WHITE';
-
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -166,7 +152,7 @@ export type GetCommissionTemplatesQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: Types.BeverageType, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, categories: Array<{ id: string, name: string, properties: Array<
+export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: { id: string, code: string, name: string }, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, categories: Array<{ id: string, name: string, properties: Array<
             | { __typename: 'BooleanProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, boolDefaultValue: boolean | null }
             | { __typename: 'DiscreteNumbersProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, discreteAllowedValues: Array<number>, discreteDefaultValue: number | null }
             | { __typename: 'DoubleProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, doubleMinLimit: number | null, doubleMaxLimit: number | null, doubleDefaultValue: number | null }
@@ -270,14 +256,14 @@ export type GetReplicaCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, candidates: Array<{ id: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: Types.BeverageType, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { type: Types.WineType, id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null, producers: Array<{ auid: Array<number> }> } } } } }> } | null };
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, candidates: Array<{ id: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, producers: Array<{ auid: Array<number> }>, origin: { latitude: number, longitude: number } | null } } } } }> } | null };
 
 export type GetReplicaCandidateQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null } } } } } | null };
+export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, origin: { latitude: number, longitude: number } | null } } } } } | null };
 
 export type CreateEvaluationTemplateMutationVariables = Exact<{
   input: Types.CreateEvaluationTemplateInput;
@@ -302,7 +288,7 @@ export type ActivateEvaluationTemplateEditionMutation = { activateEvaluationTemp
 
 export type SetCommissionTemplateEditionMutationVariables = Exact<{
   id: string | number;
-  beverageType: Types.BeverageType;
+  beverageTypeId: string | number;
   templateEditionId: string | number;
 }>;
 
@@ -354,11 +340,11 @@ export type StartCompetitionMutation = { startCompetition: { id: string, status:
 
 export type GetMyBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
-  filter?: Types.WineFilterInput | null | undefined;
+  filter?: Types.BeverageFilterInput | null | undefined;
 }>;
 
 
-export type GetMyBeveragesQuery = { wines: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, type: Types.WineType, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
+export type GetMyBeveragesQuery = { beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
 
 export type GetMyCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -431,7 +417,11 @@ export const GetCommissionTemplatesDocument = gql`
     id
     templateEditions {
       id
-      beverageType
+      beverageType {
+        id
+        code
+        name
+      }
       templateEdition {
         id
         version
@@ -693,26 +683,28 @@ export const GetReplicaCandidatesDocument = gql`
       candidate {
         id
         anonymizedCode
-        beverageType
+        beverageType {
+          id
+          code
+          name
+        }
         sample {
           id
           volumeMl
           batch {
             id
-            vintage
+            attributes
             beverage {
               id
               name
               status
+              attributes
               producers {
                 auid
               }
-              ... on Wine {
-                type
-                origin {
-                  latitude
-                  longitude
-                }
+              origin {
+                latitude
+                longitude
               }
             }
           }
@@ -745,16 +737,15 @@ export const GetReplicaCandidateDocument = gql`
         volumeMl
         batch {
           id
-          vintage
+          attributes
           beverage {
             id
             name
             status
-            ... on Wine {
-              origin {
-                latitude
-                longitude
-              }
+            attributes
+            origin {
+              latitude
+              longitude
             }
           }
         }
@@ -788,10 +779,10 @@ export const ActivateEvaluationTemplateEditionDocument = gql`
 }
     `;
 export const SetCommissionTemplateEditionDocument = gql`
-    mutation SetCommissionTemplateEdition($id: ID!, $beverageType: BeverageType!, $templateEditionId: ID!) {
+    mutation SetCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!, $templateEditionId: ID!) {
   setCommissionTemplateEdition(
     id: $id
-    beverageType: $beverageType
+    beverageTypeId: $beverageTypeId
     templateEditionId: $templateEditionId
   ) {
     id
@@ -909,13 +900,14 @@ export const StartCompetitionDocument = gql`
 }
     `;
 export const GetMyBeveragesDocument = gql`
-    query GetMyBeverages($limit: Int, $filter: WineFilterInput) {
-  wines(limit: $limit, filter: $filter) {
+    query GetMyBeverages($limit: Int, $filter: BeverageFilterInput) {
+  beverages(limit: $limit, filter: $filter) {
     items {
       id
       name
       status
-      type
+      typeId
+      attributes
       producers {
         id
         auid

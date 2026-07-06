@@ -4,7 +4,7 @@ import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '../src/gql/sdk';
 
-const GRAPHQL_ENDPOINT = 'http://switchback.proxy.rlwy.net:43233/graphql';
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
 
 function isNotFoundError(err: any): boolean {
     const code = err.extensions?.code;

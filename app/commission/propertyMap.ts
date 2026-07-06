@@ -36,7 +36,7 @@ export function buildPropertyMapFromCommissionTemplates(
     }
 
     const link =
-        commissionWithTemplates.templateEditions.find((l) => l.beverageType === "WINE") ||
+        commissionWithTemplates.templateEditions.find((l) => l.beverageType.code === "WINE") ||
         commissionWithTemplates.templateEditions[0];
     const templateEdition = link?.templateEdition;
     if (!templateEdition?.categories) {

@@ -584,9 +584,33 @@ export default function CommissionResultsClientView({
 
             const candidate = row.candidate
             const beverage = candidate.sample?.batch?.beverage
-            const beverageType = candidate.beverageType ? formatBeverageType(candidate.beverageType) : "-"
-            const wineType = beverage?.type ? formatBeverageType(beverage.type) : "-"
-            const vintage = candidate.sample?.batch?.vintage ? String(candidate.sample.batch.vintage) : "-"
+            const beverageType = candidate.beverageType?.code ? formatBeverageType(candidate.beverageType.code) : "-"
+            
+            let wineType = "-"
+            if (beverage?.attributes) {
+                try {
+                    const parsed = JSON.parse(beverage.attributes)
+                    if (parsed && parsed.color) {
+                        wineType = formatBeverageType(parsed.color)
+                    }
+                } catch (e) {
+                    console.error("Failed to parse beverage attributes in CommissionResultsClientView", e)
+                }
+            }
+
+            let vintage = "-"
+            const batchAttrs = candidate.sample?.batch?.attributes
+            if (batchAttrs) {
+                try {
+                    const parsed = JSON.parse(batchAttrs)
+                    if (parsed && parsed.vintage) {
+                        vintage = String(parsed.vintage)
+                    }
+                } catch (e) {
+                    console.error("Failed to parse batch attributes in CommissionResultsClientView", e)
+                }
+            }
+
             const volume = candidate.sample?.volumeMl ? `${candidate.sample.volumeMl} ml` : "-"
 
             let origin = "-"
@@ -634,9 +658,32 @@ export default function CommissionResultsClientView({
 
             const candidate = row.candidate
             const beverage = candidate.sample?.batch?.beverage
-            const beverageType = candidate.beverageType ? formatBeverageType(candidate.beverageType) : "-"
-            const wineType = beverage?.type ? formatBeverageType(beverage.type) : "-"
-            const vintage = candidate.sample?.batch?.vintage ? String(candidate.sample.batch.vintage) : "-"
+            const beverageType = candidate.beverageType?.code ? formatBeverageType(candidate.beverageType.code) : "-"
+            
+            let wineType = "-"
+            if (beverage?.attributes) {
+                try {
+                    const parsed = JSON.parse(beverage.attributes)
+                    if (parsed && parsed.color) {
+                        wineType = formatBeverageType(parsed.color)
+                    }
+                } catch (e) {
+                    console.error("Failed to parse beverage attributes in CommissionResultsClientView", e)
+                }
+            }
+
+            let vintage = "-"
+            const batchAttrs = candidate.sample?.batch?.attributes
+            if (batchAttrs) {
+                try {
+                    const parsed = JSON.parse(batchAttrs)
+                    if (parsed && parsed.vintage) {
+                        vintage = String(parsed.vintage)
+                    }
+                } catch (e) {
+                    console.error("Failed to parse batch attributes in CommissionResultsClientView", e)
+                }
+            }
             const volume = candidate.sample?.volumeMl ? `${candidate.sample.volumeMl} ml` : "-"
 
             let origin = "-"
