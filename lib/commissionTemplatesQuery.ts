@@ -30,7 +30,7 @@ export const GET_COMMISSION_TEMPLATES_DEEP_QUERY = [
   "query GetCommissionTemplatesDeep($id: ID!) {",
   "commission(id: $id) {",
   "id templateEditions {",
-  "id beverageType",
+  "id beverageType { id code name }",
   "templateEdition {",
   "id version status",
   "categories {",

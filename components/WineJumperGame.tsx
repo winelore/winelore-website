@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayCircle } from 'lucide-react';
 
-export default function WineJumperGame() {
+export default function WineJumperGame({ embedded = false }: { embedded?: boolean }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
     const [score, setScore] = useState(0);
@@ -96,7 +96,14 @@ export default function WineJumperGame() {
     };
 
     return (
-        <div className="relative w-full h-64 bg-slate-50 border-2 border-indigo-100 rounded-3xl overflow-hidden cursor-pointer shadow-inner" onClick={jump}>
+        <div
+            className={`relative w-full h-64 overflow-hidden cursor-pointer ${
+                embedded
+                    ? "bg-slate-50 border border-slate-100 rounded-xl"
+                    : "bg-slate-50 border-2 border-indigo-100 rounded-3xl shadow-inner"
+            }`}
+            onClick={jump}
+        >
             {/* Рахунок */}
             <div className="absolute top-4 right-6 font-black text-2xl text-slate-300">
                 Score: {score}

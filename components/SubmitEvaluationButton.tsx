@@ -18,7 +18,8 @@ export default function SubmitEvaluationButton({ commissionId, candidateId, scor
         setIsSubmitting(true);
         try {
             // Реальна мутація з твоєї схеми
-            const response = await fetch('http://localhost:8080', {
+            const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

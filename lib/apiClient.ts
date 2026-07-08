@@ -8,6 +8,48 @@ const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT || process.env.NEXT_PUBLIC
 const CLIENT_GRAPHQL_ENDPOINT = '/api/graphql';
 const DEFAULT_ACTOR = '1';
 
+function isNotFoundError(err: any): boolean {
+    const code = err.extensions?.code;
+    const groupCode = err.extensions?.groupCode;
+    const classification = err.extensions?.classification;
+    return (
+        code === 'EVALUATION_NOT_FOUND' ||
+        code === 'COMMISSION_NOT_FOUND' ||
+        groupCode === 'NOT_FOUND' ||
+        classification === 'NOT_FOUND' ||
+        (typeof code === 'string' && code.endsWith('_NOT_FOUND'))
+    );
+}
+
+function logGraphQLPipelineError(context: string, errors: any[], isFatal: boolean) {
+    if (!errors || errors.length === 0) return;
+
+    const summary: Record<string, { count: number; paths: string[][]; sample: any }> = {};
+    for (const err of errors) {
+        const key = `${err.message || 'Unknown error'}-${err.extensions?.code || err.extensions?.classification || ''}`;
+        if (!summary[key]) {
+            summary[key] = { count: 0, paths: [], sample: err };
+        }
+        summary[key].count++;
+        if (err.path && summary[key].paths.length < 3) {
+            summary[key].paths.push(err.path);
+        }
+    }
+
+    const logFn = isFatal ? console.error : console.warn;
+
+    logFn(`GraphQL Pipeline Error (${context}):`);
+    for (const info of Object.values(summary)) {
+        const { count, paths, sample } = info;
+        if (count === 1) {
+            logFn(`  - ${sample.message} (Path: ${sample.path?.join('.') || 'root'})`);
+        } else {
+            const pathsStr = paths.map(p => p.join('.')).join(', ');
+            logFn(`  - ${sample.message} (Occurred ${count} times, paths: [${pathsStr}${count > 3 ? ', ...' : ''}])`);
+        }
+    }
+}
+
 export async function fetchGraphQLRaw<TResult, TVariables>(
     query: string,
     variables?: TVariables
@@ -22,9 +64,13 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
     const { data, errors } = await response.json();
 
     if (errors) {
-        // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error (fetchGraphQLRaw):', JSON.stringify(errors, null, 2));
-        throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
+        const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
+        if (filteredErrors.length > 0) {
+            logGraphQLPipelineError('fetchGraphQLRaw', filteredErrors, !data);
+            if (!data) {
+                throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
+            }
+        }
     }
 
     return data;
@@ -61,9 +107,13 @@ export async function fetchGraphQL<TResult, TVariables>(
     const { data, errors } = await response.json();
 
     if (errors) {
-        // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error (fetchGraphQL):', JSON.stringify(errors, null, 2));
-        throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
+        const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
+        if (filteredErrors.length > 0) {
+            logGraphQLPipelineError('fetchGraphQL', filteredErrors, !data);
+            if (!data) {
+                throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
+            }
+        }
     }
 
     return data;
@@ -80,7 +130,7 @@ const requester = async <R, V>(
 ): Promise<R> => {
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 
+        headers: {
             'Content-Type': 'application/json',
             'X-ACTOR': DEFAULT_ACTOR,
             ...options?.headers
@@ -95,9 +145,13 @@ const requester = async <R, V>(
     const { data, errors } = await response.json();
 
     if (errors) {
-        // eslint-disable-next-line no-console
-        console.error('GraphQL Pipeline Error (SDK requester):', JSON.stringify(errors, null, 2));
-        throw new Error(errors[0]?.message || 'Помилка виконання GraphQL запиту');
+        const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
+        if (filteredErrors.length > 0) {
+            logGraphQLPipelineError('SDK requester', filteredErrors, !data);
+            if (!data) {
+                throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
+            }
+        }
     }
 
     return data;

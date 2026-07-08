@@ -6,19 +6,18 @@ import * as Types from './graphql';
 
 import { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
+export type BeverageFilterInput = {
+  producers?: Array<Array<number>> | null | undefined;
+  status?: BeverageStatus | null | undefined;
+  typeId?: string | number | null | undefined;
+};
+
 export type BeverageStatus =
   | 'APPROVED'
   | 'DRAFT'
+  | 'IN_REVIEW'
   | 'PUBLISHED'
-  | 'SUBMITTED'
   | 'SUSPENDED';
-
-export type BeverageType =
-  | 'BEER'
-  | 'CIDER'
-  | 'OTHER'
-  | 'SPIRIT'
-  | 'WINE';
 
 export type CommissionReplicaCandidateStatus =
   | 'DISQUALIFIED'
@@ -80,6 +79,7 @@ export type CreateEvaluationTemplateEditionInput = {
 };
 
 export type CreateEvaluationTemplateInput = {
+  beverageTypeId: string | number;
   name: string;
   owners: Array<Array<number>>;
 };
@@ -140,37 +140,19 @@ export type SubmitEvaluationInput = {
   scores: Array<EvaluatedPropertyScoreInput>;
 };
 
-export type UpdateEvaluationCommentsInput = {
-  comments: Array<EvaluationCommentInput>;
-  id: string | number;
-};
-
-export type WineFilterInput = {
-  producers?: Array<Array<number>> | null | undefined;
-  status?: BeverageStatus | null | undefined;
-  type?: WineType | null | undefined;
-};
-
-export type WineType =
-  | 'FORTIFIED'
-  | 'RED'
-  | 'ROSE'
-  | 'SPARKLING'
-  | 'WHITE';
-
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, plannedDates: { start: string | null, end: string | null } | null, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null } }> }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, candidates: Array<{ id: string }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null } }> }> } | null };
 
 export type GetCommissionTemplatesQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: Types.BeverageType, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, categories: Array<{ id: string, name: string, properties: Array<
+export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: { id: string, code: string, name: string }, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, categories: Array<{ id: string, name: string, properties: Array<
             | { __typename: 'BooleanProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, boolDefaultValue: boolean | null }
             | { __typename: 'DiscreteNumbersProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, discreteAllowedValues: Array<number>, discreteDefaultValue: number | null }
             | { __typename: 'DoubleProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, doubleMinLimit: number | null, doubleMaxLimit: number | null, doubleDefaultValue: number | null }
@@ -269,26 +251,19 @@ export type StartCommissionReplicaMutationVariables = Exact<{
 
 export type StartCommissionReplicaMutation = { startCommissionReplica: { id: string, status: Types.CommissionReplicaStatus } };
 
-export type CompleteCommissionReplicaMutationVariables = Exact<{
-  id: string | number;
-}>;
-
-
-export type CompleteCommissionReplicaMutation = { completeCommissionReplica: { id: string, status: Types.CommissionReplicaStatus } };
-
 export type GetReplicaCandidatesQueryVariables = Exact<{
   replicaId: string | number;
 }>;
 
 
-export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null } } } } }> } | null };
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, candidates: Array<{ id: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, producers: Array<{ auid: Array<number> }>, origin: { latitude: number, longitude: number } | null } } } } }> } | null };
 
 export type GetReplicaCandidateQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, vintage: number | null, beverage: { id: string, name: string, status: Types.BeverageStatus, origin: { latitude: number, longitude: number } | null } } } } } | null };
+export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, origin: { latitude: number, longitude: number } | null } } } } } | null };
 
 export type CreateEvaluationTemplateMutationVariables = Exact<{
   input: Types.CreateEvaluationTemplateInput;
@@ -313,7 +288,7 @@ export type ActivateEvaluationTemplateEditionMutation = { activateEvaluationTemp
 
 export type SetCommissionTemplateEditionMutationVariables = Exact<{
   id: string | number;
-  beverageType: Types.BeverageType;
+  beverageTypeId: string | number;
   templateEditionId: string | number;
 }>;
 
@@ -334,6 +309,21 @@ export type MarkCommissionReplicaCandidateAsEvaluatedMutationVariables = Exact<{
 
 export type MarkCommissionReplicaCandidateAsEvaluatedMutation = { markCommissionReplicaCandidateAsEvaluated: { id: string, status: Types.CommissionReplicaCandidateStatus } };
 
+export type GetMyEvaluationForCandidateQueryVariables = Exact<{
+  replicaCandidateId: string | number;
+}>;
+
+
+export type GetMyEvaluationForCandidateQuery = { evaluationByReplicaCandidateAndEvaluator: { evaluatorAuid: Array<number>, isComplete: boolean, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> } | null };
+
+export type GetEvaluationsForCandidateQueryVariables = Exact<{
+  replicaCandidateId: string | number;
+  limit?: number | null | undefined;
+}>;
+
+
+export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ id: string, evaluatorAuid: Array<number>, isComplete: boolean, templateEdition: { id: string }, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
+
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -350,11 +340,11 @@ export type StartCompetitionMutation = { startCompetition: { id: string, status:
 
 export type GetMyBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
-  filter?: Types.WineFilterInput | null | undefined;
+  filter?: Types.BeverageFilterInput | null | undefined;
 }>;
 
 
-export type GetMyBeveragesQuery = { wines: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, type: Types.WineType, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }> }> } };
+export type GetMyBeveragesQuery = { beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
 
 export type GetMyCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -371,27 +361,6 @@ export type GetDashboardCompetitionsQueryVariables = Exact<{
 
 export type GetDashboardCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
 
-export type GetEvaluationCommentsQueryVariables = Exact<{
-  candidateId: string | number;
-}>;
-
-
-export type GetEvaluationCommentsQuery = { evaluationByReplicaCandidateAndEvaluator: { id: string, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null, sortOrder: number, createdAt: string }> } | null };
-
-export type UpdateEvaluationCommentsMutationVariables = Exact<{
-  input: Types.UpdateEvaluationCommentsInput;
-}>;
-
-
-export type UpdateEvaluationCommentsMutation = { updateEvaluationComments: { id: string, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null, sortOrder: number, createdAt: string }> } };
-
-export type SubmitEvaluationForCommentsMutationVariables = Exact<{
-  input: Types.SubmitEvaluationInput;
-}>;
-
-
-export type SubmitEvaluationForCommentsMutation = { submitEvaluation: { id: string, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null, sortOrder: number, createdAt: string }> } };
-
 
 export const GetCommissionDocument = gql`
     query GetCommission($id: ID!) {
@@ -406,6 +375,13 @@ export const GetCommissionDocument = gql`
     startedAt
     endedAt
     createdAt
+    wineJumperMiniGameEnabled
+    voiceCommentsEnabled
+    propertyCommentsEnabled
+    beverageOriginDuringEvaluationEnabled
+    candidates {
+      id
+    }
     competition {
       id
       name
@@ -441,7 +417,11 @@ export const GetCommissionTemplatesDocument = gql`
     id
     templateEditions {
       id
-      beverageType
+      beverageType {
+        id
+        code
+        name
+      }
       templateEdition {
         id
         version
@@ -686,40 +666,45 @@ export const StartCommissionReplicaDocument = gql`
   }
 }
     `;
-export const CompleteCommissionReplicaDocument = gql`
-    mutation CompleteCommissionReplica($id: ID!) {
-  completeCommissionReplica(id: $id) {
-    id
-    status
-  }
-}
-    `;
 export const GetReplicaCandidatesDocument = gql`
     query GetReplicaCandidates($replicaId: ID!) {
   commissionReplica(id: $replicaId) {
     id
     status
+    commission {
+      id
+      candidates {
+        id
+      }
+    }
     replicaCandidates {
       id
       status
       candidate {
         id
         anonymizedCode
+        beverageType {
+          id
+          code
+          name
+        }
         sample {
           id
           volumeMl
           batch {
             id
-            vintage
+            attributes
             beverage {
               id
               name
               status
-              ... on Wine {
-                origin {
-                  latitude
-                  longitude
-                }
+              attributes
+              producers {
+                auid
+              }
+              origin {
+                latitude
+                longitude
               }
             }
           }
@@ -752,16 +737,15 @@ export const GetReplicaCandidateDocument = gql`
         volumeMl
         batch {
           id
-          vintage
+          attributes
           beverage {
             id
             name
             status
-            ... on Wine {
-              origin {
-                latitude
-                longitude
-              }
+            attributes
+            origin {
+              latitude
+              longitude
             }
           }
         }
@@ -795,10 +779,10 @@ export const ActivateEvaluationTemplateEditionDocument = gql`
 }
     `;
 export const SetCommissionTemplateEditionDocument = gql`
-    mutation SetCommissionTemplateEdition($id: ID!, $beverageType: BeverageType!, $templateEditionId: ID!) {
+    mutation SetCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!, $templateEditionId: ID!) {
   setCommissionTemplateEdition(
     id: $id
-    beverageType: $beverageType
+    beverageTypeId: $beverageTypeId
     templateEditionId: $templateEditionId
   ) {
     id
@@ -822,6 +806,53 @@ export const MarkCommissionReplicaCandidateAsEvaluatedDocument = gql`
   markCommissionReplicaCandidateAsEvaluated(id: $id) {
     id
     status
+  }
+}
+    `;
+export const GetMyEvaluationForCandidateDocument = gql`
+    query GetMyEvaluationForCandidate($replicaCandidateId: ID!) {
+  evaluationByReplicaCandidateAndEvaluator(
+    replicaCandidateId: $replicaCandidateId
+  ) {
+    evaluatorAuid
+    isComplete
+    scores {
+      code
+      value
+    }
+    comments {
+      id
+      propertyId
+      text
+      voiceUrl
+    }
+  }
+}
+    `;
+export const GetEvaluationsForCandidateDocument = gql`
+    query GetEvaluationsForCandidate($replicaCandidateId: ID!, $limit: Int) {
+  evaluationsByReplicaCandidate(
+    replicaCandidateId: $replicaCandidateId
+    limit: $limit
+  ) {
+    items {
+      id
+      evaluatorAuid
+      isComplete
+      templateEdition {
+        id
+      }
+      scores {
+        code
+        value
+      }
+      comments {
+        id
+        propertyId
+        text
+        voiceUrl
+      }
+    }
   }
 }
     `;
@@ -869,17 +900,22 @@ export const StartCompetitionDocument = gql`
 }
     `;
 export const GetMyBeveragesDocument = gql`
-    query GetMyBeverages($limit: Int, $filter: WineFilterInput) {
-  wines(limit: $limit, filter: $filter) {
+    query GetMyBeverages($limit: Int, $filter: BeverageFilterInput) {
+  beverages(limit: $limit, filter: $filter) {
     items {
       id
       name
       status
-      type
+      typeId
+      attributes
       producers {
         id
         auid
         role
+      }
+      origin {
+        latitude
+        longitude
       }
     }
   }
@@ -930,51 +966,6 @@ export const GetDashboardCompetitionsDocument = gql`
   }
 }
     `;
-export const GetEvaluationCommentsDocument = gql`
-    query GetEvaluationComments($candidateId: ID!) {
-  evaluationByReplicaCandidateAndEvaluator(replicaCandidateId: $candidateId) {
-    id
-    comments {
-      id
-      propertyId
-      text
-      voiceUrl
-      sortOrder
-      createdAt
-    }
-  }
-}
-    `;
-export const UpdateEvaluationCommentsDocument = gql`
-    mutation UpdateEvaluationComments($input: UpdateEvaluationCommentsInput!) {
-  updateEvaluationComments(input: $input) {
-    id
-    comments {
-      id
-      propertyId
-      text
-      voiceUrl
-      sortOrder
-      createdAt
-    }
-  }
-}
-    `;
-export const SubmitEvaluationForCommentsDocument = gql`
-    mutation SubmitEvaluationForComments($input: SubmitEvaluationInput!) {
-  submitEvaluation(input: $input) {
-    id
-    comments {
-      id
-      propertyId
-      text
-      voiceUrl
-      sortOrder
-      createdAt
-    }
-  }
-}
-    `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
@@ -995,9 +986,6 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     StartCommissionReplica(variables: Types.StartCommissionReplicaMutationVariables, options?: C): Promise<Types.StartCommissionReplicaMutation> {
       return requester<Types.StartCommissionReplicaMutation, Types.StartCommissionReplicaMutationVariables>(StartCommissionReplicaDocument, variables, options) as Promise<Types.StartCommissionReplicaMutation>;
-    },
-    CompleteCommissionReplica(variables: Types.CompleteCommissionReplicaMutationVariables, options?: C): Promise<Types.CompleteCommissionReplicaMutation> {
-      return requester<Types.CompleteCommissionReplicaMutation, Types.CompleteCommissionReplicaMutationVariables>(CompleteCommissionReplicaDocument, variables, options) as Promise<Types.CompleteCommissionReplicaMutation>;
     },
     GetReplicaCandidates(variables: Types.GetReplicaCandidatesQueryVariables, options?: C): Promise<Types.GetReplicaCandidatesQuery> {
       return requester<Types.GetReplicaCandidatesQuery, Types.GetReplicaCandidatesQueryVariables>(GetReplicaCandidatesDocument, variables, options) as Promise<Types.GetReplicaCandidatesQuery>;
@@ -1023,6 +1011,12 @@ export function getSdk<C>(requester: Requester<C>) {
     MarkCommissionReplicaCandidateAsEvaluated(variables: Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables, options?: C): Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation> {
       return requester<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation, Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables>(MarkCommissionReplicaCandidateAsEvaluatedDocument, variables, options) as Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation>;
     },
+    GetMyEvaluationForCandidate(variables: Types.GetMyEvaluationForCandidateQueryVariables, options?: C): Promise<Types.GetMyEvaluationForCandidateQuery> {
+      return requester<Types.GetMyEvaluationForCandidateQuery, Types.GetMyEvaluationForCandidateQueryVariables>(GetMyEvaluationForCandidateDocument, variables, options) as Promise<Types.GetMyEvaluationForCandidateQuery>;
+    },
+    GetEvaluationsForCandidate(variables: Types.GetEvaluationsForCandidateQueryVariables, options?: C): Promise<Types.GetEvaluationsForCandidateQuery> {
+      return requester<Types.GetEvaluationsForCandidateQuery, Types.GetEvaluationsForCandidateQueryVariables>(GetEvaluationsForCandidateDocument, variables, options) as Promise<Types.GetEvaluationsForCandidateQuery>;
+    },
     GetCompetitionPage(variables: Types.GetCompetitionPageQueryVariables, options?: C): Promise<Types.GetCompetitionPageQuery> {
       return requester<Types.GetCompetitionPageQuery, Types.GetCompetitionPageQueryVariables>(GetCompetitionPageDocument, variables, options) as Promise<Types.GetCompetitionPageQuery>;
     },
@@ -1037,15 +1031,6 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
-    },
-    GetEvaluationComments(variables: Types.GetEvaluationCommentsQueryVariables, options?: C): Promise<Types.GetEvaluationCommentsQuery> {
-      return requester<Types.GetEvaluationCommentsQuery, Types.GetEvaluationCommentsQueryVariables>(GetEvaluationCommentsDocument, variables, options) as Promise<Types.GetEvaluationCommentsQuery>;
-    },
-    UpdateEvaluationComments(variables: Types.UpdateEvaluationCommentsMutationVariables, options?: C): Promise<Types.UpdateEvaluationCommentsMutation> {
-      return requester<Types.UpdateEvaluationCommentsMutation, Types.UpdateEvaluationCommentsMutationVariables>(UpdateEvaluationCommentsDocument, variables, options) as Promise<Types.UpdateEvaluationCommentsMutation>;
-    },
-    SubmitEvaluationForComments(variables: Types.SubmitEvaluationForCommentsMutationVariables, options?: C): Promise<Types.SubmitEvaluationForCommentsMutation> {
-      return requester<Types.SubmitEvaluationForCommentsMutation, Types.SubmitEvaluationForCommentsMutationVariables>(SubmitEvaluationForCommentsDocument, variables, options) as Promise<Types.SubmitEvaluationForCommentsMutation>;
     }
   };
 }

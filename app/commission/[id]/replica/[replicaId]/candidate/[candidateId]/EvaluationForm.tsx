@@ -1,11 +1,14 @@
 "use client"
 
-import React, { useState, useMemo, useRef, useEffect } from "react"
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
 import { submitEvaluationAction, getVoiceUploadUrlAction } from "../../../../../actions"
+import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
+import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
+import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
 import { Mic, Square, Trash2 } from "lucide-react"
 
 interface EvaluationProperty {
@@ -50,60 +53,142 @@ const BOOLEAN_OPERATORS = new Set([
     "OR",
 ])
 
-function evaluateAST(ast: any, currentValues: Record<string, number | boolean>): number | null {
-    if (!ast) return null
-
-    const { type, __typename } = ast
-
-    if (__typename === "VariableExpression" || type === "VARIABLE") {
-        const val = currentValues[ast.code]
-        if (val === undefined || val === null) return null
-        const num = typeof val === "boolean" ? (val ? 1 : 0) : Number(val)
-        return Number.isNaN(num) ? null : num
-    }
-
-    if (__typename === "ConstantExpression" || type === "CONSTANT") {
-        const num = Number(ast.value)
-        return Number.isNaN(num) ? null : num
-    }
-
-    // Anything with children is a binary node. Rely on __typename (always present here),
-    // falling back to the operator name so we never silently drop a known operator.
-    const isBinary = __typename === "BinaryExpression"
-        || ast.left !== undefined
-        || ast.right !== undefined
-    if (!isBinary) return null
-
-    const left = evaluateAST(ast.left, currentValues)
-    const right = evaluateAST(ast.right, currentValues)
-    if (left === null || right === null) return null
-
-    switch (type) {
-        case "ADD": return left + right
-        case "SUBTRACT": return left - right
-        case "MULTIPLY": return left * right
-        case "DIVIDE": return right !== 0 ? left / right : null
-        case "MODULO": return right !== 0 ? left % right : null
-        case "POWER": return Math.pow(left, right)
-        case "GREATER_THAN": return left > right ? 1 : 0
-        case "GREATER_THAN_OR_EQUAL":
-        case "GREATER_OR_EQUAL": return left >= right ? 1 : 0
-        case "LESS_THAN": return left < right ? 1 : 0
-        case "LESS_THAN_OR_EQUAL":
-        case "LESS_OR_EQUAL": return left <= right ? 1 : 0
-        case "EQUAL":
-        case "EQUALS": return left === right ? 1 : 0
-        case "NOT_EQUAL": return left !== right ? 1 : 0
-        case "AND": return left !== 0 && right !== 0 ? 1 : 0
-        case "OR": return left !== 0 || right !== 0 ? 1 : 0
-        default: return null
-    }
+function buildPropertyByCode(categories: EvaluationCategory[]): Map<string, EvaluationProperty> {
+    const map = new Map<string, EvaluationProperty>()
+    categories.forEach((category) => {
+        category.properties.forEach((prop) => map.set(prop.code, prop))
+    })
+    return map
 }
 
+function isBooleanSmartProperty(
+    prop: EvaluationProperty,
+    propertyByCode: Map<string, EvaluationProperty>,
+): boolean {
+    const expression = prop.expression
+    if (!expression) return false
+    if (BOOLEAN_OPERATORS.has(expression.type)) return true
+    const isVariable =
+        expression.__typename === "VariableExpression" || expression.type === "VARIABLE"
+    if (isVariable && expression.code) {
+        return propertyByCode.get(expression.code)?.__typename === "BooleanProperty"
+    }
+    return false
+}
+
+import { evaluateAST } from "@/lib/evaluationExpression"
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
     const backendTranslated = useBackendTranslation(translatedLabel)
     return <option value={value}>{backendTranslated}</option>
+}
+
+const DISCRETE_BUBBLE_MAX_OPTIONS = 20
+const DISCRETE_BUBBLE_MAX_ROWS = 2
+const EMPTY_DISCRETE_VALUES: number[] = []
+
+function DiscreteNumbersInput({
+                                  allowedValues,
+                                  currentValue,
+                                  onChange,
+                                  selectPlaceholder,
+                              }: {
+    allowedValues: number[]
+    currentValue: number | undefined
+    onChange: (val: number | undefined) => void
+    selectPlaceholder: string
+}) {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const measureRef = useRef<HTMLDivElement>(null)
+
+    const sortedValues = useMemo(
+        () => [...allowedValues].sort((a, b) => a - b),
+        [allowedValues]
+    )
+
+    const [useBubbles, setUseBubbles] = useState(() =>
+        sortedValues.length > 0 && sortedValues.length <= DISCRETE_BUBBLE_MAX_OPTIONS
+    )
+
+    useLayoutEffect(() => {
+        const container = containerRef.current
+        const measure = measureRef.current
+        if (!container || !measure || allowedValues.length === 0) {
+            setUseBubbles(false)
+            return
+        }
+        if (allowedValues.length > DISCRETE_BUBBLE_MAX_OPTIONS) {
+            setUseBubbles(false)
+            return
+        }
+
+        const checkFit = () => {
+            const width = container.offsetWidth
+            if (width === 0) return
+
+            measure.style.width = `${width}px`
+            const firstButton = measure.querySelector("button")
+            const rowHeight = firstButton?.offsetHeight ?? 36
+            const maxHeight = rowHeight * DISCRETE_BUBBLE_MAX_ROWS + 8
+            setUseBubbles(measure.scrollHeight <= maxHeight)
+        }
+
+        checkFit()
+        const observer = new ResizeObserver(checkFit)
+        observer.observe(container)
+        return () => observer.disconnect()
+    }, [allowedValues])
+
+    const bubbleButtonClass = (selected: boolean) =>
+        `min-w-[2.25rem] h-9 px-2.5 rounded-full text-xs font-bold border transition-colors ${
+            selected
+                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+        }`
+
+    return (
+        <div ref={containerRef} className="relative w-full">
+            <div
+                ref={measureRef}
+                aria-hidden
+                className="pointer-events-none invisible absolute inset-x-0 top-0 flex flex-wrap gap-2"
+            >
+                {sortedValues.map((opt) => (
+                    <button key={opt} type="button" tabIndex={-1} className={bubbleButtonClass(false)}>
+                        {opt}
+                    </button>
+                ))}
+            </div>
+            {useBubbles ? (
+                <div className="flex flex-wrap gap-2 justify-end">
+                    {sortedValues.map((opt) => (
+                        <button
+                            key={opt}
+                            type="button"
+                            onClick={() => onChange(opt)}
+                            className={bubbleButtonClass(currentValue === opt)}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <select
+                    value={currentValue ?? ""}
+                    onChange={(e) => {
+                        const val = e.target.value
+                        onChange(val === "" ? undefined : Number(val))
+                    }}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                >
+                    <option value="">{selectPlaceholder}</option>
+                    {sortedValues.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            )}
+        </div>
+    )
 }
 
 function VoiceCommentButton({
@@ -175,14 +260,18 @@ export default function EvaluationForm({
     candidateId,
     commissionId,
     replicaId,
+    propertyCommentsEnabled,
+    voiceCommentsEnabled,
 }: {
     categories: EvaluationCategory[]
     candidateId: string
     commissionId: string
     replicaId: string
+    propertyCommentsEnabled: boolean
+    voiceCommentsEnabled: boolean
 }) {
     const router = useRouter()
-    const { t, formatEnumLabel } = useTranslation()
+    const {t, formatEnumLabel} = useTranslation()
     const [values, setValues] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {}
         categories.forEach(category => {
@@ -193,20 +282,16 @@ export default function EvaluationForm({
                             initial[prop.code] = prop.boolDefaultValue
                         }
                         break
-                    case "IntProperty": {
-                        const hasRange = prop.intMinLimit !== null && prop.intMinLimit !== undefined
-                            && prop.intMaxLimit !== null && prop.intMaxLimit !== undefined
-                        const seeded = prop.intDefaultValue ?? (hasRange ? prop.intMinLimit : undefined)
-                        if (seeded !== null && seeded !== undefined) initial[prop.code] = seeded
+                    case "IntProperty":
+                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
+                            initial[prop.code] = prop.intDefaultValue
+                        }
                         break
-                    }
-                    case "DoubleProperty": {
-                        const hasRange = prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined
-                            && prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined
-                        const seeded = prop.doubleDefaultValue ?? (hasRange ? prop.doubleMinLimit : undefined)
-                        if (seeded !== null && seeded !== undefined) initial[prop.code] = seeded
+                    case "DoubleProperty":
+                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
+                            initial[prop.code] = prop.doubleDefaultValue
+                        }
                         break
-                    }
                     case "EnumProperty":
                         if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
                             initial[prop.code] = prop.enumDefaultValue
@@ -223,6 +308,8 @@ export default function EvaluationForm({
         return initial
     })
     const [commentValues, setCommentValues] = useState<Record<string, string>>({})
+    const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({})
+    const [numericErrors, setNumericErrors] = useState<Record<string, NumericInputErrorReason | null>>({})
     const [generalComment, setGeneralComment] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -244,26 +331,28 @@ export default function EvaluationForm({
             streamRef.current?.getTracks().forEach(t => t.stop())
             Object.values(voicePreviewUrls).forEach(u => URL.revokeObjectURL(u))
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const startRecording = async (key: string) => {
         if (activeRecordingKey) stopRecording()
         audioChunksRef.current = []
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            const stream = await navigator.mediaDevices.getUserMedia({audio: true})
             streamRef.current = stream
             const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4"
-            const mr = new MediaRecorder(stream, { mimeType })
+            const mr = new MediaRecorder(stream, {mimeType})
             mediaRecorderRef.current = mr
-            mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
+            mr.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunksRef.current.push(e.data)
+            }
             mr.onstop = () => {
-                const blob = new Blob(audioChunksRef.current, { type: mimeType })
+                const blob = new Blob(audioChunksRef.current, {type: mimeType})
                 const url = URL.createObjectURL(blob)
-                setVoiceBlobs(prev => ({ ...prev, [key]: blob }))
+                setVoiceBlobs(prev => ({...prev, [key]: blob}))
                 setVoicePreviewUrls(prev => {
                     if (prev[key]) URL.revokeObjectURL(prev[key])
-                    return { ...prev, [key]: url }
+                    return {...prev, [key]: url}
                 })
                 stream.getTracks().forEach(t => t.stop())
                 streamRef.current = null
@@ -281,7 +370,10 @@ export default function EvaluationForm({
     }
 
     const stopRecording = () => {
-        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null
+        }
         if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop()
         setActiveRecordingKey(null)
         setRecordingTime(0)
@@ -289,10 +381,16 @@ export default function EvaluationForm({
 
     const discardVoice = (key: string) => {
         if (activeRecordingKey === key) stopRecording()
-        setVoiceBlobs(prev => { const n = { ...prev }; delete n[key]; return n })
+        setVoiceBlobs(prev => {
+            const n = {...prev};
+            delete n[key];
+            return n
+        })
         setVoicePreviewUrls(prev => {
             if (prev[key]) URL.revokeObjectURL(prev[key])
-            const n = { ...prev }; delete n[key]; return n
+            const n = {...prev};
+            delete n[key];
+            return n
         })
     }
 
@@ -304,7 +402,7 @@ export default function EvaluationForm({
             if (!result) return undefined
             const resp = await fetch(result.uploadUrl, {
                 method: "PUT",
-                headers: { "Content-Type": blob.type },
+                headers: {"Content-Type": blob.type},
                 body: blob,
             })
             return resp.ok ? result.fileUrl : undefined
@@ -314,12 +412,67 @@ export default function EvaluationForm({
     }
 
     const handleValueChange = (code: string, val: any) => {
-        setValues(prev => ({ ...prev, [code]: val }))
+        setValues(prev => ({...prev, [code]: val}))
+    }
+
+    const handleNumericInputChange = (code: string, raw: string, isDouble: boolean) => {
+        setNumericDrafts(prev => ({...prev, [code]: raw}))
+        const result = parseEvaluationNumericInput(raw, isDouble)
+        if (!result.ok) {
+            const { reason } = result
+            if (reason === "empty") {
+                handleValueChange(code, undefined)
+                setNumericErrors(prev => ({...prev, [code]: null}))
+                return
+            }
+            setNumericErrors(prev => ({...prev, [code]: reason}))
+            return
+        }
+        setNumericErrors(prev => ({...prev, [code]: null}))
+        handleValueChange(code, result.value)
+    }
+
+    const commitNumericValue = (
+        code: string,
+        raw: string,
+        isDouble: boolean,
+        normalize: (value: number) => number,
+    ) => {
+        setNumericDrafts(prev => {
+            const next = {...prev}
+            delete next[code]
+            return next
+        })
+        const result = parseEvaluationNumericInput(raw, isDouble)
+        if (!result.ok) {
+            const { reason } = result
+            if (reason === "empty") {
+                handleValueChange(code, undefined)
+                setNumericErrors(prev => ({...prev, [code]: null}))
+            } else {
+                setNumericErrors(prev => ({...prev, [code]: reason}))
+                handleValueChange(code, undefined)
+            }
+            return
+        }
+        setNumericErrors(prev => ({...prev, [code]: null}))
+        handleValueChange(code, normalize(result.value))
+    }
+
+    const getNumericInputDisplayValue = (code: string, currentValue: number | undefined) =>
+        numericDrafts[code] ?? (currentValue ?? "")
+
+    const getNumericErrorMessage = (reason: NumericInputErrorReason | null | undefined) => {
+        if (reason === "not_whole_number") return t("evaluation.wholeNumbersOnly")
+        if (reason === "invalid") return t("evaluation.invalidNumber")
+        return null
     }
 
     const handleCommentChange = (propId: string, text: string) => {
-        setCommentValues(prev => ({ ...prev, [propId]: text }))
+        setCommentValues(prev => ({...prev, [propId]: text}))
     }
+
+    const propertyByCode = useMemo(() => buildPropertyByCode(categories), [categories])
 
     const computedSmartValues = useMemo(() => {
         const smartProps: EvaluationProperty[] = []
@@ -340,7 +493,7 @@ export default function EvaluationForm({
             let changed = false
             for (const prop of smartProps) {
                 if (smartMap[prop.code] !== undefined) continue
-                const result = evaluateAST(prop.expression, { ...values, ...smartMap })
+                const result = evaluateAST(prop.expression, {...values, ...smartMap})
                 if (result !== null) {
                     smartMap[prop.code] = result
                     changed = true
@@ -365,6 +518,8 @@ export default function EvaluationForm({
     }, [categories])
 
     const isFormValid = useMemo(() => {
+        if (Object.values(numericErrors).some(Boolean)) return false
+
         for (const category of categories) {
             for (const prop of category.properties) {
                 const val = values[prop.code]
@@ -390,7 +545,7 @@ export default function EvaluationForm({
             }
         }
         return true
-    }, [categories, values])
+    }, [categories, values, numericErrors])
 
     const handleSubmit = async () => {
         setIsSubmitting(true)
@@ -399,41 +554,72 @@ export default function EvaluationForm({
         try {
             const scores = Object.entries(values)
                 .filter(([code, val]) => val !== undefined && val !== null && !smartPropertyCodes.has(code))
-                .map(([code, val]) => ({
-                    code,
-                    value: String(val)
-                }))
-
-            // Collect all property keys that have text or voice
-            const propKeys = new Set([
-                ...Object.keys(commentValues).filter(k => commentValues[k].trim().length > 0),
-                ...Object.keys(voiceBlobs).filter(k => k !== "general"),
-            ])
-
-            let sortIndex = 0
-            const perPropertyComments = await Promise.all(
-                [...propKeys].map(async (propId) => {
-                    const text = commentValues[propId]?.trim() || undefined
-                    const blob = voiceBlobs[propId]
-                    const voiceUrl = blob ? await uploadVoice(blob, propId) : undefined
-                    return { propertyId: propId, text, voiceUrl, sortOrder: sortIndex++ }
+                .map(([code, val]) => {
+                    const prop = propertyByCode.get(code)
+                    const value =
+                        prop?.__typename === "DoubleProperty" && typeof val === "number"
+                            ? roundScoreToTwoDecimals(val).toFixed(2)
+                            : String(val)
+                    return { code, value }
                 })
-            )
 
-            const generalBlob = voiceBlobs["general"]
+            // Collect per-property comments when enabled
+            let perPropertyComments: Array<{
+                propertyId: string;
+                text?: string;
+                voiceUrl?: string;
+                sortOrder: number
+            }> = []
+            if (propertyCommentsEnabled) {
+                const propKeys = new Set([
+                    ...Object.keys(commentValues).filter(k => commentValues[k].trim().length > 0),
+                    ...(voiceCommentsEnabled
+                        ? Object.keys(voiceBlobs).filter(k => k !== "general")
+                        : []),
+                ])
+
+                let sortIndex = 0
+                perPropertyComments = await Promise.all(
+                    [...propKeys].map(async (propId) => {
+                        const text = commentValues[propId]?.trim() || undefined
+                        const blob = voiceCommentsEnabled ? voiceBlobs[propId] : undefined
+                        const voiceUrl = blob ? await uploadVoice(blob, propId) : undefined
+                        return {propertyId: propId, text, voiceUrl, sortOrder: sortIndex++}
+                    })
+                )
+            }
+
+            const generalBlob = voiceCommentsEnabled ? voiceBlobs["general"] : undefined
             const generalVoiceUrl = generalBlob ? await uploadVoice(generalBlob, "general") : undefined
             const hasGeneral = generalComment.trim() || generalVoiceUrl
             const comments = hasGeneral
-                ? [...perPropertyComments, { text: generalComment.trim() || undefined, voiceUrl: generalVoiceUrl, sortOrder: sortIndex }]
+                ? [...perPropertyComments, {
+                    text: generalComment.trim() || undefined,
+                    voiceUrl: generalVoiceUrl,
+                    sortOrder: perPropertyComments.length
+                }]
                 : perPropertyComments
 
-            await submitEvaluationAction(candidateId, scores, comments)
+            const submitted = await submitEvaluationAction(candidateId, scores, comments)
+
+            writeCachedWaitEvaluation(commissionId, replicaId, {
+                candidateId,
+                isComplete: submitted?.isComplete ?? true,
+                scores: submitted?.scores ?? scores,
+                comments: comments.map((comment, index) => ({
+                    id: `local-${index}`,
+                    propertyId: "propertyId" in comment && comment.propertyId != null
+                        ? String(comment.propertyId)
+                        : null,
+                    text: comment.text,
+                    voiceUrl: comment.voiceUrl,
+                })),
+            })
 
             setSuccess(true)
-            
+
             setTimeout(() => {
-                router.push(`/commission/${commissionId}/replica/${replicaId}/wait`)
-                router.refresh()
+                window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
             }, 1000)
         } catch {
             setError(t("evaluation.submitError"))
@@ -444,7 +630,8 @@ export default function EvaluationForm({
 
     if (categories.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200 rounded-3xl text-center text-slate-500 font-medium gap-2">
+            <div
+                className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200 rounded-3xl text-center text-slate-500 font-medium gap-2">
                 <span className="text-lg font-bold text-slate-700">⚠️ {t("evaluation.noTemplate")}</span>
                 <p className="text-sm text-slate-400 max-w-md">{t("evaluation.noTemplateDesc")}</p>
             </div>
@@ -452,280 +639,338 @@ export default function EvaluationForm({
     }
 
     return (
-        <div className="flex flex-col gap-8">
-            {categories.map((category) => {
-                const orderedProperties = [
-                    ...category.properties.filter((prop) => prop.isResult !== true),
-                    ...category.properties.filter((prop) => prop.isResult === true),
-                ]
+        <div className="flex flex-col gap-4 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4 items-start w-full">
+                {categories.map((category, index) => {
+                    const isLastCategory = index === categories.length - 1
+                    const orderedProperties = [
+                        ...category.properties.filter((prop) => prop.isResult !== true),
+                        ...category.properties.filter((prop) => prop.isResult === true),
+                    ]
 
-                return (
-                <div key={category.id} className="border border-slate-100 rounded-2xl p-6 bg-slate-50/30">
-                    <h2 className="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
-                        <TranslatedText text={category.name} />
-                    </h2>
+                    return (
+                        // Змінено p-6 на p-4 для зменшення загальної висоти
+                        <div key={category.id}
+                             className="border border-slate-100 rounded-2xl p-4 bg-slate-50/30 w-full flex flex-col h-full">
+                            {/* Зменшено відступи під заголовком: mb-3 замість mb-4 */}
+                            <h2 className="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
+                                <TranslatedText text={category.name}/>
+                            </h2>
 
-                    <div className="flex flex-col gap-5">
-                        {orderedProperties.map((prop, index) => {
-                            const currentValue = values[prop.code]
-                            const isSmart = prop.__typename === "SmartProperty"
-                            const isResult = prop.isResult === true
-                            const startsResultSection = isResult && orderedProperties[index - 1]?.isResult !== true
+                            {/* Зменшено відступ між полями (повзунками): gap-3 замість gap-5 */}
+                            <div className="flex flex-col gap-3 flex-1">
+                                {orderedProperties.map((prop, propIndex) => {
+                                    const currentValue = values[prop.code]
+                                    const isSmart = prop.__typename === "SmartProperty"
+                                    const isResult = prop.isResult === true
 
-                            return (
-                                <React.Fragment key={prop.id}>
-                                {startsResultSection && (
-                                    <div className="mt-2 flex items-baseline gap-2">
-                                        <p className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-indigo-600">
-                                            {t("evaluation.resultsSection")}
-                                        </p>
-                                        <p className="text-[11px] font-medium text-slate-400">
-                                            {t("evaluation.resultsSectionDesc")}
-                                        </p>
-                                    </div>
-                                )}
-                                <div className={`flex flex-col gap-3 p-3 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <h4 className="text-sm font-semibold text-slate-800">
-                                                <TranslatedText 
-                                                    text={prop.name} 
-                                                    prefix={prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty" ? t("evaluation.scoreLabelPrefix") : ""} 
-                                                    suffix={t("evaluation.scoreLabelSuffix")} 
-                                                />
-                                            </h4>
-                                            {prop.isRequired && !isSmart && <span className="text-rose-500 text-xs">*</span>}
-                                        </div>
-                                        {prop.description && (
-                                            <p className="text-xs text-slate-400 mt-0.5">
-                                                <TranslatedText text={prop.description} />
-                                            </p>
-                                        )}
-                                    </div>
+                                    // ВИДАЛЕНО: логіку обчислення startsResultSection та блок "Результати"
 
-                                    <div className="w-full md:w-64 flex justify-end">
-                                        {prop.__typename === "BooleanProperty" && (
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleValueChange(prop.code, true)}
-                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-colors ${currentValue === true ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-                                                >
-                                                    {t("common.yes")}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleValueChange(prop.code, false)}
-                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-colors ${currentValue === false ? "bg-rose-600 border-rose-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-                                                >
-                                                    {t("common.no")}
-                                                </button>
-                                            </div>
-                                        )}
+                                    return (
+                                        <React.Fragment key={prop.id}>
+                                            {/* Зменшено padding блоку: p-2.5 замість p-3 */}
+                                            <div
+                                                className={`flex flex-col gap-2.5 p-2.5 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
+                                                <div
+                                                    className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="text-base font-bold text-slate-800">
+                                                                <TranslatedText
+                                                                    text={prop.name}
+                                                                    prefix={prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty" ? t("evaluation.scoreLabelPrefix") : ""}
+                                                                    suffix={t("evaluation.scoreLabelSuffix")}
+                                                                />
+                                                            </h4>
+                                                            {prop.isRequired && !isSmart &&
+                                                                <span className="text-rose-500 text-xs">*</span>}
+                                                        </div>
+                                                        {prop.description && (
+                                                            <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                                                                <TranslatedText text={prop.description}/>
+                                                            </p>
+                                                        )}
+                                                    </div>
 
-                                         {(prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty") && (() => {
-                                             const rawMin = prop.__typename === "IntProperty" ? prop.intMinLimit : prop.doubleMinLimit
-                                             const rawMax = prop.__typename === "IntProperty" ? prop.intMaxLimit : prop.doubleMaxLimit
+                                                    <div className="w-full md:w-64 flex justify-end">
+                                                        {prop.__typename === "BooleanProperty" && (
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleValueChange(prop.code, true)}
+                                                                    className={`px-4 py-1 rounded-lg text-xs font-bold border transition-colors ${currentValue === true ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                                                >
+                                                                    {t("common.yes")}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleValueChange(prop.code, false)}
+                                                                    className={`px-4 py-1 rounded-lg text-xs font-bold border transition-colors ${currentValue === false ? "bg-rose-600 border-rose-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                                                >
+                                                                    {t("common.no")}
+                                                                </button>
+                                                            </div>
+                                                        )}
 
-                                             if (rawMin === null || rawMin === undefined || rawMax === null || rawMax === undefined) {
-                                                 return (
-                                                     <div className="w-full flex flex-col gap-1">
-                                                         <input
-                                                             type="number"
-                                                             step={prop.__typename === "DoubleProperty" ? "0.1" : "1"}
-                                                             value={currentValue ?? ""}
-                                                             onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
-                                                             className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-colors"
-                                                             placeholder={t("evaluation.enterValue")}
-                                                         />
-                                                     </div>
-                                                 )
-                                             }
+                                                        {(prop.__typename === "IntProperty" || prop.__typename === "DoubleProperty") && (() => {
+                                                            const isDouble = prop.__typename === "DoubleProperty"
+                                                            const rawMin = prop.__typename === "IntProperty" ? prop.intMinLimit : prop.doubleMinLimit
+                                                            const rawMax = prop.__typename === "IntProperty" ? prop.intMaxLimit : prop.doubleMaxLimit
+                                                            const normalizeNumericValue = (raw: number) =>
+                                                                isDouble ? roundScoreToTwoDecimals(raw) : raw
+                                                            const numericError = numericErrors[prop.code]
+                                                            const numericErrorMessage = getNumericErrorMessage(numericError)
+                                                            const inputDisplayValue = getNumericInputDisplayValue(prop.code, currentValue)
+                                                            const inputErrorClass = numericError
+                                                                ? "border-rose-500 bg-rose-50 text-rose-700"
+                                                                : "border-slate-200 bg-white text-slate-800"
 
-                                             const min = rawMin
-                                             const max = rawMax
-                                             const step = prop.__typename === "DoubleProperty" ? 0.1 : 1
-                                             const defaultValue = (prop.__typename === "IntProperty" ? prop.intDefaultValue : prop.doubleDefaultValue) ?? min
-                                             
-                                             const sliderValue = currentValue !== undefined && currentValue !== null && currentValue !== "" ? currentValue : defaultValue
-                                             const isOutOfRange = currentValue !== undefined && currentValue !== null && currentValue !== "" && (
-                                                 currentValue < min || currentValue > max
-                                             )
+                                                            if (rawMin === null || rawMin === undefined || rawMax === null || rawMax === undefined) {
+                                                                return (
+                                                                    <div className="w-full flex flex-col gap-1">
+                                                                        <input
+                                                                            type="number"
+                                                                            step={isDouble ? "0.01" : "1"}
+                                                                            inputMode={isDouble ? "decimal" : "numeric"}
+                                                                            value={inputDisplayValue}
+                                                                            onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
+                                                                            onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
+                                                                            className={`w-full px-3 py-1 border rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${inputErrorClass}`}
+                                                                            placeholder={t("evaluation.enterValue")}
+                                                                        />
+                                                                        {numericErrorMessage && (
+                                                                            <span className="text-[10px] text-rose-500 font-medium">
+                                                                                {numericErrorMessage}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            }
 
-                                             const stepCount = Math.round((max - min) / step)
-                                             const showTicks = stepCount > 0 && stepCount <= 20
-                                             const showLabels = stepCount > 0 && stepCount <= 10
-                                             const ticks = showTicks ? Array.from({ length: stepCount + 1 }, (_, i) => Number((min + i * step).toFixed(1))) : []
+                                                            const min = rawMin
+                                                            const max = rawMax
+                                                            const step = prop.__typename === "DoubleProperty" ? 0.1 : 1
+                                                            const configuredDefault = prop.__typename === "IntProperty" ? prop.intDefaultValue : prop.doubleDefaultValue
+                                                            const hasValue = currentValue !== undefined && currentValue !== null && currentValue !== ""
+                                                            const sliderValue = hasValue
+                                                                ? currentValue
+                                                                : configuredDefault ?? (min + max) / 2
+                                                            const isOutOfRange = currentValue !== undefined && currentValue !== null && currentValue !== "" && (
+                                                                currentValue < min || currentValue > max
+                                                            )
+                                                            const hasInputIssue = Boolean(numericError) || isOutOfRange
 
-                                             return (
-                                                 <div className="w-full flex flex-col gap-1">
-                                                     <div className="flex items-center gap-4 w-full">
-                                                         <div className={`flex-1 relative flex flex-col ${showLabels ? "pb-6" : "py-2"}`}>
-                                                             <Slider
-                                                                 min={min}
-                                                                 max={max}
-                                                                 step={step}
-                                                                 showSteps={true}
-                                                                 value={[sliderValue]}
-                                                                 onValueChange={(val) => handleValueChange(prop.code, val[0])}
-                                                                 className="cursor-pointer relative z-10"
-                                                             />
-                                                         </div>
-                                                         <input
-                                                             type="number"
-                                                             step={step}
-                                                             min={min}
-                                                             max={max}
-                                                             value={currentValue ?? ""}
-                                                             onChange={(e) => handleValueChange(prop.code, e.target.value === "" ? undefined : Number(e.target.value))}
-                                                             className={`w-16 px-2 py-1 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${isOutOfRange ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
-                                                             placeholder={t("evaluation.val")}
-                                                         />
-                                                     </div>
-                                                     <div className="flex justify-between text-[10px] text-slate-400 px-0.5 mt-1">
-                                                         {!showLabels ? <span>{t("evaluation.min", { value: min })}</span> : <span />}
-                                                         {isOutOfRange && <span className="text-rose-500 font-medium animate-pulse">{t("evaluation.outOfRange")}</span>}
-                                                         {!showLabels ? <span>{t("evaluation.max", { value: max })}</span> : <span />}
-                                                     </div>
-                                                 </div>
-                                             )
-                                         })()}
+                                                            const stepCount = Math.round((max - min) / step)
+                                                            const showSliderTicks = stepCount > 0 && stepCount <= 100
 
-                                        {(prop.__typename === "EnumProperty" || prop.__typename === "DiscreteNumbersProperty") && (
-                                            <select
-                                                value={currentValue ?? ""}
-                                                onChange={(e) => {
-                                                    const val = e.target.value
-                                                    handleValueChange(prop.code, prop.__typename === "DiscreteNumbersProperty" ? (val === "" ? undefined : Number(val)) : val)
-                                                }}
-                                                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
-                                            >
-                                                <option value="">{t("evaluation.selectOption")}</option>
-                                                {prop.__typename === "EnumProperty" 
-                                                    ? prop.enumAllowedValues?.map((opt) => (
-                                                        <EnumOption key={opt} value={opt} formatEnumLabel={formatEnumLabel} />
-                                                    ))
-                                                    : prop.discreteAllowedValues?.map((opt) => (
-                                                        <option key={opt} value={opt}>{opt}</option>
-                                                    ))
-                                                }
-                                            </select>
-                                        )}
+                                                            return (
+                                                                <div className="w-full flex flex-col">
+                                                                    <div className="flex items-center gap-3 w-full">
+                                                                        <div
+                                                                            className={`flex-1 relative flex flex-col ${showSliderTicks ? "pb-5" : "py-1"}`}>
+                                                                            <Slider
+                                                                                min={min}
+                                                                                max={max}
+                                                                                step={step}
+                                                                                showSteps={true}
+                                                                                value={[sliderValue]}
+                                                                                onValueChange={(val) => {
+                                                                                    setNumericDrafts(prev => {
+                                                                                        const next = {...prev}
+                                                                                        delete next[prop.code]
+                                                                                        return next
+                                                                                    })
+                                                                                    setNumericErrors(prev => ({...prev, [prop.code]: null}))
+                                                                                    handleValueChange(prop.code, normalizeNumericValue(val[0]))
+                                                                                }}
+                                                                                className="cursor-pointer relative z-10"
+                                                                            />
+                                                                        </div>
+                                                                        <input
+                                                                            type="number"
+                                                                            step={step}
+                                                                            min={min}
+                                                                            max={max}
+                                                                            inputMode={isDouble ? "decimal" : "numeric"}
+                                                                            value={inputDisplayValue}
+                                                                            onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
+                                                                            onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
+                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
+                                                                            placeholder={t("evaluation.val")}
+                                                                        />
+                                                                    </div>
+                                                                    {(numericErrorMessage || !showSliderTicks || isOutOfRange) && (
+                                                                        <div
+                                                                            className="flex justify-between text-[9px] text-slate-400 px-0.5 mt-0.5">
+                                                                            {!showSliderTicks &&
+                                                                                <span>{t("evaluation.min", {value: min})}</span>}
+                                                                            {numericErrorMessage ? (
+                                                                                <span className="text-rose-500 font-medium animate-pulse mx-auto">
+                                                                                    {numericErrorMessage}
+                                                                                </span>
+                                                                            ) : isOutOfRange ? (
+                                                                                <span
+                                                                                    className="text-rose-500 font-medium animate-pulse mx-auto">{t("evaluation.outOfRange")}</span>
+                                                                            ) : null}
+                                                                            {!showSliderTicks &&
+                                                                                <span>{t("evaluation.max", {value: max})}</span>}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })()}
 
-                                        {prop.__typename === "SmartProperty" && (() => {
-                                            const raw = computedSmartValues[prop.code]
-                                            const isBooleanResult = BOOLEAN_OPERATORS.has(prop.expression?.type)
-                                            return (
-                                                <div className={`px-4 py-1.5 rounded-lg text-sm font-bold w-full text-center ${isResult ? "border border-indigo-200 bg-white text-indigo-800 shadow-sm" : "border border-indigo-100 bg-indigo-50/50 text-indigo-700"}`}>
-                                                    {raw === undefined
-                                                        ? t("evaluation.waitingDependencies")
-                                                        : isBooleanResult
-                                                            ? (raw !== 0 ? t("common.yes") : t("common.no"))
-                                                            : raw.toFixed(2)}
+                                                        {prop.__typename === "EnumProperty" && (
+                                                            <select
+                                                                value={currentValue ?? ""}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value
+                                                                    handleValueChange(prop.code, val === "" ? undefined : val)
+                                                                }}
+                                                                className="w-full px-3 py-1 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                                                            >
+                                                                <option value="">{t("evaluation.selectOption")}</option>
+                                                                {prop.enumAllowedValues?.map((opt) => (
+                                                                    <EnumOption key={opt} value={opt}
+                                                                                formatEnumLabel={formatEnumLabel}/>
+                                                                ))}
+                                                            </select>
+                                                        )}
+
+                                                        {prop.__typename === "DiscreteNumbersProperty" && (
+                                                            <DiscreteNumbersInput
+                                                                allowedValues={prop.discreteAllowedValues ?? EMPTY_DISCRETE_VALUES}
+                                                                currentValue={currentValue}
+                                                                onChange={(val) => handleValueChange(prop.code, val)}
+                                                                selectPlaceholder={t("evaluation.selectOption")}
+                                                            />
+                                                        )}
+
+                                                        {prop.__typename === "SmartProperty" && (() => {
+                                                            const raw = computedSmartValues[prop.code]
+                                                            const isBooleanResult = isBooleanSmartProperty(prop, propertyByCode)
+                                                            return (
+                                                                <div
+                                                                    className={`px-4 py-1 rounded-lg text-[13px] font-bold w-full text-center ${isResult ? "border border-indigo-200 bg-white text-indigo-800 shadow-sm" : "border border-indigo-100 bg-indigo-50/50 text-indigo-700"}`}>
+                                                                    {raw === undefined
+                                                                        ? t("evaluation.waitingDependencies")
+                                                                        : isBooleanResult
+                                                                            ? (raw !== 0 ? t("common.yes") : t("common.no"))
+                                                                            : roundScoreToTwoDecimals(raw).toFixed(2)}
+                                                                </div>
+                                                            )
+                                                        })()}
+                                                    </div>
                                                 </div>
-                                            )
-                                        })()}
-                                    </div>
-                                    </div>
-                                    {!isSmart && (
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-end gap-2">
-                                                <textarea
-                                                    rows={1}
-                                                    value={commentValues[prop.id] ?? ""}
-                                                    onChange={(e) => handleCommentChange(prop.id, e.target.value)}
-                                                    placeholder={t("evaluation.addComment")}
-                                                    className="flex-1 px-3 py-1.5 border border-slate-100 rounded-lg text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 bg-slate-50/60 resize-none transition-colors"
-                                                />
-                                                <VoiceCommentButton
-                                                    isRecording={activeRecordingKey === prop.id}
-                                                    recordingTime={recordingTime}
-                                                    previewUrl={voicePreviewUrls[prop.id]}
-                                                    disabled={activeRecordingKey !== null && activeRecordingKey !== prop.id}
-                                                    onStart={() => startRecording(prop.id)}
-                                                    onStop={stopRecording}
-                                                    onDiscard={() => discardVoice(prop.id)}
-                                                />
-                                            </div>
-                                            {voicePreviewUrls[prop.id] && (
-                                                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1">
-                                                    <audio
-                                                        src={voicePreviewUrls[prop.id]}
-                                                        controls
-                                                        className="h-7 flex-1 min-w-0"
+                                                {!isSmart && propertyCommentsEnabled && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-end gap-2">
+                                                    <textarea
+                                                        rows={1}
+                                                        value={commentValues[prop.id] ?? ""}
+                                                        onChange={(e) => handleCommentChange(prop.id, e.target.value)}
+                                                        placeholder={t("evaluation.addComment")}
+                                                        className="flex-1 px-3 py-1 border border-slate-100 rounded-lg text-[11px] text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 bg-slate-50/60 resize-none transition-colors"
                                                     />
-                                                </div>
+                                                            {voiceCommentsEnabled && (
+                                                                <VoiceCommentButton
+                                                                    isRecording={activeRecordingKey === prop.id}
+                                                                    recordingTime={recordingTime}
+                                                                    previewUrl={voicePreviewUrls[prop.id]}
+                                                                    disabled={activeRecordingKey !== null && activeRecordingKey !== prop.id}
+                                                                    onStart={() => startRecording(prop.id)}
+                                                                    onStop={stopRecording}
+                                                                    onDiscard={() => discardVoice(prop.id)}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                        {voiceCommentsEnabled && voicePreviewUrls[prop.id] && (
+                                                            <div
+                                                                className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-0.5">
+                                                                <audio src={voicePreviewUrls[prop.id]} controls
+                                                                       className="h-6 flex-1 min-w-0"/>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </React.Fragment>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Блок з кнопкою та коментарем для останньої категорії */}
+                            {isLastCategory && (
+                                <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <h2 className="text-[13px] font-bold text-slate-700">
+                                            {t("evaluation.generalCommentLabel")}
+                                        </h2>
+                                        <div className="flex items-end gap-2">
+                                        <textarea
+                                            rows={2}
+                                            value={generalComment}
+                                            onChange={(e) => setGeneralComment(e.target.value)}
+                                            placeholder={t("evaluation.generalCommentPlaceholder")}
+                                            className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white resize-none transition-colors"
+                                        />
+                                            {voiceCommentsEnabled && (
+                                                <VoiceCommentButton
+                                                    isRecording={activeRecordingKey === "general"}
+                                                    recordingTime={recordingTime}
+                                                    previewUrl={voicePreviewUrls["general"]}
+                                                    disabled={activeRecordingKey !== null && activeRecordingKey !== "general"}
+                                                    onStart={() => startRecording("general")}
+                                                    onStop={stopRecording}
+                                                    onDiscard={() => discardVoice("general")}
+                                                />
                                             )}
+                                        </div>
+                                        {voiceCommentsEnabled && voicePreviewUrls["general"] && (
+                                            <div
+                                                className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-0.5 mt-1">
+                                                <audio src={voicePreviewUrls["general"]} controls
+                                                       className="h-7 flex-1 min-w-0"/>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isFormValid ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleSubmit}
+                                            disabled={isSubmitting}
+                                            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors shadow-md shadow-indigo-600/10 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+                                        >
+                                            {isSubmitting && <div
+                                                className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
+                                            <span>{t("evaluation.submit")}</span>
+                                        </button>
+                                    ) : (
+                                        <div
+                                            className="w-full py-2.5 bg-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl text-center cursor-default select-none border border-slate-200">
+                                            {t("evaluation.fillRequired")}
+                                        </div>
+                                    )}
+
+                                    {error && (
+                                        <div
+                                            className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-[11px] font-semibold text-center">
+                                            {error}
+                                        </div>
+                                    )}
+                                    {success && (
+                                        <div
+                                            className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 text-[11px] font-semibold text-center animate-pulse">
+                                            {t("evaluation.submitSuccess")}
                                         </div>
                                     )}
                                 </div>
-                                </React.Fragment>
-                            )
-                        })}
-                    </div>
-                </div>
-                )
-            })}
-
-            <div className="border border-slate-100 rounded-2xl p-6 bg-slate-50/30">
-                <h2 className="text-sm font-bold text-slate-700 mb-3">
-                    {t("evaluation.generalCommentLabel")}
-                </h2>
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-end gap-2">
-                        <textarea
-                            rows={3}
-                            value={generalComment}
-                            onChange={(e) => setGeneralComment(e.target.value)}
-                            placeholder={t("evaluation.generalCommentPlaceholder")}
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white resize-none transition-colors"
-                        />
-                        <VoiceCommentButton
-                            isRecording={activeRecordingKey === "general"}
-                            recordingTime={recordingTime}
-                            previewUrl={voicePreviewUrls["general"]}
-                            disabled={activeRecordingKey !== null && activeRecordingKey !== "general"}
-                            onStart={() => startRecording("general")}
-                            onStop={stopRecording}
-                            onDiscard={() => discardVoice("general")}
-                        />
-                    </div>
-                    {voicePreviewUrls["general"] && (
-                        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-1">
-                            <audio
-                                src={voicePreviewUrls["general"]}
-                                controls
-                                className="h-8 flex-1 min-w-0"
-                            />
+                            )}
                         </div>
-                    )}
-                </div>
+                    )
+                })}
             </div>
-
-            {isFormValid ? (
-                <button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors mt-4 shadow-md shadow-indigo-600/10 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
-                >
-                    {isSubmitting && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
-                    <span>{t("evaluation.submit")}</span>
-                </button>
-            ) : (
-                <div className="w-full py-3 bg-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl text-center cursor-default select-none mt-4 border border-slate-200">
-                    {t("evaluation.fillRequired")}
-                </div>
-            )}
-
-            {error && (
-                <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-semibold text-center">
-                    {error}
-                </div>
-            )}
-            {success && (
-                <div className="mt-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 text-xs font-semibold text-center animate-pulse">
-                    {t("evaluation.submitSuccess")}
-                </div>
-            )}
         </div>
     )
 }

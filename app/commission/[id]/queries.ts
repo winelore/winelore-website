@@ -13,6 +13,13 @@ export const GET_COMMISSION = gql(`
       startedAt
       endedAt
       createdAt
+      wineJumperMiniGameEnabled
+      voiceCommentsEnabled
+      propertyCommentsEnabled
+      beverageOriginDuringEvaluationEnabled
+      candidates {
+        id
+      }
       competition {
         id
         name
@@ -49,7 +56,11 @@ export const GET_COMMISSION_TEMPLATES = gql(`
       id
       templateEditions {
         id
-        beverageType
+        beverageType {
+          id
+          code
+          name
+        }
         templateEdition {
           id
           version
@@ -303,41 +314,45 @@ export const START_COMMISSION = gql(`
   }
 `);
 
-export const COMPLETE_COMMISSION = gql(`
-  mutation CompleteCommissionReplica($id: ID!) {
-    completeCommissionReplica(id: $id) {
-      id
-      status
-    }
-  }
-`);
-
 export const GET_REPLICA_CANDIDATES = gql(`
   query GetReplicaCandidates($replicaId: ID!) {
     commissionReplica(id: $replicaId) {
       id
       status
+      commission {
+        id
+        candidates {
+          id
+        }
+      }
       replicaCandidates {
         id
         status
         candidate {
           id
           anonymizedCode
+          beverageType {
+            id
+            code
+            name
+          }
           sample {
             id
             volumeMl
             batch {
               id
-              vintage
+              attributes
               beverage {
                 id
                 name
                 status
-                ... on Wine {
-                  origin {
-                    latitude
-                    longitude
-                  }
+                attributes
+                producers {
+                  auid
+                }
+                origin {
+                  latitude
+                  longitude
                 }
               }
             }
@@ -371,16 +386,15 @@ export const GET_REPLICA_CANDIDATE = gql(`
           volumeMl
           batch {
             id
-            vintage
+            attributes
             beverage {
               id
               name
               status
-              ... on Wine {
-                origin {
-                  latitude
-                  longitude
-                }
+              attributes
+              origin {
+                latitude
+                longitude
               }
             }
           }
@@ -418,8 +432,8 @@ export const ACTIVATE_EVALUATION_TEMPLATE_EDITION = gql(`
 `);
 
 export const SET_COMMISSION_TEMPLATE_EDITION = gql(`
-  mutation SetCommissionTemplateEdition($id: ID!, $beverageType: BeverageType!, $templateEditionId: ID!) {
-    setCommissionTemplateEdition(id: $id, beverageType: $beverageType, templateEditionId: $templateEditionId) {
+  mutation SetCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!, $templateEditionId: ID!) {
+    setCommissionTemplateEdition(id: $id, beverageTypeId: $beverageTypeId, templateEditionId: $templateEditionId) {
       id
     }
   }
@@ -443,6 +457,50 @@ export const MARK_CANDIDATE_EVALUATED = gql(`
     markCommissionReplicaCandidateAsEvaluated(id: $id) {
       id
       status
+    }
+  }
+`);
+
+export const GET_MY_EVALUATION_FOR_CANDIDATE = gql(`
+  query GetMyEvaluationForCandidate($replicaCandidateId: ID!) {
+    evaluationByReplicaCandidateAndEvaluator(replicaCandidateId: $replicaCandidateId) {
+      evaluatorAuid
+      isComplete
+      scores {
+        code
+        value
+      }
+      comments {
+        id
+        propertyId
+        text
+        voiceUrl
+      }
+    }
+  }
+`);
+
+export const GET_EVALUATIONS_FOR_CANDIDATE = gql(`
+  query GetEvaluationsForCandidate($replicaCandidateId: ID!, $limit: Int) {
+    evaluationsByReplicaCandidate(replicaCandidateId: $replicaCandidateId, limit: $limit) {
+      items {
+        id
+        evaluatorAuid
+        isComplete
+        templateEdition {
+          id
+        }
+        scores {
+          code
+          value
+        }
+        comments {
+          id
+          propertyId
+          text
+          voiceUrl
+        }
+      }
     }
   }
 `);

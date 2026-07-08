@@ -1,228 +1,35 @@
 "use client"
 
-import React, { useState, useEffect, use } from "react"
+import React, { useState, useEffect, use, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
-import { Users, Wine, Loader2, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
+import { Users, Wine, Loader2, ArrowRight } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import { TranslatedText } from "@/lib/i18n/TranslatedText"
+import { useUsernames } from "@/hooks/useUsernames"
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
 } from "../../../../actions"
-
-type PropertyMeta = { name: string; isResult: boolean }
-
-function isResultOrGeneralComment(
-    comment: { propertyId?: string | null },
-    propertyMap: Record<string, PropertyMeta>,
-) {
-    if (!comment.propertyId) return true
-    return propertyMap[comment.propertyId]?.isResult === true
-}
-
-function SubmittedScores({
-    scores,
-    propertyMap,
-    accent = "slate",
-    resultsOnly = false,
-}: {
-    scores: Array<{ code: string; value: string }>
-    propertyMap: Record<string, PropertyMeta>
-    accent?: "indigo" | "slate"
-    resultsOnly?: boolean
-}) {
-    const { t } = useTranslation()
-
-    const regularScores = resultsOnly
-        ? []
-        : scores.filter((score) => propertyMap[score.code]?.isResult !== true)
-    const resultScores = scores.filter((score) => propertyMap[score.code]?.isResult === true)
-
-    const borderClass = accent === "indigo" ? "border-indigo-300" : "border-indigo-200"
-
-    const renderScoreChip = (score: { code: string; value: string }, isResult: boolean) => {
-        const displayName = propertyMap[score.code]?.name || score.code
-
-        return (
-            <div
-                key={score.code}
-                className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs shadow-sm ${
-                    isResult
-                        ? "border border-indigo-300 bg-indigo-600 text-white"
-                        : "border border-slate-200 bg-white"
-                }`}
-            >
-                <span className={`mr-1 ${isResult ? "text-indigo-100" : "text-slate-500"}`}>
-                    <TranslatedText text={displayName} />
-                </span>
-                <span className={`font-bold ${isResult ? "text-white" : "text-slate-800"}`}>
-                    {score.value}
-                </span>
-            </div>
-        )
-    }
-
-    if (regularScores.length === 0 && resultScores.length === 0) return null
-
-    return (
-        <div className={`pl-3 border-l-2 ${borderClass} mt-2 space-y-3`}>
-            {regularScores.length > 0 && (
-                <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        {t("evaluation.submittedScores")}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {regularScores.map((score) => renderScoreChip(score, false))}
-                    </div>
-                </div>
-            )}
-
-            {resultScores.length > 0 && (
-                <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
-                        {t("evaluation.resultsSection")}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {resultScores.map((score) => renderScoreChip(score, true))}
-                    </div>
-                </div>
-            )}
-        </div>
-    )
-}
-
-function hasFullAssessmentDetails(
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
-    propertyMap: Record<string, PropertyMeta>,
-) {
-    const scores = evaluation.scores || []
-    const hasNonResultScores = scores.some((s) => propertyMap[s.code]?.isResult !== true)
-    const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
-    const hasHiddenComments = allComments.some((c) => !isResultOrGeneralComment(c, propertyMap))
-    return hasNonResultScores || hasHiddenComments
-}
-
-function MemberEvaluationSection({
-    evaluation,
-    propertyMap,
-    accent,
-}: {
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
-    propertyMap: Record<string, PropertyMeta>
-    accent: "indigo" | "slate"
-}) {
-    const { t } = useTranslation()
-    const [expanded, setExpanded] = useState(false)
-    const canExpand = hasFullAssessmentDetails(evaluation, propertyMap)
-
-    return (
-        <div className="space-y-2">
-            <MemberEvaluationDetails
-                evaluation={evaluation}
-                propertyMap={propertyMap}
-                accent={accent}
-                showAll={expanded}
-            />
-            {canExpand && (
-                <button
-                    type="button"
-                    onClick={() => setExpanded((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
-                >
-                    {expanded ? (
-                        <>
-                            <ChevronUp className="w-3.5 h-3.5 shrink-0" />
-                            <span>{t("commission.showResultsOnly")}</span>
-                        </>
-                    ) : (
-                        <>
-                            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
-                            <span>{t("commission.showAllAssessments")}</span>
-                        </>
-                    )}
-                </button>
-            )}
-        </div>
-    )
-}
-
-function MemberEvaluationDetails({
-    evaluation,
-    propertyMap,
-    accent,
-    showAll,
-}: {
-    evaluation: { scores?: Array<{ code: string; value: string }>; comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }> }
-    propertyMap: Record<string, PropertyMeta>
-    accent: "indigo" | "slate"
-    showAll: boolean
-}) {
-    const { t } = useTranslation()
-
-    const scores = evaluation.scores || []
-    const allComments = (evaluation.comments || []).filter((c) => c.text || c.voiceUrl)
-    const visibleComments = showAll
-        ? allComments
-        : allComments.filter((c) => isResultOrGeneralComment(c, propertyMap))
-
-    const visibleScores = showAll
-        ? scores
-        : scores.filter((s) => propertyMap[s.code]?.isResult === true)
-
-    const commentAccentClass = accent === "indigo" ? "border-slate-300" : "border-slate-200"
-    const commentLabelClass = accent === "indigo" ? "text-indigo-500" : "text-slate-500"
-    const commentTextClass = accent === "indigo" ? "text-indigo-950" : "text-slate-600"
-
-    return (
-        <>
-            {visibleScores.length > 0 && (
-                <SubmittedScores
-                    scores={visibleScores}
-                    propertyMap={propertyMap}
-                    accent={accent}
-                    resultsOnly={!showAll}
-                />
-            )}
-
-            {visibleComments.length > 0 && (
-                <div className={`pl-2 border-l-2 ${commentAccentClass} mt-2`}>
-                    <p className="text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">{t("commission.comments")}</p>
-                    <div className="space-y-1.5">
-                        {visibleComments.map((comment) => {
-                            const displayName = comment.propertyId
-                                ? propertyMap[comment.propertyId]?.name || comment.propertyId
-                                : t("evaluation.generalCommentLabel")
-                            return (
-                                <div key={comment.id} className={`text-xs ${commentTextClass} space-y-1`}>
-                                    <span className={`font-semibold ${commentLabelClass}`}><TranslatedText text={displayName} />:</span>
-                                    {comment.text && <span> {comment.text}</span>}
-                                    {comment.voiceUrl && (
-                                        <div className="mt-1">
-                                            <audio
-                                                src={comment.voiceUrl}
-                                                controls
-                                                className="h-7 w-full max-w-xs"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            )}
-        </>
-    )
-}
+import { findEvaluationForMember, normalizeAuids } from "../../../../auidUtils"
+import {
+    clearCachedWaitEvaluation,
+    readCachedWaitEvaluation,
+} from "../../../../waitEvaluationCache"
+import {
+    hasEvaluationData,
+    MemberEvaluationSection,
+} from "../../../../EvaluationCommentsDisplay"
+import type { PropertyMeta } from "../../../../propertyMap"
+import type { MyTastingSummaryData } from "../../../../expertRanking"
+import { MyTastingSummary } from "../../../../MyTastingSummary"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
     const router = useRouter();
     const { t, tCount } = useTranslation();
-    const [auid, setAuid] = useState<number>(1);
+    const [auid, setAuid] = useState<number | null>(null);
     const [role, setRole] = useState<string>("EXPERT");
     const [members, setMembers] = useState<any[]>([]);
     const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(null);
@@ -232,46 +39,100 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [propertyMap, setPropertyMap] = useState<Record<string, PropertyMeta>>({});
     const [candidatesLeft, setCandidatesLeft] = useState<number>(0);
     const [candidatesLeftAfterCurrent, setCandidatesLeftAfterCurrent] = useState<number>(0);
+    const [allDone, setAllDone] = useState(false);
+    const [myEvaluation, setMyEvaluation] = useState<any | null>(null);
+    const [wineJumperMiniGameEnabled, setWineJumperMiniGameEnabled] = useState(false);
+    const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
+    const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
+    const [myTastingSummary, setMyTastingSummary] = useState<MyTastingSummaryData | null>(null);
 
-    // 1. Read AUID from cookie (fallback to 1)
+    // Fetch usernames for commission members
+    const allMemberAuids = useMemo(() => {
+        return Array.from(new Set(members.flatMap(m => normalizeAuids(m.auid))));
+    }, [members]);
+    const { usernames } = useUsernames(allMemberAuids);
+
+    // 1. Read AUID from cookie and restore cached evaluation from submit
     useEffect(() => {
         const cookieAuid = Cookies.get("auid");
-        setAuid(cookieAuid ? parseInt(cookieAuid, 10) : 1);
-    }, []);
+        if (!cookieAuid) {
+            router.push("/auth/login");
+            return;
+        }
+        setAuid(parseInt(cookieAuid, 10));
+
+        const cached = readCachedWaitEvaluation(commissionId, replicaId);
+        if (cached) {
+            setMyEvaluation(cached);
+        }
+    }, [commissionId, replicaId, router]);
 
     // 2. Polling loop every 3 seconds
     useEffect(() => {
-        if (auid === null) return;
+        if (auid === null || isRedirecting) return;
 
         const fetchData = async () => {
+            if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
                 setEvaluations(newEvaluations || []);
                 setPropertyMap(newPropertyMap || {});
+                setWineJumperMiniGameEnabled(newWineJumperEnabled);
+                setVoiceCommentsEnabled(newVoiceCommentsEnabled);
+                setPropertyCommentsEnabled(newPropertyCommentsEnabled);
+                const commentFlags = {
+                    propertyCommentsEnabled: newPropertyCommentsEnabled,
+                    voiceCommentsEnabled: newVoiceCommentsEnabled,
+                };
+                if (newMyEvaluation && hasEvaluationData(newMyEvaluation, commentFlags)) {
+                    setMyEvaluation(newMyEvaluation);
+                    clearCachedWaitEvaluation(commissionId, replicaId);
+                } else if (newMyEvaluation) {
+                    setMyEvaluation(newMyEvaluation);
+                }
                 setCandidatesLeft(newCandidatesLeft ?? 0);
                 setCandidatesLeftAfterCurrent(newCandidatesLeftAfterCurrent ?? 0);
 
                 // Find current user's role
-                const me = commMembers.find((m: any) => Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid);
+                const me = commMembers.find((m: any) => auid !== null && (Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid));
                 if (me) setRole(me.role);
 
-                if (!newCandidateId || allCandidatesEvaluated) {
-                    // Tasting is complete!
-                    router.push(`/commission/${commissionId}`);
+                if (allCandidatesEvaluated) {
+                    setAllDone(true);
+                    if (newMyTastingSummary != null) {
+                        setMyTastingSummary(newMyTastingSummary);
+                    }
+                    return;
+                }
+
+                if (!newCandidateId) {
+                    return;
+                }
+
+                const cached = readCachedWaitEvaluation(commissionId, replicaId);
+                const hasFreshSubmitCache =
+                    cached?.candidateId === newCandidateId && cached?.isComplete !== false;
+
+                if (!hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
                 }
 
                 // If candidate changed (HEAD advanced) — redirect everyone to evaluation
                 if (currentCandidateId && currentCandidateId !== newCandidateId) {
-                    router.push(`/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`);
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
                 }
 
                 setCurrentCandidateId(newCandidateId);
                 setCurrentCandidateCode(newCandidateCode);
+                setIsSwitching(false);
 
             } catch (err) {
                 console.error("Polling error", err);
@@ -281,27 +142,49 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         fetchData();
         const interval = setInterval(fetchData, 3000);
         return () => clearInterval(interval);
-    }, [commissionId, replicaId, auid, currentCandidateId, router]);
+    }, [commissionId, replicaId, auid, currentCandidateId, router, isRedirecting]);
+
+    const heads = members.filter(m => m.role === "HEAD");
+    const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
+    const commentFlags = { propertyCommentsEnabled, voiceCommentsEnabled };
+    const canAdvanceToNextBeverage =
+        Boolean(currentCandidateId) &&
+        members.length > 0 &&
+        members.every((member) => findEvaluationForMember(evaluations, member.auid)?.isComplete === true);
 
     // HEAD action: advance to next beverage
     const handleNextBeverage = async () => {
-        if (!currentCandidateId || isSwitching) return;
+        if (!canAdvanceToNextBeverage || isSwitching || !currentCandidateId) return;
         setIsSwitching(true);
         try {
-            await markCandidateEvaluatedAction(currentCandidateId);
-            // Polling will detect the status change and redirect automatically
+            await markCandidateEvaluatedAction(replicaId, currentCandidateId);
+            // Polling will detect the advanced current candidate and redirect automatically
         } catch (err) {
             console.error(err);
             setIsSwitching(false);
         }
     };
 
-    const heads = members.filter(m => m.role === "HEAD");
-    const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
-
     // ==========================================
     // HEAD OF COMMISSION VIEW
     // ==========================================
+    if (allDone) {
+        return (
+            <div className="flex min-h-screen flex-col bg-slate-50">
+                <AppHeader activeTab="competitions" />
+                <main className="flex-1 p-6 md:p-10">
+                    <div className="max-w-4xl mx-auto">
+                        <MyTastingSummary
+                            data={myTastingSummary}
+                            commissionId={commissionId}
+                            showBackLink
+                        />
+                    </div>
+                </main>
+            </div>
+        )
+    }
+
     if (role === "HEAD") {
         return (
             <div className="flex min-h-screen flex-col bg-slate-50">
@@ -330,7 +213,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </div>
                         <button
                             onClick={handleNextBeverage}
-                            disabled={!currentCandidateId || isSwitching}
+                            disabled={!canAdvanceToNextBeverage || isSwitching}
                             className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
                         >
                             {isSwitching ? (
@@ -355,19 +238,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 
                                 {/* 1. Render Heads */}
                                 {heads.map((headMember, i) => {
-                                    const headAuid = Array.isArray(headMember.auid) ? headMember.auid[0] : headMember.auid;
-                                    const headAuidsStr = Array.isArray(headMember.auid) ? headMember.auid.join(", ") : String(headMember.auid);
-                                    
-                                    // Find if there is an evaluation for this head member
-                                    const evaluation = evaluations.find((ev: any) => {
-                                        const evAuid = Array.isArray(ev.evaluatorAuid) ? ev.evaluatorAuid : [ev.evaluatorAuid];
-                                        return evAuid.some((id: any) => String(id) === String(headAuid));
-                                    });
+                                    const headAuidsStr = normalizeAuids(headMember.auid).map(id => usernames[id] || id).join(", ");
+                                    const headKeyAuid = normalizeAuids(headMember.auid)[0] ?? i;
+
+                                    const evaluation = findEvaluationForMember(evaluations, headMember.auid);
 
                                     const isCompleted = evaluation?.isComplete || false;
 
                                     return (
-                                        <div key={`${currentCandidateId}-head-${headAuid}`} className="flex flex-col p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 space-y-3">
+                                        <div key={`${currentCandidateId}-head-${headKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold text-indigo-950">
@@ -393,6 +272,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     evaluation={evaluation}
                                                     propertyMap={propertyMap}
                                                     accent="indigo"
+                                                    propertyCommentsEnabled={propertyCommentsEnabled}
+                                                    voiceCommentsEnabled={voiceCommentsEnabled}
                                                 />
                                             )}
                                         </div>
@@ -401,19 +282,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                                 {/* 2. Render Experts */}
                                 {experts.map((expert, i) => {
-                                    const expertAuid = Array.isArray(expert.auid) ? expert.auid[0] : expert.auid;
-                                    const expertAuidsStr = Array.isArray(expert.auid) ? expert.auid.join(", ") : String(expert.auid);
-                                    
-                                    // Find if there is an evaluation for this expert
-                                    const evaluation = evaluations.find((ev: any) => {
-                                        const evAuid = Array.isArray(ev.evaluatorAuid) ? ev.evaluatorAuid : [ev.evaluatorAuid];
-                                        return evAuid.some((id: any) => String(id) === String(expertAuid));
-                                    });
+                                    const expertAuidsStr = normalizeAuids(expert.auid).map(id => usernames[id] || id).join(", ");
+                                    const expertKeyAuid = normalizeAuids(expert.auid)[0] ?? i;
+
+                                    const evaluation = findEvaluationForMember(evaluations, expert.auid);
 
                                     const isCompleted = evaluation?.isComplete || false;
 
                                     return (
-                                        <div key={`${currentCandidateId}-expert-${expertAuid}`} className="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                                        <div key={`${currentCandidateId}-expert-${expertKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <span className="font-semibold text-slate-700">
                                                     {expertAuidsStr} {expert.role === "TRAINEE_EXPERT" ? `(${t("commission.roleTrainee")})` : ""}
@@ -429,11 +306,14 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                 )}
                                             </div>
                                             
-                                            {isCompleted && evaluation && (
+                                            {evaluation && hasEvaluationData(evaluation, commentFlags) && (
                                                 <MemberEvaluationSection
                                                     evaluation={evaluation}
                                                     propertyMap={propertyMap}
                                                     accent="slate"
+                                                    forceShowAll={!isCompleted}
+                                                    propertyCommentsEnabled={propertyCommentsEnabled}
+                                                    voiceCommentsEnabled={voiceCommentsEnabled}
                                                 />
                                             )}
                                         </div>
@@ -442,11 +322,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                             </div>
                         </div>
 
-                        {/* Mini game */}
-                        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col items-center">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{t("commission.boredPlay")}</h3>
-                            <WineJumperGame />
-                        </div>
+                        {wineJumperMiniGameEnabled && (
+                            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col items-center">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{t("commission.boredPlay")}</h3>
+                                <WineJumperGame />
+                            </div>
+                        )}
                     </div>
                 </div>
                 </main>
@@ -458,35 +339,64 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // EXPERT VIEW
     // ==========================================
     return (
-        <div className="flex min-h-screen flex-col bg-[#0f172a]">
+        <div className="flex min-h-screen flex-col bg-slate-50">
             <AppHeader activeTab="competitions" />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <div className="relative mb-10 flex justify-center">
-                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center animate-pulse">
-                        <Wine className="w-10 h-10 text-white" />
+                    <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center animate-pulse border border-indigo-100">
+                        <Wine className="w-10 h-10 text-indigo-600" />
                     </div>
                 </div>
 
-                <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+                <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight mb-4">
                     {t("commission.evaluationSubmitted")}
                 </h1>
-                <div className="max-w-md mx-auto mb-14 space-y-4">
-                    <p className="text-slate-400 text-lg">
+                <div className="max-w-md mx-auto mb-8 space-y-4">
+                    <p className="text-slate-500 text-lg">
                         {t("commission.waitingNextRound")} {t("commission.autoRefreshNotice")}
                     </p>
                     {candidatesLeftAfterCurrent > 0 && (
-                        <p className="text-indigo-300 text-sm font-semibold">
+                        <p className="text-indigo-600 text-sm font-semibold">
                             {tCount("commission.candidatesLeftToEvaluate", candidatesLeftAfterCurrent)}
                         </p>
                     )}
                 </div>
 
-                <div className="w-full max-w-2xl bg-white p-2 rounded-[2.5rem] shadow-2xl shadow-black/50 border border-slate-800">
-                    <WineJumperGame />
-                </div>
+                {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
+                <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
+                    {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && (
+                        <div className="p-5">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                                {t("evaluation.submittedScores")}
+                            </p>
+                            <MemberEvaluationSection
+                                evaluation={myEvaluation}
+                                propertyMap={propertyMap}
+                                accent="slate"
+                                forceShowAll
+                                propertyCommentsEnabled={propertyCommentsEnabled}
+                                voiceCommentsEnabled={voiceCommentsEnabled}
+                            />
+                        </div>
+                    )}
 
-                <div className="mt-12 flex items-center gap-3 text-slate-400 font-medium">
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && wineJumperMiniGameEnabled && (
+                        <div className="border-t border-slate-100" />
+                    )}
+
+                    {wineJumperMiniGameEnabled && (
+                    <div className="p-5">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 text-center">
+                            {t("commission.boredPlay")}
+                        </p>
+                        <WineJumperGame embedded />
+                    </div>
+                    )}
+                </div>
+                ) : null}
+
+                <div className="mt-12 flex items-center gap-3 text-slate-500 font-medium">
+                    <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
                     {t("commission.waitingOtherExperts")}
                 </div>
             </main>

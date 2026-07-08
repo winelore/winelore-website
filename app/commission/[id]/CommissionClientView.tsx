@@ -1,18 +1,20 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Layers, PlayCircle, StopCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar, ChevronRight, Settings, AlertCircle, Plus } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
+
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { useUsernames } from "@/hooks/useUsernames"
 import { 
     markMemberReadyAction, 
     markMemberNotReadyAction, 
     startCommissionAction, 
-    completeCommissionAction,
     getCommissionDataAction
 } from "../actions"
+import { isReplicaCandidateFinished } from "../replicaUtils"
 
 const tabs = (t: any) => [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -55,10 +57,10 @@ function getAvatarGradient(auid: number): string {
     return gradients[idx]
 }
 
-function MemberAvatar({ auid, role, className }: { auid: number[]; role: string; className?: string }) {
+function MemberAvatar({ auid, role, username, className }: { auid: number[]; role: string; username?: string; className?: string }) {
     const primaryAuid = auid[0] || 0
     const gradient = getAvatarGradient(primaryAuid)
-    const initials = primaryAuid ? `${primaryAuid}`.slice(-2) : "?"
+    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : (primaryAuid ? `${primaryAuid}`.slice(-2) : "?")
     
     return (
         <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm shrink-0 border border-white/10 ${className}`}>
@@ -183,20 +185,28 @@ export default function CommissionClientView({
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
-    const [currentAuid, setCurrentAuid] = useState<number>(serverAuid || 1)
+    const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [hasRedirected, setHasRedirected] = useState(false)
 
     const initialData = localData
 
     // Detect user's active replica
     const activeReplica = localReplicas.find(r =>
-        r.members.some(m => m.auid.includes(currentAuid))
+        r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
     ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
 
     const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
 
     const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
     const localMembers = selectedReplica ? selectedReplica.members : []
+
+    // Fetch usernames for panel members and competition creators/holders
+    const allMemberAuids = useMemo(() => {
+        const memberIds = localMembers.flatMap(m => m.auid);
+        const holderIds = initialData.competition.holders || [];
+        return Array.from(new Set([...memberIds, ...holderIds]));
+    }, [localMembers, initialData.competition.holders])
+    const { usernames } = useUsernames(allMemberAuids)
 
     const prevReplicaStatusRef = useRef(selectedReplica?.status)
 
@@ -205,7 +215,7 @@ export default function CommissionClientView({
         if (propInitialData.replicas) {
             setLocalReplicas(propInitialData.replicas)
             const active = propInitialData.replicas.find(r =>
-                r.members.some(m => m.auid.includes(currentAuid))
+                r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
             ) || propInitialData.replicas.find(r => r.type === "STANDARD") || propInitialData.replicas[0] || null
             if (active && !selectedReplicaId) {
                 setSelectedReplicaId(active.id)
@@ -221,7 +231,7 @@ export default function CommissionClientView({
     }, [])
 
     useEffect(() => {
-        const me = localMembers.find(m => m.auid.includes(currentAuid))
+        const me = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
         if (me) {
             setCurrentUserRole(me.role)
             setCurrentMemberId(me.id)
@@ -232,7 +242,7 @@ export default function CommissionClientView({
     }, [localMembers, currentAuid])
 
     const creatorNames = initialData.competition.holders.length > 0
-        ? initialData.competition.holders.join(", ")
+        ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
         : t("common.unknownCreator")
 
     const isHolder = initialData.competition.holders.includes(currentAuid)
@@ -367,7 +377,7 @@ export default function CommissionClientView({
         setIsMutating(true)
         try {
             await startCommissionAction(selectedReplica.id)
-            router.push(`/commission/${initialData.id}/replica/${selectedReplica.id}/wait`)
+            router.push(`/commission/${initialData.id}/replica/${selectedReplica.id}/evaluation`)
             router.refresh()
         } catch (err) {
             console.error("Failed to start replica tasting session:", err)
@@ -376,21 +386,8 @@ export default function CommissionClientView({
         }
     }
 
-    const handleCompleteCommission = async () => {
-        if (!selectedReplica || isMutating) return
-        setIsMutating(true)
-        try {
-            await completeCommissionAction(selectedReplica.id)
-            router.refresh()
-        } catch (err) {
-            console.error("Failed to complete replica tasting session:", err)
-        } finally {
-            setIsMutating(false)
-        }
-    }
-
     const isEveryoneReady = localMembers.every(m => m.isReady)
-    const myStatus = localMembers.find(m => m.auid.includes(currentAuid))
+    const myStatus = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
     const amIReady = myStatus?.isReady || false
     const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
     const nonReadyCount = localMembers.filter(m => !m.isReady).length
@@ -402,12 +399,98 @@ export default function CommissionClientView({
 
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
+    const isCommissionCompleted = initialData.status === "COMPLETED"
+    const isCompetitionHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
+    const showResultsBanner = isCompetitionHolder
+    const isUserReplicaMember = selectedReplica?.members.some(
+        (m) => currentAuid !== null && m.auid.includes(currentAuid),
+    ) ?? false
+    const myReplica = localReplicas.find((r) =>
+        r.members.some((m) => currentAuid !== null && m.auid.includes(currentAuid)),
+    ) ?? null
+    const allCandidatesEvaluated =
+        (selectedReplica?.replicaCandidates?.length ?? 0) > 0 &&
+        selectedReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status))
+    const selectedReplicaReadyForSummary =
+        isUserReplicaMember &&
+        selectedReplica &&
+        (replicaStatus === "COMPLETED" || allCandidatesEvaluated)
+    const myReplicaReadyForSummary =
+        myReplica?.status === "COMPLETED" ||
+        ((myReplica?.replicaCandidates?.length ?? 0) > 0 &&
+            myReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status)))
+    const summaryReplica = selectedReplicaReadyForSummary
+        ? selectedReplica
+        : myReplicaReadyForSummary
+          ? myReplica
+          : null
+    const showMyTastingSummary = summaryReplica != null
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+                {showMyTastingSummary && (
+                    <div className="w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
+                        <div className="flex items-center gap-3">
+                            <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
+                            <div>
+                                <p className="text-sm font-bold text-indigo-900">
+                                    {t("commission.myRankingTitle")}
+                                </p>
+                                <p className="text-xs mt-0.5 text-indigo-600">
+                                    {t("commission.myRankingDesc")}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
+                            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                        >
+                            <Wine className="w-4 h-4" />
+                            {t("commission.viewMyTastingSummary")}
+                        </button>
+                    </div>
+                )}
+                {showResultsBanner && (
+                    <div className={`w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
+                        isCommissionCompleted
+                            ? "bg-emerald-50 border-emerald-200"
+                            : "bg-indigo-50 border-indigo-200"
+                    }`}>
+                        <div className="flex items-center gap-3">
+                            {isCommissionCompleted ? (
+                                <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                            ) : (
+                                <Trophy className="w-5 h-5 text-indigo-600 shrink-0" />
+                            )}
+                            <div>
+                                <p className={`text-sm font-bold ${isCommissionCompleted ? "text-emerald-800" : "text-indigo-900"}`}>
+                                    {isCommissionCompleted
+                                        ? t("commission.sessionCompleted")
+                                        : t("commission.resultsBannerTitle")}
+                                </p>
+                                <p className={`text-xs mt-0.5 ${isCommissionCompleted ? "text-emerald-600" : "text-indigo-600"}`}>
+                                    {isCommissionCompleted
+                                        ? t("commission.allCandidatesEvaluatedDesc")
+                                        : t("commission.resultsBannerDesc")}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => router.push(`/commission/${localData.id}/results`)}
+                            className={`shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
+                                isCommissionCompleted
+                                    ? "bg-emerald-600 hover:bg-emerald-700"
+                                    : "bg-indigo-600 hover:bg-indigo-700"
+                            }`}
+                        >
+                            <Trophy className="w-4 h-4" />
+                            {t("commission.continueToResults")}
+                        </button>
+                    </div>
+                )}
                 <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
 
                     {/* Left Column: Replicas, Stepper and Tasting Panel */}
@@ -423,7 +506,7 @@ export default function CommissionClientView({
                                 <div className="flex flex-col gap-2">
                                     {localReplicas.map((r) => {
                                         const isSelected = r.id === selectedReplicaId
-                                        const isUserReplica = r.members.some(m => m.auid.includes(currentAuid))
+                                        const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
                                         return (
                                             <button
                                                 key={r.id}
@@ -485,7 +568,7 @@ export default function CommissionClientView({
                                         {t("commission.tastingPanelSubtitle")}
                                     </p>
                                 </div>
-                                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                <span className="inline-flex items-center justify-center shrink-0 whitespace-nowrap text-xs font-semibold px-3 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100 tabular-nums">
                                     {t("commission.readyCount", { 
                                         ready: localMembers.filter(m => m.isReady).length, 
                                         total: localMembers.length 
@@ -495,18 +578,18 @@ export default function CommissionClientView({
 
                             <div className="flex flex-col gap-3">
                                 {sortedMembers.map((p) => {
-                                    const isMe = p.auid.includes(currentAuid)
+                                    const isMe = currentAuid !== null && p.auid.includes(currentAuid)
                                     return (
                                         <div key={p.id} className={`relative rounded-xl border p-4 shadow-sm flex items-center gap-3 transition-all duration-300 hover:shadow-md w-full ${
                                             isMe 
                                                 ? "border-indigo-200 bg-indigo-50/30 shadow-indigo-100/30 shadow-md" 
                                                 : "border-slate-100 bg-slate-50/30 hover:border-slate-200/50 hover:bg-slate-50/50"
                                         }`}>
-                                            <MemberAvatar auid={p.auid} role={p.role} className="h-10 w-10 shrink-0" />
+                                            <MemberAvatar auid={p.auid} role={p.role} username={usernames[p.auid[0]]} className="h-10 w-10 shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
-                                                        <span>AUID: {p.auid.join(", ")}</span>
+                                                        <span>{p.auid.map(id => usernames[id] || String(id)).join(", ")}</span>
                                                         {isMe && (
                                                             <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded-xs uppercase tracking-wider">
                                                                 {t("common.you")}
@@ -783,28 +866,6 @@ export default function CommissionClientView({
                             </h3>
                             
                             <div className="flex flex-col gap-6">
-                                {replicaStatus === "STARTED" && (
-                                    <div className="flex flex-col gap-2">
-                                        <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
-                                            className="group flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/15 transition-all duration-300 transform active:scale-95 w-fit cursor-pointer"
-                                        >
-                                            <FileText className="h-5 w-5" />
-                                            <span>{t("commission.continueEvaluation")}</span>
-                                        </button>
-                                        {selectedReplica?.currentCandidateId && (() => {
-                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
-                                            return (
-                                                <p className="text-xs text-slate-500 font-medium pl-1 flex items-center gap-1.5 flex-wrap">
-                                                    <span>{t("commission.currentCandidate", { code: code || t("common.na") })}</span>
-                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
-                                                </p>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-
                                 {isPreStart && currentUserRole && (
                                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
@@ -882,45 +943,33 @@ export default function CommissionClientView({
                                             </div>
                                         )}
 
-                                        {replicaStatus === "STARTED" && (
-                                            <div className="flex flex-col gap-2.5">
-                                                <p className="text-xs text-slate-500 mb-1">
-                                                    {t("commission.completeDescription")}
-                                                </p>
-                                                <div className="flex flex-wrap gap-3">
-                                                    <button
-                                                        onClick={handleCompleteCommission}
-                                                        disabled={isMutating}
-                                                        className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/15 transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none w-fit cursor-pointer"
-                                                    >
-                                                        {isMutating ? (
-                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                        ) : (
-                                                            <StopCircle className="h-5 w-5" />
-                                                        )}
-                                                        <span>{t("commission.completeTasting")}</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
 
                                 {replicaStatus === "COMPLETED" && (
                                     <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
                                         <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                                        <div>
+                                        <div className="flex-1">
                                             <h4 className="text-sm font-bold text-emerald-800">
                                                 {t("commission.sessionCompleted")}
                                             </h4>
                                             <p className="text-xs text-emerald-600/90 mt-1">
                                                 {t("commission.sessionCompletedDesc")}
                                             </p>
+                                            {isCompetitionHolder && (
+                                                <button
+                                                    onClick={() => router.push(`/commission/${localData.id}/results`)}
+                                                    className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
+                                                >
+                                                    <Trophy className="w-3.5 h-3.5" />
+                                                    {t("commission.viewResults")}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
 
-                                {replicaStatus === "STARTED" && currentUserRole !== "HEAD" && (
+                                {replicaStatus === "STARTED" && currentUserRole && (
                                     <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
                                         <div className="flex items-start gap-3">
                                             <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
@@ -936,8 +985,18 @@ export default function CommissionClientView({
                                                 </p>
                                             </div>
                                         </div>
+                                        {selectedReplica?.currentCandidateId && (() => {
+                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
+                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
+                                            return (
+                                                <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
+                                                    <span>{t("commission.currentCandidate", { code: code || t("common.na") })}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
+                                                </p>
+                                            );
+                                        })()}
                                         <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/wait`)}
+                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
                                         >
                                             {t("commission.enterTastingSession")} →
