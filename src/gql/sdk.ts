@@ -80,7 +80,6 @@ export type CreateEvaluationTemplateEditionInput = {
 };
 
 export type CreateEvaluationTemplateInput = {
-  beverageType: BeverageType;
   name: string;
   owners: Array<Array<number>>;
 };
@@ -139,6 +138,11 @@ export type SubmitEvaluationInput = {
   candidateId: string | number;
   comments?: Array<EvaluationCommentInput> | null | undefined;
   scores: Array<EvaluatedPropertyScoreInput>;
+};
+
+export type UpdateEvaluationCommentsInput = {
+  comments: Array<EvaluationCommentInput>;
+  id: string | number;
 };
 
 export type WineFilterInput = {
@@ -366,6 +370,27 @@ export type GetDashboardCompetitionsQueryVariables = Exact<{
 
 
 export type GetDashboardCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
+
+export type GetEvaluationCommentsQueryVariables = Exact<{
+  candidateId: string | number;
+}>;
+
+
+export type GetEvaluationCommentsQuery = { evaluationByReplicaCandidateAndEvaluator: { id: string, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null, sortOrder: number, createdAt: string }> } | null };
+
+export type UpdateEvaluationCommentsMutationVariables = Exact<{
+  input: Types.UpdateEvaluationCommentsInput;
+}>;
+
+
+export type UpdateEvaluationCommentsMutation = { updateEvaluationComments: { id: string, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null, sortOrder: number, createdAt: string }> } };
+
+export type SubmitEvaluationForCommentsMutationVariables = Exact<{
+  input: Types.SubmitEvaluationInput;
+}>;
+
+
+export type SubmitEvaluationForCommentsMutation = { submitEvaluation: { id: string, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null, sortOrder: number, createdAt: string }> } };
 
 
 export const GetCommissionDocument = gql`
@@ -905,6 +930,51 @@ export const GetDashboardCompetitionsDocument = gql`
   }
 }
     `;
+export const GetEvaluationCommentsDocument = gql`
+    query GetEvaluationComments($candidateId: ID!) {
+  evaluationByReplicaCandidateAndEvaluator(replicaCandidateId: $candidateId) {
+    id
+    comments {
+      id
+      propertyId
+      text
+      voiceUrl
+      sortOrder
+      createdAt
+    }
+  }
+}
+    `;
+export const UpdateEvaluationCommentsDocument = gql`
+    mutation UpdateEvaluationComments($input: UpdateEvaluationCommentsInput!) {
+  updateEvaluationComments(input: $input) {
+    id
+    comments {
+      id
+      propertyId
+      text
+      voiceUrl
+      sortOrder
+      createdAt
+    }
+  }
+}
+    `;
+export const SubmitEvaluationForCommentsDocument = gql`
+    mutation SubmitEvaluationForComments($input: SubmitEvaluationInput!) {
+  submitEvaluation(input: $input) {
+    id
+    comments {
+      id
+      propertyId
+      text
+      voiceUrl
+      sortOrder
+      createdAt
+    }
+  }
+}
+    `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
@@ -967,6 +1037,15 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
+    },
+    GetEvaluationComments(variables: Types.GetEvaluationCommentsQueryVariables, options?: C): Promise<Types.GetEvaluationCommentsQuery> {
+      return requester<Types.GetEvaluationCommentsQuery, Types.GetEvaluationCommentsQueryVariables>(GetEvaluationCommentsDocument, variables, options) as Promise<Types.GetEvaluationCommentsQuery>;
+    },
+    UpdateEvaluationComments(variables: Types.UpdateEvaluationCommentsMutationVariables, options?: C): Promise<Types.UpdateEvaluationCommentsMutation> {
+      return requester<Types.UpdateEvaluationCommentsMutation, Types.UpdateEvaluationCommentsMutationVariables>(UpdateEvaluationCommentsDocument, variables, options) as Promise<Types.UpdateEvaluationCommentsMutation>;
+    },
+    SubmitEvaluationForComments(variables: Types.SubmitEvaluationForCommentsMutationVariables, options?: C): Promise<Types.SubmitEvaluationForCommentsMutation> {
+      return requester<Types.SubmitEvaluationForCommentsMutation, Types.SubmitEvaluationForCommentsMutationVariables>(SubmitEvaluationForCommentsDocument, variables, options) as Promise<Types.SubmitEvaluationForCommentsMutation>;
     }
   };
 }

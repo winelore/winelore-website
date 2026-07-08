@@ -2,7 +2,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { parse } from 'graphql';
 import { fetchGraphQL } from '@/lib/apiClient';
+import {
+  GetEvaluationCommentsDocument,
+  SubmitEvaluationForCommentsDocument,
+  UpdateEvaluationCommentsDocument,
+  type EvaluationCommentInput,
+  type CommissionReplicaCandidateStatus,
+  type SubmitEvaluationForCommentsMutationVariables,
+  type UpdateEvaluationCommentsMutationVariables,
+} from '@/src/gql/graphql';
 
 // Типи для системи коментарів
 export interface CommentAuthor {
@@ -17,67 +27,182 @@ export interface Comment {
   entityType: string;
   content?: string | null;
   audioUrl?: string | null;
+  audioStorageUrl?: string | null;
   audioDuration?: number | null;
   author: CommentAuthor;
   createdAt: string;
 }
 
-// Чернетки запитів для майбутнього використання (codegen відключений для цих рядків,
-// оскільки поля ще не додані на бекенд).
-// Після оновлення бекенду, ці gql-рядки слід перенести у файли, що скануються codegen.
-/*
-const GET_COMMENTS_QUERY = gql(`
-  query GetComments($entityId: String!, $entityType: String!) {
-    comments(entityId: $entityId, entityType: $entityType) {
-      id
-      entityId
-      entityType
-      content
-      audioUrl
-      audioDuration
-      author {
+const CLOSED_EVALUATION_MESSAGE = 'Етап оцінювання для цього кандидата вже закритий. Коментарі можна додавати лише у статусі PENDING.';
+const EVALUATION_NOT_FOUND_MESSAGE = 'Evaluation with requested id not found';
+const EVALUATION_SYNC_MESSAGE = 'Не вдалося знайти попереднє оцінювання для цього кандидата. Оновіть сторінку або поверніть кандидата у статус PENDING і спробуйте ще раз.';
+const LOCAL_AUDIO_URL_PREFIX = 'local-audio://';
+const LOCAL_AUDIO_STORAGE_PREFIX = 'comment_audio_';
+
+const GET_EVALUATIONS_FOR_COMMENTS = parse(`
+  query GetEvaluationsForComments($candidateId: ID!) {
+    evaluationsByReplicaCandidate(replicaCandidateId: $candidateId, limit: 20) {
+      items {
         id
-        name
-        avatarUrl
+        evaluatorAuid
+        status
+        comments {
+          id
+          propertyId
+          text
+          voiceUrl
+          sortOrder
+          createdAt
+        }
       }
-      createdAt
     }
   }
 `);
 
-const CREATE_COMMENT_MUTATION = gql(`
-  mutation CreateComment($input: CreateCommentInput!) {
-    createComment(input: $input) {
-      id
-      entityId
-      entityType
-      content
-      audioUrl
-      audioDuration
-      author {
-        id
-        name
-        avatarUrl
+function logUndefinedFields(value: unknown, path = 'variables') {
+  if (!value || typeof value !== 'object') return;
+
+  Object.entries(value as Record<string, unknown>).forEach(([key, nestedValue]) => {
+    const fieldPath = `${path}.${key}`;
+
+    if (nestedValue === undefined) {
+      console.warn(`[useComments] ${fieldPath} is undefined`);
+      return;
+    }
+
+    if (Array.isArray(nestedValue)) {
+      nestedValue.forEach((item, index) => logUndefinedFields(item, `${fieldPath}[${index}]`));
+      return;
+    }
+
+    logUndefinedFields(nestedValue, fieldPath);
+  });
+}
+
+function mapEvaluationCommentsToComments(
+  evaluationComments: any[] | null | undefined,
+  entityId: string,
+  entityType: string,
+  audioDurationsByUrl = new Map<string, number>()
+): Comment[] {
+  const mappedComments: Comment[] = (evaluationComments || []).map((c: any) => {
+    const localAudio = getLocalAudio(c.voiceUrl);
+
+    return {
+      id: c.id,
+      entityId,
+      entityType,
+      content: c.text,
+      audioUrl: localAudio?.dataUrl || c.voiceUrl,
+      audioStorageUrl: c.voiceUrl,
+      audioDuration: c.voiceUrl
+        ? audioDurationsByUrl.get(c.voiceUrl) ?? localAudio?.duration ?? null
+        : null,
+      author: {
+        id: 'expert',
+        name: 'Expert',
+        avatarUrl: null,
+      },
+      createdAt: c.createdAt || new Date().toISOString(),
+    };
+  });
+
+  mappedComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return mappedComments;
+}
+
+function getCurrentActorAuid() {
+  if (typeof document === 'undefined') return null;
+
+  const cookie = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('auid='));
+  const auid = cookie ? Number(decodeURIComponent(cookie.split('=')[1])) : NaN;
+
+  return Number.isFinite(auid) ? auid : null;
+}
+
+function getLocalAudioStorageKey(storageUrl: string | null | undefined) {
+  if (!storageUrl?.startsWith(LOCAL_AUDIO_URL_PREFIX)) return null;
+
+  return `${LOCAL_AUDIO_STORAGE_PREFIX}${storageUrl.slice(LOCAL_AUDIO_URL_PREFIX.length)}`;
+}
+
+function getLocalAudio(storageUrl: string | null | undefined) {
+  if (typeof window === 'undefined') return null;
+
+  const storageKey = getLocalAudioStorageKey(storageUrl);
+  if (!storageKey) return null;
+
+  try {
+    const storedAudio = window.localStorage.getItem(storageKey);
+    if (!storedAudio) return null;
+
+    const parsed = JSON.parse(storedAudio) as { dataUrl?: string; duration?: number };
+    if (!parsed.dataUrl) return null;
+
+    return {
+      dataUrl: parsed.dataUrl,
+      duration: typeof parsed.duration === 'number' && Number.isFinite(parsed.duration) ? parsed.duration : null,
+    };
+  } catch (error) {
+    console.warn('Не вдалося прочитати локальний аудіокоментар:', error);
+    return null;
+  }
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
       }
-      createdAt
-    }
-  }
-`);
 
-const GET_PRESIGNED_URL_MUTATION = gql(`
-  mutation GetPresignedAudioUploadUrl($fileName: String!, $contentType: String!) {
-    getPresignedAudioUploadUrl(fileName: $fileName, contentType: $contentType) {
-      uploadUrl
-      fileUrl
-    }
-  }
-`);
-*/
+      reject(new Error('Не вдалося підготувати аудіо для локального збереження'));
+    };
 
-export function useComments(entityId: string, entityType: string) {
+    reader.onerror = () => reject(new Error('Не вдалося прочитати аудіофайл'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function isCurrentActorEvaluation(evaluation: any, currentActorAuid: number | null) {
+  if (currentActorAuid === null) return false;
+
+  const evaluatorAuid = evaluation?.evaluatorAuid;
+
+  if (Array.isArray(evaluatorAuid)) {
+    return evaluatorAuid.includes(currentActorAuid);
+  }
+
+  return evaluatorAuid === currentActorAuid;
+}
+
+function isEvaluationNotFoundError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '');
+
+  return message.toLowerCase().includes(EVALUATION_NOT_FOUND_MESSAGE.toLowerCase());
+}
+
+function isCandidateNotPendingError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '');
+
+  return message.toLowerCase().includes('status is not pending');
+}
+
+export function useComments(
+  entityId: string,
+  entityType: string,
+  candidateStatus?: CommissionReplicaCandidateStatus | null
+) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [evaluationId, setEvaluationId] = useState<string | null>(null);
 
   // Стан для запису аудіо
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -90,62 +215,44 @@ export function useComments(entityId: string, entityType: string) {
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const recordingStartTimeRef = useRef<number>(0);
-
-  // Демонстраційні (mock) дані на випадок, якщо бекенд ще не готовий
-  const mockCommentsKey = `mock_comments_${entityType}_${entityId}`;
+  const localCommentsKey = `comments_${entityType}_${entityId}`;
+  const canAddComment = candidateStatus === 'PENDING';
 
   // Завантаження коментарів
   const fetchComments = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Спроба отримати з API
-      // Оскільки ми передаємо рядком, використовуємо альтернативний fetch
-      const result = await fetchGraphQL(
-        // Тимчасово приводимо тип до TypedDocumentNode для сумісності з fetchGraphQL
-        { kind: 'Document', definitions: [] } as any,
-        { entityId, entityType }
-      ).catch(() => {
-        // У разі помилки відсутньої схеми - кидаємо помилку для переходу на mock
-        throw new Error('API Schema not ready');
-      });
+      const candidateId = entityId?.trim();
 
-      if (result && 'comments' in result) {
-        setComments(result.comments as Comment[]);
-      } else {
-        throw new Error('No data');
+      if (!candidateId) {
+        throw new Error('Не вдалося завантажити коментарі: candidateId порожній або undefined');
       }
-    } catch (e) {
-      console.warn('Використовуються локальні mock-коментарі (бекенд ще не підтримує запит comments):', e);
-      // Завантаження з localStorage для демонстрації
-      const saved = localStorage.getItem(mockCommentsKey);
-      if (saved) {
-        setComments(JSON.parse(saved));
-      } else {
-        // Дефолтні mock коментарі
-        const defaultMocks: Comment[] = [
-          {
-            id: 'mock-1',
-            entityId,
-            entityType,
-            content: 'Дуже гарне вино! Відчуваються нотки вишні та дуба.',
-            author: { id: 'user-1', name: 'Олексій Коваленко', avatarUrl: null },
-            createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-          },
-          {
-            id: 'mock-2',
-            entityId,
-            entityType,
-            content: 'Спробував це вино на дегустації. Додаю свій аудіовідгук:',
-            audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-            audioDuration: 12.5,
-            author: { id: 'user-2', name: 'Марія Петренко', avatarUrl: null },
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-          }
-        ];
-        localStorage.setItem(mockCommentsKey, JSON.stringify(defaultMocks));
-        setComments(defaultMocks);
+
+      const variables = { candidateId };
+      console.log('🔍 Fetching comments with variables:', variables);
+      logUndefinedFields(variables);
+
+      const result = await fetchGraphQL(GetEvaluationCommentsDocument, variables);
+      let evaluation = result?.evaluationByReplicaCandidateAndEvaluator;
+
+      if (!evaluation) {
+        const evaluationsResult: any = await fetchGraphQL(GET_EVALUATIONS_FOR_COMMENTS as any, variables);
+        const evaluations = evaluationsResult?.evaluationsByReplicaCandidate?.items || [];
+        evaluation = evaluations.find((item: any) => isCurrentActorEvaluation(item, getCurrentActorAuid())) || null;
       }
+
+      if (evaluation) {
+        setEvaluationId(evaluation.id);
+        setComments(mapEvaluationCommentsToComments(evaluation.comments, entityId, entityType));
+      } else {
+        setEvaluationId(null);
+        const savedComments = window.localStorage.getItem(localCommentsKey);
+        setComments(savedComments ? JSON.parse(savedComments) : []);
+      }
+    } catch (e: any) {
+      console.error('Помилка завантаження коментарів:', e);
+      setError(e.message || 'Не вдалося завантажити коментарі з сервера');
     } finally {
       setLoading(false);
     }
@@ -156,7 +263,7 @@ export function useComments(entityId: string, entityType: string) {
     return () => {
       stopRecordingAndCleanup();
     };
-  }, [entityId, entityType]);
+  }, [entityId, entityType, candidateStatus]);
 
   const stopRecordingAndCleanup = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -224,46 +331,20 @@ export function useComments(entityId: string, entityType: string) {
     setRecordingTime(0);
   };
 
-  // Завантаження аудіо на S3
-  const uploadAudioToS3 = async (blob: Blob): Promise<string> => {
+  // Підготовка локально відновлюваного URL для голосового коментаря
+  const prepareAudioUrl = async (blob: Blob, duration: number): Promise<string> => {
     setIsUploading(true);
     try {
-      const fileName = `comment_${entityType}_${entityId}_${Date.now()}.webm`;
-      const contentType = blob.type;
+      const localAudioId = `${entityType}_${entityId}_${Date.now()}`;
+      const storageUrl = `${LOCAL_AUDIO_URL_PREFIX}${localAudioId}`;
+      const dataUrl = await blobToDataUrl(blob);
 
-      // 1. Отримуємо presigned URL з бекенду
-      let uploadUrl = '';
-      let fileUrl = '';
+      window.localStorage.setItem(
+        `${LOCAL_AUDIO_STORAGE_PREFIX}${localAudioId}`,
+        JSON.stringify({ dataUrl, duration })
+      );
 
-      try {
-        const response: any = await fetchGraphQL(
-          // Тимчасово приводимо тип для сумісності з fetchGraphQL
-          { kind: 'Document', definitions: [] } as any, 
-          { fileName, contentType }
-        );
-        uploadUrl = response.getPresignedAudioUploadUrl.uploadUrl;
-        fileUrl = response.getPresignedAudioUploadUrl.fileUrl;
-      } catch (err) {
-        console.warn('Не вдалося отримати presigned URL з API, використовуємо локальний mock-завантажувач:', err);
-        // Симуляція завантаження
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        return URL.createObjectURL(blob); // Повертаємо локальний URL для демонстрації
-      }
-
-      // 2. Робимо PUT запит безпосередньо до S3 сховища
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': contentType,
-        },
-        body: blob,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Помилка завантаження файлу на S3');
-      }
-
-      return fileUrl;
+      return storageUrl;
     } finally {
       setIsUploading(false);
     }
@@ -273,54 +354,126 @@ export function useComments(entityId: string, entityType: string) {
   const addComment = async (content?: string, audioDuration?: number) => {
     setError(null);
     try {
+      if (!canAddComment) {
+        setError(CLOSED_EVALUATION_MESSAGE);
+        return false;
+      }
+
       let finalAudioUrl: string | undefined = undefined;
+      const normalizedAudioDuration = audioBlob
+        ? Math.max(1, Math.round(audioDuration || recordingTime || 0))
+        : null;
 
       if (audioBlob) {
-        // Якщо є записаний аудіофайл, завантажуємо його на S3
-        finalAudioUrl = await uploadAudioToS3(audioBlob);
+        finalAudioUrl = await prepareAudioUrl(audioBlob, normalizedAudioDuration || 1);
       }
 
-      const input = {
-        entityId,
-        entityType,
-        content: content || null,
-        audioUrl: finalAudioUrl || null,
-        audioDuration: audioDuration || (audioBlob ? recordingTime : null),
+      const candidateId = entityId?.trim();
+
+      if (!candidateId) {
+        throw new Error('Не вдалося зберегти коментар: candidateId порожній або undefined');
+      }
+
+      const newCommentInput: EvaluationCommentInput = {
+        propertyId: null,
+        text: content || null,
+        voiceUrl: finalAudioUrl || null,
+        sortOrder: comments.length + 1
       };
 
-      let newComment: Comment;
+      const existingCommentsInput: EvaluationCommentInput[] = comments.map((c, index) => ({
+        propertyId: null,
+        text: c.content || null,
+        voiceUrl: c.audioStorageUrl || c.audioUrl || null,
+        sortOrder: index + 1
+      }));
 
-      try {
-        const result: any = await fetchGraphQL(
-          // Тимчасово приводимо тип для сумісності з fetchGraphQL
-          { kind: 'Document', definitions: [] } as any,
-          { input }
-        );
-        newComment = result.createComment;
-      } catch (err) {
-        console.warn('Не вдалося створити коментар через API, додаємо локально (mock mode):', err);
-        // Локальний mock-коментар
-        newComment = {
-          id: `mock-${Date.now()}`,
-          entityId,
-          entityType,
-          content: input.content,
-          audioUrl: input.audioUrl,
-          audioDuration: input.audioDuration,
-          author: {
-            id: 'current-user',
-            name: 'Ви (Гість WineLore)',
-            avatarUrl: null,
-          },
-          createdAt: new Date().toISOString(),
+      const allCommentsInput: EvaluationCommentInput[] = [...existingCommentsInput, newCommentInput];
+      let updatedComments: any[] = [];
+
+      const submitEvaluationWithComments = async () => {
+        const variables: SubmitEvaluationForCommentsMutationVariables = {
+          input: {
+            candidateId,
+            scores: [],
+            comments: allCommentsInput
+          }
         };
+
+        console.log('📤 SubmitEvaluationForComments variables:', variables);
+        logUndefinedFields(variables);
+
+        const result = await fetchGraphQL(SubmitEvaluationForCommentsDocument, variables);
+        setEvaluationId(result.submitEvaluation.id);
+        return result.submitEvaluation.comments || [];
+      };
+
+      console.log('📤 Sending comment mutation variables:', {
+        evaluationId,
+        candidateId,
+        allCommentsInput
+      });
+
+      if (evaluationId?.trim()) {
+        // Оновлюємо коментарі для існуючої оцінки
+        const variables: UpdateEvaluationCommentsMutationVariables = {
+          input: {
+            id: evaluationId.trim(),
+            comments: allCommentsInput
+          }
+        };
+
+        console.log('📤 UpdateEvaluationComments variables:', variables);
+        logUndefinedFields(variables);
+
+        try {
+          const result = await fetchGraphQL(UpdateEvaluationCommentsDocument, variables);
+          updatedComments = result.updateEvaluationComments.comments || [];
+        } catch (updateError: any) {
+          if (!isEvaluationNotFoundError(updateError)) {
+            throw updateError;
+          }
+
+          setEvaluationId(null);
+          try {
+            updatedComments = await submitEvaluationWithComments();
+          } catch (submitAfterMissingEvaluationError) {
+            if (isCandidateNotPendingError(submitAfterMissingEvaluationError)) {
+              throw new Error(CLOSED_EVALUATION_MESSAGE);
+            }
+
+            if (isEvaluationNotFoundError(submitAfterMissingEvaluationError)) {
+              throw new Error(EVALUATION_SYNC_MESSAGE);
+            }
+
+            throw submitAfterMissingEvaluationError;
+          }
+        }
+      } else {
+        // Створюємо оцінку з коментарями
+        try {
+          updatedComments = await submitEvaluationWithComments();
+        } catch (submitError: any) {
+          if (isCandidateNotPendingError(submitError)) {
+            throw new Error(CLOSED_EVALUATION_MESSAGE);
+          }
+
+          if (isEvaluationNotFoundError(submitError)) {
+            setEvaluationId(null);
+            throw new Error(EVALUATION_SYNC_MESSAGE);
+          }
+
+          throw submitError;
+        }
       }
 
-      const updated = [newComment, ...comments];
-      setComments(updated);
+      const audioDurationsByUrl = new Map<string, number>();
 
-      // Оновлюємо mock у localStorage
-      localStorage.setItem(mockCommentsKey, JSON.stringify(updated));
+      if (finalAudioUrl && normalizedAudioDuration) {
+        audioDurationsByUrl.set(finalAudioUrl, normalizedAudioDuration);
+      }
+
+      setComments(mapEvaluationCommentsToComments(updatedComments, entityId, entityType, audioDurationsByUrl));
 
       // Очищення аудіо після успішної відправки
       setAudioBlob(null);
@@ -329,7 +482,19 @@ export function useComments(entityId: string, entityType: string) {
 
       return true;
     } catch (err: any) {
-      setError(err.message || 'Не вдалося додати коментар');
+      console.error('Помилка збереження коментаря:', err);
+      if (isCandidateNotPendingError(err)) {
+        setError(CLOSED_EVALUATION_MESSAGE);
+        return false;
+      }
+
+      if (isEvaluationNotFoundError(err)) {
+        setEvaluationId(null);
+        setError(EVALUATION_SYNC_MESSAGE);
+        return false;
+      }
+
+      setError(err.message || 'Не вдалося зберегти коментар на сервері');
       return false;
     }
   };
@@ -347,6 +512,8 @@ export function useComments(entityId: string, entityType: string) {
     stopRecording,
     cancelRecording,
     addComment,
+    canAddComment,
+    closedEvaluationMessage: CLOSED_EVALUATION_MESSAGE,
     refreshComments: fetchComments,
   };
 }

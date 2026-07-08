@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, MessageSquare, AudioLines, Clock } from 'lucide-react';
+import { Play, Pause, MessageSquare, AudioLines, Clock, Lock } from 'lucide-react';
 import { useComments, Comment } from '@/hooks/useComments';
+import type { CommissionReplicaCandidateStatus } from '@/src/gql/graphql';
 import { CommentForm } from './CommentForm';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,44 +12,56 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface CommentSectionProps {
   entityId: string;
   entityType: string;
+  candidateStatus?: CommissionReplicaCandidateStatus | null;
 }
 
 // Допоміжний компонент для гарного відображення аудіо-плеєра
 function AudioPlayer({ src, duration: initialDuration }: { src: string; duration?: number | null }) {
+  const initialDurationValue =
+    typeof initialDuration === 'number' && Number.isFinite(initialDuration) && initialDuration > 0
+      ? initialDuration
+      : 0;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(initialDuration || 0);
+  const [duration, setDuration] = useState(initialDurationValue);
+  const [hasAudioError, setHasAudioError] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (initialDuration) {
+    if (typeof initialDuration === 'number' && Number.isFinite(initialDuration) && initialDuration > 0) {
       setDuration(initialDuration);
     }
   }, [initialDuration]);
 
   const handlePlayPause = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || hasAudioError) return;
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(() => setHasAudioError(true));
     }
   };
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && Number.isFinite(audioRef.current.currentTime)) {
       setCurrentTime(audioRef.current.currentTime);
     }
   };
 
   const handleLoadedMetadata = () => {
-    if (audioRef.current && !initialDuration) {
+    if (audioRef.current && !initialDuration && Number.isFinite(audioRef.current.duration)) {
       setDuration(audioRef.current.duration);
     }
   };
 
   const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleAudioError = () => {
+    setHasAudioError(true);
     setIsPlaying(false);
     setCurrentTime(0);
   };
@@ -65,6 +78,8 @@ function AudioPlayer({ src, duration: initialDuration }: { src: string; duration
   };
 
   const formatTime = (time: number) => {
+    if (!Number.isFinite(time) || time <= 0) return '0:00';
+
     const mins = Math.floor(time / 60);
     const secs = Math.floor(time % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -76,7 +91,8 @@ function AudioPlayer({ src, duration: initialDuration }: { src: string; duration
     <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 dark:bg-amber-500/10 dark:border-amber-500/20 max-w-md w-full my-2">
       <button
         onClick={handlePlayPause}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-600 hover:bg-amber-500 text-white shadow-xs transition-transform active:scale-95"
+        disabled={hasAudioError}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-600 hover:bg-amber-500 text-white shadow-xs transition-transform active:scale-95 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
       >
         {isPlaying ? (
           <Pause className="h-4 w-4 fill-current" />
@@ -103,7 +119,7 @@ function AudioPlayer({ src, duration: initialDuration }: { src: string; duration
           <span className="tabular-nums">{formatTime(currentTime)}</span>
           <div className="flex items-center gap-1">
             <AudioLines className="h-3.5 w-3.5 text-amber-500/70" />
-            <span>Голосовий відгук</span>
+            <span>{hasAudioError ? 'Аудіо недоступне після перезавантаження' : 'Голосовий відгук'}</span>
           </div>
           <span className="tabular-nums">{formatTime(duration)}</span>
         </div>
@@ -117,6 +133,7 @@ function AudioPlayer({ src, duration: initialDuration }: { src: string; duration
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleAudioEnded}
+        onError={handleAudioError}
         className="hidden"
       />
     </div>
@@ -185,11 +202,13 @@ function CommentItem({ comment }: { comment: Comment }) {
   );
 }
 
-export function CommentSection({ entityId, entityType }: CommentSectionProps) {
+export function CommentSection({ entityId, entityType, candidateStatus }: CommentSectionProps) {
   const {
     comments,
     loading,
     error,
+    canAddComment,
+    closedEvaluationMessage,
     isRecording,
     audioUrl,
     recordingTime,
@@ -198,7 +217,7 @@ export function CommentSection({ entityId, entityType }: CommentSectionProps) {
     stopRecording,
     cancelRecording,
     addComment,
-  } = useComments(entityId, entityType);
+  } = useComments(entityId, entityType, candidateStatus);
 
   return (
     <Card className="border border-neutral-200 dark:border-neutral-800 shadow-xs overflow-hidden max-w-3xl mx-auto bg-white dark:bg-black">
@@ -216,8 +235,16 @@ export function CommentSection({ entityId, entityType }: CommentSectionProps) {
       <CardContent className="p-0 space-y-6">
         {/* Форма створення коментаря */}
         <div className="p-6 border-b border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/20 dark:bg-neutral-900/5">
+          {!canAddComment && (
+            <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="leading-relaxed">{closedEvaluationMessage}</p>
+            </div>
+          )}
           <CommentForm
             onSubmit={addComment}
+            disabled={!canAddComment}
+            disabledMessage={closedEvaluationMessage}
             isRecording={isRecording}
             audioUrl={audioUrl}
             recordingTime={recordingTime}
