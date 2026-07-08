@@ -13,7 +13,6 @@ import {
     completeCommissionAction,
     getCommissionDataAction
 } from "../actions"
-import TemplateCreatorModal from "./TemplateCreatorModal"
 
 const tabs = (t: any) => [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -186,7 +185,6 @@ export default function CommissionClientView({
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number>(serverAuid || 1)
     const [hasRedirected, setHasRedirected] = useState(false)
-    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
 
     const initialData = localData
 
@@ -707,28 +705,14 @@ export default function CommissionClientView({
                                                     </div>
                                                 </div>
                                             ))}
-                                        </div>
                                     </div>
-
-                                    <button
-                                        onClick={() => setIsTemplateModalOpen(true)}
-                                        className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100/50 px-4 py-3 text-xs font-bold transition-all cursor-pointer transform active:scale-95"
-                                    >
-                                        <Settings className="w-4 h-4" />
-                                        <span>Налаштувати новий шаблон</span>
-                                    </button>
                                 </div>
+                            </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center p-6 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center text-slate-500 gap-2">
                                     <AlertCircle className="w-8 h-8 text-amber-500 animate-pulse" />
                                     <span className="text-xs font-bold text-slate-700">Немає налаштованого шаблону</span>
-                                    <p className="text-[11px] text-slate-400 max-w-[240px]">Створіть шаблон оцінювання, щоб дегустатори могли розпочати оцінювання зразків.</p>
-                                    <button
-                                        onClick={() => setIsTemplateModalOpen(true)}
-                                        className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-md shadow-indigo-600/10"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" /> Створити шаблон
-                                    </button>
+                                    <p className="text-[11px] text-slate-400 max-w-[240px]">Зверніться до адміністратора для налаштування шаблону оцінювання.</p>
                                 </div>
                             )}
                         </div>
@@ -996,14 +980,6 @@ export default function CommissionClientView({
 
                 </div>
             </main>
-            {isTemplateModalOpen && (
-                <TemplateCreatorModal
-                    isOpen={isTemplateModalOpen}
-                    onClose={() => setIsTemplateModalOpen(false)}
-                    commissionId={initialData.id}
-                    currentAuid={currentAuid}
-                />
-            )}
         </div>
     )
 }

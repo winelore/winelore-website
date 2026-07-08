@@ -1,6 +1,6 @@
 "use client"
 
-import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink } from "lucide-react"
+import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Settings } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useTranslation } from "@/lib/i18n/context"
 import { BadgeCheck } from "lucide-react"
@@ -76,6 +76,13 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
           >
             <Trophy className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>{t("common.myCompetitions")}</span>
+          </a>
+          <a
+            href="/templates"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
+          >
+            <Settings className="h-5 w-5 stroke-[1.5] text-foreground" />
+            <span>{t("common.templates")}</span>
           </a>
           <a
             href="#"

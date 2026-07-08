@@ -21,6 +21,7 @@ const en = {
     standard: "Standard",
     loading: "Loading...",
     none: "None",
+    templates: "Evaluation Templates",
   },
   dashboard: {
     holderId: "Holder ID: {{ids}}",

@@ -4,12 +4,11 @@ import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Plus, Trash2, HelpCircle, AlertCircle, Info } from "lucide-react"
-import { createCustomTemplateAction } from "../actions"
+import { createGlobalTemplateAction } from "./actions"
 
 interface TemplateCreatorModalProps {
     isOpen: boolean
     onClose: () => void
-    commissionId: string
     currentAuid: number
 }
 
@@ -141,7 +140,6 @@ function parseExpression(input: string): any {
 export default function TemplateCreatorModal({
     isOpen,
     onClose,
-    commissionId,
     currentAuid
 }: TemplateCreatorModalProps) {
     const router = useRouter()
@@ -398,7 +396,7 @@ export default function TemplateCreatorModal({
 
         setIsSaving(true)
         try {
-            await createCustomTemplateAction(commissionId, templateName, formattedCategories, currentAuid)
+            await createGlobalTemplateAction(templateName, formattedCategories, currentAuid)
             onClose()
             router.refresh()
         } catch (saveErr: any) {
@@ -416,7 +414,7 @@ export default function TemplateCreatorModal({
                         Створення темплейту оцінювання
                     </DialogTitle>
                     <DialogDescription className="text-slate-500 text-sm">
-                        Налаштуйте категорії та властивості для дегустаційної форми цієї комісії.
+                        Налаштуйте категорії та показники для нового глобального шаблону оцінювання.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -714,7 +712,7 @@ export default function TemplateCreatorModal({
                         {isSaving ? (
                             <div className="h-4.5 w-4.5 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                         ) : (
-                            <span>Створити та застосувати</span>
+                            <span>Створити</span>
                         )}
                     </button>
                 </DialogFooter>
