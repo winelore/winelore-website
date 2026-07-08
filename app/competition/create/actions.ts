@@ -40,7 +40,7 @@ export async function createCompetitionInfrastructure(formData: any) {
         const competitionResult = await executeGraphQL(createCompetitionMutation, {
             input: {
                 name: formData.name,
-                seriesId: formData.seriesId ? parseInt(formData.seriesId, 10) || formData.seriesId : null,
+                seriesId: formData.seriesId ? formData.seriesId : null,
                 holders: formData.holders // Added holders to satisfy the NonNull requirement
             }
         });
