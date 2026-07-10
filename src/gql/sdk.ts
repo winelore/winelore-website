@@ -145,7 +145,7 @@ export type GetCommissionQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, candidates: Array<{ id: string }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null } }> }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, panels: Array<{ id: string, name: string }>, candidates: Array<{ id: string, panelId: string }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string } }> }> } | null };
 
 export type GetCommissionTemplatesQueryVariables = Exact<{
   id: string | number;
@@ -256,7 +256,7 @@ export type GetReplicaCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, candidates: Array<{ id: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, producers: Array<{ auid: Array<number> }>, origin: { latitude: number, longitude: number } | null } } } } }> } | null };
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, panels: Array<{ id: string, name: string }>, candidates: Array<{ id: string, panelId: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, producers: Array<{ auid: Array<number> }>, origin: { latitude: number, longitude: number } | null } } } } }> } | null };
 
 export type GetReplicaCandidateQueryVariables = Exact<{
   id: string | number;
@@ -324,6 +324,19 @@ export type GetEvaluationsForCandidateQueryVariables = Exact<{
 
 export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ id: string, evaluatorAuid: Array<number>, isComplete: boolean, templateEdition: { id: string }, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
 
+export type GetPanelResultsQueryVariables = Exact<{
+  replicaId: string | number;
+}>;
+
+
+export type GetPanelResultsQuery = { commissionReplica: { id: string, commission: { id: string, outcomePolicyEdition: { outputProperties: Array<
+          | { code: string, name: string }
+          | { code: string, name: string }
+          | { code: string, name: string }
+          | { code: string, name: string }
+          | { code: string, name: string }
+        > } | null }, outcomes: Array<{ beverageId: string, scores: string }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string, sample: { batch: { beverage: { id: string, name: string } } } } }> } | null };
+
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -379,8 +392,13 @@ export const GetCommissionDocument = gql`
     voiceCommentsEnabled
     propertyCommentsEnabled
     beverageOriginDuringEvaluationEnabled
+    panels {
+      id
+      name
+    }
     candidates {
       id
+      panelId
     }
     competition {
       id
@@ -405,6 +423,7 @@ export const GetCommissionDocument = gql`
         candidate {
           id
           anonymizedCode
+          panelId
         }
       }
     }
@@ -673,8 +692,13 @@ export const GetReplicaCandidatesDocument = gql`
     status
     commission {
       id
+      panels {
+        id
+        name
+      }
       candidates {
         id
+        panelId
       }
     }
     replicaCandidates {
@@ -683,6 +707,7 @@ export const GetReplicaCandidatesDocument = gql`
       candidate {
         id
         anonymizedCode
+        panelId
         beverageType {
           id
           code
@@ -856,6 +881,43 @@ export const GetEvaluationsForCandidateDocument = gql`
   }
 }
     `;
+export const GetPanelResultsDocument = gql`
+    query GetPanelResults($replicaId: ID!) {
+  commissionReplica(id: $replicaId) {
+    id
+    commission {
+      id
+      outcomePolicyEdition {
+        outputProperties {
+          code
+          name
+        }
+      }
+    }
+    outcomes {
+      beverageId
+      scores
+    }
+    replicaCandidates {
+      id
+      status
+      candidate {
+        id
+        anonymizedCode
+        panelId
+        sample {
+          batch {
+            beverage {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}
+    `;
 export const GetCompetitionPageDocument = gql`
     query GetCompetitionPage($id: ID!) {
   competition(id: $id) {
@@ -1016,6 +1078,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetEvaluationsForCandidate(variables: Types.GetEvaluationsForCandidateQueryVariables, options?: C): Promise<Types.GetEvaluationsForCandidateQuery> {
       return requester<Types.GetEvaluationsForCandidateQuery, Types.GetEvaluationsForCandidateQueryVariables>(GetEvaluationsForCandidateDocument, variables, options) as Promise<Types.GetEvaluationsForCandidateQuery>;
+    },
+    GetPanelResults(variables: Types.GetPanelResultsQueryVariables, options?: C): Promise<Types.GetPanelResultsQuery> {
+      return requester<Types.GetPanelResultsQuery, Types.GetPanelResultsQueryVariables>(GetPanelResultsDocument, variables, options) as Promise<Types.GetPanelResultsQuery>;
     },
     GetCompetitionPage(variables: Types.GetCompetitionPageQueryVariables, options?: C): Promise<Types.GetCompetitionPageQuery> {
       return requester<Types.GetCompetitionPageQuery, Types.GetCompetitionPageQueryVariables>(GetCompetitionPageDocument, variables, options) as Promise<Types.GetCompetitionPageQuery>;
