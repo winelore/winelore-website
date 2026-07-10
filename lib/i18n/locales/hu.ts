@@ -151,6 +151,7 @@ const hu = {
         continueToResults: "Tovább az eredményekhez",
         enterTastingSession: "Belépés a kóstolási szakaszba",
         backToCommission: "Vissza a bizottsághoz",
+        startNextPanel: "Következő panel indítása",
         results: {
             pageTitle: "Eredmények: {{name}}",
             statusCompleted: "Befejezve",

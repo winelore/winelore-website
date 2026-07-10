@@ -435,7 +435,15 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const currentCandidateId = replica.currentCandidateId || null;
         const currentCandidateObj = replicaCandidates.find((rc: any) => rc.id === currentCandidateId);
         const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
-        const currentPanelId = currentCandidateObj?.candidate?.panelId || null;
+        let currentPanelId = currentCandidateObj?.candidate?.panelId || null;
+        if (!currentPanelId && replicaCandidates.length > 0) {
+            const lastEvaluated = [...replicaCandidates].reverse().find((rc: any) => isReplicaCandidateFinished(rc.status));
+            if (lastEvaluated) {
+                currentPanelId = lastEvaluated.candidate?.panelId || null;
+            } else {
+                currentPanelId = replicaCandidates[0].candidate?.panelId || null;
+            }
+        }
         const panels = commission.panels || [];
         const currentPanelName = panels.find((p: any) => p.id === currentPanelId)?.name || "Panel";
 

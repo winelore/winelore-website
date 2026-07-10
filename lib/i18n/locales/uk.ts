@@ -159,6 +159,7 @@ const uk: TranslationKey = {
     continueToResults: "Перейти до результатів",
     enterTastingSession: "Увійти до сесії дегустації",
     backToCommission: "Назад до комісії",
+    startNextPanel: "Почати наступну панель",
     results: {
       pageTitle: "Результати: {{name}}",
       statusCompleted: "Завершено",

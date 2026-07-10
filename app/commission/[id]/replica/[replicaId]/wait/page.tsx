@@ -239,7 +239,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 {isSwitching ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
-                                    <>Start Next Panel <ArrowRight className="w-5 h-5" /></>
+                                    <>{t("commission.startNextPanel")} <ArrowRight className="w-5 h-5" /></>
                                 )}
                             </button>
                         ) : (
