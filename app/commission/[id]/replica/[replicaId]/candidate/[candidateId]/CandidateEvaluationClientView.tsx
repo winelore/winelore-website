@@ -15,7 +15,7 @@ interface CandidateEvaluationClientViewProps {
   replicaName?: string | null
   candidateCode: string
   commissionName: string
-    panelName?: string
+  panelName?: string
   currentIndex: number
   totalCandidates: number
   candidatesLeft: number
@@ -63,9 +63,10 @@ export default function CandidateEvaluationClientView({
                                 <span className="font-medium text-slate-700">{t("evaluation.commission")}:</span> {commissionName}
                             </p>
                             {panelName && (
-                                <div className="flex items-center gap-1.5 text-indigo-700 font-semibold border-l-2 border-slate-100 pl-4 bg-indigo-50/50 px-2 py-0.5 rounded">
-                                    <LayoutList className="w-3.5 h-3.5 shrink-0" />
-                                    <span>{panelName}</span>
+                                <div className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                    <LayoutList className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                                    <span className="font-medium text-slate-800">Panel:</span>
+                                    <span className="font-normal text-slate-600">{panelName}</span>
                                 </div>
                             )}
                             {originParts.length > 0 && (

@@ -217,7 +217,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 {currentPanelName && (
                                     <>
                                         <span className="text-slate-300 font-normal">|</span>
-                                        <span className="text-indigo-600">{currentPanelName}</span>
+                                        <span className="text-slate-800">Panel:</span>
+                                        <span className="text-slate-500 font-normal">{currentPanelName}</span>
                                     </>
                                 )}
                             </h1>
