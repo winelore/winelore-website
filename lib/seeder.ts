@@ -173,7 +173,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
              }
            }
          `;
-         const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://hayabusa.proxy.rlwy.net:21675/graphql';
+         const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
          const tplRes = await fetch(GRAPHQL_ENDPOINT, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', ...headers },
@@ -445,7 +445,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         id: commissionId,
         name,
         replicaId,
-        head: { name: config.headName, auid: headAuid },
+        head: { auid: headAuid },
         experts,
         type
       });
