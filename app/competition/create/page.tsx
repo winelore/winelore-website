@@ -137,6 +137,12 @@ export default function CreateCompetitionPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!formData.seriesId) {
+            setSubmitError('Please select a valid Competition Series from the list.');
+            return;
+        }
+
         setIsSubmitting(true);
         setSubmitError(null);
 
@@ -198,6 +204,7 @@ export default function CreateCompetitionPage() {
                                 <div className="flex-1">
                                     <h2 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">Competition Series</h2>
                                     <select
+                                        required
                                         className="text-base font-semibold text-[#0F172A] bg-transparent border-b border-transparent hover:border-[#E2E8F0] focus:border-[#5046E5] focus:outline-none w-full mt-0.5 pt-0.5 cursor-pointer"
                                         value={formData.seriesId}
                                         onChange={e => handleCompetitionChange('seriesId', e.target.value)}
@@ -408,7 +415,7 @@ export default function CreateCompetitionPage() {
                     <div className="col-span-12 flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
                         <button
                             type="button"
-                            onClick={() => router.push('/dashboard')}
+                            onClick={() => router.push('/')}
                             disabled={isSubmitting}
                             className="px-6 py-2.5 bg-white border border-[#E2E8F0] text-[#475569] text-sm font-semibold rounded-xl hover:bg-[#F8FAFC] disabled:opacity-50"
                         >
