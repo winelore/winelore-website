@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 interface SliderProps extends React.ComponentProps<typeof SliderPrimitive.Root> {
   showSteps?: boolean
+  hasValue?: boolean
 }
 
 function Slider({
@@ -17,6 +18,7 @@ function Slider({
   max = 100,
   step = 1,
   showSteps = false,
+  hasValue = true,
   ...props
 }: SliderProps) {
   const _values = React.useMemo(
@@ -83,9 +85,9 @@ function Slider({
       >
         <SliderPrimitive.Range
           data-slot="slider-range"
-          className={
-            'bg-indigo-600 absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full'
-          }
+          className={cn(
+              'absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full', hasValue ? 'bg-indigo-600' : 'bg-transparent'
+          )}
         />
       </SliderPrimitive.Track>
 
@@ -94,7 +96,7 @@ function Slider({
           {ticks.map((tickVal) => {
             const percentage = ((tickVal - min) / (max - min)) * 100
             const isMajor = Number(((tickVal - min) % majorStep).toFixed(1)) === 0 || tickVal === min || tickVal === max
-            const isActive = tickVal <= currentValue
+              const isActive = hasValue && (tickVal <= currentValue)
 
             return (
               <div
