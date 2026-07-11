@@ -151,7 +151,26 @@ export default function CreateCompetitionPage() {
             router.push('/dashboard');
         } catch (err: any) {
             console.error('Cascade activation failed:', err);
-            setSubmitError(err.message || 'An error occurred while creating the competition infrastructure.');
+            
+            const errorMsg = err.message || '';
+            const lower = errorMsg.toLowerCase();
+            let friendlyMessage = 'An unexpected error occurred while creating the competition. Please try again.';
+            
+            if (lower.includes('failed to fetch') || lower.includes('fetch failed') || lower.includes('server responded with status')) {
+                friendlyMessage = 'Network error: Unable to connect to the server. Please check your internet connection.';
+            } else if (lower.includes('seriesid') || lower.includes('series id') || lower.includes('failed to convert argument value')) {
+                friendlyMessage = 'Please select a valid Competition Series from the list.';
+            } else if (lower.includes('name') && (lower.includes('null') || lower.includes('empty') || lower.includes('required'))) {
+                friendlyMessage = 'Please fill in the competition name.';
+            } else if (lower.includes('holders')) {
+                friendlyMessage = 'Please specify at least one holder for the competition.';
+            } else if (lower.includes('failed to initialize competition root node')) {
+                friendlyMessage = 'Failed to create the competition. Please review the submitted details.';
+            } else if (errorMsg) {
+                friendlyMessage = `Error: ${errorMsg}`;
+            }
+            
+            setSubmitError(friendlyMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -389,6 +408,7 @@ export default function CreateCompetitionPage() {
                     <div className="col-span-12 flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
                         <button
                             type="button"
+                            onClick={() => router.push('/dashboard')}
                             disabled={isSubmitting}
                             className="px-6 py-2.5 bg-white border border-[#E2E8F0] text-[#475569] text-sm font-semibold rounded-xl hover:bg-[#F8FAFC] disabled:opacity-50"
                         >
