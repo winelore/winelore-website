@@ -787,7 +787,7 @@ export default function EvaluationForm({
                                                                                     setNumericErrors(prev => ({...prev, [prop.code]: null}))
                                                                                     handleValueChange(prop.code, normalizeNumericValue(val[0]))
                                                                                 }}
-                                                                                className={`cursor-pointer relative z-10 transition-opacity ${!hasValue ? "opacity-50 [&_[role=slider]]:opacity-0 hover:[&_[role=slider]]:opacity-50" : ""}`}
+                                                                                className={`cursor-pointer relative z-10 transition-opacity ${!hasValue ? "opacity-50 [&_[role=slider]]:opacity-0" : ""}`}
                                                                             />
                                                                         </div>
                                                                         <input

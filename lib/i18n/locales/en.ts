@@ -157,7 +157,7 @@ const en = {
     continueToResults: "Continue to Results",
     enterTastingSession: "Enter Tasting Session",
     backToCommission: "Back to Commission",
-    startNextPanel: "Start next Panel",
+    startNextPanel: "Start Next Panel",
     results: {
       pageTitle: "Results: {{name}}",
       statusCompleted: "Completed",
