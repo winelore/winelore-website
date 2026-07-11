@@ -47,12 +47,120 @@ export async function getCompetitionDataAction(competitionId: string) {
                 plannedStartAt: comm.plannedDates?.start || null,
                 plannedEndAt: comm.plannedDates?.end || null,
                 startedAt: comm.startedAt || null,
-                endedAt: comm.endedAt || null
+                endedAt: comm.endedAt || null,
+                wineJumperMiniGameEnabled: comm.wineJumperMiniGameEnabled || false,
+                voiceCommentsEnabled: comm.voiceCommentsEnabled || false,
+                propertyCommentsEnabled: comm.propertyCommentsEnabled || false,
+                beverageOriginDuringEvaluationEnabled: comm.beverageOriginDuringEvaluationEnabled || false
             }))
         };
     } catch (err: any) {
         console.error("Server Action Error (getCompetitionDataAction):", err);
         throw new Error(err.message || "Failed to fetch competition data");
+    }
+}
+
+export async function updateCompetitionSettingsAction(
+    competitionId: string,
+    plannedStartDate: string | null,
+    plannedEndDate: string | null,
+    commissions: {
+        id: string;
+        plannedStartDate: string | null;
+        plannedEndDate: string | null;
+        wineJumperMiniGameEnabled: boolean;
+        voiceCommentsEnabled: boolean;
+        propertyCommentsEnabled: boolean;
+        beverageOriginDuringEvaluationEnabled: boolean;
+    }[]
+) {
+    if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
+
+    const executeMutation = async (query: string, variables: any) => {
+        const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, variables }),
+            cache: 'no-store'
+        });
+        const json = await response.json();
+        if (json.errors && json.errors.length > 0) {
+            throw new Error(json.errors[0].message);
+        }
+        return json.data;
+    };
+
+    try {
+        // 1. Update competition dates
+        const updateCompetitionDatesMutation = `
+            mutation UpdateCompetitionDates($id: ID!, $input: PlannedDatesInput!) {
+                updateCompetitionDates(id: $id, input: $input) { id }
+            }
+        `;
+        await executeMutation(updateCompetitionDatesMutation, {
+            id: competitionId,
+            input: {
+                start: plannedStartDate ? new Date(plannedStartDate).toISOString() : null,
+                end: plannedEndDate ? new Date(plannedEndDate).toISOString() : null
+            }
+        });
+
+        // 2. Loop through commissions and update their dates & toggles
+        for (const comm of commissions) {
+            const updateCommissionDatesMutation = `
+                mutation UpdateCommissionDates($id: ID!, $input: PlannedDatesInput!) {
+                    updateCommissionDates(id: $id, input: $input) { id }
+                }
+            `;
+            await executeMutation(updateCommissionDatesMutation, {
+                id: comm.id,
+                input: {
+                    start: comm.plannedStartDate ? new Date(comm.plannedStartDate).toISOString() : null,
+                    end: comm.plannedEndDate ? new Date(comm.plannedEndDate).toISOString() : null
+                }
+            });
+
+            const setWineJumper = `mutation SetWJ($id: ID!, $v: Boolean!) { setCommissionWineJumperMiniGameEnabled(id: $id, enabled: $v) { id } }`;
+            const setVoice = `mutation SetVoice($id: ID!, $v: Boolean!) { setCommissionVoiceCommentsEnabled(id: $id, enabled: $v) { id } }`;
+            const setProp = `mutation SetProp($id: ID!, $v: Boolean!) { setCommissionPropertyCommentsEnabled(id: $id, enabled: $v) { id } }`;
+            const setOrigin = `mutation SetOrigin($id: ID!, $v: Boolean!) { setCommissionBeverageOriginDuringEvaluationEnabled(id: $id, enabled: $v) { id } }`;
+
+            await Promise.all([
+                executeMutation(setWineJumper, { id: comm.id, v: comm.wineJumperMiniGameEnabled }),
+                executeMutation(setVoice, { id: comm.id, v: comm.voiceCommentsEnabled }),
+                executeMutation(setProp, { id: comm.id, v: comm.propertyCommentsEnabled }),
+                executeMutation(setOrigin, { id: comm.id, v: comm.beverageOriginDuringEvaluationEnabled })
+            ]);
+        }
+
+        return { success: true };
+    } catch (err: any) {
+        console.error("Server Action Error (updateCompetitionSettingsAction):", err);
+        return { success: false, error: err.message || "Failed to update settings" };
+    }
+}
+
+export async function getCompetitionSeriesListAction() {
+    try {
+        const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: '{ competitionSeriesList(limit: 100) { items { id name } } }'
+            }),
+            cache: 'no-store'
+        });
+
+        const json = await response.json();
+
+        if (json.errors && json.errors.length > 0) {
+            throw new Error(json.errors[0].message);
+        }
+
+        return json?.data?.competitionSeriesList?.items || [];
+    } catch (err: any) {
+        console.error("Server Action Error (getCompetitionSeriesListAction):", err);
+        return [];
     }
 }
 

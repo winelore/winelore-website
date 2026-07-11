@@ -3,13 +3,13 @@
 import React, { useState, useEffect, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle } from "lucide-react"
+import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Settings, X, Save } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
 import { getDateLocale } from "@/lib/i18n"
 import Link from "next/link"
-import { startCompetitionAction, getCompetitionDataAction } from "../actions"
+import { startCompetitionAction, getCompetitionDataAction, updateCompetitionSettingsAction } from "../actions"
 
 const tabs = (t: any) => [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -246,8 +246,54 @@ export default function CompetitionClientView({
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [isMutating, setIsMutating] = useState(false)
+    const [isEditingSettings, setIsEditingSettings] = useState(false)
+    const [editFormData, setEditFormData] = useState({
+        plannedStartAt: "",
+        plannedEndAt: "",
+        commissions: [] as any[]
+    })
 
     const initialData = localData
+
+    const openEditSettings = () => {
+        setEditFormData({
+            plannedStartAt: initialData.plannedStartAt ? initialData.plannedStartAt.substring(0, 16) : "",
+            plannedEndAt: initialData.plannedEndAt ? initialData.plannedEndAt.substring(0, 16) : "",
+            commissions: initialData.commissions.map(c => ({
+                id: c.id,
+                name: c.name,
+                plannedStartDate: c.plannedStartAt ? c.plannedStartAt.substring(0, 16) : "",
+                plannedEndDate: c.plannedEndAt ? c.plannedEndAt.substring(0, 16) : "",
+                wineJumperMiniGameEnabled: (c as any).wineJumperMiniGameEnabled || false,
+                voiceCommentsEnabled: (c as any).voiceCommentsEnabled || false,
+                propertyCommentsEnabled: (c as any).propertyCommentsEnabled || false,
+                beverageOriginDuringEvaluationEnabled: (c as any).beverageOriginDuringEvaluationEnabled || false
+            }))
+        })
+        setIsEditingSettings(true)
+    }
+
+    const handleSaveSettings = async () => {
+        setIsMutating(true)
+        try {
+            const res = await updateCompetitionSettingsAction(
+                initialData.id,
+                editFormData.plannedStartAt || null,
+                editFormData.plannedEndAt || null,
+                editFormData.commissions
+            )
+            if (res.success) {
+                setIsEditingSettings(false)
+                router.refresh()
+            } else {
+                alert(res.error || "Failed to save settings")
+            }
+        } catch (err: any) {
+            alert(err.message || "An error occurred")
+        } finally {
+            setIsMutating(false)
+        }
+    }
     const compTabs = tabs(t)
 
     // Fetch usernames for competition holders
@@ -447,44 +493,55 @@ export default function CompetitionClientView({
                         <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
                             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
-                            <div className="flex items-start gap-4 mb-6">
-                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100/55 shadow-sm">
-                                    <Trophy className="h-8 w-8" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
-                                        {t("competition.panel")}
-                                    </span>
-                                    <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5 truncate">
-                                        {initialData.name}
-                                    </h2>
-                                    <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                            initialData.status === "STARTED" 
-                                                ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" 
-                                                : initialData.status === "COMPLETED"
-                                                    ? "bg-slate-100 text-slate-500 border border-slate-200"
-                                                    : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                                        }`}>
-                                            {initialData.status === "STARTED" && (
-                                                <span className="relative flex h-2 w-2 mr-1">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                                </span>
-                                            )}
-                                            {formatStatus(initialData.status)}
+                            <div className="flex items-start justify-between gap-4 mb-6">
+                                <div className="flex items-start gap-4 min-w-0 flex-1">
+                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100/55 shadow-sm">
+                                        <Trophy className="h-8 w-8" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
+                                            {t("competition.panel")}
                                         </span>
-                                        {timeDisplay && (
-                                            <>
-                                                <span className="text-slate-300">|</span>
-                                                <span className="text-slate-500 font-semibold flex items-center gap-1 text-xs">
-                                                    <Timer className="w-3.5 h-3.5 text-indigo-500" />
-                                                    {timeDisplay}
-                                                </span>
-                                            </>
-                                        )}
-                                    </p>
+                                        <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5 truncate">
+                                            {initialData.name}
+                                        </h2>
+                                        <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                                initialData.status === "STARTED" 
+                                                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" 
+                                                    : initialData.status === "COMPLETED"
+                                                        ? "bg-slate-100 text-slate-500 border border-slate-200"
+                                                        : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                                            }`}>
+                                                {initialData.status === "STARTED" && (
+                                                    <span className="relative flex h-2 w-2 mr-1">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                                    </span>
+                                                )}
+                                                {formatStatus(initialData.status)}
+                                            </span>
+                                            {timeDisplay && (
+                                                <>
+                                                    <span className="text-slate-300">|</span>
+                                                    <span className="text-slate-500 font-semibold flex items-center gap-1 text-xs">
+                                                        <Timer className="w-3.5 h-3.5 text-indigo-500" />
+                                                        {timeDisplay}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </p>
+                                    </div>
                                 </div>
+                                {isHolder && (
+                                    <button
+                                        onClick={openEditSettings}
+                                        className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-2xl transition-all shadow-sm shrink-0 flex items-center justify-center cursor-pointer active:scale-95"
+                                        title="Configure Competition Settings"
+                                    >
+                                        <Settings className="w-5 h-5 animate-hover-spin" />
+                                    </button>
+                                )}
                             </div>
 
                             <div className="border-t border-slate-100 pt-6">
@@ -586,6 +643,185 @@ export default function CompetitionClientView({
                 {children}
             </div>
         </main>
+
+        {isEditingSettings && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+                <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+                    {/* Header */}
+                    <div className="flex justify-between items-center p-6 md:p-8 border-b border-slate-100">
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800">Configure Competition Settings</h3>
+                            <p className="text-xs text-slate-500 mt-1">Adjust timeline, commissions and mini-games parameters</p>
+                        </div>
+                        <button
+                            onClick={() => setIsEditingSettings(false)}
+                            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                        {/* Competition Timeline */}
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Competition Dates</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="pl-4 border-l-2 border-indigo-500">
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Start</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
+                                        value={editFormData.plannedStartAt}
+                                        onChange={e => setEditFormData({ ...editFormData, plannedStartAt: e.target.value })}
+                                    />
+                                </div>
+                                <div className="pl-4 border-l-2 border-indigo-500">
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Completion</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
+                                        value={editFormData.plannedEndAt}
+                                        onChange={e => setEditFormData({ ...editFormData, plannedEndAt: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Commissions Configuration */}
+                        {editFormData.commissions.length > 0 && (
+                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Commissions ({editFormData.commissions.length})</h4>
+                                <div className="space-y-4">
+                                    {editFormData.commissions.map((comm, idx) => (
+                                        <div key={comm.id} className="p-5 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-4">
+                                            <div className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                                                {comm.name}
+                                            </div>
+
+                                            {/* Dates */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="pl-3 border-l border-slate-200">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Planned Start</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className="w-full text-xs font-semibold text-slate-600 mt-1 bg-transparent outline-none border-b border-transparent focus:border-indigo-500 py-0.5"
+                                                        value={comm.plannedStartDate}
+                                                        onChange={e => {
+                                                            const updated = [...editFormData.commissions];
+                                                            updated[idx].plannedStartDate = e.target.value;
+                                                            setEditFormData({ ...editFormData, commissions: updated });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="pl-3 border-l border-slate-200">
+                                                    <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Planned End</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className="w-full text-xs font-semibold text-slate-600 mt-1 bg-transparent outline-none border-b border-transparent focus:border-indigo-500 py-0.5"
+                                                        value={comm.plannedEndDate}
+                                                        onChange={e => {
+                                                            const updated = [...editFormData.commissions];
+                                                            updated[idx].plannedEndDate = e.target.value;
+                                                            setEditFormData({ ...editFormData, commissions: updated });
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Checkboxes */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-medium text-slate-600">
+                                                <label className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-200">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 rounded"
+                                                        checked={comm.wineJumperMiniGameEnabled}
+                                                        onChange={e => {
+                                                            const updated = [...editFormData.commissions];
+                                                            updated[idx].wineJumperMiniGameEnabled = e.target.checked;
+                                                            setEditFormData({ ...editFormData, commissions: updated });
+                                                        }}
+                                                    />
+                                                    <span>WineJumper Interaction</span>
+                                                </label>
+                                                <label className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-200">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 rounded"
+                                                        checked={comm.voiceCommentsEnabled}
+                                                        onChange={e => {
+                                                            const updated = [...editFormData.commissions];
+                                                            updated[idx].voiceCommentsEnabled = e.target.checked;
+                                                            setEditFormData({ ...editFormData, commissions: updated });
+                                                        }}
+                                                    />
+                                                    <span>Allow Voice Notes</span>
+                                                </label>
+                                                <label className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-200">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 rounded"
+                                                        checked={comm.propertyCommentsEnabled}
+                                                        onChange={e => {
+                                                            const updated = [...editFormData.commissions];
+                                                            updated[idx].propertyCommentsEnabled = e.target.checked;
+                                                            setEditFormData({ ...editFormData, commissions: updated });
+                                                        }}
+                                                    />
+                                                    <span>Property Annotation</span>
+                                                </label>
+                                                <label className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-200">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 rounded"
+                                                        checked={comm.beverageOriginDuringEvaluationEnabled}
+                                                        onChange={e => {
+                                                            const updated = [...editFormData.commissions];
+                                                            updated[idx].beverageOriginDuringEvaluationEnabled = e.target.checked;
+                                                            setEditFormData({ ...editFormData, commissions: updated });
+                                                        }}
+                                                    />
+                                                    <span>Expose Beverage Origin</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-3 p-6 md:p-8 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
+                        <button
+                            onClick={() => setIsEditingSettings(false)}
+                            disabled={isMutating}
+                            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSaveSettings}
+                            disabled={isMutating}
+                            className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
+                        >
+                            {isMutating ? (
+                                <>
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    <span>Save Settings</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         </div>
     )
 }

@@ -71,7 +71,11 @@ export default async function CompetitionStartPage({ params }: PageProps) {
             plannedStartAt: comm.plannedDates?.start || null,
             plannedEndAt: comm.plannedDates?.end || null,
             startedAt: comm.startedAt || null,
-            endedAt: comm.endedAt || null
+            endedAt: comm.endedAt || null,
+            wineJumperMiniGameEnabled: comm.wineJumperMiniGameEnabled || false,
+            voiceCommentsEnabled: comm.voiceCommentsEnabled || false,
+            propertyCommentsEnabled: comm.propertyCommentsEnabled || false,
+            beverageOriginDuringEvaluationEnabled: comm.beverageOriginDuringEvaluationEnabled || false
         }))
     };
 

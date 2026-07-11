@@ -26,6 +26,17 @@ async function executeGraphQL(query: string, variables: any) {
     return json.data;
 }
 
+export async function getCompetitionSeriesListAction() {
+    try {
+        const query = '{ competitionSeriesList(limit: 100) { items { id name } } }';
+        const data = await executeGraphQL(query, {});
+        return data?.competitionSeriesList?.items || [];
+    } catch (err) {
+        console.error("Failed to fetch competition series list:", err);
+        return [];
+    }
+}
+
 /**
  * Server Action that handles the cascade generation of the entire competition infrastructure.
  */

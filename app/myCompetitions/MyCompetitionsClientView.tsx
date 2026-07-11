@@ -156,14 +156,23 @@ export default function MyCompetitionsClientView({ initialData }: { initialData:
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col gap-8">
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                         <div>
                             <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myCompetitions.title")}</h2>
                             <p className="text-sm text-slate-500 mt-1">{t("myCompetitions.subtitle")}</p>
                         </div>
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                            {t("myCompetitions.count", { count: initialData.competitions.length })}
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                {t("myCompetitions.count", { count: initialData.competitions.length })}
+                            </span>
+                            <Link
+                                href="/competition/create"
+                                className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
+                            >
+                                <Trophy className="w-4 h-4" />
+                                Create Competition
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -176,6 +185,13 @@ export default function MyCompetitionsClientView({ initialData }: { initialData:
                                 <Trophy className="w-12 h-12 text-slate-300 mb-4" />
                                 <h3 className="text-lg font-bold text-slate-700">{t("myCompetitions.emptyTitle")}</h3>
                                 <p className="text-sm text-slate-500 mt-1 max-w-md">{t("myCompetitions.emptyDescription")}</p>
+                                <Link
+                                    href="/competition/create"
+                                    className="mt-6 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-6 py-3 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
+                                >
+                                    <Trophy className="w-4 h-4" />
+                                    Create Competition
+                                </Link>
                             </div>
                         )}
                     </div>
