@@ -212,7 +212,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 <div className="max-w-4xl mx-auto space-y-8">
                     <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-800">{t("commission.headDashboard")}</h1>
+                            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+                                {t("commission.headDashboard")}
+                                {currentPanelName && (
+                                    <>
+                                        <span className="text-slate-300 font-normal">|</span>
+                                        <span className="text-indigo-600">{currentPanelName}</span>
+                                    </>
+                                )}
+                            </h1>
                             <p className="text-slate-500 text-sm mt-1 flex items-center gap-1.5 flex-wrap">
                                 <span>{t("commission.currentCandidateLabel")}</span>
                                 <span className="font-mono font-semibold text-indigo-600">
