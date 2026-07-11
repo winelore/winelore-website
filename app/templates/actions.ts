@@ -3,7 +3,7 @@
 import { sdk } from '../../lib/apiClient';
 import { revalidatePath } from 'next/cache';
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://localhost:8080/graphql';
+const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT || process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
 
 async function rawGraphQL(query: string, variables?: Record<string, any>) {
     const res = await fetch(GRAPHQL_ENDPOINT, {
@@ -17,105 +17,31 @@ async function rawGraphQL(query: string, variables?: Record<string, any>) {
     return json.data;
 }
 
-// In-memory offline fallback data for when the backend is down
-let globalMockTemplates: any[] = [
-    {
-        id: "mock-template-1",
-        name: "Стандартний шаблон оцінювання (Червоні вина)",
-        beverageType: "WINE",
-        status: "ACTIVE",
-        createdAt: "2026-07-08T12:00:00Z",
-        latestEdition: {
-            id: "mock-edition-1",
-            version: 1,
-            status: "ACTIVE",
-            categories: [
-                {
-                    id: "mock-cat-1",
-                    name: "Візуальна оцінка",
-                    properties: [
-                        {
-                            id: "mock-prop-1",
-                            code: "clarity",
-                            name: "Прозорість (Clarity)",
-                            description: "Характеристика прозорості та блиску вина",
-                            type: "Boolean",
-                            isRequired: true
-                        },
-                        {
-                            id: "mock-prop-2",
-                            code: "color_intensity",
-                            name: "Інтенсивність кольору",
-                            description: "Глибина кольору від 1 до 10",
-                            type: "Int",
-                            isRequired: true
-                        }
-                    ]
-                },
-                {
-                    id: "mock-cat-2",
-                    name: "Аромат та Смак",
-                    properties: [
-                        {
-                            id: "mock-prop-3",
-                            code: "aroma_score",
-                            name: "Оцінка аромату",
-                            description: "Чистота та інтенсивність аромату (1.0 - 20.0)",
-                            type: "Double",
-                            isRequired: true
-                        },
-                        {
-                            id: "mock-prop-4",
-                            code: "taste_score",
-                            name: "Оцінка смаку",
-                            description: "Баланс, кислотність та таніни (1.0 - 50.0)",
-                            type: "Double",
-                            isRequired: true
-                        }
-                    ]
+
+export async function getBeverageTypesAction(): Promise<{ id: string; code: string; name: string }[]> {
+    try {
+        const query = `
+            query GetBeverageTypes {
+                beverageTypes {
+                    items {
+                        id
+                        code
+                        name
+                    }
                 }
-            ]
-        }
-    },
-    {
-        id: "mock-template-2",
-        name: "Експрес-дегустація (Білі та ігристі вина)",
-        beverageType: "WINE",
-        status: "ACTIVE",
-        createdAt: "2026-07-08T14:30:00Z",
-        latestEdition: {
-            id: "mock-edition-2",
-            version: 1,
-            status: "ACTIVE",
-            categories: [
-                {
-                    id: "mock-cat-3",
-                    name: "Загальні властивості",
-                    properties: [
-                        {
-                            id: "mock-prop-5",
-                            code: "sparkling_intensity",
-                            name: "Перляж / Інтенсивність бульбашок",
-                            description: "Якість гри бульбашок в бокалі",
-                            type: "Int",
-                            isRequired: false
-                        },
-                        {
-                            id: "mock-prop-6",
-                            code: "sweetness",
-                            name: "Рівень солодкості",
-                            description: "Сухе, напівсухе, напівсолодке чи солодке",
-                            type: "Enum",
-                            isRequired: true
-                        }
-                    ]
-                }
-            ]
-        }
+            }
+        `;
+        const data = await rawGraphQL(query);
+        return data?.beverageTypes?.items || [];
+    } catch (err: any) {
+        console.error("❌ Failed to fetch beverage types:", err.message);
+        return [];
     }
-];
+}
+
 
 export async function getEvaluationTemplatesAction() {
+
     try {
         const query = `
             query GetEvaluationTemplateEditions($limit: Int) {
@@ -127,7 +53,11 @@ export async function getEvaluationTemplatesAction() {
                         template {
                             id
                             name
-                            beverageType
+                            beverageType {
+                                id
+                                code
+                                name
+                            }
                             status
                             createdAt
                         }
@@ -149,16 +79,12 @@ export async function getEvaluationTemplatesAction() {
         `;
         const data = await rawGraphQL(query, { limit: 50 });
         const items = data?.evaluationTemplateEditions?.items || [];
-        
-        if (items.length === 0) {
-            return globalMockTemplates;
-        }
 
         // Map editions to templates
         return items.map((item: any) => ({
             id: item.template.id,
             name: item.template.name,
-            beverageType: item.template.beverageType,
+            beverageType: item.template.beverageType?.name ?? item.template.beverageType?.code ?? "",
             status: item.template.status,
             createdAt: item.template.createdAt,
             latestEdition: {
@@ -180,26 +106,29 @@ export async function getEvaluationTemplatesAction() {
             }
         }));
     } catch (err: any) {
-        console.warn("⚠️ Failed to fetch templates from backend (offline mode). Returning mock templates:", err.message);
-        return globalMockTemplates;
+        console.error("❌ Failed to fetch templates from backend:", err.message);
+        throw err;
     }
 }
 
 export async function createGlobalTemplateAction(
     templateName: string,
     categories: any[],
-    ownerAuid: number = 1
+    ownerAuid: number = 1,
+    beverageTypeId: string
 ) {
     try {
         console.log(`🚀 Creating global template "${templateName}"...`);
         
         // 1. Create evaluation template
+        const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
         const templateRes = await sdk.CreateEvaluationTemplate({
             input: {
                 name: templateName,
+                beverageTypeId,
                 owners: [[ownerAuid]]
             }
-        });
+        }, { headers: actorHeaders });
         const templateId = templateRes.createEvaluationTemplate.id;
         console.log(`  Created template: ${templateId}`);
 
@@ -210,53 +139,19 @@ export async function createGlobalTemplateAction(
                 version: 1,
                 categories
             }
-        });
+        }, { headers: actorHeaders });
         const editionId = editionRes.createEvaluationTemplateEdition.id;
         console.log(`  Created template edition: ${editionId}`);
 
         // 3. Activate the edition
-        await sdk.ActivateEvaluationTemplateEdition({ id: editionId });
+        await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
         console.log(`  Activated template edition: ${editionId}`);
 
         revalidatePath('/templates');
 
         return { success: true, templateId, editionId };
     } catch (err: any) {
-        console.warn("⚠️ Failed to create template on backend (offline mode). Simulating success:", err.message);
-        
-        const mockTemplateId = `mock-template-${Date.now()}`;
-        const mockEditionId = `mock-edition-${Date.now()}`;
-        
-        const newMockTemplate = {
-            id: mockTemplateId,
-            name: templateName,
-            beverageType: "WINE",
-            status: "ACTIVE",
-            createdAt: new Date().toISOString(),
-            latestEdition: {
-                id: mockEditionId,
-                version: 1,
-                status: "ACTIVE",
-                categories: categories.map((cat: any, index: number) => ({
-                    id: `mock-cat-id-${index}-${Date.now()}`,
-                    name: cat.name,
-                    properties: cat.properties.map((prop: any, pIndex: number) => ({
-                        id: `mock-prop-id-${index}-${pIndex}-${Date.now()}`,
-                        code: prop.code,
-                        name: prop.name,
-                        description: prop.description,
-                        type: prop.type,
-                        isRequired: prop.isRequired
-                    }))
-                }))
-            }
-        };
-
-        // Append to local in-memory mock templates
-        globalMockTemplates = [newMockTemplate, ...globalMockTemplates];
-
-        revalidatePath('/templates');
-
-        return { success: true, templateId: mockTemplateId, editionId: mockEditionId };
+        console.error("❌ Failed to create template on backend:", err.message);
+        throw err;
     }
 }

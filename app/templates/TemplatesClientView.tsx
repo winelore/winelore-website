@@ -113,11 +113,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                                                     <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
                                                         {template.name}
                                                     </h3>
-                                                    {template.id.startsWith("mock-") && (
-                                                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded-md uppercase tracking-wider shrink-0">
-                                                            Fallback (Mock)
-                                                        </span>
-                                                    )}
+
                                                 </div>
                                                 
                                                 <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
