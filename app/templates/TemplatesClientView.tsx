@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { AppHeader } from "@/components/AppHeader"
-import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2, Shield } from "lucide-react"
+import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2 } from "lucide-react"
 import Cookies from "js-cookie"
 import TemplateCreatorModal from "./TemplateCreatorModal"
 
@@ -63,8 +63,15 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
 
     // Filter to only show templates owned by the current user
     const myTemplates = currentAuid > 0
-        ? templates.filter(t => t.owners?.some(ownerGroup => ownerGroup.includes(currentAuid)))
-        : templates
+        ? templates.filter(t => {
+              if (!t.owners) return false;
+              return t.owners.some(ownerGroup => 
+                  Array.isArray(ownerGroup) 
+                      ? ownerGroup.includes(currentAuid) 
+                      : (ownerGroup as any) === currentAuid
+              );
+          })
+        : [];
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
@@ -119,7 +126,6 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                                                     <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
                                                         {template.name}
                                                     </h3>
-
                                                 </div>
                                                 
                                                 <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
