@@ -1,10 +1,11 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
-import { FileText, Trophy, Wine, User, Layers } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
 
@@ -33,6 +34,16 @@ interface Competition {
   startedAt: string | null
   endedAt: string | null
   series: CompetitionSeries
+}
+
+interface DashboardProps {
+    initialCompetitions: Competition[]
+    nextCursor: string | null
+    nextHistory: string
+    prevCursor: string | null
+    prevHistory: string
+    hasPrev: boolean
+    hasNext: boolean
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -127,7 +138,7 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
     )
 
     return (
-        <Link 
+        <Link
             href={`/competition/${competition.id}`}
             className="group bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 flex flex-col min-h-[140px]"
         >
@@ -165,30 +176,87 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
     )
 }
 
-export default function WineLoreDashboard({ initialCompetitions }: { initialCompetitions: Competition[] }) {
+export default function WineLoreDashboard({
+                                              initialCompetitions,
+                                              nextCursor,
+                                              nextHistory,
+                                              prevCursor,
+                                              prevHistory,
+                                              hasPrev,
+                                              hasNext
+                                          }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
-
+  const router = useRouter()
+  const pathname = usePathname()
+  const [isLoading, setIsLoading] = useState(false)
   // Fetch usernames for all competition holders on the dashboard
   const allHolderAuids = useMemo(() => {
     return Array.from(new Set(initialCompetitions.flatMap(c => c.holder || [])))
   }, [initialCompetitions])
   const { usernames } = useUsernames(allHolderAuids)
 
+    const handleNext = () => {
+        if (!hasNext || !nextCursor) return
+        setIsLoading(true)
+        router.push(`${pathname}?cursor=${nextCursor}&h=${nextHistory}`)
+    }
+
+    const handlePrev = () => {
+        if (!hasPrev) return
+        setIsLoading(true)
+        if (!prevCursor) {
+            router.push(pathname)
+        } else {
+            const histParam = prevHistory ? `&h=${prevHistory}` : ''
+            router.push(`${pathname}?cursor=${prevCursor}${histParam}`)
+        }
+    }
+
+    useEffect(() => {
+        setIsLoading(false)
+    }, [initialCompetitions])
+
   return (
     <div className="flex h-screen flex-col bg-background">
         <AppHeader activeTab={activeTab} onTabChange={setActiveTab} wineTab />
 
+        <main className="flex-1 overflow-auto p-6 flex flex-col relative">
+            {isLoading && (
+                <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-3xl">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                </div>
+            )}
+
       {/* Competition Cards Grid */}
-      <main className="flex-1 overflow-auto p-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
           {initialCompetitions.map((competition) => (
-            <CompetitionCard 
-              key={competition.id} 
-              competition={competition} 
+            <CompetitionCard
+              key={competition.id}
+              competition={competition}
               usernames={usernames}
             />
           ))}
         </div>
+
+          {(hasPrev || hasNext) && (
+            <div className="mt-2 flex items-center justify-center gap-3">
+              <button
+                onClick={handlePrev}
+                disabled={!hasPrev || isLoading}
+                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              <button
+                onClick={handleNext}
+                disabled={!hasNext || isLoading}
+                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          )}
       </main>
     </div>
   )
