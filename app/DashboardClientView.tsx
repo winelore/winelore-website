@@ -44,6 +44,7 @@ interface DashboardProps {
     prevHistory: string
     hasPrev: boolean
     hasNext: boolean
+    currentPage: number
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -183,7 +184,8 @@ export default function WineLoreDashboard({
                                               prevCursor,
                                               prevHistory,
                                               hasPrev,
-                                              hasNext
+                                              hasNext,
+                                              currentPage
                                           }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
   const router = useRouter()
@@ -247,6 +249,10 @@ export default function WineLoreDashboard({
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
+
+              <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
+                {currentPage}
+              </span>
 
               <button
                 onClick={handleNext}

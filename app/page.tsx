@@ -13,19 +13,20 @@ export default async function DashboardPage({
     const historyStr = resolvedParams.h || "";
     const historyArray = historyStr ? historyStr.split(',') : [];
     const LIMIT = 20;
-    let competitions: any[] = [];
+    let rawCompetitions: any[] = [];
     try {
         const data = await sdk.GetDashboardCompetitions({
-            limit: LIMIT,
+            limit: LIMIT + 1,
             cursor: cursor || undefined
         });
-        competitions = data.competitions?.items || [];
+        rawCompetitions = data.competitions?.items || [];
     } catch (error) {
         console.error("Failed to load dashboard competitions:", error);
     }
-
+    const hasNextPage = rawCompetitions.length > LIMIT;
+    const competitionsToDisplay = rawCompetitions.slice(0, LIMIT);
     // Map backend competitions to the format expected by DashboardClientView
-    const mappedCompetitions = competitions.map((comp: any) => ({
+    const mappedCompetitions = competitionsToDisplay.map((comp: any) => ({
         id: comp.id,
         name: comp.name,
         status: comp.status,
@@ -42,8 +43,8 @@ export default async function DashboardPage({
         }
     }));
 
-    const hasNextPage = competitions.length === LIMIT;
-    const nextCursor = hasNextPage ? competitions[competitions.length - 1].id : null;
+
+    const nextCursor = hasNextPage ? competitionsToDisplay[competitionsToDisplay.length - 1].id : null;
 
     const currentCursorRep = cursor || "root";
     const nextHistory = historyStr ? `${historyStr},${currentCursorRep}` : currentCursorRep;
@@ -57,6 +58,8 @@ export default async function DashboardPage({
         prevHistory = historyArray.slice(0, -1).join(',');
     }
 
+    const currentPage = historyArray.length + 1;
+
     return (
         <WineLoreDashboard
             initialCompetitions={mappedCompetitions}
@@ -66,6 +69,7 @@ export default async function DashboardPage({
             prevHistory={prevHistory}
             hasPrev={historyArray.length > 0}
             hasNext={hasNextPage}
+            currentPage={currentPage}
         />
     );
 }
