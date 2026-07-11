@@ -217,6 +217,15 @@ export const DevGetEvaluationTemplateEditionsQuery = gql(`
       items {
         id
         status
+        template {
+          name
+          beverageType {
+            id
+          }
+        }
+        categories {
+          id
+        }
       }
     }
   }

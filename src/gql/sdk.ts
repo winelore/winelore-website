@@ -604,7 +604,7 @@ export type DevSetCommissionTemplateEditionMutation = { setCommissionTemplateEdi
 export type DevGetEvaluationTemplateEditionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type DevGetEvaluationTemplateEditionsQuery = { evaluationTemplateEditions: { items: Array<{ id: string, status: Types.EvaluationTemplateEditionStatus }> } };
+export type DevGetEvaluationTemplateEditionsQuery = { evaluationTemplateEditions: { items: Array<{ id: string, status: Types.EvaluationTemplateEditionStatus, template: { name: string, beverageType: { id: string } }, categories: Array<{ id: string }> }> } };
 
 export type DevPlanCommissionReplicaMutationVariables = Exact<{
   id: string | number;
@@ -1417,6 +1417,15 @@ export const DevGetEvaluationTemplateEditionsDocument = gql`
     items {
       id
       status
+      template {
+        name
+        beverageType {
+          id
+        }
+      }
+      categories {
+        id
+      }
     }
   }
 }

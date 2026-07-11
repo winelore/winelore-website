@@ -1,5 +1,3 @@
-'use server';
-
 import { cookies } from 'next/headers';
 import { sdk } from '@/lib/apiClient';
 
@@ -24,10 +22,7 @@ function generateAuid() {
 const isValidUuid = (id?: string | null) => 
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id || '');
 
-export async function seedCompetitionScenarioAction(data: SeederFormData) {
-  const logs: string[] = [];
-  const log = (msg: string) => logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
-
+export async function seedCompetitionScenarioAction(data: SeederFormData, log: (msg: string) => void) {
   try {
     log('🚀 Початок генерації сценарію Data Seeder (New State Machine)...');
     
@@ -133,14 +128,29 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
 
     // Отримуємо існуючий шаблон оцінювання для прив'язки
     let activeTemplateEditionId = '';
-    let evaluationProperties: string[] = [];
+    let evaluationProperties: { code: string, min: number, max: number }[] = [];
     try {
       const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
-      const firstActive = evalTemplatesRes.evaluationTemplateEditions?.items?.find((i: any) => i.status === 'PUBLISHED' || i.status === 'ACTIVE');
-      activeTemplateEditionId = firstActive?.id || evalTemplatesRes.evaluationTemplateEditions?.items?.[0]?.id || '';
+      const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
+      
+      log(`🔎 Знайдено ${items.length} шаблонів у базі. Аналізуємо...`);
+      items.forEach((item: any, index: number) => {
+        const catCount = item.categories?.length || 0;
+        const bevId = item.template?.beverageType?.id;
+        const name = item.template?.name || "Unknown";
+        log(`   [${index + 1}] ID: ${item.id} | Назва: "${name}" | Статус: ${item.status} | Категорій: ${catCount} | BevType: ${bevId}`);
+      });
+
+      const firstActive = items.find((i: any) => 
+        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
+        i.categories && i.categories.length > 1 &&
+        (!i.template?.beverageType?.id || i.template.beverageType.id === beverageTypeId)
+      );
+      activeTemplateEditionId = firstActive?.id || items.find((i: any) => i.categories && i.categories.length > 1)?.id || items[0]?.id || '';
       
       if (activeTemplateEditionId) {
-         log(`📄 Знайдено шаблон оцінювання: ${activeTemplateEditionId}`);
+         const selectedName = items.find((i: any) => i.id === activeTemplateEditionId)?.template?.name || "Unknown";
+         log(`📄 Вибрано шаблон оцінювання: "${selectedName}" (ID: ${activeTemplateEditionId})`);
          
          const query = `
            query GetTemplate($id: ID!) {
@@ -150,12 +160,20 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
                    __typename
                    code
                    isResult
+                   ... on DoubleProperty {
+                     doubleMin: minLimit
+                     doubleMax: maxLimit
+                   }
+                   ... on IntProperty {
+                     intMin: minLimit
+                     intMax: maxLimit
+                   }
                  }
                }
              }
            }
          `;
-         const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+         const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://hayabusa.proxy.rlwy.net:21675/graphql';
          const tplRes = await fetch(GRAPHQL_ENDPOINT, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', ...headers },
@@ -163,14 +181,23 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
          });
          const tplData = await tplRes.json();
          const categories = tplData?.data?.evaluationTemplateEdition?.categories || [];
-         categories.forEach((cat: any) => {
-           cat.properties.forEach((prop: any) => {
-             // SmartProperty values are calculated by backend, everything else must be submitted!
-             if (prop.__typename !== "SmartProperty") {
-               evaluationProperties.push(prop.code);
-             }
-           });
-         });
+          categories.forEach((cat: any) => {
+            cat.properties.forEach((prop: any) => {
+              // SmartProperty values are calculated by backend, everything else must be submitted!
+              if (prop.__typename !== "SmartProperty") {
+                let min = 0;
+                let max = 100;
+                if (prop.__typename === "DoubleProperty") {
+                  min = prop.doubleMin ?? 0;
+                  max = prop.doubleMax ?? 100;
+                } else if (prop.__typename === "IntProperty") {
+                  min = prop.intMin ?? 0;
+                  max = prop.intMax ?? 100;
+                }
+                evaluationProperties.push({ code: prop.code, min, max });
+              }
+            });
+          });
          log(`📄 Отримано властивостей для оцінки: ${evaluationProperties.length}`);
       } else {
          log(`⚠️ Шаблони оцінювання не знайдені в базі! Можливі помилки валідації.`);
@@ -289,7 +316,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
         input: { auid: [headAuid], role: 'HEAD' }
       });
       const headMemberUuid = headRes.addCommissionReplicaMember.members.find(m => m.auid?.includes(headAuid))?.id;
-      log(`   Голову "${config.headName}" додано (AUID: ${headAuid}, UUID: ${headMemberUuid})`);
+      log(`   Голову (поточного користувача) додано (AUID: ${headAuid}, UUID: ${headMemberUuid})`);
 
       const experts = [];
       for (let i = 0; i < config.expertsCount; i++) {
@@ -364,17 +391,18 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
 
           const allMembersToEvaluate = [{ auid: headAuid, isHead: true }, ...experts];
           for (const expert of allMembersToEvaluate) {
-            const randomScore = Math.floor(Math.random() * 51) + 50;
             try {
               const scores = evaluationProperties.length > 0 
-                ? evaluationProperties.map(code => {
-                    const max100 = code === 'typicity' || code === 'total_score';
-                    const score = max100 
-                        ? Math.floor(Math.random() * 51) + 50  // 50-100
-                        : Math.floor(Math.random() * 5) + 5;   // 5-9 for 10-point scales
-                    return { code, value: score.toString() };
+                ? evaluationProperties.map(prop => {
+                    const range = prop.max - prop.min;
+                    const minAllowed = prop.min + Math.floor(range / 2);
+                    const score = Math.floor(Math.random() * (prop.max - minAllowed + 1)) + minAllowed;
+                    return { code: prop.code, value: score.toString() };
                   })
-                : [{ code: 'QUALITY', value: (Math.floor(Math.random() * 51) + 50).toString() }];
+                : [
+                    { code: "appearance_clarity", value: (Math.floor(Math.random() * 5) + 5).toString() },
+                    { code: "appearance_color", value: (Math.floor(Math.random() * 5) + 5).toString() }
+                  ];
 
               const evalRes = await sdk.SubmitEvaluation({
                 input: {
@@ -431,7 +459,6 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
     
     return { 
       success: true, 
-      logs, 
       competitionId, 
       commissions: resultCommissions 
     };
@@ -446,7 +473,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
     console.error("======================================================");
     
     // Возвращаем объект СЮДА, вместо throw! Тогда Next.js покажет текст на экране.
-    return { success: false, logs, error: e?.message || "Internal Error" };
+    return { success: false, error: e?.message || "Internal Error" };
   }
 }
 

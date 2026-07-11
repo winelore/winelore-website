@@ -57,7 +57,7 @@ type Documents = {
     "\n  mutation DevCreateBeverageType($input: CreateBeverageTypeInput!) {\n    createBeverageType(input: $input) {\n      id\n    }\n  }\n": typeof types.DevCreateBeverageTypeDocument,
     "\n  mutation DevPublishBeverageType($id: ID!) {\n    publishBeverageType(id: $id) {\n      id\n    }\n  }\n": typeof types.DevPublishBeverageTypeDocument,
     "\n  mutation DevSetCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!, $templateEditionId: ID!) {\n    setCommissionTemplateEdition(id: $id, beverageTypeId: $beverageTypeId, templateEditionId: $templateEditionId) {\n      id\n    }\n  }\n": typeof types.DevSetCommissionTemplateEditionDocument,
-    "\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n      }\n    }\n  }\n": typeof types.DevGetEvaluationTemplateEditionsDocument,
+    "\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n        template {\n          name\n          beverageType {\n            id\n          }\n        }\n        categories {\n          id\n        }\n      }\n    }\n  }\n": typeof types.DevGetEvaluationTemplateEditionsDocument,
     "\n  mutation DevPlanCommissionReplica($id: ID!) {\n    planCommissionReplica(id: $id) {\n      id\n    }\n  }\n": typeof types.DevPlanCommissionReplicaDocument,
     "\n  mutation DevStartCommissionReplica($id: ID!) {\n    startCommissionReplica(id: $id) {\n      id\n    }\n  }\n": typeof types.DevStartCommissionReplicaDocument,
     "\n  mutation DevMarkCommissionReplicaMemberReady($id: ID!, $memberId: ID!) {\n    markCommissionReplicaMemberReady(id: $id, memberId: $memberId) {\n      id\n    }\n  }\n": typeof types.DevMarkCommissionReplicaMemberReadyDocument,
@@ -113,7 +113,7 @@ const documents: Documents = {
     "\n  mutation DevCreateBeverageType($input: CreateBeverageTypeInput!) {\n    createBeverageType(input: $input) {\n      id\n    }\n  }\n": types.DevCreateBeverageTypeDocument,
     "\n  mutation DevPublishBeverageType($id: ID!) {\n    publishBeverageType(id: $id) {\n      id\n    }\n  }\n": types.DevPublishBeverageTypeDocument,
     "\n  mutation DevSetCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!, $templateEditionId: ID!) {\n    setCommissionTemplateEdition(id: $id, beverageTypeId: $beverageTypeId, templateEditionId: $templateEditionId) {\n      id\n    }\n  }\n": types.DevSetCommissionTemplateEditionDocument,
-    "\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n      }\n    }\n  }\n": types.DevGetEvaluationTemplateEditionsDocument,
+    "\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n        template {\n          name\n          beverageType {\n            id\n          }\n        }\n        categories {\n          id\n        }\n      }\n    }\n  }\n": types.DevGetEvaluationTemplateEditionsDocument,
     "\n  mutation DevPlanCommissionReplica($id: ID!) {\n    planCommissionReplica(id: $id) {\n      id\n    }\n  }\n": types.DevPlanCommissionReplicaDocument,
     "\n  mutation DevStartCommissionReplica($id: ID!) {\n    startCommissionReplica(id: $id) {\n      id\n    }\n  }\n": types.DevStartCommissionReplicaDocument,
     "\n  mutation DevMarkCommissionReplicaMemberReady($id: ID!, $memberId: ID!) {\n    markCommissionReplicaMemberReady(id: $id, memberId: $memberId) {\n      id\n    }\n  }\n": types.DevMarkCommissionReplicaMemberReadyDocument,
@@ -315,7 +315,7 @@ export function gql(source: "\n  mutation DevSetCommissionTemplateEdition($id: I
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n      }\n    }\n  }\n"): (typeof documents)["\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n      }\n    }\n  }\n"];
+export function gql(source: "\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n        template {\n          name\n          beverageType {\n            id\n          }\n        }\n        categories {\n          id\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query DevGetEvaluationTemplateEditions {\n    evaluationTemplateEditions {\n      items {\n        id\n        status\n        template {\n          name\n          beverageType {\n            id\n          }\n        }\n        categories {\n          id\n        }\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

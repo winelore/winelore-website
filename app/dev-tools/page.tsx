@@ -23,7 +23,6 @@ export default function DevToolsPage() {
   const defaultCommission: CommissionConfig = {
     name: 'Нова комісія',
     type: 'NOT_STARTED',
-    headName: 'Ім\'я Голови',
     expertsCount: 3,
     winesCount: 5,
     evaluatedWinesCount: 0
@@ -34,9 +33,9 @@ export default function DevToolsPage() {
     competitionName: 'TEST 1',
     seriesName: 'Червоне вино 2026',
     commissions: [
-      { name: 'Комісія 1', type: 'NOT_STARTED', headName: 'Іван Голова', expertsCount: 3, winesCount: 5 },
-      { name: 'Комісія 2', type: 'IN_PROGRESS', headName: 'Марія Голова', expertsCount: 3, winesCount: 5, evaluatedWinesCount: 2 },
-      { name: 'Комісія 3', type: 'FINISHED', headName: 'Олег Голова', expertsCount: 3, winesCount: 5 }
+      { name: 'Комісія 1', type: 'NOT_STARTED', expertsCount: 3, winesCount: 5 },
+      { name: 'Комісія 2', type: 'IN_PROGRESS', expertsCount: 3, winesCount: 5, evaluatedWinesCount: 2 },
+      { name: 'Комісія 3', type: 'FINISHED', expertsCount: 3, winesCount: 5 }
     ]
   });
 
@@ -78,16 +77,49 @@ export default function DevToolsPage() {
   const handleGenerate = async () => {
     setLoading(true);
     setLogs([]);
-    addLog(`[${new Date().toLocaleTimeString()}] Початок роботи генератора...`);
 
     try {
-      const res = await seedCompetitionScenarioAction(formData);
-      if (res.success) {
-        if (res.logs) {
-          setLogs((prev) => [...prev, ...res.logs!]);
+      const response = await fetch('/api/dev-tools/seed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            
+            if (line.startsWith('__DONE__')) {
+              // Generation completed successfully
+              continue;
+            } else if (line.startsWith('__ERROR__')) {
+              // Next line contains error JSON if we want to parse it, but we can just ignore for logs
+              continue;
+            } else if (line.startsWith('{"error":')) {
+                // Ignore raw error json string
+                continue;
+            } else if (line.startsWith('{"success":')) {
+                // Ignore raw success json string
+                continue;
+            } else {
+              setLogs((prev) => [...prev, line]);
+            }
+          }
         }
-      } else {
-        addLog(`[${new Date().toLocaleTimeString()}] ❌ Помилка: ${res.error}`);
       }
     } catch (e: any) {
       addLog(`[${new Date().toLocaleTimeString()}] ❌ Критична помилка: ${e.message}`);
@@ -219,11 +251,7 @@ export default function DevToolsPage() {
                         </Button>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                        <div className="space-y-1">
-                          <label className="text-xs text-gray-600">Ім'я Голови</label>
-                          <Input value={comm.headName} onChange={e => updateCommission(idx, { headName: e.target.value })} className="bg-white" />
-                        </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                         <div className="space-y-1">
                           <label className="text-xs text-gray-600">Експертів (n)</label>
                           <Input type="number" value={comm.expertsCount} onChange={e => updateCommission(idx, { expertsCount: Number(e.target.value) })} className="bg-white" />
