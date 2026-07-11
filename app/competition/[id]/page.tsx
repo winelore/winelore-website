@@ -24,10 +24,11 @@ export default async function CompetitionStartPage({ params }: PageProps) {
 
     try {
         const data = await fetchGraphQL(GET_COMPETITION_PAGE, { id: competitionId });
-
+        console.log("GraphQL Data:", data);
         if (data) {
-            competition = data.competition;
-            commissions = data.commissionsByCompetition?.items || [];
+            const responseData = data.data || data;
+            competition = responseData.competition;
+            commissions = responseData.commissionsByCompetition?.items || [];
         } else {
             console.error("Порожня відповідь від GraphQL (data is undefined)");
         }

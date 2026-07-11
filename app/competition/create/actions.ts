@@ -62,7 +62,7 @@ export async function createCompetitionInfrastructure(formData: any) {
         // 2. Set planned timeline boundaries for the competition
         if (formData.plannedStartDate || formData.plannedEndDate) {
             const updateCompetitionDatesMutation = `
-                mutation UpdateCompetitionDates($id: ID!, $input: UpdateCompetitionDatesInput!) {
+                mutation UpdateCompetitionDates($id: ID!, $input: PlannedDatesInput!) {
                     updateCompetitionDates(id: $id, input: $input) { id }
                 }
             `;
@@ -95,7 +95,7 @@ export async function createCompetitionInfrastructure(formData: any) {
             // 4. Update the schedule and timeline constraints for the commission
             if (commission.plannedStartDate || commission.plannedEndDate) {
                 const updateCommissionDatesMutation = `
-                    mutation UpdateCommissionDates($id: ID!, $input: UpdateCommissionDatesInput!) {
+                    mutation UpdateCommissionDates($id: ID!, $input: PlannedDatesInput!) {
                         updateCommissionDates(id: $id, input: $input) { id }
                     }
                 `;
