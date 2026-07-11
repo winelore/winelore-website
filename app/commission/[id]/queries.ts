@@ -17,8 +17,13 @@ export const GET_COMMISSION = gql(`
       voiceCommentsEnabled
       propertyCommentsEnabled
       beverageOriginDuringEvaluationEnabled
+      panels {
+        id
+        name
+      }
       candidates {
         id
+        panelId
       }
       competition {
         id
@@ -43,6 +48,7 @@ export const GET_COMMISSION = gql(`
           candidate {
             id
             anonymizedCode
+            panelId
           }
         }
       }
@@ -317,8 +323,13 @@ export const GET_REPLICA_CANDIDATES = gql(`
       status
       commission {
         id
+        panels {
+          id
+          name
+        }
         candidates {
           id
+          panelId
         }
       }
       replicaCandidates {
@@ -327,6 +338,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
         candidate {
           id
           anonymizedCode
+          panelId
           beverageType {
             id
             code

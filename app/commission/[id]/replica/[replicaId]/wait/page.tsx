@@ -11,6 +11,7 @@ import { useUsernames } from "@/hooks/useUsernames"
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
+    startNextPanelAction,
 } from "../../../../actions"
 import { findEvaluationForMember, normalizeAuids } from "../../../../auidUtils"
 import {
@@ -46,6 +47,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [myTastingSummary, setMyTastingSummary] = useState<MyTastingSummaryData | null>(null);
+    const [isPanelFinished, setIsPanelFinished] = useState(false);
+    const [currentPanelName, setCurrentPanelName] = useState<string>("");
+    const [nextPanelFirstCandidateId, setNextPanelFirstCandidateId] = useState<string | null>(null);
 
     // Fetch usernames for commission members
     const allMemberAuids = useMemo(() => {
@@ -75,7 +79,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         const fetchData = async () => {
             if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, nextPanelFirstCandidateId: newNextPanelFirstCandidateId } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -84,6 +88,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 setWineJumperMiniGameEnabled(newWineJumperEnabled);
                 setVoiceCommentsEnabled(newVoiceCommentsEnabled);
                 setPropertyCommentsEnabled(newPropertyCommentsEnabled);
+                setIsPanelFinished(newIsPanelFinished || false);
+                setCurrentPanelName(newPanelName || "");
+                setNextPanelFirstCandidateId(newNextPanelFirstCandidateId || null);
                 const commentFlags = {
                     propertyCommentsEnabled: newPropertyCommentsEnabled,
                     voiceCommentsEnabled: newVoiceCommentsEnabled,
@@ -165,6 +172,18 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     };
 
+    // HEAD action: advance to next panel
+    const handleStartNextPanel = async () => {
+        if (!nextPanelFirstCandidateId || isSwitching) return;
+        setIsSwitching(true);
+        try {
+            await startNextPanelAction(replicaId, nextPanelFirstCandidateId);
+        } catch (err) {
+            console.error(err);
+            setIsSwitching(false);
+        }
+    };
+
     // ==========================================
     // HEAD OF COMMISSION VIEW
     // ==========================================
@@ -193,7 +212,16 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 <div className="max-w-4xl mx-auto space-y-8">
                     <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-800">{t("commission.headDashboard")}</h1>
+                            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+                                {t("commission.headDashboard")}
+                                {currentPanelName && (
+                                    <>
+                                        <span className="text-slate-300 font-normal">|</span>
+                                        <span className="text-slate-800">Panel:</span>
+                                        <span className="text-slate-500 font-normal">{currentPanelName}</span>
+                                    </>
+                                )}
+                            </h1>
                             <p className="text-slate-500 text-sm mt-1 flex items-center gap-1.5 flex-wrap">
                                 <span>{t("commission.currentCandidateLabel")}</span>
                                 <span className="font-mono font-semibold text-indigo-600">
@@ -211,17 +239,31 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 </p>
                             )}
                         </div>
-                        <button
-                            onClick={handleNextBeverage}
-                            disabled={!canAdvanceToNextBeverage || isSwitching}
-                            className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
-                        >
-                            {isSwitching ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <>{t("commission.nextBeverage")} <ArrowRight className="w-5 h-5" /></>
-                            )}
-                        </button>
+                        {isPanelFinished && !allDone ? (
+                            <button
+                                onClick={handleStartNextPanel}
+                                disabled={isSwitching}
+                                className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 disabled:bg-slate-300 disabled:shadow-none"
+                            >
+                                {isSwitching ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <>{t("commission.startNextPanel")} <ArrowRight className="w-5 h-5" /></>
+                                )}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleNextBeverage}
+                                disabled={!canAdvanceToNextBeverage || isSwitching}
+                                className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+                            >
+                                {isSwitching ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <>{t("commission.nextBeverage")} <ArrowRight className="w-5 h-5" /></>
+                                )}
+                            </button>
+                        )}
                     </header>
 
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -352,8 +394,11 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     {t("commission.evaluationSubmitted")}
                 </h1>
                 <div className="max-w-md mx-auto mb-8 space-y-4">
-                    <p className="text-slate-500 text-lg">
-                        {t("commission.waitingNextRound")} {t("commission.autoRefreshNotice")}
+                    <p className="text-slate-500 text-lg font-medium">
+                        {isPanelFinished
+                            ? `Panel "${currentPanelName}" is completed! Waiting for the Head to start the next panel.`
+                            : `${t("commission.waitingNextRound")} ${t("commission.autoRefreshNotice")}`
+                        }
                     </p>
                     {candidatesLeftAfterCurrent > 0 && (
                         <p className="text-indigo-600 text-sm font-semibold">
