@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Trash2, AlertCircle, Info, X, Star, GripVertical } from "lucide-react"
 import { createGlobalTemplateAction, getBeverageTypesAction } from "./actions"
@@ -37,7 +37,6 @@ function parseExpression(input: string): any {
     const tokens: { type: string; value: string }[] = []
     let i = 0
 
-    // Normalize and clean up
     input = input.replace(/\s+/g, "")
 
     while (i < input.length) {
@@ -115,7 +114,6 @@ function parseExpression(input: string): any {
     return ast
 }
 
-// ─── Compute duplicate codes across all categories ────────────────────────────
 function computeDuplicateCodes(categories: CategoryState[]): Set<string> {
     const seen = new Map<string, number>()
     for (const cat of categories) {
@@ -129,7 +127,6 @@ function computeDuplicateCodes(categories: CategoryState[]): Set<string> {
     return dups
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function TemplateCreatorModal({
     isOpen,
     onClose,
@@ -144,24 +141,46 @@ export default function TemplateCreatorModal({
     const [beverageTypes, setBeverageTypes] = useState<{ id: string; code: string; name: string }[]>([])
     const [selectedBeverageTypeId, setSelectedBeverageTypeId] = useState<string>("")
 
-    // Error-field highlighting
     const [errorPropIds, setErrorPropIds] = useState<Set<string>>(new Set())
     const [errorCatIds, setErrorCatIds] = useState<Set<string>>(new Set())
 
-    // Drag-and-drop
     const dragCatIdx = useRef<number | null>(null)
     const dragPropKey = useRef<{ catId: string; propIdx: number } | null>(null)
     const [dragOverCatIdx, setDragOverCatIdx] = useState<number | null>(null)
     const [dragOverPropKey, setDragOverPropKey] = useState<{ catId: string; propIdx: number } | null>(null)
 
-    // Code-rename tracking (to update Smart formulas)
-    const prevCodeRef = useRef<Map<string, string>>(new Map()) // propId -> code at focus time
+    const prevCodeRef = useRef<Map<string, string>>(new Map())
 
-    // Load beverage types and reset state on open
+    // Load beverage types and initialize with ONE category and ONE default property
     useEffect(() => {
         if (isOpen) {
             setTemplateName("")
-            setCategories([])
+            
+            const initialCatId = `cat_${Date.now()}`
+            const initialPropId = `prop_${Date.now()}`
+            
+            setCategories([
+                { 
+                    id: initialCatId, 
+                    name: "", 
+                    properties: [
+                        {
+                            id: initialPropId,
+                            name: "",
+                            code: "",
+                            type: "Int",
+                            description: "",
+                            isRequired: true,
+                            isResult: false,
+                            defaultValue: "",
+                            allowedValuesStr: "",
+                            expressionStr: "",
+                            minLimit: undefined,
+                            maxLimit: undefined,
+                        }
+                    ] 
+                }
+            ])
             setErrorMsg(null)
             setErrorPropIds(new Set())
             setErrorCatIds(new Set())
@@ -172,20 +191,14 @@ export default function TemplateCreatorModal({
         }
     }, [isOpen])
 
-    // Duplicate codes (derived)
     const duplicateCodes = computeDuplicateCodes(categories)
 
-    // All variable codes available for Smart property formulas
     const allVariableCodes = categories.flatMap(cat =>
         cat.properties
             .filter(p => p.type !== "Smart" && p.code.trim().length > 0)
             .map(p => p.code.trim())
     )
 
-    // Whether any criteria exist
-    const hasAnyCriteria = categories.some(c => c.properties.length > 0)
-
-    // ── Handlers ──────────────────────────────────────────────────────────────
     const handleAddCategory = () => {
         const id = `cat_${Date.now()}`
         setCategories(prev => [...prev, { id, name: "", properties: [] }])
@@ -238,7 +251,6 @@ export default function TemplateCreatorModal({
                     if (p.id !== propId) return p
                     const updated = { ...p, ...fields }
 
-                    // Auto-generate code from name if name changed
                     if (fields.name !== undefined) {
                         updated.code = fields.name
                             .toLowerCase()
@@ -247,7 +259,6 @@ export default function TemplateCreatorModal({
                             .replace(/^_+|_+$/g, "")
                     }
 
-                    // When type changes — clear type-specific fields only
                     if (fields.type !== undefined) {
                         updated.defaultValue = ""
                         updated.allowedValuesStr = ""
@@ -266,7 +277,6 @@ export default function TemplateCreatorModal({
         }))
     }
 
-    // ── Handle code rename (update Smart formulas) ────────────────────────────
     const handleCodeFocus = (propId: string, currentCode: string) => {
         prevCodeRef.current.set(propId, currentCode)
     }
@@ -275,12 +285,10 @@ export default function TemplateCreatorModal({
         const oldCode = prevCodeRef.current.get(propId)
         if (!oldCode || oldCode === newCode || !oldCode.trim() || !newCode.trim()) return
 
-        // Replace all occurrences of oldCode in Smart formulas
         setCategories(prev => prev.map(cat => ({
             ...cat,
             properties: cat.properties.map(p => {
                 if (p.type !== "Smart" || !p.expressionStr) return p
-                // Word-boundary replace
                 const regex = new RegExp(`\\b${oldCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g")
                 return { ...p, expressionStr: p.expressionStr.replace(regex, newCode) }
             })
@@ -288,7 +296,6 @@ export default function TemplateCreatorModal({
         prevCodeRef.current.delete(propId)
     }
 
-    // ── Save ──────────────────────────────────────────────────────────────────
     const handleSave = async () => {
         setErrorMsg(null)
         setErrorPropIds(new Set())
@@ -332,7 +339,6 @@ export default function TemplateCreatorModal({
                     }
                     if (codesSet.has(p.code)) {
                         newErrorPropIds.add(p.id)
-                        // find sibling with same code too
                         for (const cat2 of categories) {
                             for (const p2 of cat2.properties) {
                                 if (p2.code === p.code && p2.id !== p.id) newErrorPropIds.add(p2.id)
@@ -429,7 +435,6 @@ export default function TemplateCreatorModal({
                 formattedCategories.push({ name: cat.name, properties: propertiesInput })
             }
 
-            // ── isResult validation ────────────────────────────────────────────
             const hasResult = formattedCategories.some(cat =>
                 cat.properties.some((p: any) => p.isResult === true)
             )
@@ -462,51 +467,27 @@ export default function TemplateCreatorModal({
         }
     }
 
-    // ── Drag-and-drop: Categories ──────────────────────────────────────────────
-    const handleCatDragStart = (idx: number) => {
-        dragCatIdx.current = idx
-    }
-    const handleCatDragOver = (e: React.DragEvent, idx: number) => {
-        e.preventDefault()
-        setDragOverCatIdx(idx)
-    }
+    const handleCatDragStart = (idx: number) => { dragCatIdx.current = idx }
+    const handleCatDragOver = (e: React.DragEvent, idx: number) => { e.preventDefault(); setDragOverCatIdx(idx) }
     const handleCatDrop = (targetIdx: number) => {
         const sourceIdx = dragCatIdx.current
-        if (sourceIdx === null || sourceIdx === targetIdx) {
-            dragCatIdx.current = null
-            setDragOverCatIdx(null)
-            return
-        }
+        if (sourceIdx === null || sourceIdx === targetIdx) { dragCatIdx.current = null; setDragOverCatIdx(null); return }
         setCategories(prev => {
             const arr = [...prev]
             const [moved] = arr.splice(sourceIdx, 1)
             arr.splice(targetIdx, 0, moved)
             return arr
         })
-        dragCatIdx.current = null
-        setDragOverCatIdx(null)
+        dragCatIdx.current = null; setDragOverCatIdx(null)
     }
-    const handleCatDragEnd = () => {
-        dragCatIdx.current = null
-        setDragOverCatIdx(null)
-    }
+    const handleCatDragEnd = () => { dragCatIdx.current = null; setDragOverCatIdx(null) }
 
-    // ── Drag-and-drop: Properties ──────────────────────────────────────────────
-    const handlePropDragStart = (catId: string, propIdx: number) => {
-        dragPropKey.current = { catId, propIdx }
-    }
-    const handlePropDragOver = (e: React.DragEvent, catId: string, propIdx: number) => {
-        e.preventDefault()
-        setDragOverPropKey({ catId, propIdx })
-    }
+    const handlePropDragStart = (catId: string, propIdx: number) => { dragPropKey.current = { catId, propIdx } }
+    const handlePropDragOver = (e: React.DragEvent, catId: string, propIdx: number) => { e.preventDefault(); setDragOverPropKey({ catId, propIdx }) }
     const handlePropDrop = (targetCatId: string, targetPropIdx: number) => {
         const source = dragPropKey.current
         if (!source) return
-        if (source.catId === targetCatId && source.propIdx === targetPropIdx) {
-            dragPropKey.current = null
-            setDragOverPropKey(null)
-            return
-        }
+        if (source.catId === targetCatId && source.propIdx === targetPropIdx) { dragPropKey.current = null; setDragOverPropKey(null); return }
         setCategories(prev => {
             const arr = prev.map(c => ({ ...c, properties: [...c.properties] }))
             const srcCat = arr.find(c => c.id === source.catId)
@@ -516,21 +497,14 @@ export default function TemplateCreatorModal({
             tgtCat.properties.splice(targetPropIdx, 0, moved)
             return arr
         })
-        dragPropKey.current = null
-        setDragOverPropKey(null)
+        dragPropKey.current = null; setDragOverPropKey(null)
     }
-    const handlePropDragEnd = () => {
-        dragPropKey.current = null
-        setDragOverPropKey(null)
-    }
+    const handlePropDragEnd = () => { dragPropKey.current = null; setDragOverPropKey(null) }
 
-    // ── Don't render when closed ───────────────────────────────────────────────
     if (!isOpen) return null
 
-    // ── Full-screen UI ─────────────────────────────────────────────────────────
     return (
         <div className="fixed inset-0 z-50 bg-white flex flex-col overflow-hidden">
-
             {/* ── Top bar ── */}
             <div className="shrink-0 flex items-center justify-between px-8 py-5 border-b border-slate-100 bg-white shadow-sm">
                 <div>
@@ -553,8 +527,6 @@ export default function TemplateCreatorModal({
 
             {/* ── Scrollable content ── */}
             <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6">
-
-                {/* Template name + beverage type */}
                 <div className="flex gap-3 flex-wrap">
                     <div className="flex flex-col gap-1.5 flex-1 min-w-64">
                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
@@ -623,7 +595,6 @@ export default function TemplateCreatorModal({
                                         : "border-slate-100 bg-slate-50/40 hover:bg-slate-50/70"
                             }`}
                         >
-                            {/* Drag handle + remove */}
                             <div className="absolute top-4 right-4 flex items-center gap-1">
                                 <button
                                     type="button"
@@ -636,10 +607,7 @@ export default function TemplateCreatorModal({
                             </div>
 
                             <div className="flex items-start gap-2 max-w-[85%]">
-                                <div
-                                    className="mt-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0"
-                                    title="Перетягнути категорію"
-                                >
+                                <div className="mt-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0">
                                     <GripVertical className="w-4 h-4" />
                                 </div>
                                 <div className="flex flex-col gap-1 flex-1">
@@ -699,339 +667,194 @@ export default function TemplateCreatorModal({
                                                                 : "border-slate-100"
                                             }`}
                                         >
-                                            {/* Result badge */}
-                                            {p.isResult && (
-                                                <div className="absolute top-3 left-12 flex items-center gap-1 bg-amber-50 text-amber-600 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-200">
-                                                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                                                    Результуючий
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0">
+                                                        <GripVertical className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                        Показник #{propIdx + 1}
+                                                    </span>
                                                 </div>
-                                            )}
-
-                                            {/* Drag handle */}
-                                            <div
-                                                className="absolute top-3.5 left-3 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors"
-                                                title="Перетягнути показник"
-                                            >
-                                                <GripVertical className="w-3.5 h-3.5" />
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handlePropertyChange(cat.id, p.id, { isResult: !p.isResult })}
+                                                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                                            p.isResult ? "text-amber-500 bg-amber-50 hover:bg-amber-100" : "text-slate-300 hover:text-slate-500 hover:bg-slate-50"
+                                                        }`}
+                                                        title={p.isResult ? "Результуючий показник" : "Зробити результуючим"}
+                                                    >
+                                                        <Star className="w-4 h-4 fill-current" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveProperty(cat.id, p.id)}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                                                        title="Видалити показник"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
 
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveProperty(cat.id, p.id)}
-                                                className="absolute top-3 right-3 p-1 text-slate-400 hover:text-rose-500 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
-                                                title="Видалити показник"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-
-                                            {/* Row 1: Name · Code · Type */}
-                                            <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${p.isResult ? "mt-5" : "mt-1"}`}>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Назва оцінки
-                                                    </span>
+                                                    <label className="text-[11px] font-bold text-slate-500">Назва</label>
                                                     <input
                                                         type="text"
                                                         value={p.name}
                                                         onChange={(e) => handlePropertyChange(cat.id, p.id, { name: e.target.value })}
-                                                        placeholder="Наприклад: Аромат..."
-                                                        className={`px-3 py-1.5 border rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-indigo-500 bg-slate-50/20 transition-colors ${
-                                                            isErrorProp && !p.name.trim() ? "border-rose-400" : "border-slate-150"
-                                                        }`}
+                                                        placeholder="Наприклад: Аромат"
+                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-hidden focus:border-indigo-500 text-slate-800"
                                                     />
                                                 </div>
-
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Код змінної (унікальний)
-                                                    </span>
+                                                    <label className="text-[11px] font-bold text-slate-500">Код змінної (для формул)</label>
                                                     <input
                                                         type="text"
                                                         value={p.code}
                                                         onFocus={() => handleCodeFocus(p.id, p.code)}
-                                                        onChange={(e) => {
-                                                            // Only allow code-safe characters
-                                                            const raw = e.target.value.replace(/[^a-zA-Z0-9_]/g, "_")
-                                                            handlePropertyChange(cat.id, p.id, { code: raw, name: p.name }) // keep name
-                                                            setCategories(prev => prev.map(c =>
-                                                                c.id !== cat.id ? c : {
-                                                                    ...c,
-                                                                    properties: c.properties.map(pp =>
-                                                                        pp.id !== p.id ? pp : { ...pp, code: raw }
-                                                                    )
-                                                                }
-                                                            ))
-                                                        }}
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { code: e.target.value })}
                                                         onBlur={(e) => handleCodeCommit(p.id, e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === "Enter") {
-                                                                (e.target as HTMLInputElement).blur()
-                                                            }
-                                                        }}
-                                                        placeholder="aroma_score"
-                                                        className={`px-3 py-1.5 border rounded-xl text-xs font-mono font-semibold text-slate-700 bg-slate-50/30 focus:outline-hidden focus:ring-1 transition-colors ${
-                                                            isCodeDuplicate
-                                                                ? "border-amber-400 ring-1 ring-amber-300 bg-amber-50/30"
-                                                                : isErrorProp && !p.code.trim()
-                                                                    ? "border-rose-400"
-                                                                    : "border-slate-150"
+                                                        placeholder="автогенерація..."
+                                                        className={`px-3 py-1.5 border rounded-xl text-xs font-mono font-bold focus:outline-hidden focus:border-indigo-500 text-slate-800 ${
+                                                            isCodeDuplicate ? "border-amber-400 bg-amber-50/20" : "border-slate-200"
                                                         }`}
                                                     />
-                                                    {isCodeDuplicate && (
-                                                        <span className="text-[9px] text-amber-600 font-semibold flex items-center gap-1">
-                                                            <AlertCircle className="w-2.5 h-2.5" />
-                                                            Код вже використовується
-                                                        </span>
-                                                    )}
                                                 </div>
-
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Тип показника
-                                                    </span>
+                                                    <label className="text-[11px] font-bold text-slate-500">Тип</label>
                                                     <select
                                                         value={p.type}
                                                         onChange={(e) => handlePropertyChange(cat.id, p.id, { type: e.target.value as any })}
-                                                        className="px-3 py-1.5 border border-slate-150 rounded-xl text-xs font-semibold text-slate-800 bg-white"
+                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-hidden focus:border-indigo-500 cursor-pointer text-slate-800"
                                                     >
-                                                        <option value="Boolean">Boolean (Yes/No)</option>
-                                                        <option value="Int">Int (Ціле число)</option>
-                                                        <option value="Double">Double (Дробове число)</option>
-                                                        <option value="Discrete">Discrete (Набір чисел)</option>
-                                                        <option value="Enum">Enum (Текстовий список)</option>
-                                                        <option value="Smart">Smart (Авто-обчислення)</option>
+                                                        <option value="Int">Ціле число (Int)</option>
+                                                        <option value="Double">Дробове (Double)</option>
+                                                        <option value="Boolean">Так/Ні (Boolean)</option>
+                                                        <option value="Discrete">Дискретні числа</option>
+                                                        <option value="Enum">Текстовий перелік (Enum)</option>
+                                                        <option value="Smart">Розумна формула (Smart)</option>
                                                     </select>
                                                 </div>
                                             </div>
 
-                                            {/* Row 2: Description · Required · isResult */}
-                                            <div className="flex items-end gap-4 flex-wrap">
-                                                <div className="flex flex-col gap-1 flex-1 min-w-48">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Опис (підказка)
-                                                    </span>
-                                                    <input
-                                                        type="text"
-                                                        value={p.description}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { description: e.target.value })}
-                                                        placeholder="Опис показника для дегустатора..."
-                                                        className="px-3 py-1.5 border border-slate-150 rounded-xl text-xs font-semibold text-slate-800 bg-slate-50/20"
-                                                    />
-                                                </div>
-
-                                                {p.type !== "Smart" && (
-                                                    <div className="flex items-center gap-2 pb-1 shrink-0">
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`req_${p.id}`}
-                                                            checked={p.isRequired}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { isRequired: e.target.checked })}
-                                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                                                        />
-                                                        <label htmlFor={`req_${p.id}`} className="text-xs font-bold text-slate-600 cursor-pointer whitespace-nowrap">
-                                                            Обов&apos;язковий
-                                                        </label>
-                                                    </div>
-                                                )}
-
-                                                {/* isResult toggle */}
-                                                <div className="flex items-center gap-2 pb-1 shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        id={`result_${p.id}`}
-                                                        checked={p.isResult}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { isResult: e.target.checked })}
-                                                        className="rounded border-amber-300 focus:ring-amber-400 h-4 w-4 accent-amber-500"
-                                                    />
-                                                    <label
-                                                        htmlFor={`result_${p.id}`}
-                                                        className={`text-xs font-bold cursor-pointer flex items-center gap-1 whitespace-nowrap transition-colors ${
-                                                            p.isResult ? "text-amber-600" : "text-slate-500"
-                                                        }`}
-                                                    >
-                                                        <Star className={`w-3 h-3 transition-all ${p.isResult ? "fill-amber-400 text-amber-400" : "text-slate-400"}`} />
-                                                        Результуючий
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            {/* Row 3: Type-specific config */}
                                             {(p.type === "Int" || p.type === "Double") && (
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-50">
+                                                <div className="grid grid-cols-2 gap-4 -mt-2">
                                                     <div className="flex flex-col gap-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Мінімум</span>
+                                                        <label className="text-[11px] font-bold text-slate-500">Мінімум</label>
                                                         <input
                                                             type="number"
-                                                            step={p.type === "Double" ? "0.1" : "1"}
                                                             value={p.minLimit ?? ""}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, {
-                                                                minLimit: e.target.value !== "" ? Number(e.target.value) : undefined
-                                                            })}
-                                                            placeholder={p.type === "Double" ? "0.0" : "0"}
-                                                            className={`px-3 py-1.5 border rounded-xl text-xs font-semibold text-slate-800 bg-slate-50/10 transition-colors ${
-                                                                isErrorProp && p.minLimit === undefined ? "border-rose-400" : "border-slate-150"
-                                                            }`}
+                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { minLimit: e.target.value === "" ? undefined : Number(e.target.value) })}
+                                                            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-hidden text-slate-800"
                                                         />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Максимум</span>
+                                                        <label className="text-[11px] font-bold text-slate-500">Максимум</label>
                                                         <input
                                                             type="number"
-                                                            step={p.type === "Double" ? "0.1" : "1"}
                                                             value={p.maxLimit ?? ""}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, {
-                                                                maxLimit: e.target.value !== "" ? Number(e.target.value) : undefined
-                                                            })}
-                                                            placeholder={p.type === "Double" ? "10.0" : "10"}
-                                                            className={`px-3 py-1.5 border rounded-xl text-xs font-semibold text-slate-800 bg-slate-50/10 transition-colors ${
-                                                                isErrorProp && p.maxLimit === undefined ? "border-rose-400" : "border-slate-150"
-                                                            }`}
-                                                        />
-                                                    </div>
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Стандартне значення</span>
-                                                        <input
-                                                            type="text"
-                                                            value={p.defaultValue}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { defaultValue: e.target.value })}
-                                                            placeholder={p.type === "Double" ? "5.0" : "5"}
-                                                            className="px-3 py-1.5 border border-slate-150 rounded-xl text-xs font-semibold text-slate-800 bg-slate-50/10"
+                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { maxLimit: e.target.value === "" ? undefined : Number(e.target.value) })}
+                                                            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-hidden text-slate-800"
                                                         />
                                                     </div>
                                                 </div>
                                             )}
 
                                             {(p.type === "Discrete" || p.type === "Enum") && (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-50">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                                            {p.type === "Discrete" ? "Дозволені числа (через кому)" : "Дозволені варіанти (через кому)"}
-                                                        </span>
-                                                        <input
-                                                            type="text"
-                                                            value={p.allowedValuesStr}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { allowedValuesStr: e.target.value })}
-                                                            placeholder={p.type === "Discrete" ? "1, 2, 3, 5" : "DRY, MEDIUM_DRY, SWEET"}
-                                                            className={`px-3 py-1.5 border rounded-xl text-xs font-semibold text-slate-800 bg-slate-50/10 transition-colors ${
-                                                                isErrorProp && !p.allowedValuesStr.trim() ? "border-rose-400" : "border-slate-150"
-                                                            }`}
-                                                        />
-                                                    </div>
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Стандартне значення</span>
-                                                        <input
-                                                            type="text"
-                                                            value={p.defaultValue}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { defaultValue: e.target.value })}
-                                                            placeholder={p.type === "Discrete" ? "1" : "DRY"}
-                                                            className="px-3 py-1.5 border border-slate-150 rounded-xl text-xs font-semibold text-slate-800 bg-slate-50/10"
-                                                        />
-                                                    </div>
+                                                <div className="flex flex-col gap-1 -mt-2">
+                                                    <label className="text-[11px] font-bold text-slate-500">
+                                                        {p.type === "Discrete" ? "Дозволені числа (через кому)" : "Дозволені текстові значення (через кому)"}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={p.allowedValuesStr}
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { allowedValuesStr: e.target.value })}
+                                                        placeholder={p.type === "Discrete" ? "0, 2, 4, 6, 8, 10" : "LOW, MEDIUM, HIGH"}
+                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-hidden text-slate-800"
+                                                    />
                                                 </div>
                                             )}
 
                                             {p.type === "Smart" && (
-                                                <div className="flex flex-col gap-2 pt-2 border-t border-slate-50">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">
-                                                            Математична формула авто-обчислення
+                                                <div className="flex flex-col gap-1 -mt-2">
+                                                    <label className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                                                        Формула розрахунку <Info className="w-3 h-3 text-slate-400" title="Використовуйте коди змінних, наприклад: aroma * 0.4 + taste * 0.6" />
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={p.expressionStr}
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { expressionStr: e.target.value })}
+                                                        placeholder="aroma * 0.5 + color * 0.5"
+                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-mono focus:outline-hidden text-slate-800"
+                                                    />
+                                                    {allVariableCodes.length > 0 && (
+                                                        <span className="text-[10px] text-slate-400">
+                                                            Доступні коди: {allVariableCodes.join(", ")}
                                                         </span>
-                                                        <input
-                                                            type="text"
-                                                            value={p.expressionStr}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { expressionStr: e.target.value })}
-                                                            placeholder="aroma_score * 0.4 + taste_score * 0.6"
-                                                            className={`px-3 py-1.5 border rounded-xl text-xs font-mono font-bold text-slate-800 bg-indigo-50/10 focus:ring-1 focus:ring-indigo-500 transition-colors ${
-                                                                isErrorProp && !p.expressionStr.trim() ? "border-rose-400" : "border-slate-150"
-                                                            }`}
-                                                        />
-                                                    </div>
-
-                                                    {/* Available variable codes helper */}
-                                                    <div className="bg-indigo-50/30 border border-indigo-100/40 rounded-xl p-3 flex flex-col gap-1">
-                                                        <span className="text-[9.5px] font-bold text-indigo-600 flex items-center gap-1">
-                                                            <Info className="w-3.5 h-3.5" /> Доступні змінні для формули:
-                                                        </span>
-                                                        {allVariableCodes.length > 0 ? (
-                                                            <div className="flex flex-wrap gap-1.5 mt-1">
-                                                                {allVariableCodes.map(code => (
-                                                                    <button
-                                                                        key={code}
-                                                                        type="button"
-                                                                        onClick={() => handlePropertyChange(cat.id, p.id, {
-                                                                            expressionStr: p.expressionStr
-                                                                                ? p.expressionStr + " + " + code
-                                                                                : code
-                                                                        })}
-                                                                        className="px-2 py-0.5 bg-indigo-100/60 hover:bg-indigo-200/70 text-indigo-700 text-[9px] font-mono font-bold rounded-md border border-indigo-200/50 transition-colors cursor-pointer"
-                                                                    >
-                                                                        {code}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] text-slate-400 italic mt-0.5">
-                                                                Спочатку створіть звичайні показники (Int, Double тощо) вище, щоб використовувати їх коди тут.
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                    )}
                                                 </div>
                                             )}
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center -mt-2">
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[11px] font-bold text-slate-500">Опис (опціонально)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={p.description}
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { description: e.target.value })}
+                                                        placeholder="Короткий опис для дегустатора..."
+                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-hidden text-slate-800"
+                                                    />
+                                                </div>
+                                                {p.type !== "Smart" && (
+                                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-600 md:mt-5 cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={p.isRequired}
+                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { isRequired: e.target.checked })}
+                                                            className="rounded text-indigo-600 focus:ring-indigo-500"
+                                                        />
+                                                        Обов'язкове поле
+                                                    </label>
+                                                )}
+                                            </div>
                                         </div>
                                     )
                                 })}
-
-                                {cat.properties.length === 0 && (
-                                    <div className="text-slate-400 text-xs italic py-4 text-center border border-dashed border-slate-200 rounded-2xl bg-white/60">
-                                        У цій категорії ще немає жодного показника. Натисніть кнопку «Додати показник».
-                                    </div>
-                                )}
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* ── Footer ── */}
-            <div className="shrink-0 border-t border-slate-100 bg-white px-8 py-4 shadow-[0_-1px_8px_rgba(0,0,0,0.04)]">
-                {/* Error / warning in footer */}
-                {errorMsg && (
-                    <div className="mb-3 bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 flex items-start gap-2 text-rose-600 text-xs font-semibold">
-                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                        <p>{errorMsg}</p>
-                    </div>
-                )}
-
-                {/* Duplicate codes warning (live) */}
-                {duplicateCodes.size > 0 && !errorMsg && (
-                    <div className="mb-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5 flex items-start gap-2 text-amber-700 text-xs font-semibold">
-                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
-                        <p>
-                            Дублюючі коди: {Array.from(duplicateCodes).map(c => `"${c}"`).join(", ")} — коди мають бути унікальними.
-                        </p>
-                    </div>
-                )}
-
-                <div className="flex gap-2 justify-end">
+            {/* ── Bottom action bar (Правка: Помилка тепер НА РІВНІ кнопок) ── */}
+            <div className="shrink-0 border-t border-slate-100 px-8 py-4 bg-slate-50/50 flex flex-row items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                    {errorMsg && (
+                        <div className="flex items-center gap-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-2.5 max-w-xl animate-fade-in">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span className="block">{errorMsg}</span>
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                        className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                         Скасувати
                     </button>
                     <button
                         type="button"
                         onClick={handleSave}
-                        disabled={isSaving || !hasAnyCriteria || duplicateCodes.size > 0}
-                        title={!hasAnyCriteria ? "Додайте хоча б один показник оцінки" : undefined}
-                        className="flex items-center gap-1.5 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/15 transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                        disabled={isSaving}
+                        className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:from-slate-400 disabled:to-slate-400 text-white rounded-xl text-sm font-bold shadow-sm transition-all transform active:scale-95 cursor-pointer flex items-center gap-1.5"
                     >
-                        {isSaving ? (
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        ) : (
-                            <span>Створити темплейт</span>
-                        )}
+                        {isSaving ? "Збереження..." : "Створити темплейт"}
                     </button>
                 </div>
             </div>
