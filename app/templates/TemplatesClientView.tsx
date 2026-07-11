@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { LocaleProvider } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
 import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2 } from "lucide-react"
 import Cookies from "js-cookie"
