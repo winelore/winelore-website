@@ -53,6 +53,7 @@ export async function getEvaluationTemplatesAction() {
                         template {
                             id
                             name
+                            owners
                             beverageType {
                                 id
                                 code
@@ -84,6 +85,7 @@ export async function getEvaluationTemplatesAction() {
         return items.map((item: any) => ({
             id: item.template.id,
             name: item.template.name,
+            owners: (item.template.owners as number[][] | null) ?? [],
             beverageType: item.template.beverageType?.name ?? item.template.beverageType?.code ?? "",
             status: item.template.status,
             createdAt: item.template.createdAt,

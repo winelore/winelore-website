@@ -34,6 +34,7 @@ interface Template {
     beverageType: string
     status: string
     createdAt: string
+    owners: number[][]
     latestEdition?: TemplateEdition
 }
 
@@ -41,7 +42,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
-    const [currentAuid, setCurrentAuid] = useState<number>(1) // Default to likespro (AUID 1)
+    const [currentAuid, setCurrentAuid] = useState<number>(0)
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -60,6 +61,11 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
         setExpandedTemplateId(prev => prev === id ? null : id)
     }
 
+    // Filter to only show templates owned by the current user
+    const myTemplates = currentAuid > 0
+        ? templates.filter(t => t.owners?.some(ownerGroup => ownerGroup.includes(currentAuid)))
+        : templates
+
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
@@ -72,10 +78,10 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                         <div>
                             <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                                 <Layers className="w-8 h-8 text-indigo-600" />
-                                Шаблони оцінювання
+                                Мої шаблони оцінювання
                             </h2>
                             <p className="text-sm text-slate-500 mt-1">
-                                Управління глобальними шаблонами дегустаційних форм, що використовуються на змаганнях.
+                                Шаблони оцінювання, створені вами особисто.
                             </p>
                         </div>
                         <button
@@ -89,7 +95,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
 
                     {/* Template list */}
                     <div className="flex flex-col gap-4">
-                        {templates.map((template) => {
+                        {myTemplates.map((template) => {
                             const isExpanded = expandedTemplateId === template.id
                             const edition = template.latestEdition
                             const propertiesCount = edition?.categories.reduce((acc, cat) => acc + cat.properties.length, 0) || 0
@@ -199,10 +205,10 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                             )
                         })}
 
-                        {templates.length === 0 && (
+                        {myTemplates.length === 0 && (
                             <div className="flex flex-col items-center justify-center p-12 border border-dashed border-slate-200 rounded-[32px] bg-white text-center text-slate-500 gap-3 shadow-sm">
                                 <AlertCircle className="w-12 h-12 text-slate-300 animate-pulse" />
-                                <span className="text-base font-bold text-slate-700">Шаблони не знайдені</span>
+                                <span className="text-base font-bold text-slate-700">Ваші шаблони не знайдені</span>
                                 <p className="text-sm text-slate-400 max-w-sm">Створіть свій перший шаблон оцінювання за допомогою кнопки вище.</p>
                             </div>
                         )}
