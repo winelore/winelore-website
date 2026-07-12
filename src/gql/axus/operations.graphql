@@ -1,230 +1,230 @@
 mutation Login($auid: ID!, $password: String!, $permissions: [String!]) {
-  login(auid: $auid, password: $password, permissions: $permissions) {
-    accessToken
-    refreshToken
-    accessTokenExpiresAt
-  }
+    login(auid: $auid, password: $password, permissions: $permissions) {
+        accessToken
+        refreshToken
+        accessTokenExpiresAt
+    }
 }
 
 mutation RefreshCredentials($refreshToken: String!) {
-  refreshCredentials(refreshToken: $refreshToken) {
-    accessToken
-    refreshToken
-    accessTokenExpiresAt
-  }
+    refreshCredentials(refreshToken: $refreshToken) {
+        accessToken
+        refreshToken
+        accessTokenExpiresAt
+    }
 }
 
 mutation RevokeCredentials($refreshToken: String!) {
-  revokeCredentials(refreshToken: $refreshToken)
+    revokeCredentials(refreshToken: $refreshToken)
 }
 
 mutation CreateUser(
-  $contextAuid: ID
-  $tokenId: String
-  $username: String!
-  $password: String!
+    $contextAuid: ID
+    $tokenId: String
+    $username: String!
+    $password: String!
 ) {
-  createUser(
-    contextAuid: $contextAuid
-    tokenId: $tokenId
-    username: $username
-    password: $password
-  ) {
-    auid
-    id
-  }
+    createUser(
+        contextAuid: $contextAuid
+        tokenId: $tokenId
+        username: $username
+        password: $password
+    ) {
+        auid
+        id
+    }
 }
 
 mutation ChangePassword(
-  $auid: ID!
-  $tokenId: String
-  $newPassword: String!
+    $auid: ID!
+    $tokenId: String
+    $newPassword: String!
 ) {
-  changePassword(auid: $auid, tokenId: $tokenId, newPassword: $newPassword)
+    changePassword(auid: $auid, tokenId: $tokenId, newPassword: $newPassword)
 }
 
 query OwnerByUsername($username: String!) {
-  ownerByUsername(username: $username)
+    ownerByUsername(username: $username)
 }
 
 query User($auid: ID!) {
-  user(auid: $auid) {
-    identity {
-      auid
-      id
+    user(auid: $auid) {
+        identity {
+            auid
+            id
+        }
+        usernames {
+            auid
+            usernames
+            defaultUsername
+        }
+        defaultVariation {
+            auid
+            variationId
+        }
     }
-    usernames {
-      auid
-      usernames
-      defaultUsername
-    }
-    defaultVariation {
-      auid
-      variationId
-    }
-  }
 }
 
 query Usernames($auid: ID!) {
-  usernames(auid: $auid) {
-    auid
-    usernames
-    defaultUsername
-  }
+    usernames(auid: $auid) {
+        auid
+        usernames
+        defaultUsername
+    }
 }
 
 query Variations($auid: ID!) {
-  variations(auid: $auid) {
-    id
-    auid
-    firstName
-    lastName
-    status
-    description
-    locationId
-    icon
-    createdAt
-  }
+    variations(auid: $auid) {
+        id
+        auid
+        firstName
+        lastName
+        status
+        description
+        locationId
+        icon
+        createdAt
+    }
 }
 
 query DefaultVariation($auid: ID!) {
-  defaultVariation(auid: $auid) {
-    auid
-    variationId
-  }
+    defaultVariation(auid: $auid) {
+        auid
+        variationId
+    }
 }
 
 mutation AddUsername($auid: ID!, $username: String!) {
-  addUsername(auid: $auid, username: $username) {
-    auid
-    usernames
-    defaultUsername
-  }
+    addUsername(auid: $auid, username: $username) {
+        auid
+        usernames
+        defaultUsername
+    }
 }
 
 mutation RemoveUsername($auid: ID!, $username: String!) {
-  removeUsername(auid: $auid, username: $username) {
-    auid
-    usernames
-    defaultUsername
-  }
+    removeUsername(auid: $auid, username: $username) {
+        auid
+        usernames
+        defaultUsername
+    }
 }
 
 mutation ChangeDefaultUsername($auid: ID!, $username: String!) {
-  changeDefaultUsername(auid: $auid, username: $username) {
-    auid
-    usernames
-    defaultUsername
-  }
+    changeDefaultUsername(auid: $auid, username: $username) {
+        auid
+        usernames
+        defaultUsername
+    }
 }
 
 mutation CreateVariation(
-  $auid: ID!
-  $firstName: String
-  $lastName: String
-  $status: String
-  $description: String
-  $locationId: String
-  $icon: String
+    $auid: ID!
+    $firstName: String
+    $lastName: String
+    $status: String
+    $description: String
+    $locationId: String
+    $icon: String
 ) {
-  createVariation(
-    auid: $auid
-    firstName: $firstName
-    lastName: $lastName
-    status: $status
-    description: $description
-    locationId: $locationId
-    icon: $icon
-  ) {
-    id
-    auid
-    firstName
-    lastName
-    status
-    description
-    locationId
-    icon
-    createdAt
-  }
+    createVariation(
+        auid: $auid
+        firstName: $firstName
+        lastName: $lastName
+        status: $status
+        description: $description
+        locationId: $locationId
+        icon: $icon
+    ) {
+        id
+        auid
+        firstName
+        lastName
+        status
+        description
+        locationId
+        icon
+        createdAt
+    }
 }
 
 mutation ChangeVariationFirstName(
-  $auid: ID!
-  $variationId: ID!
-  $firstName: String
+    $auid: ID!
+    $variationId: ID!
+    $firstName: String
 ) {
-  changeVariationFirstName(
-    auid: $auid
-    variationId: $variationId
-    firstName: $firstName
-  ) {
-    id
-    firstName
-  }
+    changeVariationFirstName(
+        auid: $auid
+        variationId: $variationId
+        firstName: $firstName
+    ) {
+        id
+        firstName
+    }
 }
 
 mutation ChangeVariationLastName(
-  $auid: ID!
-  $variationId: ID!
-  $lastName: String
+    $auid: ID!
+    $variationId: ID!
+    $lastName: String
 ) {
-  changeVariationLastName(
-    auid: $auid
-    variationId: $variationId
-    lastName: $lastName
-  ) {
-    id
-    lastName
-  }
+    changeVariationLastName(
+        auid: $auid
+        variationId: $variationId
+        lastName: $lastName
+    ) {
+        id
+        lastName
+    }
 }
 
 mutation ChangeVariationStatus(
-  $auid: ID!
-  $variationId: ID!
-  $status: String
+    $auid: ID!
+    $variationId: ID!
+    $status: String
 ) {
-  changeVariationStatus(
-    auid: $auid
-    variationId: $variationId
-    status: $status
-  ) {
-    id
-    status
-  }
+    changeVariationStatus(
+        auid: $auid
+        variationId: $variationId
+        status: $status
+    ) {
+        id
+        status
+    }
 }
 
 mutation ChangeVariationDescription(
-  $auid: ID!
-  $variationId: ID!
-  $description: String
+    $auid: ID!
+    $variationId: ID!
+    $description: String
 ) {
-  changeVariationDescription(
-    auid: $auid
-    variationId: $variationId
-    description: $description
-  ) {
-    id
-    description
-  }
+    changeVariationDescription(
+        auid: $auid
+        variationId: $variationId
+        description: $description
+    ) {
+        id
+        description
+    }
 }
 
 mutation SetDefaultVariation($auid: ID!, $variationId: ID!) {
-  setDefaultVariation(auid: $auid, variationId: $variationId) {
-    auid
-    variationId
-  }
+    setDefaultVariation(auid: $auid, variationId: $variationId) {
+        auid
+        variationId
+    }
 }
 
 query UserDetails($auid: ID!) {
-  usernames(auid: $auid) {
-    defaultUsername
-  }
-  defaultVariation(auid: $auid) {
-    variationId
-  }
-  variations(auid: $auid) {
-    id
-    firstName
-    lastName
-  }
+    usernames(auid: $auid) {
+        defaultUsername
+    }
+    defaultVariation(auid: $auid) {
+        variationId
+    }
+    variations(auid: $auid) {
+        id
+        firstName
+        lastName
+    }
 }
