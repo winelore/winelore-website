@@ -408,19 +408,6 @@ export type GetEvaluationsForCandidateQueryVariables = Exact<{
 
 export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ id: string, evaluatorAuid: Array<number>, isComplete: boolean, templateEdition: { id: string }, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
 
-export type GetPanelResultsQueryVariables = Exact<{
-  replicaId: string | number;
-}>;
-
-
-export type GetPanelResultsQuery = { commissionReplica: { id: string, commission: { id: string, outcomePolicyEdition: { outputProperties: Array<
-          | { code: string, name: string }
-          | { code: string, name: string }
-          | { code: string, name: string }
-          | { code: string, name: string }
-          | { code: string, name: string }
-        > } | null }, outcomes: Array<{ beverageId: string, scores: string }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string, sample: { batch: { beverage: { id: string, name: string } } } } }> } | null };
-
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -687,6 +674,7 @@ export type GetMyCompetitionsQuery = { competitions: { items: Array<{ id: string
 
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
+  cursor?: string | number | null | undefined;
 }>;
 
 
@@ -1199,43 +1187,6 @@ export const GetEvaluationsForCandidateDocument = gql`
   }
 }
     `;
-export const GetPanelResultsDocument = gql`
-    query GetPanelResults($replicaId: ID!) {
-  commissionReplica(id: $replicaId) {
-    id
-    commission {
-      id
-      outcomePolicyEdition {
-        outputProperties {
-          code
-          name
-        }
-      }
-    }
-    outcomes {
-      beverageId
-      scores
-    }
-    replicaCandidates {
-      id
-      status
-      candidate {
-        id
-        anonymizedCode
-        panelId
-        sample {
-          batch {
-            beverage {
-              id
-              name
-            }
-          }
-        }
-      }
-    }
-  }
-}
-    `;
 export const GetCompetitionPageDocument = gql`
     query GetCompetitionPage($id: ID!) {
   competition(id: $id) {
@@ -1601,8 +1552,8 @@ export const GetMyCompetitionsDocument = gql`
 }
     `;
 export const GetDashboardCompetitionsDocument = gql`
-    query GetDashboardCompetitions($limit: Int) {
-  competitions(limit: $limit) {
+    query GetDashboardCompetitions($limit: Int, $cursor: ID) {
+  competitions(limit: $limit, cursor: $cursor) {
     items {
       id
       name
@@ -1673,9 +1624,6 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetEvaluationsForCandidate(variables: Types.GetEvaluationsForCandidateQueryVariables, options?: C): Promise<Types.GetEvaluationsForCandidateQuery> {
       return requester<Types.GetEvaluationsForCandidateQuery, Types.GetEvaluationsForCandidateQueryVariables>(GetEvaluationsForCandidateDocument, variables, options) as Promise<Types.GetEvaluationsForCandidateQuery>;
-    },
-    GetPanelResults(variables: Types.GetPanelResultsQueryVariables, options?: C): Promise<Types.GetPanelResultsQuery> {
-      return requester<Types.GetPanelResultsQuery, Types.GetPanelResultsQueryVariables>(GetPanelResultsDocument, variables, options) as Promise<Types.GetPanelResultsQuery>;
     },
     GetCompetitionPage(variables: Types.GetCompetitionPageQueryVariables, options?: C): Promise<Types.GetCompetitionPageQuery> {
       return requester<Types.GetCompetitionPageQuery, Types.GetCompetitionPageQueryVariables>(GetCompetitionPageDocument, variables, options) as Promise<Types.GetCompetitionPageQuery>;
