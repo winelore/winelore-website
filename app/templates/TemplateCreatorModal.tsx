@@ -151,7 +151,6 @@ export default function TemplateCreatorModal({
 
     const prevCodeRef = useRef<Map<string, string>>(new Map())
 
-    // Load beverage types and initialize with ONE category and ONE default property
     useEffect(() => {
         if (isOpen) {
             setTemplateName("")
@@ -676,16 +675,20 @@ export default function TemplateCreatorModal({
                                                         Показник #{propIdx + 1}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5">
+                                                {/* ПРАВКА: Додано зрозумілий текстовий лейбл до кнопки-зірочки за фідбеком тімліда */}
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         type="button"
                                                         onClick={() => handlePropertyChange(cat.id, p.id, { isResult: !p.isResult })}
-                                                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                                                            p.isResult ? "text-amber-500 bg-amber-50 hover:bg-amber-100" : "text-slate-300 hover:text-slate-500 hover:bg-slate-50"
+                                                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                                            p.isResult 
+                                                                ? "text-amber-600 bg-amber-50 border-amber-200 shadow-xs" 
+                                                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-50 border-transparent"
                                                         }`}
                                                         title={p.isResult ? "Результуючий показник" : "Зробити результуючим"}
                                                     >
-                                                        <Star className="w-4 h-4 fill-current" />
+                                                        <span className="text-[11px] font-bold tracking-wide">Помітити як результат</span>
+                                                        <Star className={`w-3.5 h-3.5 ${p.isResult ? "fill-amber-500 text-amber-500" : "fill-none"}`} />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -830,7 +833,7 @@ export default function TemplateCreatorModal({
                 </div>
             </div>
 
-            {/* ── Bottom action bar (Правка: Помилка тепер НА РІВНІ кнопок) ── */}
+            {/* ── Bottom action bar ── */}
             <div className="shrink-0 border-t border-slate-100 px-8 py-4 bg-slate-50/50 flex flex-row items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                     {errorMsg && (
