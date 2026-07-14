@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { getGeographicInfo } from "@/lib/geocoding"
+import { getUsernamesAction } from "@/app/userActions"
 import { GET_BEVERAGE, GET_BEVERAGE_AWARDS, GET_COMMISSION_FOR_AWARD } from "./queries"
 import BeverageClientView from "./BeverageClientView"
 
@@ -16,14 +17,10 @@ interface PageProps {
 export default async function BeveragePage({ params }: PageProps) {
     const resolvedParams = await params
     const beverageId = resolvedParams.id
-    console.log("=== Beverage page loaded ===");
-    console.log("params =", resolvedParams);
-    console.log("beverageId =", beverageId);
 
     const cookieStore = await cookies()
     const auidStr = cookieStore.get("auid")?.value
-    console.log("cookies =", cookieStore.getAll());
-    console.log("auid =", auidStr);
+
     if (!auidStr) {
         redirect("/auth/login")
     }
@@ -34,27 +31,44 @@ export default async function BeveragePage({ params }: PageProps) {
     let awardsWithCompetitionInfo: any[] = []
 
     try {
-        // Fetch beverage details
-        const beverageData = await fetchGraphQL(GET_BEVERAGE, { id: beverageId })
-        console.log("beverageData =", JSON.stringify(beverageData, null, 2));
-        beverage = beverageData.beverage
+        const beverageData = await fetchGraphQL(GET_BEVERAGE as any, { id: beverageId }) as any;
+        beverage = beverageData?.beverage;
 
         if (!beverage) {
-            return (
-                <div className="flex h-screen items-center justify-center bg-slate-50/50">
-                    <div className="text-center">
-                        <h2 className="text-3xl font-bold tracking-tight text-slate-800 mb-2">
-                            Beverage not found
-                        </h2>
-                        <p className="text-slate-500">
-                            Please check the URL or contact support.
-                        </p>
-                    </div>
-                </div>
-            )
+            return <BeverageClientView isNotFound={true} initialData={null} currentAuid={currentAuid} />
         }
 
-        // Get geographic info for origin
+        // 1. Отримуємо імена користувачів (Task Requirement #1)
+        try {
+            if (beverage.producers && beverage.producers.length > 0) {
+                const auidsToFetch = beverage.producers.map((p: any) => String(p.auid[0]));
+                const usernamesMap = await getUsernamesAction(auidsToFetch) as Record<string, any>;
+
+                beverage.producers = beverage.producers.map((p: any) => {
+                    const auidStr = String(p.auid[0]);
+                    const userInfo = usernamesMap[auidStr];
+
+                    let dName = null;
+                    let uName = null;
+
+                    if (typeof userInfo === 'string') {
+                        uName = userInfo;
+                    } else if (userInfo && typeof userInfo === 'object') {
+                        dName = userInfo.displayName || null;
+                        uName = userInfo.username || null;
+                    }
+
+                    return {
+                        ...p,
+                        displayName: dName,
+                        username: uName
+                    };
+                });
+            }
+        } catch (err) {
+            console.error("Failed to fetch producer usernames:", err);
+        }
+
         let originParts: string[] = []
         if (beverage.origin && typeof beverage.origin.latitude === "number" && typeof beverage.origin.longitude === "number") {
             const info = await getGeographicInfo(beverage.origin.latitude, beverage.origin.longitude)
@@ -63,7 +77,6 @@ export default async function BeveragePage({ params }: PageProps) {
             }
         }
 
-        // Parse attributes for color
         let colorVal = "WINE"
         if (beverage.attributes) {
             try {
@@ -76,26 +89,21 @@ export default async function BeveragePage({ params }: PageProps) {
             }
         }
 
-        // Fetch beverage awards
         try {
-            const awardsData = await fetchGraphQL(GET_BEVERAGE_AWARDS, { id: beverageId })
-            awards = awardsData.beverageAwards || []
+            const awardsData = await fetchGraphQL(GET_BEVERAGE_AWARDS as any, { id: beverageId }) as any;
+            awards = awardsData?.beverageAwards || []
 
-            // Fetch competition info for each award
             awardsWithCompetitionInfo = await Promise.all(
                 awards.map(async (award: any) => {
                     try {
-                        const commissionData = await fetchGraphQL(GET_COMMISSION_FOR_AWARD, { id: award.commissionId })
+                        const commissionData = await fetchGraphQL(GET_COMMISSION_FOR_AWARD as any, { id: award.commissionId }) as any;
                         return {
                             ...award,
-                            commission: commissionData.commission
+                            commission: commissionData?.commission
                         }
                     } catch (error) {
                         console.error(`Failed to fetch commission ${award.commissionId}:`, error)
-                        return {
-                            ...award,
-                            commission: null
-                        }
+                        return { ...award, commission: null }
                     }
                 })
             )
@@ -115,17 +123,6 @@ export default async function BeveragePage({ params }: PageProps) {
         return <BeverageClientView initialData={initialData} currentAuid={currentAuid} />
     } catch (error) {
         console.error("Failed to fetch beverage:", error)
-        return (
-            <div className="flex h-screen items-center justify-center bg-slate-50/50">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-800 mb-2">
-                        Error loading beverage
-                    </h2>
-                    <p className="text-slate-500">
-                        Please try again later.
-                    </p>
-                </div>
-            </div>
-        )
+        return <BeverageClientView isError={true} initialData={null} currentAuid={currentAuid} />
     }
 }

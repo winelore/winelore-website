@@ -64,3 +64,19 @@ export const GET_COMMISSION_FOR_AWARD = gql(`
     }
   }
 `);
+
+export const GET_AXUS_USER_DETAILS = gql(`
+  query UserDetails($auid: ID!) {
+    usernames(auid: $auid) {
+      defaultUsername
+    }
+    defaultVariation(auid: $auid) {
+      variationId
+    }
+    variations(auid: $auid) {
+      id
+      firstName
+      lastName
+    }
+  }
+`);

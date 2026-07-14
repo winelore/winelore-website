@@ -22,6 +22,7 @@ const en = {
     standard: "Standard",
     loading: "Loading...",
     none: "None",
+    unknownUser: "Unknown User",
   },
   dashboard: {
     holderId: "Holder: {{ids}}",
@@ -357,6 +358,29 @@ const en = {
     Stability: "Stability",
     Identity: "Identity",
     "Final Score": "Final Score",
+  },
+  roles: {
+    maker: "Maker",
+    owner: "Owner",
+    distributor: "Distributor"
+  },
+  beverage: {
+    notFoundTitle: "Beverage Not Found",
+    notFoundDesc: "The beverage you're looking for doesn't exist.",
+    backToMyBeverages: "Back to My Beverages",
+    errorLoading: "Error loading beverage",
+    tryAgain: "Please try again later.",
+    origin: "Origin:",
+    producers: "Producers",
+    created: "Created",
+    competitionResults: "Competition Results",
+    awardsSubtitle: "Awards and recognitions",
+    awardSingle: "1 Award",
+    awardPlural: "{{count}} Awards",
+    noAwardsTitle: "No awards yet",
+    noAwardsDesc: "This beverage hasn't received any competition awards yet.",
+    commission: "Commission",
+    awardedOn: "Awarded on {{date}}",
   },
 } as const
 
