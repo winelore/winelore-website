@@ -22,6 +22,7 @@ const hu = {
         standard: "Standard",
         loading: "Betöltés...",
         none: "Nincs",
+        unknownUser: "Ismeretlen felhasználó",
     },
     dashboard: {
         holderId: "Szervező: {{ids}}",
@@ -357,6 +358,29 @@ const hu = {
         Stability: "Stabilitás",
         Identity: "Identitás",
         "Final Score": "Végső pontszám",
+    },
+    roles: {
+        maker: "Készítő",
+        owner: "Tulajdonos",
+        distributor: "Forgalmazó"
+    },
+    beverage: {
+        notFoundTitle: "Az ital nem található",
+        notFoundDesc: "A keresett ital nem létezik.",
+        backToMyBeverages: "Vissza a saját italokhoz",
+        errorLoading: "Hiba az ital betöltésekor",
+        tryAgain: "Kérjük, próbálja újra később.",
+        origin: "Származás:",
+        producers: "Termelők",
+        created: "Létrehozva",
+        competitionResults: "Versenyeredmények",
+        awardsSubtitle: "Díjak és elismerések",
+        awardSingle: "1 Díj",
+        awardPlural: "{{count}} Díj",
+        noAwardsTitle: "Még nincsenek díjak",
+        noAwardsDesc: "Ez az ital még nem kapott versenyeredményeket.",
+        commission: "Bizottság",
+        awardedOn: "Díjazva: {{date}}",
     },
 } as const
 

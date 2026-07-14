@@ -25,6 +25,7 @@ const uk: TranslationKey = {
     loading: "Завантаження...",
     none: "Немає",
     templates: "Мої шаблони оцінювання",
+    unknownUser: "Невідомий користувач",
   },
   dashboard: {
     holderId: "Організатор: {{ids}}",
@@ -360,6 +361,29 @@ const uk: TranslationKey = {
     Stability: "Стабільність",
     Identity: "Ідентичність",
     "Final Score": "Фінальний бал",
+  },
+  roles: {
+    maker: "Виробник",
+    owner: "Власник",
+    distributor: "Дистриб'ютор"
+  },
+  beverage: {
+    notFoundTitle: "Напій не знайдено",
+    notFoundDesc: "Напій, який ви шукаєте, не існує.",
+    backToMyBeverages: "Назад до моїх напоїв",
+    errorLoading: "Помилка завантаження напою",
+    tryAgain: "Будь ласка, спробуйте пізніше.",
+    origin: "Походження:",
+    producers: "Виробники",
+    created: "Створено",
+    competitionResults: "Результати конкурсів",
+    awardsSubtitle: "Нагороди та визнання",
+    awardSingle: "1 Нагорода",
+    awardPlural: "{{count}} Нагород(и)",
+    noAwardsTitle: "Нагород ще немає",
+    noAwardsDesc: "Цей напій ще не отримував нагород на конкурсах.",
+    commission: "Комісія",
+    awardedOn: "Нагороджено {{date}}",
   },
 }
 
