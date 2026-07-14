@@ -39,6 +39,7 @@ export type Mutation = {
   addUsername: Usernames;
   changeDefaultUsername: Usernames;
   changePassword: Scalars['Boolean']['output'];
+  changeUsername: Usernames;
   changeVariationDescription: Variation;
   changeVariationFirstName: Variation;
   changeVariationIcon: Variation;
@@ -49,10 +50,13 @@ export type Mutation = {
   createVariation: Variation;
   generateToken: Token;
   login: AuthCredentials;
+  loginWithTotp: AuthCredentials;
   refreshCredentials: AuthCredentials;
   removeUsername: Usernames;
   revokeCredentials: Scalars['Boolean']['output'];
   setDefaultVariation: DefaultVariation;
+  startTotpEnrollment: TotpEnrollmentResponse;
+  verifyTotpEnrollment: Scalars['Boolean']['output'];
 };
 
 
@@ -73,6 +77,14 @@ export type MutationChangeDefaultUsernameArgs = {
 export type MutationChangePasswordArgs = {
   auid: Scalars['ID']['input'];
   newPassword: Scalars['String']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationChangeUsernameArgs = {
+  auid: Scalars['ID']['input'];
+  newUsername: Scalars['String']['input'];
+  oldUsername: Scalars['String']['input'];
   tokenId?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -159,6 +171,12 @@ export type MutationLoginArgs = {
 };
 
 
+export type MutationLoginWithTotpArgs = {
+  code: Scalars['String']['input'];
+  totpToken: Scalars['String']['input'];
+};
+
+
 export type MutationRefreshCredentialsArgs = {
   refreshToken: Scalars['String']['input'];
 };
@@ -180,6 +198,19 @@ export type MutationSetDefaultVariationArgs = {
   auid: Scalars['ID']['input'];
   tokenId?: InputMaybe<Scalars['String']['input']>;
   variationId: Scalars['ID']['input'];
+};
+
+
+export type MutationStartTotpEnrollmentArgs = {
+  auid: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationVerifyTotpEnrollmentArgs = {
+  auid: Scalars['ID']['input'];
+  code: Scalars['String']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Query = {
@@ -219,6 +250,12 @@ export type QueryVariationsArgs = {
 export type Token = {
   __typename?: 'Token';
   id: Scalars['ID']['output'];
+};
+
+export type TotpEnrollmentResponse = {
+  __typename?: 'TotpEnrollmentResponse';
+  otpauthUrl: Scalars['String']['output'];
+  secret: Scalars['String']['output'];
 };
 
 export type User = {

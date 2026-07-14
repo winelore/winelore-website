@@ -3,39 +3,30 @@ import WineLoreDashboard from './DashboardClientView';
 
 export const dynamic = "force-dynamic"
 
-export default async function DashboardPage() {
-    let competitions: any[] = [];
+export default async function DashboardPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ cursor?: string; h?: string }>
+}) {
+    const resolvedParams = await searchParams;
+    const cursor = resolvedParams.cursor;
+    const historyStr = resolvedParams.h || "";
+    const historyArray = historyStr ? historyStr.split(',') : [];
+    const LIMIT = 20;
+    let rawCompetitions: any[] = [];
     try {
-        const data = await sdk.GetDashboardCompetitions({ limit: 50 });
-        competitions = data.competitions?.items || [];
+        const data = await sdk.GetDashboardCompetitions({
+            limit: LIMIT + 1,
+            cursor: cursor || undefined
+        });
+        rawCompetitions = data.competitions?.items || [];
     } catch (error) {
         console.error("Failed to load dashboard competitions:", error);
     }
-
-    if (competitions.length === 0) {
-        competitions = [
-            {
-                id: "11111111-1111-1111-1111-111111111111",
-                name: "Червоні вина Бордо 2026 (Резервний режим)",
-                status: "PLANNED",
-                holders: [[1]],
-                plannedDates: {
-                    start: new Date().toISOString(),
-                    end: new Date(Date.now() + 2 * 3600 * 1000).toISOString()
-                },
-                startedAt: null,
-                endedAt: null,
-                series: {
-                    id: "33333333-3333-3333-3333-333333333333",
-                    name: "Бордо Гран Крю",
-                    status: "ACTIVE"
-                }
-            }
-        ];
-    }
-
+    const hasNextPage = rawCompetitions.length > LIMIT;
+    const competitionsToDisplay = rawCompetitions.slice(0, LIMIT);
     // Map backend competitions to the format expected by DashboardClientView
-    const mappedCompetitions = competitions.map((comp: any) => ({
+    const mappedCompetitions = competitionsToDisplay.map((comp: any) => ({
         id: comp.id,
         name: comp.name,
         status: comp.status,
@@ -46,11 +37,39 @@ export default async function DashboardPage() {
         startedAt: comp.startedAt || null,
         endedAt: comp.endedAt || null,
         series: {
-            id: comp.series?.id || "33333333-3333-3333-3333-333333333333",
-            name: comp.series?.name || "Бордо Гран Крю",
-            status: comp.series?.status || "ACTIVE"
+            id: comp.series?.id,
+            name: comp.series?.name,
+            status: comp.series?.status
         }
     }));
 
-    return <WineLoreDashboard initialCompetitions={mappedCompetitions} />;
+
+    const nextCursor = hasNextPage ? competitionsToDisplay[competitionsToDisplay.length - 1].id : null;
+
+    const currentCursorRep = cursor || "root";
+    const nextHistory = historyStr ? `${historyStr},${currentCursorRep}` : currentCursorRep;
+
+    let prevCursor: string | null = null;
+    let prevHistory = "";
+
+    if (historyArray.length > 0) {
+        const targetPrev = historyArray[historyArray.length - 1];
+        prevCursor = targetPrev === "root" ? null : targetPrev;
+        prevHistory = historyArray.slice(0, -1).join(',');
+    }
+
+    const currentPage = historyArray.length + 1;
+
+    return (
+        <WineLoreDashboard
+            initialCompetitions={mappedCompetitions}
+            nextCursor={nextCursor}
+            nextHistory={nextHistory}
+            prevCursor={prevCursor}
+            prevHistory={prevHistory}
+            hasPrev={historyArray.length > 0}
+            hasNext={hasNextPage}
+            currentPage={currentPage}
+        />
+    );
 }

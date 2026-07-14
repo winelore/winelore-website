@@ -179,7 +179,7 @@ export async function getCommissionDataAction(commissionId: string) {
 
         if (!isValidTemplate) {
             if (commission.status === "DRAFT" || commission.status === "PLANNED") {
-                console.error("❌ Failed to bootstrap template edition:", bootstrapErr.message);
+                console.error("❌ Failed to bootstrap template edition: Template is invalid, empty, or missing required properties.");
                 templateEdition = null;
             } else {
                 console.warn(`⚠️ Skipping template bootstrap: commission is in ${commission.status} status and cannot accept new templates.`);
@@ -239,6 +239,7 @@ export async function getCommissionDataAction(commissionId: string) {
                 evaluationTemplateEdition: templateEdition
             },
             candidateCount: countData.commissionCandidateCount ?? 0,
+            panels: commission.panels || [],
             replicas,
             members: defaultMembers
         };
@@ -395,6 +396,9 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         myEvaluation: null as any,
         hasCompletedCurrentCandidate: false,
         myTastingSummary: null as MyTastingSummaryData | null,
+        isPanelFinished: false,
+        currentPanelName: "",
+        nextPanelFirstCandidateId: null as string | null,
         ...emptyFeatureFlags,
     };
 
@@ -431,19 +435,41 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const currentCandidateId = replica.currentCandidateId || null;
         const currentCandidateObj = replicaCandidates.find((rc: any) => rc.id === currentCandidateId);
         const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
+        let currentPanelId = currentCandidateObj?.candidate?.panelId || null;
+        if (!currentPanelId && replicaCandidates.length > 0) {
+            const lastEvaluated = [...replicaCandidates].reverse().find((rc: any) => isReplicaCandidateFinished(rc.status));
+            if (lastEvaluated) {
+                currentPanelId = lastEvaluated.candidate?.panelId || null;
+            } else {
+                currentPanelId = replicaCandidates[0].candidate?.panelId || null;
+            }
+        }
+        const panels = commission.panels || [];
+        const currentPanelName = panels.find((p: any) => p.id === currentPanelId)?.name || "Panel";
 
-        const totalCandidates = replicaCandidates.length;
-        const evaluatedCount = replicaCandidates.filter((rc: any) => isReplicaCandidateFinished(rc.status)).length;
+        const currentPanelCandidates = currentPanelId
+            ? replicaCandidates.filter((rc: any) => rc.candidate?.panelId === currentPanelId)
+            : replicaCandidates;
+
+        const totalCandidates = currentPanelCandidates.length;
+        const evaluatedCount = currentPanelCandidates.filter((rc: any) => isReplicaCandidateFinished(rc.status)).length;
         const currentCandidateIndex = currentCandidateId
-            ? replicaCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
+            ? currentPanelCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
             : -1;
+
         const candidatesLeft = totalCandidates - evaluatedCount;
         const candidatesLeftAfterCurrent = currentCandidateIndex >= 0
             ? totalCandidates - currentCandidateIndex - 1
             : candidatesLeft;
 
+        const isPanelFinished = currentPanelCandidates.length > 0 &&
+            currentPanelCandidates.every((rc: any) => isReplicaCandidateFinished(rc.status));
+
         const allCandidatesEvaluated = replicaCandidates.length > 0
             && replicaCandidates.every((rc: any) => isReplicaCandidateFinished(rc.status));
+
+        const nextPanelFirstCandidateId = replicaCandidates.find((rc: any) =>
+            rc.status === "PENDING" && rc.candidate?.panelId !== currentPanelId)?.id || null;
 
         let evaluations: any[] = [];
         const propertyMap: Record<string, PropertyMeta> = {};
@@ -513,6 +539,9 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             myEvaluation: myEvaluation ?? null,
             hasCompletedCurrentCandidate,
             myTastingSummary,
+            isPanelFinished,
+            currentPanelName,
+            nextPanelFirstCandidateId,
             ...featureFlags,
         };
     } catch (err: any) {
@@ -582,7 +611,13 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
                 return idxA - idxB;
             });
         }
-        const nextCandidate = sortedCandidates.find((rc: any) => rc.status === "PENDING");
+        const currentReplicaCandidate = sortedCandidates.find((c: any) => c.id === candidateId);
+        const currentPanelId = currentReplicaCandidate?.candidate?.panelId;
+
+        const nextCandidate = sortedCandidates.find((rc: any) =>
+            rc.status === "PENDING" && rc.candidate?.panelId === currentPanelId
+        );
+
         const nextCandidateId = nextCandidate?.id ?? null;
 
         // 3. Explicitly advance (or clear, when finished) the replica's current candidate.
@@ -598,5 +633,21 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
         throw new Error(err.message || "Failed to mark candidate as evaluated");
+    }
+}
+
+export async function startNextPanelAction(replicaId: string, nextCandidateId: string) {
+    if (!isValidUuid(replicaId) || !isValidUuid(nextCandidateId)) return null;
+    try {
+        const headers = await getActorHeaders();
+        await rawGraphQL(
+            SET_REPLICA_CURRENT_CANDIDATE_MUTATION,
+            { id: replicaId, currentCandidateId: nextCandidateId },
+            headers,
+        );
+        return true;
+    } catch (err: any) {
+        console.error("Server Action Error (startNextPanelAction):", err);
+        throw new Error(err.message || "Failed to start next panel");
     }
 }
