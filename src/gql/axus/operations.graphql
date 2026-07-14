@@ -222,7 +222,7 @@ query UserDetails($auid: ID!) {
     defaultVariation(auid: $auid) {
         variationId
     }
-    variations(auid: $auid) {
+        variations(auid: $auid) {
         id
         firstName
         lastName

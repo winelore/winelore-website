@@ -2,7 +2,7 @@ import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '../src/gql/axus/sdk';
 
-const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || 'http://hayabusa.proxy.rlwy.net:58687/graphql';
 
 export interface AxusRequesterOptions {
     headers?: Record<string, string>;
