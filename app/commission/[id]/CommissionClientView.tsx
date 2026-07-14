@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, Users, Timer, Check, Calendar } from "lucide-react"
+
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -162,6 +163,7 @@ interface InitialData {
         id: string;
         name: string;
         holders: number[];
+        evaluationTemplateEdition?: any;
     };
     replicas: Replica[];
     members: Member[];
@@ -242,6 +244,8 @@ export default function CommissionClientView({
     const creatorNames = initialData.competition.holders.length > 0
         ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
         : t("common.unknownCreator")
+
+    const isHolder = initialData.competition.holders.includes(currentAuid)
 
     useEffect(() => {
         const prevStatus = prevReplicaStatusRef.current
@@ -715,6 +719,85 @@ export default function CommissionClientView({
                                     {t("commission.replicaBeverages", { count: selectedReplica?.candidateCount || 0 })}
                                 </span>
                             </div>
+                        </div>
+
+                        {/* Evaluation Template Details */}
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/50 shadow-xs">
+                                        <FileText className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold tracking-tight text-slate-800">
+                                            Шаблон оцінювання
+                                        </h3>
+                                        <p className="text-[10px] text-slate-400 font-medium">
+                                            Конфігурація оцінювання напоїв
+                                        </p>
+                                    </div>
+                                </div>
+                                {initialData.competition?.evaluationTemplateEdition && (
+                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-wider">
+                                        Активний
+                                    </span>
+                                )}
+                            </div>
+
+                            {initialData.competition?.evaluationTemplateEdition ? (
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-1 bg-slate-50/50 border border-slate-100 rounded-2xl p-4">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Назва шаблону</span>
+                                        <span className="text-sm font-extrabold text-slate-800">
+                                            {initialData.competition.evaluationTemplateEdition.template?.name || "Стандартний шаблон оцінювання"}
+                                        </span>
+                                        <div className="flex items-center gap-3 mt-2 text-[10px] font-semibold text-slate-500">
+                                            <span>Версія: {initialData.competition.evaluationTemplateEdition.version}</span>
+                                            <span className="text-slate-300">|</span>
+                                            <span>Статус: {formatEnumStatus(initialData.competition.evaluationTemplateEdition.status)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Структура оцінювання</h4>
+                                        <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-1">
+                                            {initialData.competition.evaluationTemplateEdition.categories.map((cat: any) => (
+                                                <div key={cat.id || cat.name} className="border border-slate-100 rounded-2xl p-4 bg-slate-50/20">
+                                                    <h5 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-1.5 mb-2.5">
+                                                        {cat.name}
+                                                    </h5>
+                                                    <div className="flex flex-col gap-2">
+                                                        {cat.properties.map((prop: any) => (
+                                                            <div key={prop.id || prop.code} className="flex justify-between items-center bg-white border border-slate-100/80 rounded-xl px-3 py-2 text-xs">
+                                                                <div className="flex flex-col min-w-0 flex-1 pr-3">
+                                                                    <span className="font-bold text-slate-700 truncate">{prop.name}</span>
+                                                                    {prop.description && (
+                                                                        <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                                    <span className="bg-slate-100 text-slate-500 rounded-md px-1.5 py-0.5 text-[9px] font-mono font-bold border border-slate-200/50">
+                                                                        {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
+                                                                    </span>
+                                                                    {prop.isRequired && (
+                                                                        <span className="text-rose-500 font-bold" title="Обов'язкове">*</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </div>
+                            </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center p-6 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center text-slate-500 gap-2">
+                                    <AlertCircle className="w-8 h-8 text-amber-500 animate-pulse" />
+                                    <span className="text-xs font-bold text-slate-700">Немає налаштованого шаблону</span>
+                                    <p className="text-[11px] text-slate-400 max-w-[240px]">Зверніться до адміністратора для налаштування шаблону оцінювання.</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Timeline and Dates */}

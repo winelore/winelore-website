@@ -30,8 +30,8 @@ export default async function DashboardPage({
         id: comp.id,
         name: comp.name,
         status: comp.status,
-        description: "", // Fallback as backend doesn't have description
-        holder: comp.holders.flat(),
+        description: comp.description || "", // Fallback as backend doesn't have description
+        holder: comp.holders ? comp.holders.flat() : [1],
         plannedStartAt: comp.plannedDates?.start || null,
         plannedEndAt: comp.plannedDates?.end || null,
         startedAt: comp.startedAt || null,
