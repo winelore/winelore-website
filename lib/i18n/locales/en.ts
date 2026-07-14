@@ -23,6 +23,7 @@ const en = {
     loading: "Loading...",
     none: "None",
     unknownUser: "Unknown User",
+    templates: "My Evaluation Templates",
   },
   dashboard: {
     holderId: "Holder: {{ids}}",
