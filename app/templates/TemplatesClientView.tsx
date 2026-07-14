@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { LocaleProvider } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
-import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2 } from "lucide-react"
+import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2, Pencil } from "lucide-react"
 import Cookies from "js-cookie"
 import TemplateCreatorModal from "./TemplateCreatorModal"
 
@@ -41,7 +41,8 @@ interface Template {
 
 export default function TemplatesClientView({ initialTemplates }: { initialTemplates: Template[] }) {
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null) // WIN-65: зберігаємо ID шаблону, який редагуємо
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
     const [currentAuid, setCurrentAuid] = useState<number>(0)
 
@@ -60,6 +61,22 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
 
     const toggleExpandTemplate = (id: string) => {
         setExpandedTemplateId(prev => prev === id ? null : id)
+    }
+
+    const handleOpenCreateModal = () => {
+        setEditingTemplateId(null)
+        setIsModalOpen(true)
+    }
+
+    const handleOpenEditModal = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation() // Щоб не тригерилося розгортання рядка
+        setEditingTemplateId(id)
+        setIsModalOpen(true)
+    }
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false)
+        setEditingTemplateId(null)
     }
 
     // Filter to only show templates owned by the current user
@@ -93,7 +110,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                             </p>
                         </div>
                         <button
-                            onClick={() => setIsCreateModalOpen(true)}
+                            onClick={handleOpenCreateModal}
                             className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"
                         >
                             <Plus className="w-4 h-4" />
@@ -144,7 +161,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
+                                        <div className="flex items-center gap-4 self-end md:self-auto shrink-0">
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Статус версії</span>
                                                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -157,6 +174,16 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                                                     </span>
                                                 </div>
                                             </div>
+                                            
+                                            {/* WIN-65: Кнопка швидкого редагування шаблону */}
+                                            <button
+                                                onClick={(e) => handleOpenEditModal(e, template.id)}
+                                                className="p-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-150 text-slate-500 hover:text-indigo-600 rounded-xl transition-all cursor-pointer group shadow-xs"
+                                                title="Редагувати темплейт"
+                                            >
+                                                <Pencil className="w-4 h-4 transition-transform group-hover:scale-105" />
+                                            </button>
+
                                             <div className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-colors">
                                                 {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                                             </div>
@@ -216,7 +243,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                             <div className="flex flex-col items-center justify-center p-12 border border-dashed border-slate-200 rounded-[32px] bg-white text-center text-slate-500 gap-3 shadow-sm">
                                 <AlertCircle className="w-12 h-12 text-slate-300 animate-pulse" />
                                 <span className="text-base font-bold text-slate-700">Ваші шаблони не знайдені</span>
-                                <p className="text-sm text-slate-400 max-w-sm">Створіть свій перший шаблон оцінювання за допомогою кнопки вище.</p>
+                                <p className="text-sm text-slate-400 max-w-sm">Створіть свій перший шаблон оцінювання за допомогою按钮 вище.</p>
                             </div>
                         )}
                     </div>
@@ -224,11 +251,12 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                 </div>
             </main>
 
-            {isCreateModalOpen && (
+            {isModalOpen && (
                 <TemplateCreatorModal
-                    isOpen={isCreateModalOpen}
-                    onClose={() => setIsCreateModalOpen(false)}
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
                     currentAuid={currentAuid}
+                    initialTemplateId={editingTemplateId} // WIN-65: Передаємо ID для редагування (або null для створення)
                 />
             )}
         </div>
