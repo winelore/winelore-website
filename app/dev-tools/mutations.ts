@@ -289,6 +289,7 @@ export const DevGetCommissionReplicasByCommissionQuery = gql(`
   query DevGetCommissionReplicasByCommission($commissionId: ID!) {
     commissionReplicasByCommission(commissionId: $commissionId) {
       id
+      name
       type
       members {
         id

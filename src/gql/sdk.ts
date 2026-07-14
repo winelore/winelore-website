@@ -654,7 +654,7 @@ export type DevGetCommissionReplicasByCommissionQueryVariables = Exact<{
 }>;
 
 
-export type DevGetCommissionReplicasByCommissionQuery = { commissionReplicasByCommission: Array<{ id: string, type: Types.CommissionReplicaType, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole }> }> };
+export type DevGetCommissionReplicasByCommissionQuery = { commissionReplicasByCommission: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole }> }> };
 
 export type GetMyBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -1498,6 +1498,7 @@ export const DevGetCommissionReplicasByCommissionDocument = gql`
     query DevGetCommissionReplicasByCommission($commissionId: ID!) {
   commissionReplicasByCommission(commissionId: $commissionId) {
     id
+    name
     type
     members {
       id
