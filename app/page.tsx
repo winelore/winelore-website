@@ -6,27 +6,39 @@ export const dynamic = "force-dynamic"
 export default async function DashboardPage({
     searchParams,
 }: {
-    searchParams: Promise<{ cursor?: string; h?: string }>
+    searchParams: Promise<{ cursor?: string; page?: string }>
 }) {
     const resolvedParams = await searchParams;
     const cursor = resolvedParams.cursor;
-    const historyStr = resolvedParams.h || "";
-    const historyArray = historyStr ? historyStr.split(',') : [];
+    const currentPage = parseInt(resolvedParams.page || "1", 10);
+
     const LIMIT = 20;
     let rawCompetitions: any[] = [];
+    let totalCount = 0;
+    let nextCursor: string | null = null;
+
     try {
-        const data = await sdk.GetDashboardCompetitions({
-            limit: LIMIT + 1,
-            cursor: cursor || undefined
-        });
+        const args: any = { limit: LIMIT };
+        if (cursor) {
+            args.cursor = cursor;
+        } else if (currentPage > 1) {
+            args.offset = (currentPage - 1) * LIMIT;
+        }
+        const data = await sdk.GetDashboardCompetitions(args);
         rawCompetitions = data.competitions?.items || [];
+        totalCount = data.competitionCount || 0;
+
+        if (rawCompetitions.length > 0) {
+            nextCursor = rawCompetitions[rawCompetitions.length - 1].id;
+        }
     } catch (error) {
         console.error("Failed to load dashboard competitions:", error);
     }
-    const hasNextPage = rawCompetitions.length > LIMIT;
-    const competitionsToDisplay = rawCompetitions.slice(0, LIMIT);
+
+    const totalPages = Math.ceil(totalCount / LIMIT);
+
     // Map backend competitions to the format expected by DashboardClientView
-    const mappedCompetitions = competitionsToDisplay.map((comp: any) => ({
+    const mappedCompetitions = rawCompetitions.map((comp: any) => ({
         id: comp.id,
         name: comp.name,
         status: comp.status,
@@ -44,32 +56,14 @@ export default async function DashboardPage({
     }));
 
 
-    const nextCursor = hasNextPage ? competitionsToDisplay[competitionsToDisplay.length - 1].id : null;
 
-    const currentCursorRep = cursor || "root";
-    const nextHistory = historyStr ? `${historyStr},${currentCursorRep}` : currentCursorRep;
-
-    let prevCursor: string | null = null;
-    let prevHistory = "";
-
-    if (historyArray.length > 0) {
-        const targetPrev = historyArray[historyArray.length - 1];
-        prevCursor = targetPrev === "root" ? null : targetPrev;
-        prevHistory = historyArray.slice(0, -1).join(',');
-    }
-
-    const currentPage = historyArray.length + 1;
 
     return (
         <WineLoreDashboard
             initialCompetitions={mappedCompetitions}
             nextCursor={nextCursor}
-            nextHistory={nextHistory}
-            prevCursor={prevCursor}
-            prevHistory={prevHistory}
-            hasPrev={historyArray.length > 0}
-            hasNext={hasNextPage}
             currentPage={currentPage}
+            totalPages={totalPages}
         />
     );
 }
