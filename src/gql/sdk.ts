@@ -72,6 +72,11 @@ export type CompetitionStatus =
   | 'PLANNED'
   | 'STARTED';
 
+export type CountriesType =
+  | 'GLOBAL'
+  | 'NOT_SPECIFIED'
+  | 'SPECIFIC';
+
 export type CreateEvaluationTemplateEditionInput = {
   categories: Array<EvaluationTemplateEditionCategoryInput>;
   templateId: string | number;
@@ -353,6 +358,15 @@ export type GetMyCompetitionsQueryVariables = Exact<{
 
 
 export type GetMyCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
+
+export type GetMyCompetitionSeriesQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  offset?: number | null | undefined;
+  cursor?: string | number | null | undefined;
+}>;
+
+
+export type GetMyCompetitionSeriesQuery = { competitionSeriesList: { items: Array<{ id: string, name: string, status: Types.CompetitionSeriesStatus, countriesType: Types.CountriesType, countriesCodes: Array<string> | null, owners: Array<Array<number>>, createdAt: string }> } };
 
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -947,6 +961,21 @@ export const GetMyCompetitionsDocument = gql`
   }
 }
     `;
+export const GetMyCompetitionSeriesDocument = gql`
+    query GetMyCompetitionSeries($limit: Int, $offset: Int, $cursor: ID) {
+  competitionSeriesList(limit: $limit, offset: $offset, cursor: $cursor) {
+    items {
+      id
+      name
+      status
+      countriesType
+      countriesCodes
+      owners
+      createdAt
+    }
+  }
+}
+    `;
 export const GetDashboardCompetitionsDocument = gql`
     query GetDashboardCompetitions($limit: Int) {
   competitions(limit: $limit) {
@@ -1032,6 +1061,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetMyCompetitions(variables?: Types.GetMyCompetitionsQueryVariables, options?: C): Promise<Types.GetMyCompetitionsQuery> {
       return requester<Types.GetMyCompetitionsQuery, Types.GetMyCompetitionsQueryVariables>(GetMyCompetitionsDocument, variables, options) as Promise<Types.GetMyCompetitionsQuery>;
+    },
+    GetMyCompetitionSeries(variables?: Types.GetMyCompetitionSeriesQueryVariables, options?: C): Promise<Types.GetMyCompetitionSeriesQuery> {
+      return requester<Types.GetMyCompetitionSeriesQuery, Types.GetMyCompetitionSeriesQueryVariables>(GetMyCompetitionSeriesDocument, variables, options) as Promise<Types.GetMyCompetitionSeriesQuery>;
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
