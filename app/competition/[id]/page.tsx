@@ -24,7 +24,7 @@ export default async function CompetitionStartPage({ params }: PageProps) {
 
     try {
         const data = await fetchGraphQL(GET_COMPETITION_PAGE, { id: competitionId });
-        console.log("GraphQL Data:", data);
+        // console.log("GraphQL Data:", data);
         if (data) {
             const responseData = data.data || data;
             competition = responseData.competition;
