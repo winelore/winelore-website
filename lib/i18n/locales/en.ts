@@ -22,6 +22,7 @@ const en = {
     standard: "Standard",
     loading: "Loading...",
     none: "None",
+    myCompetitionSeries: "My Competition Series",
   },
   dashboard: {
     holderId: "Holder: {{ids}}",

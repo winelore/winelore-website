@@ -31,7 +31,6 @@ export default async function MyCompetitionsSeriesPage() {
         );
 
         myCompetitionSeries = JSON.parse(JSON.stringify(myCompetitionSeries));
-        // console.log(myCompetitionsSeries)
     } catch (error) {
         console.error("Failed to fetch competition series:", error);
     }

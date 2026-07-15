@@ -72,7 +72,7 @@ function CompetitionSeriesCard({ series }: { series: Series }) {
                 </div>
 
                 <Link
-                    href={`/competition/create?seriesId=${series.id}`}
+                    href={`/competitionSeries/create?seriesId=${series.id}`}
                     className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl transition-all"
                 >
                     Create Competition
