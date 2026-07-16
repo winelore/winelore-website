@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "codegen": "graphql-codegen",
-    "codegen:watch": "graphql-codegen --watch",
-    "leaf"
+    "codegen:watch": "graphql-codegen --watch"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
