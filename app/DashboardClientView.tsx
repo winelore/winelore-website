@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
-import { FileText, Trophy, Wine, User, Layers, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, ChevronLeft, ChevronRight, Loader2, Tag, AlertCircle, CheckCircle, MapPin } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
@@ -38,6 +38,7 @@ interface Competition {
 
 interface DashboardProps {
     initialCompetitions: Competition[]
+    initialBeverages?: any[]
     nextCursor: string | null
     nextHistory: string
     prevCursor: string | null
@@ -177,8 +178,49 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
     )
 }
 
+type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
+type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
+
+interface ProducerDetails {
+    id: string
+    auid: number[]
+    role: "DISTRIBUTOR" | "MAKER" | "OWNER"
+}
+
+interface Beverage {
+    id: string
+    name: string
+    status: BeverageStatus
+    type: BeverageType
+    producers: ProducerDetails[]
+    originParts?: string[]
+}
+
+function BeverageCard({ bev }: { bev: Beverage }) {
+    const { formatBeverageType } = useTranslation()
+    return (
+        <Link
+            href={`/beverage/${bev.id}`}
+            className="group bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 flex items-center gap-4"
+        >
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+                <Wine className="h-7 w-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
+                    {formatBeverageType(bev.type)}
+                </span>
+                <h3 className="text-lg font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
+                    {bev.name}
+                </h3>
+            </div>
+        </Link>
+    )
+}
+
 export default function WineLoreDashboard({
                                               initialCompetitions,
+                                              initialBeverages,
                                               nextCursor,
                                               nextHistory,
                                               prevCursor,
@@ -191,11 +233,32 @@ export default function WineLoreDashboard({
   const router = useRouter()
   const pathname = usePathname()
   const [isLoading, setIsLoading] = useState(false)
+  const [currentBeveragePage, setCurrentBeveragePage] = useState(1)
+  const [isAnimatingBeverages, setIsAnimatingBeverages] = useState(false)
+  const beveragesPerPage = 16
+
+  const changeBeveragePage = (newPage: number) => {
+      setIsAnimatingBeverages(true)
+      setTimeout(() => {
+          setCurrentBeveragePage(newPage)
+          setIsAnimatingBeverages(false)
+      }, 200)
+  }
+
   // Fetch usernames for all competition holders on the dashboard
   const allHolderAuids = useMemo(() => {
     return Array.from(new Set(initialCompetitions.flatMap(c => c.holder || [])))
   }, [initialCompetitions])
   const { usernames } = useUsernames(allHolderAuids)
+
+  const beveragesToDisplay = useMemo(() => {
+      if (!initialBeverages) return []
+      const startIndex = (currentBeveragePage - 1) * beveragesPerPage
+      return initialBeverages.slice(startIndex, startIndex + beveragesPerPage)
+  }, [initialBeverages, currentBeveragePage])
+
+  const hasNextBeveragePage = initialBeverages && currentBeveragePage * beveragesPerPage < initialBeverages.length
+  const hasPrevBeveragePage = currentBeveragePage > 1
 
     const handleNext = () => {
         if (!hasNext || !nextCursor) return
@@ -229,40 +292,87 @@ export default function WineLoreDashboard({
                 </div>
             )}
 
-      {/* Competition Cards Grid */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
-          {initialCompetitions.map((competition) => (
-            <CompetitionCard
-              key={competition.id}
-              competition={competition}
-              usernames={usernames}
-            />
-          ))}
-        </div>
+            {activeTab === "competitions" && (
+                <>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
+                        {initialCompetitions.map((competition) => (
+                            <CompetitionCard
+                                key={competition.id}
+                                competition={competition}
+                                usernames={usernames}
+                            />
+                        ))}
+                    </div>
 
-          {(hasPrev || hasNext) && (
-            <div className="mt-2 flex items-center justify-center gap-3">
-              <button
-                onClick={handlePrev}
-                disabled={!hasPrev || isLoading}
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+                    {(hasPrev || hasNext) && (
+                        <div className="mt-2 flex items-center justify-center gap-3">
+                            <button
+                                onClick={handlePrev}
+                                disabled={!hasPrev || isLoading}
+                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            >
+                                <ChevronLeft className="h-5 w-5" />
+                            </button>
 
-              <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
-                {currentPage}
-              </span>
+                            <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
+                                {currentPage}
+                            </span>
 
-              <button
-                onClick={handleNext}
-                disabled={!hasNext || isLoading}
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
-          )}
+                            <button
+                                onClick={handleNext}
+                                disabled={!hasNext || isLoading}
+                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            >
+                                <ChevronRight className="h-5 w-5" />
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {activeTab === "wines" && (
+                <>
+                    <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1 transition-all duration-200 ${isAnimatingBeverages ? 'opacity-0 scale-[0.98] translate-y-2' : 'opacity-100 scale-100 translate-y-0'}`}>
+                        {beveragesToDisplay?.map((bev) => (
+                            <BeverageCard
+                                key={bev.id}
+                                bev={bev}
+                            />
+                        ))}
+                        {(!initialBeverages || initialBeverages.length === 0) && (
+                            <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50">
+                                <Wine className="w-12 h-12 text-slate-300 mb-4" />
+                                <h3 className="text-lg font-bold text-slate-700">Немає напоїв</h3>
+                                <p className="text-sm text-slate-500 mt-1 max-w-md">Тут ще немає жодного напою.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {initialBeverages && initialBeverages.length > beveragesPerPage && (
+                        <div className="mt-2 flex items-center justify-center gap-3">
+                            <button
+                                onClick={() => changeBeveragePage(currentBeveragePage - 1)}
+                                disabled={!hasPrevBeveragePage || isAnimatingBeverages}
+                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            >
+                                <ChevronLeft className="h-5 w-5" />
+                            </button>
+
+                            <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
+                                {currentBeveragePage}
+                            </span>
+
+                            <button
+                                onClick={() => changeBeveragePage(currentBeveragePage + 1)}
+                                disabled={!hasNextBeveragePage || isAnimatingBeverages}
+                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            >
+                                <ChevronRight className="h-5 w-5" />
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
       </main>
     </div>
   )
