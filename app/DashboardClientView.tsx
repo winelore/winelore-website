@@ -48,6 +48,7 @@ interface DashboardProps {
     prevHistory?: string
     hasPrev?: boolean
     hasNext?: boolean
+
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -274,6 +275,7 @@ export default function WineLoreDashboard({
   const hasNextBeveragePage = initialBeverages && currentBeveragePage * beveragesPerPage < initialBeverages.length
   const hasPrevBeveragePage = currentBeveragePage > 1
 
+
     const getPageNumbers = () => {
         const pages = [];
         if (totalPages <= 5) {
@@ -291,27 +293,14 @@ export default function WineLoreDashboard({
     };
 
     const handleNext = () => {
-        // Support both old and new logic
-        if (totalPages > 1) {
-            if (currentPage >= totalPages || !nextCursor) return
-            setIsLoading(true)
-            router.push(`${pathname}?cursor=${nextCursor}&page=${currentPage + 1}`)
-        } else {
-            if (!hasNext || !nextCursor) return
-            setIsLoading(true)
-            router.push(`${pathname}?cursor=${nextCursor}&h=${nextHistory}`)
-        }
+        if (currentPage >= totalPages || !nextCursor) return
+        setIsLoading(true)
+        router.push(`${pathname}?cursor=${nextCursor}&page=${currentPage + 1}`)
     }
 
-    const handlePrev = () => {
-        if (!hasPrev) return
+    const handleJumpToPage = (pageNumber: number) => {
         setIsLoading(true)
-        if (!prevCursor) {
-            router.push(pathname)
-        } else {
-            const histParam = prevHistory ? `&h=${prevHistory}` : ''
-            router.push(`${pathname}?cursor=${prevCursor}${histParam}`)
-        }
+        router.push(`${pathname}?page=${pageNumber}`)
     }
 
     const handleJumpToPage = (pageNumber: number) => {
