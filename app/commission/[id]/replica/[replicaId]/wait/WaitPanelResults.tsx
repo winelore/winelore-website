@@ -288,7 +288,7 @@ export default function WaitPanelResults({
         return <TranslatedText text={label} />;
     }
     return (
-        <section className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full max-w-5xl mx-auto text-left">
+        <section className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
             <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h2 className="text-lg font-bold text-slate-800">
                     Results: {panelName}
@@ -299,7 +299,7 @@ export default function WaitPanelResults({
                     </span>
                 </div>
             </div>
-            <p className="px-6 py-2 text-xs text-slate-400 border-b border-slate-50">
+            <p className="px-6 py-2 text-xs text-slate-400 border-b border-slate-50 bg-slate-50/50">
                 {t("commission.results.clickToExpand")}
             </p>
             <div className="overflow-x-auto">
@@ -309,21 +309,21 @@ export default function WaitPanelResults({
                         <th className="py-4 px-6 font-semibold text-slate-600 text-sm">
                             {t("commission.results.codeBeverage")}
                         </th>
+
+                        {/* Column for My Score */}
+                        <th className="py-4 px-6 font-semibold text-slate-600 text-sm text-center border-l border-slate-100 min-w-[8rem]">
+                            {t("evaluation.myScore")}
+                        </th>
+
                         {policyOutputProperties.map((prop) => (
                             <th
                                 key={prop.code}
-                                className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 bg-indigo-50/30 min-w-[8rem]"
+                                className="py-4 px-6 font-semibold text-slate-600 text-sm text-center border-l border-slate-100 min-w-[8rem]"
                             >
                                 <OutcomePropertyLabel code={prop.code} />
                                 <div className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase">(Average)</div>
                             </th>
                         ))}
-                        {/* New column for My Score */}
-                        {policyOutputProperties.length > 0 && (
-                            <th className="py-4 px-6 font-bold text-emerald-700 text-sm text-center border-l border-slate-100 bg-emerald-50/30 min-w-[8rem]">
-                                My Score
-                            </th>
-                        )}
                         <th className="py-4 px-6 font-semibold text-slate-600 text-sm border-l border-slate-100 w-1/4">
                             {t("commission.results.awards")}
                         </th>
@@ -332,13 +332,14 @@ export default function WaitPanelResults({
                     <tbody className="divide-y divide-slate-100">
                     {candidateRows.map((row) => {
                         const isExpanded = expandedCandidateId === row.candidate.id;
-                        const colSpan = 2 + policyOutputProperties.length + (policyOutputProperties.length > 0 ? 1 : 0);
+                        const numAvgCols = policyOutputProperties.length > 0 ? policyOutputProperties.length : 1;
+                        const colSpan = 2 + numAvgCols + 1; // CodeBeverage(1) + MyScore(1) + Average(numAvgCols) + Awards(1)
 
                         // Parse My Score
                         let myTotalScore = "-";
                         if (row.myEvaluation?.scores && data.propertyMap) {
                             const totalVal = parseEvaluationTotal(row.myEvaluation.scores, data.propertyMap);
-                            if (totalVal !== null) myTotalScore = String(totalVal);
+                            if (totalVal !== null) myTotalScore = Number(totalVal).toFixed(2);
                         }
                         return (
                             <React.Fragment key={row.candidate.id}>
@@ -372,13 +373,23 @@ export default function WaitPanelResults({
                                         </div>
                                     </td>
 
+                                    {/* My Score */}
+                                    <td className="py-4 px-6 text-center border-l border-slate-50 font-bold text-lg text-slate-700">
+                                        {myTotalScore}
+                                        {row.myEvaluation?.isComplete === false && (
+                                            <span className="block mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mx-auto">
+                                                    INC
+                                            </span>
+                                        )}
+                                    </td>
+
                                     {/* Average Score */}
                                     {policyOutputProperties.map((prop) => {
                                         const outcome = row.outcomeOverall?.[prop.code];
                                         return (
                                             <td
                                                 key={prop.code}
-                                                className="py-4 px-6 text-center border-l border-slate-50 font-bold bg-indigo-50/10 text-lg text-indigo-700"
+                                                className="py-4 px-6 text-center border-l border-slate-50 font-bold text-lg text-slate-700"
                                             >
                                                 {outcome?.average ?? "-"}
                                                 {outcome?.isPreview && (
@@ -390,17 +401,6 @@ export default function WaitPanelResults({
                                         );
                                     })}
 
-                                    {/* My Score */}
-                                    {policyOutputProperties.length > 0 && (
-                                        <td className="py-4 px-6 text-center border-l border-slate-50 font-bold bg-emerald-50/10 text-lg text-emerald-700">
-                                            {myTotalScore}
-                                            {row.myEvaluation?.isComplete === false && (
-                                                <span className="block mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mx-auto">
-                                                        INC
-                                                    </span>
-                                            )}
-                                        </td>
-                                    )}
                                     <td className="py-4 px-6 border-l border-slate-50">
                                         <div className="flex flex-wrap gap-1.5">
                                             {row.awards.map((assignment: any) => (
@@ -456,7 +456,7 @@ export default function WaitPanelResults({
                                                                             {resolveEvaluatorName(expert.evaluatorAuids)}
                                                                         </span>
                                                                 </div>
-                                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                                <div className="flex flex-col items-end gap-1 shrink overflow-hidden min-w-0 max-w-[60%]">
                                                                     {(() => {
                                                                         const booleanLabels = {
                                                                             yesLabel: t("common.yes"),
@@ -471,7 +471,7 @@ export default function WaitPanelResults({
                                                                         const results = expert.evaluation.scores?.filter((s) => data.propertyMap[s.code]?.isResult) || [];
                                                                         if (results.length === 1) {
                                                                             return (
-                                                                                <div className="text-xl font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">
+                                                                                <div className="text-xl font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0 max-w-full">
                                                                                     {formatScore(results[0])}
                                                                                 </div>
                                                                             );
@@ -480,7 +480,7 @@ export default function WaitPanelResults({
                                                                             return results.map((s) => (
                                                                                 <div
                                                                                     key={s.code}
-                                                                                    className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg whitespace-nowrap"
+                                                                                    className="text-[10px] sm:text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg text-right whitespace-nowrap"
                                                                                 >
                                                                                     {data.propertyMap[s.code]?.name ?? s.code}: {formatScore(s)}
                                                                                 </div>
@@ -517,7 +517,7 @@ export default function WaitPanelResults({
                     })}
                     {candidateRows.length === 0 && (
                         <tr>
-                            <td colSpan={2 + policyOutputProperties.length + (policyOutputProperties.length > 0 ? 1 : 0)} className="py-12 text-center text-slate-400 text-sm">
+                            <td colSpan={2 + (policyOutputProperties.length > 0 ? policyOutputProperties.length : 1) + 1} className="py-12 text-center text-slate-400 text-sm">
                                 No candidates in this panel
                             </td>
                         </tr>

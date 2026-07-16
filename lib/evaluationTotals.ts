@@ -3,7 +3,11 @@ export function parseEvaluationTotal(
     propertyMap: Record<string, { isResult: boolean }> | undefined | null,
 ): number | null {
     if (!scores?.length || !propertyMap) return null
-    const resultScore = scores.find((s) => propertyMap[s.code]?.isResult)
+    const resultScores = scores.filter((s) => propertyMap[s.code]?.isResult)
+    if (resultScores.length === 0) return null
+
+    // Prefer a property code that contains 'total', otherwise use the last result score (usually the overall total)
+    const resultScore = resultScores.find((s) => s.code.toLowerCase().includes('total')) || resultScores[resultScores.length - 1]
     if (resultScore?.value != null && !isNaN(parseFloat(resultScore.value))) {
         return parseFloat(resultScore.value)
     }

@@ -120,25 +120,28 @@ export async function getPanelResultsAction(commissionId: string, replicaId: str
             .filter((c: any) => c.panelId === panelId)
             .map((c: any) => c.id);
         if (commission.replicas) {
-            const targetReplica = commission.replicas.find((r: any) => r.id === replicaId);
-            if (targetReplica && targetReplica.replicaCandidates) {
-                await Promise.all(
-                    targetReplica.replicaCandidates.map(async (rc: any) => {
-                        // Only fetch if it's in the panel
-                        if (panelCandidateIds.includes(rc.candidate?.id)) {
-                            try {
-                                const evs = await getEvaluationsForCandidateAction(rc.id);
-                                rc.evaluations = evs;
-                            } catch (err) {
-                                console.error(`[wait] Failed to fetch evaluations for replica candidate ${rc.id}:`, err);
-                                rc.evaluations = [];
-                            }
-                        } else {
-                            rc.evaluations = [];
-                        }
-                    })
-                );
-            }
+            await Promise.all(
+                commission.replicas.map(async (replica: any) => {
+                    if (replica.replicaCandidates) {
+                        await Promise.all(
+                            replica.replicaCandidates.map(async (rc: any) => {
+                                // Only fetch if it's in the panel
+                                if (panelCandidateIds.includes(rc.candidate?.id)) {
+                                    try {
+                                        const evs = await getEvaluationsForCandidateAction(rc.id);
+                                        rc.evaluations = evs;
+                                    } catch (err) {
+                                        console.error(`[wait] Failed to fetch evaluations for replica candidate ${rc.id}:`, err);
+                                        rc.evaluations = [];
+                                    }
+                                } else {
+                                    rc.evaluations = [];
+                                }
+                            })
+                        );
+                    }
+                })
+            );
         }
         // Fetch awards
         const beverageIds = Array.from(

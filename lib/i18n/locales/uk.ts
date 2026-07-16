@@ -161,6 +161,7 @@ const uk: TranslationKey = {
     enterTastingSession: "Увійти до сесії дегустації",
     backToCommission: "Назад до комісії",
     startNextPanel: "Почати наступну панель",
+    panel: "Панель",
     results: {
       pageTitle: "Результати: {{name}}",
       statusCompleted: "Завершено",
@@ -258,6 +259,8 @@ const uk: TranslationKey = {
     voiceRecorded: "Голос ({{seconds}}с)",
     voiceMicError: "Доступ до мікрофона відхилено. Перевірте дозволи браузера.",
     voiceUploadFailed: "Помилка завантаження голосу — надсилається лише текст.",
+    myScore:"Моя оцінка",
+    averageScore: "Середня оцінка",
   },
   status: {
     IN_PROGRESS: "В процесі",

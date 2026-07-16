@@ -195,7 +195,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             <div className="flex min-h-screen flex-col bg-slate-50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
-                    <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="max-w-7xl mx-auto space-y-8">
                         {currentPanelId && (
                             <WaitPanelResults
                                 commissionId={commissionId}
@@ -222,7 +222,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             <div className="flex min-h-screen flex-col bg-slate-50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
-                <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="max-w-7xl mx-auto space-y-8">
                     <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
@@ -230,7 +230,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 {currentPanelName && (
                                     <>
                                         <span className="text-slate-300 font-normal">|</span>
-                                        <span className="text-slate-800">Panel:</span>
+                                        <span className="text-slate-800">{t("commission.panel")}:</span>
                                         <span className="text-slate-500 font-normal">{currentPanelName}</span>
                                     </>
                                 )}
