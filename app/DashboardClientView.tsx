@@ -5,7 +5,7 @@ import { FileText, Trophy, Wine, User, Layers, ChevronLeft, ChevronRight, Loader
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
 
@@ -40,12 +40,14 @@ interface DashboardProps {
     initialCompetitions: Competition[]
     initialBeverages?: any[]
     nextCursor: string | null
-    nextHistory: string
-    prevCursor: string | null
-    prevHistory: string
-    hasPrev: boolean
-    hasNext: boolean
     currentPage: number
+    totalPages?: number
+    // Legacy props to keep local dev server working before full merge
+    nextHistory?: string
+    prevCursor?: string | null
+    prevHistory?: string
+    hasPrev?: boolean
+    hasNext?: boolean
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -227,11 +229,23 @@ export default function WineLoreDashboard({
                                               prevHistory,
                                               hasPrev,
                                               hasNext,
-                                              currentPage
+                                              currentPage,
+                                              totalPages = 1 // default for local
                                           }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
+  const searchParams = useSearchParams()
+  const rawTab = searchParams.get("tab")
+  const initialTab = (rawTab === "beverages" ? "wines" : rawTab) as AppTabId || "competitions"
+  const [activeTab, setActiveTab] = useState<AppTabId>(initialTab)
   const router = useRouter()
   const pathname = usePathname()
+
+  useEffect(() => {
+    let tabParam = searchParams.get("tab") as string
+    if (tabParam === "beverages") tabParam = "wines"
+    if (tabParam && ["competitions", "wines", "feed"].includes(tabParam)) {
+      setActiveTab(tabParam as AppTabId)
+    }
+  }, [searchParams])
   const [isLoading, setIsLoading] = useState(false)
   const [currentBeveragePage, setCurrentBeveragePage] = useState(1)
   const [isAnimatingBeverages, setIsAnimatingBeverages] = useState(false)
@@ -260,10 +274,33 @@ export default function WineLoreDashboard({
   const hasNextBeveragePage = initialBeverages && currentBeveragePage * beveragesPerPage < initialBeverages.length
   const hasPrevBeveragePage = currentBeveragePage > 1
 
+    const getPageNumbers = () => {
+        const pages = [];
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 3) {
+                pages.push(1, 2, 3, 4, '...', totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+            }
+        }
+        return pages;
+    };
+
     const handleNext = () => {
-        if (!hasNext || !nextCursor) return
-        setIsLoading(true)
-        router.push(`${pathname}?cursor=${nextCursor}&h=${nextHistory}`)
+        // Support both old and new logic
+        if (totalPages > 1) {
+            if (currentPage >= totalPages || !nextCursor) return
+            setIsLoading(true)
+            router.push(`${pathname}?cursor=${nextCursor}&page=${currentPage + 1}`)
+        } else {
+            if (!hasNext || !nextCursor) return
+            setIsLoading(true)
+            router.push(`${pathname}?cursor=${nextCursor}&h=${nextHistory}`)
+        }
     }
 
     const handlePrev = () => {
@@ -275,6 +312,11 @@ export default function WineLoreDashboard({
             const histParam = prevHistory ? `&h=${prevHistory}` : ''
             router.push(`${pathname}?cursor=${prevCursor}${histParam}`)
         }
+    }
+
+    const handleJumpToPage = (pageNumber: number) => {
+        setIsLoading(true)
+        router.push(`${pathname}?page=${pageNumber}`)
     }
 
     useEffect(() => {
@@ -304,7 +346,44 @@ export default function WineLoreDashboard({
                         ))}
                     </div>
 
-                    {(hasPrev || hasNext) && (
+                    {(totalPages > 1) ? (
+                        <div className="mt-1 flex items-center justify-center gap-3">
+                            <button
+                                onClick={() => handleJumpToPage(currentPage - 1)}
+                                disabled={currentPage <= 1 || isLoading}
+                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            >
+                                <ChevronLeft className="h-5 w-5" />
+                            </button>
+
+                            {getPageNumbers().map((p, i) => (
+                                p === '...' ? (
+                                    <span key={i} className="flex items-center justify-center w-8 h-10 text-slate-400">...</span>
+                                ) : (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleJumpToPage(p as number)}
+                                        disabled={isLoading || p === currentPage}
+                                        className={`flex items-center justify-center h-10 w-10 rounded-full text-sm font-semibold transition-all duration-300 shadow-xl ${
+                                            p === currentPage
+                                                ? "bg-indigo-600 text-white shadow-indigo-200/50 pointer-events-none"
+                                                : "bg-white border border-slate-100 text-slate-600 shadow-slate-200/50 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100"
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                )
+                            ))}
+
+                            <button
+                                onClick={handleNext}
+                                disabled={currentPage >= totalPages || isLoading}
+                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            >
+                                <ChevronRight className="h-5 w-5" />
+                            </button>
+                        </div>
+                    ) : (hasPrev || hasNext) ? (
                         <div className="mt-2 flex items-center justify-center gap-3">
                             <button
                                 onClick={handlePrev}
@@ -326,7 +405,7 @@ export default function WineLoreDashboard({
                                 <ChevronRight className="h-5 w-5" />
                             </button>
                         </div>
-                    )}
+                    ) : null}
                 </>
             )}
 

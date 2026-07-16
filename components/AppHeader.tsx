@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react"
 import { FileText, Trophy, Wine } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 import { useTranslation } from "@/lib/i18n/context"
@@ -27,6 +28,7 @@ export function AppHeader({
   wineTab = false,
 }: AppHeaderProps) {
   const { t } = useTranslation()
+  const router = useRouter()
   const [currentUser, setCurrentUser] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -83,7 +85,13 @@ export function AppHeader({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => onTabChange?.(tab.id)}
+                onClick={() => {
+                  if (onTabChange) {
+                    onTabChange(tab.id)
+                  } else {
+                    router.push(`/?tab=${tab.id}`)
+                  }
+                }}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   isActive
                      ? "border border-slate-100/50 bg-white text-slate-800 shadow-sm"
