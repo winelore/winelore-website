@@ -39,6 +39,7 @@ interface Competition {
 interface DashboardProps {
     initialCompetitions: Competition[]
     initialBeverages?: any[]
+    beverageTypesMap?: Record<string, string>
     nextCursor: string | null
     currentPage: number
     totalPages?: number
@@ -194,13 +195,19 @@ interface Beverage {
     id: string
     name: string
     status: BeverageStatus
-    type: BeverageType
+    type?: BeverageType
+    typeId?: string
     producers: ProducerDetails[]
     originParts?: string[]
 }
 
-function BeverageCard({ bev }: { bev: Beverage }) {
+function BeverageCard({ bev, typeMap }: { bev: Beverage; typeMap?: Record<string, string> }) {
     const { formatBeverageType } = useTranslation()
+    
+    // Fallback: If we have a typeMap and bev.typeId, use the mapped name.
+    // Otherwise, try the old formatBeverageType(bev.type) if bev.type exists.
+    const displayType = (typeMap && bev.typeId && typeMap[bev.typeId]) || (bev.type ? formatBeverageType(bev.type) : null)
+
     return (
         <Link
             href={`/beverage/${bev.id}`}
@@ -210,9 +217,11 @@ function BeverageCard({ bev }: { bev: Beverage }) {
                 <Wine className="h-7 w-7" />
             </div>
             <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
-                    {formatBeverageType(bev.type)}
-                </span>
+                {displayType && (
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
+                        {displayType}
+                    </span>
+                )}
                 <h3 className="text-lg font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
                     {bev.name}
                 </h3>
@@ -224,6 +233,7 @@ function BeverageCard({ bev }: { bev: Beverage }) {
 export default function WineLoreDashboard({
                                               initialCompetitions,
                                               initialBeverages,
+                                              beverageTypesMap,
                                               nextCursor,
                                               nextHistory,
                                               prevCursor,
@@ -416,9 +426,17 @@ export default function WineLoreDashboard({
                             <BeverageCard
                                 key={bev.id}
                                 bev={bev}
+                                typeMap={beverageTypesMap}
                             />
                         ))}
-                        {(!initialBeverages || initialBeverages.length === 0) && (
+                        {initialBeverages === undefined && (
+                            <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-red-50 border border-red-100 rounded-[32px] shadow-xl shadow-red-200/50">
+                                <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+                                <h3 className="text-lg font-bold text-red-800">Помилка завантаження</h3>
+                                <p className="text-sm text-red-600 mt-1 max-w-md">Не вдалося завантажити список напоїв. Спробуйте оновити сторінку.</p>
+                            </div>
+                        )}
+                        {initialBeverages !== undefined && initialBeverages.length === 0 && (
                             <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50">
                                 <Wine className="w-12 h-12 text-slate-300 mb-4" />
                                 <h3 className="text-lg font-bold text-slate-700">Немає напоїв</h3>

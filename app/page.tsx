@@ -1,5 +1,6 @@
 import { sdk } from '@/lib/apiClient';
 import WineLoreDashboard from './DashboardClientView';
+import { getBeverageTypesAction } from '@/app/templates/actions';
 
 export const dynamic = "force-dynamic"
 
@@ -14,7 +15,7 @@ export default async function DashboardPage({
 
     const LIMIT = 20;
     let rawCompetitions: any[] = [];
-    let allBeverages: any[] = [];
+    let allBeverages: any[] | undefined = [];
     let totalCount = 0;
     let nextCursor: string | null = null;
 
@@ -39,34 +40,21 @@ export default async function DashboardPage({
     try {
         const bevData = await sdk.GetMyBeverages({ limit: 100 });
         const rawBeverages = bevData.beverages?.items || [];
-
-        const { getGeographicInfo } = await import("@/lib/geocoding");
-        allBeverages = await Promise.all(
-            rawBeverages.map(async (bev: any) => {
-                const origin = bev.origin;
-                let originParts: string[] = [];
-                if (origin && typeof origin.latitude === "number" && typeof origin.longitude === "number") {
-                    const info = await getGeographicInfo(origin.latitude, origin.longitude);
-                    if (info) {
-                        originParts = [info.country, info.district].filter(Boolean) as string[];
+        allBeverages = rawBeverages.map((bev: any) => {
+            let beverageType = undefined;
+            if (bev.attributes) {
+                try {
+                    const parsed = JSON.parse(bev.attributes);
+                    if (parsed && parsed.color) {
+                        beverageType = parsed.color; // E.g.: "RED", "WHITE"
                     }
-                }
-                
-                let colorVal = "WINE";
-                if (bev.attributes) {
-                    try {
-                        const parsed = JSON.parse(bev.attributes);
-                        if (parsed && parsed.color) {
-                            colorVal = parsed.color;
-                        }
-                    } catch (e) {}
-                }
-
-                return { ...bev, type: colorVal, originParts };
-            })
-        );
+                } catch (e) {}
+            }
+            return { ...bev, type: beverageType };
+        });
     } catch (error) {
         console.error("Failed to load beverages:", error);
+        allBeverages = undefined; // undefined indicates an error state to the client
     }
     const totalPages = Math.ceil(totalCount / LIMIT);
 
@@ -91,10 +79,22 @@ export default async function DashboardPage({
 
 
 
+    let beverageTypesDict: Record<string, string> = {};
+    try {
+        const typesList = await getBeverageTypesAction();
+        beverageTypesDict = typesList.reduce((acc, t) => {
+            acc[t.id] = t.name;
+            return acc;
+        }, {} as Record<string, string>);
+    } catch (e) {
+        console.error("Failed to load beverage types map:", e);
+    }
+
     return (
-        <WineLoreDashboard
+        <WineLoreDashboard 
             initialCompetitions={mappedCompetitions}
             initialBeverages={allBeverages}
+            beverageTypesMap={beverageTypesDict}
             nextCursor={nextCursor}
             currentPage={currentPage}
             totalPages={totalPages}
