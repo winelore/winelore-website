@@ -39,12 +39,8 @@ interface Competition {
 interface DashboardProps {
     initialCompetitions: Competition[]
     nextCursor: string | null
-    nextHistory: string
-    prevCursor: string | null
-    prevHistory: string
-    hasPrev: boolean
-    hasNext: boolean
     currentPage: number
+    totalPages: number
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -177,16 +173,7 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
     )
 }
 
-export default function WineLoreDashboard({
-                                              initialCompetitions,
-                                              nextCursor,
-                                              nextHistory,
-                                              prevCursor,
-                                              prevHistory,
-                                              hasPrev,
-                                              hasNext,
-                                              currentPage
-                                          }: DashboardProps) {
+export default function WineLoreDashboard({ initialCompetitions, nextCursor, currentPage, totalPages }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
   const router = useRouter()
   const pathname = usePathname()
@@ -197,21 +184,32 @@ export default function WineLoreDashboard({
   }, [initialCompetitions])
   const { usernames } = useUsernames(allHolderAuids)
 
+
+    const getPageNumbers = () => {
+        const pages = [];
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 3) {
+                pages.push(1, 2, 3, 4, '...', totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+            }
+        }
+        return pages;
+    };
+
     const handleNext = () => {
-        if (!hasNext || !nextCursor) return
+        if (currentPage >= totalPages || !nextCursor) return
         setIsLoading(true)
-        router.push(`${pathname}?cursor=${nextCursor}&h=${nextHistory}`)
+        router.push(`${pathname}?cursor=${nextCursor}&page=${currentPage + 1}`)
     }
 
-    const handlePrev = () => {
-        if (!hasPrev) return
+    const handleJumpToPage = (pageNumber: number) => {
         setIsLoading(true)
-        if (!prevCursor) {
-            router.push(pathname)
-        } else {
-            const histParam = prevHistory ? `&h=${prevHistory}` : ''
-            router.push(`${pathname}?cursor=${prevCursor}${histParam}`)
-        }
+        router.push(`${pathname}?page=${pageNumber}`)
     }
 
     useEffect(() => {
@@ -240,23 +238,38 @@ export default function WineLoreDashboard({
           ))}
         </div>
 
-          {(hasPrev || hasNext) && (
-            <div className="mt-2 flex items-center justify-center gap-3">
+            {(totalPages > 1) && (
+            <div className="mt-1 flex items-center justify-center gap-3">
               <button
-                onClick={handlePrev}
-                disabled={!hasPrev || isLoading}
+                onClick={() => handleJumpToPage(currentPage - 1)}
+                disabled={currentPage <= 1 || isLoading}
                 className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
 
-              <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
-                {currentPage}
-              </span>
+                    {getPageNumbers().map((p, i) => (
+                        p === '...' ? (
+                            <span key={i} className="flex items-center justify-center w-8 h-10 text-slate-400">...</span>
+                        ) : (
+                            <button
+                                key={i}
+                                onClick={() => handleJumpToPage(p as number)}
+                                disabled={isLoading || p === currentPage}
+                                className={`flex items-center justify-center h-10 w-10 rounded-full text-sm font-semibold transition-all duration-300 shadow-xl ${
+                                    p === currentPage
+                                        ? "bg-indigo-600 text-white shadow-indigo-200/50 pointer-events-none"
+                                        : "bg-white border border-slate-100 text-slate-600 shadow-slate-200/50 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100"
+                                }`}
+                            >
+                                {p}
+                            </button>
+                        )
+                    ))}
 
               <button
                 onClick={handleNext}
-                disabled={!hasNext || isLoading}
+                disabled={currentPage >= totalPages || isLoading}
                 className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
               >
                 <ChevronRight className="h-5 w-5" />
