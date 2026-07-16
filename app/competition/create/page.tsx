@@ -46,6 +46,16 @@ export default function CreateCompetitionPage() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [seriesList, setSeriesList] = useState<SeriesOption[]>([]);
     const [currentAuid, setCurrentAuid] = useState<number | null>(null);
+    const [formData, setFormData] = useState<CompetitionFormState>({
+        name: '',
+        seriesId: '',
+        plannedStartDate: '',
+        plannedEndDate: '',
+        holders: [],
+        commissions: []
+    });
+
+    const getCurrentAuidHolders = (auid: number): number[][] => [[auid]];
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -54,15 +64,16 @@ export default function CreateCompetitionPage() {
         }
     }, [])
 
-    // console.log("auid:", currentAuid)
-    const [formData, setFormData] = useState<CompetitionFormState>({
-        name: '',
-        seriesId: '',
-        plannedStartDate: '',
-        plannedEndDate: '',
-        holders: [[1, 2, 3]],
-        commissions: []
-    });
+    useEffect(() => {
+        if (currentAuid === null) return;
+
+        setFormData(prev => ({
+            ...prev,
+            holders: getCurrentAuidHolders(currentAuid)
+        }));
+
+        console.log(formData);
+    }, [currentAuid]);
 
     useEffect(() => {
         if (!currentAuid) return;
@@ -95,6 +106,8 @@ export default function CreateCompetitionPage() {
     //             console.log(count);
     //         });
     // }, [currentAuid]);
+
+
 
     const handleCompetitionChange = (field: keyof CompetitionFormState, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -163,7 +176,12 @@ export default function CreateCompetitionPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
+        if (!currentAuid) {
+            setSubmitError('Unable to detect current user. Please sign in again.');
+            return;
+        }
+
         if (!formData.seriesId) {
             setSubmitError('Please select a valid Competition Series from the list.');
             return;
@@ -174,20 +192,25 @@ export default function CreateCompetitionPage() {
 
         try {
             // Dispatches the full state payload to the Next.js Node.js layer
-            const result = await createCompetitionInfrastructure(formData);
+            const result = await createCompetitionInfrastructure({
+                ...formData,
+                holders: getCurrentAuidHolders(currentAuid)
+            });
 
             if (!result.success) {
                 throw new Error(result.error);
             }
 
-            router.push('/dashboard');
+            console.log(formData)
+
+            router.push('/myCompetitions');
         } catch (err: any) {
             console.error('Cascade activation failed:', err);
-            
+
             const errorMsg = err.message || '';
             const lower = errorMsg.toLowerCase();
             let friendlyMessage = 'An unexpected error occurred while creating the competition. Please try again.';
-            
+
             if (lower.includes('failed to fetch') || lower.includes('fetch failed') || lower.includes('server responded with status')) {
                 friendlyMessage = 'Network error: Unable to connect to the server. Please check your internet connection.';
             } else if (lower.includes('seriesid') || lower.includes('series id') || lower.includes('failed to convert argument value')) {
@@ -201,7 +224,7 @@ export default function CreateCompetitionPage() {
             } else if (errorMsg) {
                 friendlyMessage = `Error: ${errorMsg}`;
             }
-            
+
             setSubmitError(friendlyMessage);
         } finally {
             setIsSubmitting(false);
