@@ -291,11 +291,11 @@ export default function WaitPanelResults({
         <section className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
             <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h2 className="text-lg font-bold text-slate-800">
-                    Results: {panelName}
+                    {t("commission.results.resultsTitle")}: {panelName}
                 </h2>
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">
-                        {candidateRows.length} Candidates
+                        {candidateRows.length} {t("commission.results.candidates")}
                     </span>
                 </div>
             </div>
@@ -321,7 +321,7 @@ export default function WaitPanelResults({
                                 className="py-4 px-6 font-semibold text-slate-600 text-sm text-center border-l border-slate-100 min-w-[8rem]"
                             >
                                 <OutcomePropertyLabel code={prop.code} />
-                                <div className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase">(Average)</div>
+                                <div className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase">{t("commission.results.overallAverage")}</div>
                             </th>
                         ))}
                         <th className="py-4 px-6 font-semibold text-slate-600 text-sm border-l border-slate-100 w-1/4">
@@ -344,8 +344,17 @@ export default function WaitPanelResults({
                         return (
                             <React.Fragment key={row.candidate.id}>
                                 <tr
-                                    className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-expanded={isExpanded}
+                                    className="hover:bg-slate-50/50 transition-colors cursor-pointer focus-within:bg-slate-50/50"
                                     onClick={() => setExpandedCandidateId(isExpanded ? null : row.candidate.id)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            e.preventDefault();
+                                            setExpandedCandidateId(isExpanded ? null : row.candidate.id);
+                                        }
+                                    }}
                                 >
                                     <td className="py-4 px-6">
                                         <div className="flex items-center gap-2">
@@ -518,7 +527,7 @@ export default function WaitPanelResults({
                     {candidateRows.length === 0 && (
                         <tr>
                             <td colSpan={2 + (policyOutputProperties.length > 0 ? policyOutputProperties.length : 1) + 1} className="py-12 text-center text-slate-400 text-sm">
-                                No candidates in this panel
+                                {t("commission.emptyPanel")}
                             </td>
                         </tr>
                     )}

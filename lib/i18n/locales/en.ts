@@ -160,8 +160,11 @@ const en = {
     backToCommission: "Back to Commission",
     startNextPanel: "Start Next Panel",
     panel: "Panel",
+    emptyPanel: "No candidates in this panel",
     results: {
       pageTitle: "Results: {{name}}",
+      resultsTitle: "Results",
+      candidates: "Candidates",
       statusCompleted: "Completed",
       statusInProgress: "In Progress",
       progressComplete: "{{complete}} of {{expected}} evaluations complete",

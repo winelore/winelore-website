@@ -22,6 +22,7 @@ const hu = {
         standard: "Standard",
         loading: "Betöltés...",
         none: "Nincs",
+        templates: "Saját értékelési sablonok",
     },
     dashboard: {
         holderId: "Szervező: {{ids}}",
@@ -153,8 +154,11 @@ const hu = {
         backToCommission: "Vissza a bizottsághoz",
         startNextPanel: "Következő panel indítása",
         panel: "Panel",
+        emptyPanel: "Nincsenek jelöltek ebben a panelben",
         results: {
             pageTitle: "Eredmények: {{name}}",
+            resultsTitle: "Eredmények",
+            candidates: "Jelöltek",
             statusCompleted: "Befejezve",
             statusInProgress: "Folyamatban",
             progressComplete: "{{complete}} / {{expected}} értékelés kész",

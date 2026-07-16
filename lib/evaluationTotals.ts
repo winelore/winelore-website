@@ -6,12 +6,11 @@ export function parseEvaluationTotal(
     const resultScores = scores.filter((s) => propertyMap[s.code]?.isResult)
     if (resultScores.length === 0) return null
 
-    // Prefer a property code that contains 'total', otherwise use the last result score (usually the overall total)
-    const resultScore = resultScores.find((s) => s.code.toLowerCase().includes('total')) || resultScores[resultScores.length - 1]
-    if (resultScore?.value != null && !isNaN(parseFloat(resultScore.value))) {
-        return parseFloat(resultScore.value)
-    }
-    return null
+    const numericResults = resultScores.filter(s => s.value != null && !isNaN(parseFloat(s.value)))
+    if (numericResults.length === 0) return null
+    // Fall back to the last numeric result score (usually the overall total)
+    const resultScore = numericResults[numericResults.length - 1]
+    return parseFloat(resultScore.value)
 }
 
 export function parseEvaluationTotals(

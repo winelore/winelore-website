@@ -162,8 +162,11 @@ const uk: TranslationKey = {
     backToCommission: "Назад до комісії",
     startNextPanel: "Почати наступну панель",
     panel: "Панель",
+    emptyPanel: "У цій панелі немає кандидатів",
     results: {
       pageTitle: "Результати: {{name}}",
+      resultsTitle: "Результати",
+      candidates: "Кандидати",
       statusCompleted: "Завершено",
       statusInProgress: "Триває",
       progressComplete: "{{complete}} з {{expected}} оцінок завершено",
