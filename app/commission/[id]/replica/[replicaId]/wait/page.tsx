@@ -25,6 +25,7 @@ import {
 import type { PropertyMeta } from "../../../../propertyMap"
 import type { MyTastingSummaryData } from "../../../../expertRanking"
 import { MyTastingSummary } from "../../../../MyTastingSummary"
+import WaitPanelResults from "./WaitPanelResults"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -50,6 +51,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [isPanelFinished, setIsPanelFinished] = useState(false);
     const [currentPanelName, setCurrentPanelName] = useState<string>("");
     const [nextPanelFirstCandidateId, setNextPanelFirstCandidateId] = useState<string | null>(null);
+    const [currentPanelId, setCurrentPanelId] = useState<string | null>(null);
 
     // Fetch usernames for commission members
     const allMemberAuids = useMemo(() => {
@@ -79,7 +81,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         const fetchData = async () => {
             if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, nextPanelFirstCandidateId: newNextPanelFirstCandidateId } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, nextPanelFirstCandidateId: newNextPanelFirstCandidateId } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -90,6 +92,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 setPropertyCommentsEnabled(newPropertyCommentsEnabled);
                 setIsPanelFinished(newIsPanelFinished || false);
                 setCurrentPanelName(newPanelName || "");
+                setCurrentPanelId(newPanelId || null);
                 setNextPanelFirstCandidateId(newNextPanelFirstCandidateId || null);
                 const commentFlags = {
                     propertyCommentsEnabled: newPropertyCommentsEnabled,
@@ -192,7 +195,17 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             <div className="flex min-h-screen flex-col bg-slate-50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
-                    <div className="max-w-4xl mx-auto">
+                    <div className="max-w-4xl mx-auto space-y-8">
+                        {currentPanelId && (
+                            <WaitPanelResults
+                                commissionId={commissionId}
+                                replicaId={replicaId}
+                                panelId={currentPanelId}
+                                panelName={currentPanelName || "Panel"}
+                                propertyCommentsEnabled={propertyCommentsEnabled}
+                                voiceCommentsEnabled={voiceCommentsEnabled}
+                            />
+                        )}
                         <MyTastingSummary
                             data={myTastingSummary}
                             commissionId={commissionId}
@@ -265,6 +278,19 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                             </button>
                         )}
                     </header>
+
+                    {isPanelFinished && currentPanelId && (
+                        <div className="w-full">
+                            <WaitPanelResults
+                                commissionId={commissionId}
+                                replicaId={replicaId}
+                                panelId={currentPanelId}
+                                panelName={currentPanelName || "Panel"}
+                                propertyCommentsEnabled={propertyCommentsEnabled}
+                                voiceCommentsEnabled={voiceCommentsEnabled}
+                            />
+                        </div>
+                    )}
 
                     <div className={wineJumperMiniGameEnabled ? "grid grid-cols-1 xl:grid-cols-3 gap-8" : "flex flex-col gap-8"}>
                         {/* Experts list */}
@@ -406,6 +432,20 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </p>
                     )}
                 </div>
+
+                {isPanelFinished && currentPanelId && (
+                    <div className="w-full mb-8">
+                        <WaitPanelResults
+                            commissionId={commissionId}
+                            replicaId={replicaId}
+                            panelId={currentPanelId}
+                            panelName={currentPanelName || "Panel"}
+                            propertyCommentsEnabled={propertyCommentsEnabled}
+                            voiceCommentsEnabled={voiceCommentsEnabled}
+                        />
+                    </div>
+                )}
+
 
                 {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
                 <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
