@@ -274,7 +274,23 @@ export default function WineLoreDashboard({
 
   const hasNextBeveragePage = initialBeverages && currentBeveragePage * beveragesPerPage < initialBeverages.length
   const hasPrevBeveragePage = currentBeveragePage > 1
+  const totalBeveragesPages = initialBeverages ? Math.ceil(initialBeverages.length / beveragesPerPage) : 0
 
+  const getBeveragePageNumbers = () => {
+      const pages = [];
+      if (totalBeveragesPages <= 5) {
+          for (let i = 1; i <= totalBeveragesPages; i++) pages.push(i);
+      } else {
+          if (currentBeveragePage <= 3) {
+              pages.push(1, 2, 3, 4, '...', totalBeveragesPages);
+          } else if (currentBeveragePage >= totalBeveragesPages - 2) {
+              pages.push(1, '...', totalBeveragesPages - 3, totalBeveragesPages - 2, totalBeveragesPages - 1, totalBeveragesPages);
+          } else {
+              pages.push(1, '...', currentBeveragePage - 1, currentBeveragePage, currentBeveragePage + 1, '...', totalBeveragesPages);
+          }
+      }
+      return pages;
+  };
 
     const getPageNumbers = () => {
         const pages = [];
@@ -411,7 +427,7 @@ export default function WineLoreDashboard({
                         )}
                     </div>
 
-                    {initialBeverages && initialBeverages.length > beveragesPerPage && (
+                    {totalBeveragesPages > 1 && (
                         <div className="mt-2 flex items-center justify-center gap-3">
                             <button
                                 onClick={() => changeBeveragePage(currentBeveragePage - 1)}
@@ -421,9 +437,24 @@ export default function WineLoreDashboard({
                                 <ChevronLeft className="h-5 w-5" />
                             </button>
 
-                            <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
-                                {currentBeveragePage}
-                            </span>
+                            {getBeveragePageNumbers().map((p, i) => (
+                                p === '...' ? (
+                                    <span key={i} className="flex items-center justify-center w-8 h-10 text-slate-400">...</span>
+                                ) : (
+                                    <button
+                                        key={i}
+                                        onClick={() => changeBeveragePage(p as number)}
+                                        disabled={isAnimatingBeverages || p === currentBeveragePage}
+                                        className={`flex items-center justify-center h-10 w-10 rounded-full text-sm font-semibold transition-all duration-300 shadow-xl ${
+                                            p === currentBeveragePage
+                                                ? "bg-indigo-600 text-white shadow-indigo-200/50 pointer-events-none"
+                                                : "bg-white border border-slate-100 text-slate-600 shadow-slate-200/50 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100"
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                )
+                            ))}
 
                             <button
                                 onClick={() => changeBeveragePage(currentBeveragePage + 1)}
