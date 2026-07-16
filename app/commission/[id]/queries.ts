@@ -71,6 +71,10 @@ export const GET_COMMISSION_TEMPLATES = gql(`
           id
           version
           status
+          template {
+            id
+            name
+          }
           categories {
             id
             name

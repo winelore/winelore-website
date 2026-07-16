@@ -24,6 +24,7 @@ const uk: TranslationKey = {
     standard: "Стандартна",
     loading: "Завантаження...",
     none: "Немає",
+    templates: "Мої шаблони оцінювання",
   },
   dashboard: {
     holderId: "Організатор: {{ids}}",
