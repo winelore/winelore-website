@@ -1,11 +1,9 @@
-// app/map/MapComponent.tsx
 "use client"
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Фікс для стандартних іконок Leaflet у Next.js
 const customIcon = L.icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -22,7 +20,6 @@ function MapEvents({ onBoundsChange }: { onBoundsChange: (bounds: L.LatLngBounds
     });
 
     useEffect(() => {
-        // Завантажуємо дані при ініціалізації карти
         onBoundsChange(map.getBounds());
     }, [map, onBoundsChange]);
 
@@ -36,12 +33,20 @@ interface MapComponentProps {
 }
 
 export default function MapComponent({ beverages, onSelectBeverage, onBoundsChange }: MapComponentProps) {
-    // Центруємо карту на Європі / Україні за замовчуванням
     return (
-        <MapContainer center={[49.0, 31.0]} zoom={5} className="w-full h-full z-0" zoomControl={false}>
+        <MapContainer
+            center={[49.0, 31.0]}
+            zoom={5}
+            minZoom={3} // Забороняємо занадто сильно віддаляти
+            maxBounds={[[-90, -180], [90, 180]]} // ЗАБОРОНЯЄМО нескінченну прокрутку
+            maxBoundsViscosity={1.0} // Робить так, щоб карта "билася" об край і не йшла далі
+            className="w-full h-full z-0"
+            zoomControl={false}
+        >
             <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; OpenStreetMap contributors'
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                noWrap={true} // Додатково кажемо Leaflet не малювати копії світу
             />
             <ZoomControl position="bottomright" />
             <MapEvents onBoundsChange={onBoundsChange} />
