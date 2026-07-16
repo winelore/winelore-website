@@ -21,11 +21,7 @@ function isNotFoundError(err: any): boolean {
     );
 }
 
-function isIgnorableError(err: any): boolean {
-    if (isNotFoundError(err)) return true;
-    if (err.message && err.message.includes('Replica is not started.')) return true;
-    return false;
-}
+
 
 function logGraphQLPipelineError(context: string, errors: any[], isFatal: boolean) {
     if (!errors || errors.length === 0) return;
@@ -151,7 +147,7 @@ const requester = async <R, V>(
     const { data, errors } = await response.json();
 
     if (errors) {
-        const filteredErrors = errors.filter((err: any) => !isIgnorableError(err));
+        const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
         if (filteredErrors.length > 0) {
             logGraphQLPipelineError('SDK requester', filteredErrors, !data);
             if (!data) {
