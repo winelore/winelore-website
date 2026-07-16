@@ -303,11 +303,6 @@ export default function WineLoreDashboard({
         router.push(`${pathname}?page=${pageNumber}`)
     }
 
-    const handleJumpToPage = (pageNumber: number) => {
-        setIsLoading(true)
-        router.push(`${pathname}?page=${pageNumber}`)
-    }
-
     useEffect(() => {
         setIsLoading(false)
     }, [initialCompetitions])
