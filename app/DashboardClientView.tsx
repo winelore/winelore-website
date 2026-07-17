@@ -9,11 +9,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
 
-const tabs = (t: any) => [
-  { id: "feed", label: t("common.feed"), icon: FileText },
-  { id: "competitions", label: t("common.competitions"), icon: Trophy },
-  { id: "wines", label: t("common.wines"), icon: Wine },
-]
+
 
 type CompetitionSeriesStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED" | "APPROVED" | "DRAFT" | "IN_REVIEW" | "PUBLISHED" | "SUSPENDED"
 
@@ -183,7 +179,6 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
 }
 
 type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
-type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
 
 interface ProducerDetails {
     id: string
@@ -195,7 +190,7 @@ interface Beverage {
     id: string
     name: string
     status: BeverageStatus
-    type?: BeverageType
+    type?: string
     typeId?: string
     producers: ProducerDetails[]
     originParts?: string[]
@@ -204,9 +199,10 @@ interface Beverage {
 function BeverageCard({ bev, typeMap }: { bev: Beverage; typeMap?: Record<string, string> }) {
     const { formatBeverageType } = useTranslation()
     
-    // Fallback: If we have a typeMap and bev.typeId, use the mapped name.
-    // Otherwise, try the old formatBeverageType(bev.type) if bev.type exists.
-    const displayType = (typeMap && bev.typeId && typeMap[bev.typeId]) || (bev.type ? formatBeverageType(bev.type) : null)
+    // Fallback: If we have a typeMap and bev.typeId, use the mapped code.
+    // Otherwise, try the old bev.type. Pass the code to formatBeverageType for translation.
+    const typeCode = (typeMap && bev.typeId && typeMap[bev.typeId]) || bev.type
+    const displayType = typeCode ? formatBeverageType(typeCode) : null
 
     return (
         <Link
@@ -245,15 +241,15 @@ export default function WineLoreDashboard({
                                           }: DashboardProps) {
   const searchParams = useSearchParams()
   const rawTab = searchParams.get("tab")
-  const initialTab = (rawTab === "beverages" ? "wines" : rawTab) as AppTabId || "competitions"
+  const initialTab = (rawTab === "wines" ? "beverages" : rawTab) as AppTabId || "competitions"
   const [activeTab, setActiveTab] = useState<AppTabId>(initialTab)
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
     let tabParam = searchParams.get("tab") as string
-    if (tabParam === "beverages") tabParam = "wines"
-    if (tabParam && ["competitions", "wines", "feed"].includes(tabParam)) {
+    if (tabParam === "wines") tabParam = "beverages"
+    if (tabParam && ["competitions", "beverages", "feed"].includes(tabParam)) {
       setActiveTab(tabParam as AppTabId)
     }
   }, [searchParams])
@@ -335,7 +331,7 @@ export default function WineLoreDashboard({
 
   return (
     <div className="flex h-screen flex-col bg-background">
-        <AppHeader activeTab={activeTab} onTabChange={setActiveTab} wineTab />
+        <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
         <main className="flex-1 overflow-auto p-6 flex flex-col relative">
             {isLoading && (
@@ -419,7 +415,7 @@ export default function WineLoreDashboard({
                 </>
             )}
 
-            {activeTab === "wines" && (
+            {activeTab === "beverages" && (
                 <>
                     <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1 transition-all duration-200 ${isAnimatingBeverages ? 'opacity-0 scale-[0.98] translate-y-2' : 'opacity-100 scale-100 translate-y-0'}`}>
                         {beveragesToDisplay?.map((bev) => (

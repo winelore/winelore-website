@@ -27,7 +27,6 @@ const formatEnumStatus = (status: string | undefined): string => {
 // INTERFACES
 // ====================================================================
 type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
-type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
 
 interface ProducerDetails {
     id: string
@@ -39,7 +38,7 @@ interface Beverage {
     id: string
     name: string
     status: BeverageStatus
-    type: BeverageType
+    type?: string
     producers: ProducerDetails[]
     originParts?: string[]
 }

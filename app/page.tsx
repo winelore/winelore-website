@@ -83,7 +83,7 @@ export default async function DashboardPage({
     try {
         const typesList = await getBeverageTypesAction();
         beverageTypesDict = typesList.reduce((acc, t) => {
-            acc[t.id] = t.name;
+            acc[t.id] = t.code; // Use code (e.g. "WINE") so frontend can translate it
             return acc;
         }, {} as Record<string, string>);
     } catch (e) {
