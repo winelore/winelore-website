@@ -647,18 +647,23 @@ export default function CompetitionClientView({
                                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
                                         {t("common.total")}: {initialData.commissions.length}
                                     </span>
-                                        <button
-                                            onClick={addCommission}
-                                            disabled={isMutating}
-                                            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 text-xs font-semibold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                        >
-                                            {isMutating ? (
-                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                            ) : (
-                                                <Plus className="w-3.5 h-3.5" />
-                                            )}
-                                            <span>{t("competition.addCommission")}</span>
-                                        </button>
+                                        {isHolder && (
+                                            <button
+                                                onClick={addCommission}
+                                                disabled={isMutating}
+                                                className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 text-xs font-semibold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                                            >
+                                                {isMutating ? (
+                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                ) : (
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                )}
+                                                <span>{t("competition.addCommission")}</span>
+                                            </button>
+                                        )}
+
+
+
                                     </div>
                                 </div>
 
