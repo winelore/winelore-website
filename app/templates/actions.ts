@@ -69,6 +69,28 @@ export async function getEvaluationTemplatesAction() {
                                 name
                                 description
                                 isRequired
+                                isResult
+                                ... on IntProperty {
+                                    intMinLimit: minLimit
+                                    intMaxLimit: maxLimit
+                                    intDefaultValue: defaultValue
+                                }
+                                ... on DoubleProperty {
+                                    doubleMinLimit: minLimit
+                                    doubleMaxLimit: maxLimit
+                                    doubleDefaultValue: defaultValue
+                                }
+                                ... on DiscreteNumbersProperty {
+                                    discreteAllowedValues: allowedValues
+                                    discreteDefaultValue: defaultValue
+                                }
+                                ... on EnumProperty {
+                                    enumAllowedValues: allowedValues
+                                    enumDefaultValue: defaultValue
+                                }
+                                ... on BooleanProperty {
+                                    boolDefaultValue: defaultValue
+                                }
                             }
                         }
                     }
@@ -95,6 +117,7 @@ export async function getEvaluationTemplatesAction() {
             name: item.template.name,
             owners: (item.template.owners as number[][] | null) ?? [],
             beverageType: item.template.beverageType?.name ?? item.template.beverageType?.code ?? "",
+            beverageTypeId: item.template.beverageType?.id ?? "",
             status: item.template.status,
             createdAt: item.template.createdAt,
             latestEdition: {
@@ -104,14 +127,22 @@ export async function getEvaluationTemplatesAction() {
                 categories: item.categories.map((cat: any) => ({
                     id: cat.id,
                     name: cat.name,
-                    properties: cat.properties.map((prop: any) => ({
-                        id: prop.id,
-                        code: prop.code,
-                        name: prop.name,
-                        description: prop.description,
-                        type: prop.__typename ? prop.__typename.replace("Property", "") : "Boolean",
-                        isRequired: prop.isRequired
-                    }))
+                    properties: cat.properties.map((prop: any) => {
+                        const typeName = prop.__typename ? prop.__typename.replace("Property", "") : "Boolean";
+                        return {
+                            id: prop.id,
+                            code: prop.code,
+                            name: prop.name,
+                            description: prop.description,
+                            type: typeName === "DiscreteNumbers" ? "Discrete" : typeName,
+                            isRequired: prop.isRequired,
+                            isResult: prop.isResult ?? false,
+                            minLimit: prop.intMinLimit ?? prop.doubleMinLimit ?? undefined,
+                            maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
+                            allowedValues: prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
+                            defaultValue: prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
+                        };
+                    })
                 }))
             }
         }));

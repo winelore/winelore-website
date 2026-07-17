@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Trash2, AlertCircle, Info, X, Star, GripVertical } from "lucide-react"
+import { Plus, Trash2, AlertCircle, Info, X, Star, GripVertical, Lock } from "lucide-react"
 import { createGlobalTemplateAction, updateGlobalTemplateAction, getBeverageTypesAction, getTemplateByIdAction } from "./actions"
 
 interface TemplateCreatorModalProps {
@@ -166,7 +166,8 @@ export default function TemplateCreatorModal({
                         if (data) {
                             setTemplateName(data.name)
                             
-                            const matchedType = types.find(t => t.name === data.beverageType || t.code === data.beverageType)
+                            const matchedType = types.find(t => t.id === (data as any).beverageTypeId)
+                                ?? types.find(t => t.name === data.beverageType || t.code === data.beverageType)
                             if (matchedType) {
                                 setSelectedBeverageTypeId(matchedType.id)
                             } else if (types.length > 0) {
@@ -185,11 +186,12 @@ export default function TemplateCreatorModal({
                                         type: p.type as any,
                                         description: p.description || "",
                                         isRequired: p.isRequired ?? true,
-                                        isResult: p.isResult || false,
-                                        defaultValue: p.defaultValue || "",
-                                        minLimit: p.minLimit,
-                                        maxLimit: p.maxLimit,
-                                        allowedValuesStr: p.allowedValues ? p.allowedValues.join(", ") : "",
+                                        // isResult, minLimit, maxLimit, allowedValues — нормалізовані в actions.ts
+                                        isResult: !!(p.isResult ?? false),
+                                        defaultValue: p.defaultValue !== undefined && p.defaultValue !== null ? String(p.defaultValue) : "",
+                                        minLimit: p.minLimit !== undefined && p.minLimit !== null ? Number(p.minLimit) : undefined,
+                                        maxLimit: p.maxLimit !== undefined && p.maxLimit !== null ? Number(p.maxLimit) : undefined,
+                                        allowedValuesStr: Array.isArray(p.allowedValues) ? p.allowedValues.join(", ") : "",
                                         expressionStr: p.expressionRaw || ""
                                     }))
                                 }))
@@ -580,25 +582,45 @@ export default function TemplateCreatorModal({
             <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6">
                 <div className="flex gap-3 flex-wrap">
                     <div className="flex flex-col gap-1.5 flex-1 min-w-64">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                             Назва темплейту
+                            {!!initialTemplateId && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 normal-case tracking-normal">
+                                    <Lock className="w-2.5 h-2.5" /> не змінюється в ізданіях
+                                </span>
+                            )}
                         </label>
                         <input
                             type="text"
+                            disabled={!!initialTemplateId}
                             value={templateName}
                             onChange={(e) => setTemplateName(e.target.value)}
                             placeholder="Наприклад: Червоні вина дегустація..."
-                            className="px-4 py-2.5 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50/30 transition-all"
+                            className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
+                                initialTemplateId
+                                    ? "border-amber-200 bg-amber-50/40 opacity-75 cursor-not-allowed text-slate-500"
+                                    : "border-slate-200 bg-slate-50/30"
+                            }`}
                         />
                     </div>
                     <div className="flex flex-col gap-1.5 min-w-[200px]">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                             Тип напою
+                            {!!initialTemplateId && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 normal-case tracking-normal">
+                                    <Lock className="w-2.5 h-2.5" /> не змінюється в ізданіях
+                                </span>
+                            )}
                         </label>
                         <select
+                            disabled={!!initialTemplateId}
                             value={selectedBeverageTypeId}
                             onChange={(e) => setSelectedBeverageTypeId(e.target.value)}
-                            className="px-4 py-2.5 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50/30 transition-all cursor-pointer"
+                            className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
+                                initialTemplateId
+                                    ? "border-amber-200 bg-amber-50/40 opacity-75 cursor-not-allowed text-slate-500"
+                                    : "border-slate-200 bg-slate-50/30 cursor-pointer"
+                            }`}
                         >
                             {beverageTypes.length === 0 && <option value="">Завантаження...</option>}
                             {beverageTypes.map((bt) => (
@@ -700,173 +722,82 @@ export default function TemplateCreatorModal({
                                             onDragOver={(e) => handlePropDragOver(e, cat.id, propIdx)}
                                             onDrop={() => handlePropDrop(cat.id, propIdx)}
                                             onDragEnd={handlePropDragEnd}
-                                            className={`flex flex-col md:flex-row gap-4 items-start md:items-center bg-white p-4 border rounded-xl relative transition-all ${
-                                                dragOverPropKey?.catId === cat.id && dragOverPropKey?.propIdx === propIdx && (dragPropKey.current?.catId !== cat.id || dragPropKey.current?.propIdx !== propIdx)
-                                                    ? "border-indigo-300 bg-indigo-50/20 scale-[1.005]"
-                                                    : errorPropIds.has(p.id)
-                                                        ? "border-rose-200 bg-rose-50/10"
-                                                        : "border-slate-100 hover:border-slate-200"
+                                            className={`grid grid-cols-[auto,1fr,auto,auto,auto,auto,auto] gap-3 items-center p-3 rounded-2xl transition-all ${
+                                                dragOverPropKey?.catId === cat.id && dragOverPropKey?.propIdx === propIdx
+                                                    ? "bg-indigo-50 ring-2 ring-indigo-200"
+                                                    : "bg-white hover:bg-slate-50"
                                             }`}
                                         >
-                                            <div className="absolute top-4 right-4 md:static flex items-center gap-2 shrink-0 self-end md:self-auto">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handlePropertyChange(cat.id, p.id, { isResult: !p.isResult })}
-                                                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                                                        p.isResult 
-                                                            ? "text-amber-500 bg-amber-50 hover:bg-amber-100" 
-                                                            : "text-slate-300 hover:text-amber-500 hover:bg-slate-50"
-                                                    }`}
-                                                    title={p.isResult ? "Результуючий показник" : "Зробити результуючим"}
-                                                >
-                                                    <Star className={`w-4 h-4 ${p.isResult ? "fill-amber-500" : ""}`} />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveProperty(cat.id, p.id)}
-                                                    className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-                                                    title="Видалити показник"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                            <div className="cursor-grab active:cursor-grabbing text-slate-300">
+                                                <GripVertical className="w-4 h-4" />
                                             </div>
-
-                                            <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 transition-colors shrink-0 hidden md:block">
-                                                <GripVertical className="w-3.5 h-3.5" />
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 flex-1 w-full">
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[9px] font-bold text-slate-400 uppercase">Назва</label>
+                                            <input
+                                                type="text"
+                                                value={p.name}
+                                                onChange={(e) => handlePropertyChange(cat.id, p.id, { name: e.target.value })}
+                                                placeholder="Назва показника..."
+                                                className={`px-3 py-1.5 border rounded-lg text-sm font-medium ${
+                                                    errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
+                                                }`}
+                                            />
+                                            <input
+                                                type="text"
+                                                value={p.code}
+                                                onFocus={() => handleCodeFocus(p.id, p.code)}
+                                                onBlur={(e) => handleCodeCommit(p.id, e.target.value)}
+                                                onChange={(e) => handlePropertyChange(cat.id, p.id, { code: e.target.value })}
+                                                placeholder="код"
+                                                className={`w-24 px-3 py-1.5 border rounded-lg text-sm font-mono ${
+                                                    isCodeDuplicate ? "border-rose-500 bg-rose-50" : "border-slate-200"
+                                                }`}
+                                            />
+                                            <select
+                                                value={p.type}
+                                                onChange={(e) => handlePropertyChange(cat.id, p.id, { type: e.target.value as any })}
+                                                className="px-2 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold"
+                                            >
+                                                <option value="Int">Int</option>
+                                                <option value="Double">Double</option>
+                                                <option value="Discrete">Discrete</option>
+                                                <option value="Enum">Enum</option>
+                                                <option value="Boolean">Boolean</option>
+                                                <option value="Smart">Smart</option>
+                                            </select>
+                                            
+                                            {(p.type === "Int" || p.type === "Double") && (
+                                                <>
                                                     <input
-                                                        type="text"
-                                                        value={p.name}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { name: e.target.value })}
-                                                        placeholder="Наприклад: Інтенсивність"
-                                                        className={`px-3 py-1.5 border rounded-xl text-xs font-semibold focus:outline-hidden text-slate-800 ${
-                                                            errorPropIds.has(p.id) && !p.name.trim() ? "border-rose-300 bg-rose-50/10" : "border-slate-200"
-                                                        }`}
+                                                        type="number"
+                                                        value={p.minLimit ?? ""}
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { minLimit: Number(e.target.value) })}
+                                                        placeholder="мін"
+                                                        className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
                                                     />
-                                                </div>
-
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[9px] font-bold text-slate-400 uppercase">Код (для формул)</label>
                                                     <input
-                                                        type="text"
-                                                        value={p.code}
-                                                        onFocus={() => handleCodeFocus(p.id, p.code)}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { code: e.target.value })}
-                                                        onBlur={(e) => handleCodeCommit(p.id, e.target.value)}
-                                                        placeholder="intens"
-                                                        className={`px-3 py-1.5 border rounded-xl text-xs font-mono font-bold focus:outline-hidden text-slate-700 ${
-                                                            isCodeDuplicate || (errorPropIds.has(p.id) && !p.code.trim()) ? "border-rose-300 bg-rose-50/30 text-rose-700" : "border-slate-200"
-                                                        }`}
+                                                        type="number"
+                                                        value={p.maxLimit ?? ""}
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { maxLimit: Number(e.target.value) })}
+                                                        placeholder="макс"
+                                                        className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
                                                     />
-                                                </div>
+                                                </>
+                                            )}
 
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[9px] font-bold text-slate-400 uppercase">Тип</label>
-                                                    <select
-                                                        value={p.type}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { type: e.target.value as any })}
-                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-hidden text-slate-800 cursor-pointer bg-white"
-                                                    >
-                                                        <option value="Int">Ціле число (Int)</option>
-                                                        <option value="Double">Дробове (Double)</option>
-                                                        <option value="Boolean">Так/Ні (Boolean)</option>
-                                                        <option value="Discrete">Дискретні числа</option>
-                                                        <option value="Enum">Список рядків (Enum)</option>
-                                                        <option value="Smart">Розумна оцінка (Формула)</option>
-                                                    </select>
-                                                </div>
-
-                                                {(p.type === "Int" || p.type === "Double") && (
-                                                    <div className="flex gap-2 col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2">
-                                                        <div className="flex flex-col gap-1 flex-1">
-                                                            <label className="text-[9px] font-bold text-slate-400 uppercase">Мін</label>
-                                                            <input
-                                                                type="number"
-                                                                step={p.type === "Double" ? "0.1" : "1"}
-                                                                value={p.minLimit ?? ""}
-                                                                onChange={(e) => handlePropertyChange(cat.id, p.id, { minLimit: e.target.value !== "" ? Number(e.target.value) : undefined })}
-                                                                placeholder="0"
-                                                                className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-hidden text-slate-800 w-full"
-                                                            />
-                                                        </div>
-                                                        <div className="flex flex-col gap-1 flex-1">
-                                                            <label className="text-[9px] font-bold text-slate-400 uppercase">Макс</label>
-                                                            <input
-                                                                type="number"
-                                                                step={p.type === "Double" ? "0.1" : "1"}
-                                                                value={p.maxLimit ?? ""}
-                                                                onChange={(e) => handlePropertyChange(cat.id, p.id, { maxLimit: e.target.value !== "" ? Number(e.target.value) : undefined })}
-                                                                placeholder="100"
-                                                                className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-hidden text-slate-800 w-full"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {(p.type === "Discrete" || p.type === "Enum") && (
-                                                    <div className="flex flex-col gap-1 col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2">
-                                                        <label className="text-[9px] font-bold text-slate-400 uppercase">
-                                                            {p.type === "Discrete" ? "Дозволені числа (через кому)" : "Варіанти (через кому)"}
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={p.allowedValuesStr}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { allowedValuesStr: e.target.value })}
-                                                            placeholder={p.type === "Discrete" ? "0, 0.5, 1, 1.5, 2" : "LOW, MEDIUM, HIGH"}
-                                                            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-hidden text-slate-800"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {p.type === "Smart" && (
-                                                    <div className="flex flex-col gap-1 col-span-1 sm:col-span-2 md:col-span-1 lg:col-span-2">
-                                                        <label className="text-[9px] font-bold text-indigo-500 uppercase flex items-center gap-1">
-                                                            Формула обчислення
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={p.expressionStr}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { expressionStr: e.target.value })}
-                                                            placeholder="напр: aroma * 0.4 + taste * 0.6"
-                                                            className="px-3 py-1.5 border border-indigo-200 bg-indigo-50/10 rounded-xl text-xs font-mono font-bold focus:outline-hidden text-indigo-900 placeholder:text-slate-300"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {p.type !== "Int" && p.type !== "Double" && p.type !== "Discrete" && p.type !== "Enum" && p.type !== "Smart" && (
-                                                    <div className="hidden lg:block lg:col-span-2" />
-                                                )}
-
-                                                <div className="flex flex-col gap-1 col-span-1 sm:col-span-2 md:col-span-4 lg:col-span-5">
-                                                    <label className="text-[9px] font-bold text-slate-400 uppercase">Опис / Підказка для експерта</label>
-                                                    <input
-                                                        type="text"
-                                                        value={p.description}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { description: e.target.value })}
-                                                        placeholder="Опишіть критерії оцінювання для цього показника..."
-                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-medium focus:outline-hidden text-slate-700 w-full"
-                                                    />
-                                                </div>
-
-                                                {p.type !== "Smart" && (
-                                                    <div className="flex items-center gap-2 mt-1.5 col-span-1 sm:col-span-2">
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`req_${p.id}`}
-                                                            checked={p.isRequired}
-                                                            onChange={(e) => handlePropertyChange(cat.id, p.id, { isRequired: e.target.checked })}
-                                                            className="w-3.5 h-3.5 border-slate-300 rounded-sm text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                                                        />
-                                                        <label htmlFor={`req_${p.id}`} className="text-[11px] font-bold text-slate-500 select-none cursor-pointer">
-                                                            Обов'язковий показник
-                                                        </label>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePropertyChange(cat.id, p.id, { isResult: !p.isResult })}
+                                                className={`p-2 rounded-lg ${p.isResult ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-400"}`}
+                                                title="Позначити як результуючий показник"
+                                            >
+                                                <Star className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveProperty(cat.id, p.id)}
+                                                className="p-2 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     )
                                 })}
@@ -876,12 +807,11 @@ export default function TemplateCreatorModal({
                 </div>
             </div>
 
-            <div className="shrink-0 flex items-center justify-end gap-3 px-8 py-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="shrink-0 p-8 border-t border-slate-100 bg-white flex justify-end gap-3">
                 <button
                     type="button"
                     onClick={onClose}
-                    disabled={isSaving}
-                    className="px-5 py-2.5 border border-slate-200 hover:bg-slate-100 rounded-xl text-sm font-bold text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
+                    className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-2xl transition-colors"
                 >
                     Скасувати
                 </button>
@@ -889,9 +819,9 @@ export default function TemplateCreatorModal({
                     type="button"
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-400 text-white rounded-xl text-sm font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                    className="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition-colors disabled:opacity-50"
                 >
-                    {isSaving ? "Збереження..." : initialTemplateId ? "Зберегти зміни" : "Створити шаблон"}
+                    {isSaving ? "Збереження..." : "Зберегти зміни"}
                 </button>
             </div>
         </div>
