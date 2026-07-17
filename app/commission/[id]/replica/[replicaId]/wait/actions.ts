@@ -122,13 +122,20 @@ export async function getPanelResultsAction(commissionId: string, replicaId: str
             (c: any) => c.panelId === panelId
         );
         const panelCandidateIds = new Set(filteredCommission.candidates.map((c: any) => c.id));
+        async function runInChunks<T>(items: T[], chunkSize: number, fn: (item: T) => Promise<void>) {
+            for (let i = 0; i < items.length; i += chunkSize) {
+                const chunk = items.slice(i, i + chunkSize);
+                await Promise.all(chunk.map(fn));
+            }
+        }
         if (filteredCommission.replicas) {
             for (const replica of filteredCommission.replicas) {
                 if (replica.replicaCandidates) {
                     replica.replicaCandidates = replica.replicaCandidates.filter(
                         (rc: any) => panelCandidateIds.has(rc.candidate?.id)
                     );
-                    for (const rc of replica.replicaCandidates) {
+
+                    await runInChunks(replica.replicaCandidates, 10, async (rc: any) => {
                         try {
                             const evs = await getEvaluationsForCandidateAction(rc.id);
                             rc.evaluations = evs;
@@ -136,10 +143,11 @@ export async function getPanelResultsAction(commissionId: string, replicaId: str
                             console.error(`[wait] Failed to fetch evaluations for replica candidate ${rc.id}:`, err);
                             throw err;
                         }
-                    }
+                    });
                 }
             }
         }
+
         // Fetch awards
         const beverageIds = Array.from(
             new Set(
@@ -148,7 +156,8 @@ export async function getPanelResultsAction(commissionId: string, replicaId: str
                     .filter(Boolean),
             )
         ) as string[];
-        for (const beverageId of beverageIds) {
+
+        await runInChunks(beverageIds, 10, async (beverageId: string) => {
             try {
                 const res = await fetchGraphQLRaw<any, { beverageId: string }>(
                     GET_BEVERAGE_AWARDS,
@@ -159,8 +168,7 @@ export async function getPanelResultsAction(commissionId: string, replicaId: str
                 console.error(`[wait] Failed to fetch awards for ${beverageId}:`, err);
                 throw err;
             }
-        }
-
+        });
         return {
             commission: filteredCommission,
             awardsMap,

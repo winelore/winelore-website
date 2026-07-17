@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Search } from "lucide-react";
 import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
@@ -79,6 +79,10 @@ export default function WaitPanelResults({
     } | null>(null);
     const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
     const [myAuid, setMyAuid] = useState<string | null>(null);
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortMode, setSortMode] = useState<"score" | "order">("order");
+
     useEffect(() => {
         const auidStr = Cookies.get("auid");
         if (auidStr) setMyAuid(auidStr);
@@ -177,6 +181,7 @@ export default function WaitPanelResults({
             : {},
         [data, policyOutputProperties],
     );
+    const sortScorePropertyCode = policyOutputProperties[0]?.code ?? null;
     const candidateHasEvaluations = useCallback(
         (candidateId: string): boolean => {
             if (!data?.commission?.replicas) return false;
@@ -229,10 +234,18 @@ export default function WaitPanelResults({
         },
         [data, replicaId, myAuid],
     );
+    const candidateOrderIndex = useMemo(() => {
+        const map = new Map<string, number>();
+        if (data?.commission?.candidates) {
+            data.commission.candidates.forEach((candidate: any, index: number) => {
+                map.set(candidate.id, index + 1);
+            });
+        }
+        return map;
+    }, [data?.commission?.candidates]);
     const candidateRows = useMemo((): CandidateRow[] => {
         if (!data?.commission) return [];
         const panelCandidates = data.commission.candidates.filter((c: any) => c.panelId === panelId);
-
         return panelCandidates.map((candidate: any) => {
             const beverageId = candidate.sample?.batch?.beverage?.id;
             const beverageName =
@@ -272,75 +285,144 @@ export default function WaitPanelResults({
         candidateHasEvaluations,
         t,
     ]);
+    const filteredAndSortedRows = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        let rows: CandidateRow[] = candidateRows;
+        if (query) {
+            rows = rows.filter((row) => {
+                const code = (row.candidate.anonymizedCode || "").toLowerCase();
+                const beverage = row.beverageName.toLowerCase();
+                const producer = resolveProducerName(row.producerAuids).toLowerCase();
+                return (
+                    code.includes(query) ||
+                    beverage.includes(query) ||
+                    producer.includes(query)
+                );
+            });
+        }
+        if (sortMode === "score" && sortScorePropertyCode) {
+            rows = [...rows].sort((a, b) => {
+                const aScore = a.outcomeOverall?.[sortScorePropertyCode]?.numeric;
+                const bScore = b.outcomeOverall?.[sortScorePropertyCode]?.numeric;
+                if (aScore === null && bScore === null) return 0;
+                if (aScore === null || aScore === undefined) return 1;
+                if (bScore === null || bScore === undefined) return -1;
+                return bScore - aScore;
+            });
+        } else if (sortMode === "order") {
+            rows = [...rows].sort((a, b) => {
+                const idxA = candidateOrderIndex.get(a.candidate.id) ?? Number.MAX_SAFE_INTEGER;
+                const idxB = candidateOrderIndex.get(b.candidate.id) ?? Number.MAX_SAFE_INTEGER;
+                return idxA - idxB;
+            });
+        }
+        return rows;
+    }, [
+        candidateRows,
+        searchQuery,
+        sortMode,
+        candidateOrderIndex,
+        resolveProducerName,
+        sortScorePropertyCode,
+    ]);
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[2rem] shadow-sm border border-slate-100">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
-                <p className="text-slate-500 font-medium">{t("common.loading")}...</p>
+                <p className="text-slate-500 font-medium">{t("common.loading")}</p>
             </div>
         );
     }
+
     if (!data) {
-        return null; // Could show error state
+        return null;
     }
+
     function OutcomePropertyLabel({ code }: { code: string }) {
         const label = outcomePropertyMap[code]?.name ?? code;
         return <TranslatedText text={label} />;
     }
     return (
         <section className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
-            <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h2 className="text-lg font-bold text-slate-800">
-                    {t("commission.results.resultsTitle")}: {panelName}
-                </h2>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">
-                        {candidateRows.length} {t("commission.results.candidates")}
-                    </span>
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <h2 className="text-lg font-bold text-slate-800">
+                        {t("commission.results.resultsTitle")}: {panelName}
+                    </h2>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder={t("commission.results.searchPlaceholder")}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 pr-4 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-full sm:w-56 transition-all bg-white"
+                        />
+                    </div>
+
+                    {/* Sort */}
+                    <div className="flex items-center gap-1 bg-slate-100/50 border border-slate-200 p-1 rounded-lg shrink-0">
+                        <button
+                            onClick={() => setSortMode("score")}
+                            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                                sortMode === "score"
+                                    ? "bg-indigo-600 text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                            }`}
+                        >
+                            {t("commission.results.sortByScore")}
+                        </button>
+                        <button
+                            onClick={() => setSortMode("order")}
+                            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                                sortMode === "order"
+                                    ? "bg-indigo-600 text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                            }`}
+                        >
+                            {t("commission.results.sortByOrder")}
+                        </button>
+                    </div>
                 </div>
             </div>
-            <p className="px-6 py-2 text-xs text-slate-400 border-b border-slate-50 bg-slate-50/50">
+            <p className="px-6 py-2 text-xs text-slate-400 border-b border-slate-50 bg-slate-50/80">
                 {t("commission.results.clickToExpand")}
             </p>
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-100">
+                        {sortMode === "order" && (
+                            <th className="py-4 px-4 font-semibold text-slate-600 text-sm w-16 text-center">
+                                {t("commission.results.candidateOrder")}
+                            </th>
+                        )}
                         <th className="py-4 px-6 font-semibold text-slate-600 text-sm">
                             {t("commission.results.codeBeverage")}
                         </th>
-
-                        {/* Column for My Score */}
-                        <th className="py-4 px-6 font-semibold text-slate-600 text-sm text-center border-l border-slate-100 min-w-[8rem]">
-                            {t("evaluation.myScore")}
-                        </th>
-
                         {policyOutputProperties.map((prop) => (
                             <th
                                 key={prop.code}
-                                className="py-4 px-6 font-semibold text-slate-600 text-sm text-center border-l border-slate-100 min-w-[8rem]"
+                                className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 bg-indigo-50/30 min-w-[8rem]"
                             >
                                 <OutcomePropertyLabel code={prop.code} />
-                                <div className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase">{t("commission.results.overallAverage")}</div>
                             </th>
                         ))}
-                        <th className="py-4 px-6 font-semibold text-slate-600 text-sm border-l border-slate-100 w-1/4">
+                        <th className="py-4 px-6 font-semibold text-slate-600 text-sm border-l border-slate-100 w-1/2">
                             {t("commission.results.awards")}
                         </th>
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                    {candidateRows.map((row) => {
+                    {filteredAndSortedRows.map((row) => {
                         const isExpanded = expandedCandidateId === row.candidate.id;
                         const numAvgCols = policyOutputProperties.length > 0 ? policyOutputProperties.length : 1;
-                        const colSpan = 2 + numAvgCols + 1; // CodeBeverage(1) + MyScore(1) + Average(numAvgCols) + Awards(1)
-
-                        // Parse My Score
-                        let myTotalScore = "-";
-                        if (row.myEvaluation?.scores && data.propertyMap) {
-                            const totalVal = parseEvaluationTotal(row.myEvaluation.scores, data.propertyMap);
-                            if (totalVal !== null) myTotalScore = Number(totalVal).toFixed(2);
-                        }
+                        const sessionOrder = candidateOrderIndex.get(row.candidate.id);
+                        const colSpan = 1 + numAvgCols + 1 + (sortMode === "order" ? 1 : 0);
                         return (
                             <React.Fragment key={row.candidate.id}>
                                 <tr
@@ -356,6 +438,11 @@ export default function WaitPanelResults({
                                         }
                                     }}
                                 >
+                                    {sortMode === "order" && (
+                                        <td className="py-4 px-4 text-center font-bold text-slate-500 text-sm">
+                                            {sessionOrder != null ? `#${sessionOrder}` : "—"}
+                                        </td>
+                                    )}
                                     <td className="py-4 px-6">
                                         <div className="flex items-center gap-2">
                                             {isExpanded ? (
@@ -381,17 +468,6 @@ export default function WaitPanelResults({
                                             </div>
                                         </div>
                                     </td>
-
-                                    {/* My Score */}
-                                    <td className="py-4 px-6 text-center border-l border-slate-50 font-bold text-lg text-slate-700">
-                                        {myTotalScore}
-                                        {row.myEvaluation?.isComplete === false && (
-                                            <span className="block mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mx-auto">
-                                                    INC
-                                            </span>
-                                        )}
-                                    </td>
-
                                     {/* Average Score */}
                                     {policyOutputProperties.map((prop) => {
                                         const outcome = row.outcomeOverall?.[prop.code];
@@ -409,7 +485,6 @@ export default function WaitPanelResults({
                                             </td>
                                         );
                                     })}
-
                                     <td className="py-4 px-6 border-l border-slate-50">
                                         <div className="flex flex-wrap gap-1.5">
                                             {row.awards.map((assignment: any) => (
@@ -524,9 +599,9 @@ export default function WaitPanelResults({
                             </React.Fragment>
                         );
                     })}
-                    {candidateRows.length === 0 && (
+                    {filteredAndSortedRows.length === 0 && (
                         <tr>
-                            <td colSpan={2 + (policyOutputProperties.length > 0 ? policyOutputProperties.length : 1) + 1} className="py-12 text-center text-slate-400 text-sm">
+                            <td colSpan={1 + (policyOutputProperties.length > 0 ? policyOutputProperties.length : 1) + 1} className="py-12 text-center text-slate-400 text-sm">
                                 {t("commission.emptyPanel")}
                             </td>
                         </tr>

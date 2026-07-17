@@ -3,14 +3,12 @@ export function parseEvaluationTotal(
     propertyMap: Record<string, { isResult: boolean }> | undefined | null,
 ): number | null {
     if (!scores?.length || !propertyMap) return null
-    const resultScores = scores.filter((s) => propertyMap[s.code]?.isResult)
-    if (resultScores.length === 0) return null
-
-    const numericResults = resultScores.filter(s => s.value != null && !isNaN(parseFloat(s.value)))
-    if (numericResults.length === 0) return null
-    // Fall back to the last numeric result score (usually the overall total)
-    const resultScore = numericResults[numericResults.length - 1]
-    return parseFloat(resultScore.value)
+    if (!scores?.length || !propertyMap) return null
+    const resultScore = scores.find((s) => propertyMap[s.code]?.isResult)
+    if (resultScore?.value != null && !isNaN(parseFloat(resultScore.value))) {
+        return parseFloat(resultScore.value)
+    }
+    return null
 }
 
 export function parseEvaluationTotals(
