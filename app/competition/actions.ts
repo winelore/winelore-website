@@ -164,3 +164,74 @@ export async function getCompetitionSeriesListAction() {
     }
 }
 
+interface CreateCommissionParams {
+    competitionId: string;
+    name: string;
+    plannedStartDate?: string; // ISO string, optional
+    plannedEndDate?: string;   // ISO string, optional
+    wineJumperMiniGameEnabled?: boolean;
+    voiceCommentsEnabled?: boolean;
+    propertyCommentsEnabled?: boolean;
+    beverageOriginDuringEvaluationEnabled?: boolean;
+}
+
+async function executeGraphQL(query: string, variables: any) {
+    const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query, variables }),
+        cache: 'no-store'
+    });
+
+    if (!response.ok) {
+        throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const json = await response.json();
+    if (json.errors && json.errors.length > 0) {
+        throw new Error(json.errors[0].message);
+    }
+    return json.data;
+}
+
+export async function createCommission(params: CreateCommissionParams) {
+    try {
+        const createCommissionMutation = `
+            mutation CreateCommission($input: CreateCommissionInput!) {
+                createCommission(input: $input) {
+                    id
+                    name
+                }
+            }
+        `;
+
+        const plannedDates = (params.plannedStartDate || params.plannedEndDate)
+            ? {
+                start: params.plannedStartDate ? new Date(params.plannedStartDate).toISOString() : null,
+                end: params.plannedEndDate ? new Date(params.plannedEndDate).toISOString() : null,
+            }
+            : null;
+
+        const data = await executeGraphQL(createCommissionMutation, {
+            input: {
+                competitionId: params.competitionId,
+                name: params.name,
+                plannedDates,
+                wineJumperMiniGameEnabled: params.wineJumperMiniGameEnabled ?? false,
+                voiceCommentsEnabled: params.voiceCommentsEnabled ?? false,
+                propertyCommentsEnabled: params.propertyCommentsEnabled ?? false,
+                beverageOriginDuringEvaluationEnabled: params.beverageOriginDuringEvaluationEnabled ?? false,
+            }
+        });
+
+        const commission = data?.createCommission;
+        if (!commission?.id) throw new Error("Failed to create commission.");
+
+        return { success: true, commission };
+    } catch (error: any) {
+        console.error("Failed to create commission:", error);
+        return { success: false, error: error.message || "Internal Server Error" };
+    }
+}

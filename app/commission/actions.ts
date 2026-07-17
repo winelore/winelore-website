@@ -179,7 +179,7 @@ export async function getCommissionDataAction(commissionId: string) {
 
         if (!isValidTemplate) {
             if (commission.status === "DRAFT" || commission.status === "PLANNED") {
-                console.error("❌ Failed to bootstrap template edition:", bootstrapErr.message);
+                console.warn("⚠️ Commission has no valid template edition assigned yet.");
                 templateEdition = null;
             } else {
                 console.warn(`⚠️ Skipping template bootstrap: commission is in ${commission.status} status and cannot accept new templates.`);
