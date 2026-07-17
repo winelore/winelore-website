@@ -304,9 +304,9 @@ export default function WaitPanelResults({
             rows = [...rows].sort((a, b) => {
                 const aScore = a.outcomeOverall?.[sortScorePropertyCode]?.numeric;
                 const bScore = b.outcomeOverall?.[sortScorePropertyCode]?.numeric;
-                if (aScore === null && bScore === null) return 0;
-                if (aScore === null || aScore === undefined) return 1;
-                if (bScore === null || bScore === undefined) return -1;
+                if (aScore == null && bScore == null) return 0;
+                if (aScore == null) return 1;
+                if (bScore == null) return -1;
                 return bScore - aScore;
             });
         } else if (sortMode === "order") {
@@ -601,8 +601,14 @@ export default function WaitPanelResults({
                     })}
                     {filteredAndSortedRows.length === 0 && (
                         <tr>
-                            <td colSpan={1 + (policyOutputProperties.length > 0 ? policyOutputProperties.length : 1) + 1} className="py-12 text-center text-slate-400 text-sm">
-                                {t("commission.emptyPanel")}
+                            <td
+                                colSpan={2 + (policyOutputProperties.length > 0 ? policyOutputProperties.length : 1) + (sortMode === "order" ? 1 : 0)}
+                                className="py-12 text-center text-slate-400 text-sm"
+                            >
+                                {searchQuery.trim() !== ""
+                                    ? t("commission.results.searchPlaceholder")
+                                    : t("commission.emptyPanel")
+                                }
                             </td>
                         </tr>
                     )}
