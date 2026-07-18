@@ -152,7 +152,6 @@ function CompetitionCard({ comp }: { comp: Competition }) {
 }
 
 export default function MyCompetitionsClientView({ initialData, nextCursor, nextHistory, prevCursor, prevHistory, hasPrev, hasNext, currentPage }: MyCompetitionsProps) {
-    const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [currentAuid, setCurrentAuid] = useState<number | null>(null)
     const { t } = useTranslation()
     const router = useRouter()
@@ -187,7 +186,7 @@ export default function MyCompetitionsClientView({ initialData, nextCursor, next
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            <AppHeader activeTab="none" />
 
             <main className="flex-1 overflow-auto p-6 flex flex-col relative">
                 {isLoading && (

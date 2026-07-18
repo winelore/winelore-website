@@ -255,15 +255,14 @@ export default function WineLoreDashboard({
   }, [searchParams])
   const [isLoading, setIsLoading] = useState(false)
   const [currentBeveragePage, setCurrentBeveragePage] = useState(1)
-  const [isAnimatingBeverages, setIsAnimatingBeverages] = useState(false)
   const beveragesPerPage = 16
 
   const changeBeveragePage = (newPage: number) => {
-      setIsAnimatingBeverages(true)
+      setIsLoading(true)
       setTimeout(() => {
           setCurrentBeveragePage(newPage)
-          setIsAnimatingBeverages(false)
-      }, 200)
+          setIsLoading(false)
+      }, 100)
   }
 
   // Fetch usernames for all competition holders on the dashboard
@@ -417,7 +416,7 @@ export default function WineLoreDashboard({
 
             {activeTab === "beverages" && (
                 <>
-                    <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1 transition-all duration-200 ${isAnimatingBeverages ? 'opacity-0 scale-[0.98] translate-y-2' : 'opacity-100 scale-100 translate-y-0'}`}>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
                         {beveragesToDisplay?.map((bev) => (
                             <BeverageCard
                                 key={bev.id}
@@ -445,7 +444,7 @@ export default function WineLoreDashboard({
                         <div className="mt-2 flex items-center justify-center gap-3">
                             <button
                                 onClick={() => changeBeveragePage(currentBeveragePage - 1)}
-                                disabled={!hasPrevBeveragePage || isAnimatingBeverages}
+                                disabled={!hasPrevBeveragePage || isLoading}
                                 className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
                             >
                                 <ChevronLeft className="h-5 w-5" />
@@ -458,7 +457,7 @@ export default function WineLoreDashboard({
                                     <button
                                         key={i}
                                         onClick={() => changeBeveragePage(p as number)}
-                                        disabled={isAnimatingBeverages || p === currentBeveragePage}
+                                        disabled={isLoading || p === currentBeveragePage}
                                         className={`flex items-center justify-center h-10 w-10 rounded-full text-sm font-semibold transition-all duration-300 shadow-xl ${
                                             p === currentBeveragePage
                                                 ? "bg-indigo-600 text-white shadow-indigo-200/50 pointer-events-none"
@@ -472,7 +471,7 @@ export default function WineLoreDashboard({
 
                             <button
                                 onClick={() => changeBeveragePage(currentBeveragePage + 1)}
-                                disabled={!hasNextBeveragePage || isAnimatingBeverages}
+                                disabled={!hasNextBeveragePage || isLoading}
                                 className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
                             >
                                 <ChevronRight className="h-5 w-5" />

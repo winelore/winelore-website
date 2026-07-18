@@ -12,7 +12,7 @@ import { useEffect, useState } from "react"
 import Cookies from "js-cookie"
 import { getUsernamesAction } from "@/app/userActions"
 
-export type AppTabId = "feed" | "competitions" | "wines" | "beverages"
+export type AppTabId = "feed" | "competitions" | "wines" | "beverages" | "none"
 
 interface AppHeaderProps {
   activeTab: AppTabId
