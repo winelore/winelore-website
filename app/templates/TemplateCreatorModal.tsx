@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Trash2, AlertCircle, Info, X, Star, GripVertical, Lock } from "lucide-react"
+import { Plus, Trash2, AlertCircle, X, Star, GripVertical } from "lucide-react"
 import { createGlobalTemplateAction, updateGlobalTemplateAction, getBeverageTypesAction, getTemplateByIdAction } from "./actions"
 
 interface TemplateCreatorModalProps {
@@ -585,8 +585,8 @@ export default function TemplateCreatorModal({
                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                             Назва темплейту
                             {!!initialTemplateId && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 normal-case tracking-normal">
-                                    <Lock className="w-2.5 h-2.5" /> не змінюється в ізданіях
+                                <span className="text-[10px] font-medium text-slate-400 normal-case tracking-normal">
+                                    (лише для читання)
                                 </span>
                             )}
                         </label>
@@ -596,10 +596,10 @@ export default function TemplateCreatorModal({
                             value={templateName}
                             onChange={(e) => setTemplateName(e.target.value)}
                             placeholder="Наприклад: Червоні вина дегустація..."
-                            className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
+                            className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
                                 initialTemplateId
-                                    ? "border-amber-200 bg-amber-50/40 opacity-75 cursor-not-allowed text-slate-500"
-                                    : "border-slate-200 bg-slate-50/30"
+                                    ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed select-none"
+                                    : "border-slate-200 bg-slate-50/30 text-slate-800"
                             }`}
                         />
                     </div>
@@ -607,8 +607,8 @@ export default function TemplateCreatorModal({
                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                             Тип напою
                             {!!initialTemplateId && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 normal-case tracking-normal">
-                                    <Lock className="w-2.5 h-2.5" /> не змінюється в ізданіях
+                                <span className="text-[10px] font-medium text-slate-400 normal-case tracking-normal">
+                                    (лише для читання)
                                 </span>
                             )}
                         </label>
@@ -616,10 +616,10 @@ export default function TemplateCreatorModal({
                             disabled={!!initialTemplateId}
                             value={selectedBeverageTypeId}
                             onChange={(e) => setSelectedBeverageTypeId(e.target.value)}
-                            className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
+                            className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
                                 initialTemplateId
-                                    ? "border-amber-200 bg-amber-50/40 opacity-75 cursor-not-allowed text-slate-500"
-                                    : "border-slate-200 bg-slate-50/30 cursor-pointer"
+                                    ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    : "border-slate-200 bg-slate-50/30 text-slate-800 cursor-pointer"
                             }`}
                         >
                             {beverageTypes.length === 0 && <option value="">Завантаження...</option>}
@@ -722,13 +722,13 @@ export default function TemplateCreatorModal({
                                             onDragOver={(e) => handlePropDragOver(e, cat.id, propIdx)}
                                             onDrop={() => handlePropDrop(cat.id, propIdx)}
                                             onDragEnd={handlePropDragEnd}
-                                            className={`grid grid-cols-[auto,1fr,auto,auto,auto,auto,auto] gap-3 items-center p-3 rounded-2xl transition-all ${
+                                            className={`flex flex-wrap items-center gap-2 p-3 rounded-2xl transition-all ${
                                                 dragOverPropKey?.catId === cat.id && dragOverPropKey?.propIdx === propIdx
                                                     ? "bg-indigo-50 ring-2 ring-indigo-200"
                                                     : "bg-white hover:bg-slate-50"
                                             }`}
                                         >
-                                            <div className="cursor-grab active:cursor-grabbing text-slate-300">
+                                            <div className="cursor-grab active:cursor-grabbing text-slate-300 shrink-0">
                                                 <GripVertical className="w-4 h-4" />
                                             </div>
                                             <input
@@ -736,7 +736,7 @@ export default function TemplateCreatorModal({
                                                 value={p.name}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { name: e.target.value })}
                                                 placeholder="Назва показника..."
-                                                className={`px-3 py-1.5 border rounded-lg text-sm font-medium ${
+                                                className={`flex-1 min-w-[140px] px-3 py-1.5 border rounded-lg text-sm font-medium ${
                                                     errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
                                                 }`}
                                             />
@@ -747,14 +747,14 @@ export default function TemplateCreatorModal({
                                                 onBlur={(e) => handleCodeCommit(p.id, e.target.value)}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { code: e.target.value })}
                                                 placeholder="код"
-                                                className={`w-24 px-3 py-1.5 border rounded-lg text-sm font-mono ${
+                                                className={`w-24 shrink-0 px-3 py-1.5 border rounded-lg text-sm font-mono ${
                                                     isCodeDuplicate ? "border-rose-500 bg-rose-50" : "border-slate-200"
                                                 }`}
                                             />
                                             <select
                                                 value={p.type}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { type: e.target.value as any })}
-                                                className="px-2 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold"
+                                                className="shrink-0 px-2 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold"
                                             >
                                                 <option value="Int">Int</option>
                                                 <option value="Double">Double</option>
@@ -763,7 +763,7 @@ export default function TemplateCreatorModal({
                                                 <option value="Boolean">Boolean</option>
                                                 <option value="Smart">Smart</option>
                                             </select>
-                                            
+
                                             {(p.type === "Int" || p.type === "Double") && (
                                                 <>
                                                     <input
@@ -771,33 +771,37 @@ export default function TemplateCreatorModal({
                                                         value={p.minLimit ?? ""}
                                                         onChange={(e) => handlePropertyChange(cat.id, p.id, { minLimit: Number(e.target.value) })}
                                                         placeholder="мін"
-                                                        className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
+                                                        className="w-16 shrink-0 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
                                                     />
                                                     <input
                                                         type="number"
                                                         value={p.maxLimit ?? ""}
                                                         onChange={(e) => handlePropertyChange(cat.id, p.id, { maxLimit: Number(e.target.value) })}
                                                         placeholder="макс"
-                                                        className="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
+                                                        className="w-16 shrink-0 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
                                                     />
                                                 </>
                                             )}
 
-                                            <button
-                                                type="button"
-                                                onClick={() => handlePropertyChange(cat.id, p.id, { isResult: !p.isResult })}
-                                                className={`p-2 rounded-lg ${p.isResult ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-400"}`}
-                                                title="Позначити як результуючий показник"
-                                            >
-                                                <Star className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveProperty(cat.id, p.id)}
-                                                className="p-2 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="ml-auto flex items-center gap-1 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handlePropertyChange(cat.id, p.id, { isResult: !p.isResult })}
+                                                    className={`p-2 rounded-lg transition-colors ${
+                                                        p.isResult ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-400 hover:text-slate-600"
+                                                    }`}
+                                                    title="Позначити як результуючий показник"
+                                                >
+                                                    <Star className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveProperty(cat.id, p.id)}
+                                                    className="p-2 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     )
                                 })}
