@@ -23,6 +23,7 @@ const hu = {
         loading: "Betöltés...",
         none: "Nincs",
         unknownUser: "Ismeretlen felhasználó",
+        templates: "Saját értékelési sablonok",
     },
     dashboard: {
         holderId: "Szervező: {{ids}}",
