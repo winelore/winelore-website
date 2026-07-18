@@ -504,7 +504,7 @@ export default function CommissionClientView({
                                     {t("commission.tastingReplicas")}
                                 </h3>
                                 <div className="flex flex-col gap-2">
-                                    {localReplicas.map((r) => {
+                                    {[...localReplicas].sort((a, b) => (a.members?.length || 0) - (b.members?.length || 0)).map((r) => {
                                         const isSelected = r.id === selectedReplicaId
                                         const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
                                         return (

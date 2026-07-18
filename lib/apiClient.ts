@@ -21,6 +21,8 @@ function isNotFoundError(err: any): boolean {
     );
 }
 
+
+
 function logGraphQLPipelineError(context: string, errors: any[], isFatal: boolean) {
     if (!errors || errors.length === 0) return;
 

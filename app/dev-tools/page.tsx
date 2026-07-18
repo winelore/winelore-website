@@ -23,8 +23,11 @@ export default function DevToolsPage() {
   const defaultCommission: CommissionConfig = {
     name: 'Нова комісія',
     type: 'NOT_STARTED',
-    expertsCount: 3,
-    winesCount: 5,
+    panels: [{ name: 'Панель 1', winesCount: 5 }],
+    replicas: [
+      { name: 'Репліка 1', expertsCount: 3 },
+      { name: 'Репліка 2', expertsCount: 3 }
+    ],
     evaluatedWinesCount: 0
   };
 
@@ -33,9 +36,21 @@ export default function DevToolsPage() {
     competitionName: 'TEST 1',
     seriesName: 'Червоне вино 2026',
     commissions: [
-      { name: 'Комісія 1', type: 'NOT_STARTED', expertsCount: 3, winesCount: 5 },
-      { name: 'Комісія 2', type: 'IN_PROGRESS', expertsCount: 3, winesCount: 5, evaluatedWinesCount: 2 },
-      { name: 'Комісія 3', type: 'FINISHED', expertsCount: 3, winesCount: 5 }
+      { 
+        name: 'Комісія 1', type: 'NOT_STARTED', 
+        panels: [{ name: 'Панель 1', winesCount: 5 }],
+        replicas: [{ name: 'Репліка 1', expertsCount: 3 }, { name: 'Репліка 2', expertsCount: 3 }]
+      },
+      { 
+        name: 'Комісія 2', type: 'IN_PROGRESS', evaluatedWinesCount: 2,
+        panels: [{ name: 'Панель 1', winesCount: 5 }],
+        replicas: [{ name: 'Репліка 1', expertsCount: 3 }, { name: 'Репліка 2', expertsCount: 3 }]
+      },
+      { 
+        name: 'Комісія 3', type: 'FINISHED',
+        panels: [{ name: 'Панель 1', winesCount: 5 }],
+        replicas: [{ name: 'Репліка 1', expertsCount: 3 }, { name: 'Репліка 2', expertsCount: 3 }]
+      }
     ]
   });
 
@@ -160,6 +175,46 @@ export default function DevToolsPage() {
     setFormData({ ...formData, commissions: newCommissions });
   };
 
+  const updatePanel = (cIdx: number, pIdx: number, updates: Partial<PanelConfig>) => {
+    const comms = [...formData.commissions];
+    const panels = [...comms[cIdx].panels];
+    panels[pIdx] = { ...panels[pIdx], ...updates };
+    comms[cIdx] = { ...comms[cIdx], panels };
+    setFormData({ ...formData, commissions: comms });
+  };
+
+  const addPanel = (cIdx: number) => {
+    const comms = [...formData.commissions];
+    comms[cIdx].panels.push({ name: `Панель ${comms[cIdx].panels.length + 1}`, winesCount: 5 });
+    setFormData({ ...formData, commissions: comms });
+  };
+
+  const removePanel = (cIdx: number, pIdx: number) => {
+    const comms = [...formData.commissions];
+    comms[cIdx].panels = comms[cIdx].panels.filter((_, i) => i !== pIdx);
+    setFormData({ ...formData, commissions: comms });
+  };
+
+  const updateReplica = (cIdx: number, rIdx: number, updates: Partial<ReplicaConfig>) => {
+    const comms = [...formData.commissions];
+    const replicas = [...comms[cIdx].replicas];
+    replicas[rIdx] = { ...replicas[rIdx], ...updates };
+    comms[cIdx] = { ...comms[cIdx], replicas };
+    setFormData({ ...formData, commissions: comms });
+  };
+
+  const addReplica = (cIdx: number) => {
+    const comms = [...formData.commissions];
+    comms[cIdx].replicas.push({ name: `Репліка ${comms[cIdx].replicas.length + 1}`, expertsCount: 3 });
+    setFormData({ ...formData, commissions: comms });
+  };
+
+  const removeReplica = (cIdx: number, rIdx: number) => {
+    const comms = [...formData.commissions];
+    comms[cIdx].replicas = comms[cIdx].replicas.filter((_, i) => i !== rIdx);
+    setFormData({ ...formData, commissions: comms });
+  };
+
   return (
     <>
       <AppHeader />
@@ -251,21 +306,65 @@ export default function DevToolsPage() {
                         </Button>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                        <div className="space-y-1">
-                          <label className="text-xs text-gray-600">Експертів (n)</label>
-                          <Input type="number" value={comm.expertsCount} onChange={e => updateCommission(idx, { expertsCount: Number(e.target.value) })} className="bg-white" />
+                      <div className="flex flex-col gap-4 mt-4">
+                        <div className="flex gap-4 p-3 bg-white rounded-md border items-center">
+                          <span className="text-sm font-semibold text-gray-700">Всього Вин (m):</span>
+                          <span className="text-lg font-bold">{comm.panels.reduce((sum, p) => sum + p.winesCount, 0)}</span>
+                          {comm.type === 'IN_PROGRESS' && (
+                            <div className="ml-auto flex items-center gap-2">
+                              <label className="text-xs font-bold text-blue-700">Оцінено (k)</label>
+                              <Input type="number" value={comm.evaluatedWinesCount} onChange={e => updateCommission(idx, { evaluatedWinesCount: Number(e.target.value) })} className="w-24 bg-white border-blue-400" />
+                            </div>
+                          )}
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-xs text-gray-600">Всього Вин (m)</label>
-                          <Input type="number" value={comm.winesCount} onChange={e => updateCommission(idx, { winesCount: Number(e.target.value) })} className="bg-white" />
-                        </div>
-                        {comm.type === 'IN_PROGRESS' && (
-                          <div className="space-y-1">
-                            <label className="text-xs font-bold text-blue-700">Оцінено (k)</label>
-                            <Input type="number" value={comm.evaluatedWinesCount} onChange={e => updateCommission(idx, { evaluatedWinesCount: Number(e.target.value) })} className="bg-white border-blue-400" />
+
+                        {/* Panels */}
+                        <div className="border rounded-md p-4 bg-gray-50">
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-sm font-semibold">Панелі (Розподіл вин)</h4>
+                            <Button variant="outline" size="sm" onClick={() => addPanel(idx)}>
+                              <Plus className="h-4 w-4 mr-1" /> Додати панель
+                            </Button>
                           </div>
-                        )}
+                          <div className="space-y-3">
+                            {comm.panels.map((panel, pIdx) => (
+                              <div key={pIdx} className="flex items-center gap-3 bg-white p-3 rounded border">
+                                <Input value={panel.name} onChange={e => updatePanel(idx, pIdx, { name: e.target.value })} className="max-w-[150px] h-8 text-sm font-medium" />
+                                <div className="flex items-center gap-2">
+                                  <label className="text-xs text-gray-600">Кількість вин:</label>
+                                  <Input type="number" value={panel.winesCount} onChange={e => updatePanel(idx, pIdx, { winesCount: Number(e.target.value) })} className="w-20 h-8" />
+                                </div>
+                                <Button variant="ghost" size="sm" className="text-red-500 h-8 w-8 p-0 ml-auto" onClick={() => removePanel(idx, pIdx)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Replicas */}
+                        <div className="border rounded-md p-4 bg-gray-50">
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-sm font-semibold">Репліки</h4>
+                            <Button variant="outline" size="sm" onClick={() => addReplica(idx)}>
+                              <Plus className="h-4 w-4 mr-1" /> Додати репліку
+                            </Button>
+                          </div>
+                          <div className="space-y-3">
+                            {comm.replicas.map((replica, rIdx) => (
+                              <div key={rIdx} className="flex items-center gap-3 bg-white p-3 rounded border">
+                                <Input value={replica.name} onChange={e => updateReplica(idx, rIdx, { name: e.target.value })} className="max-w-[150px] h-8 text-sm font-medium" />
+                                <div className="flex items-center gap-2">
+                                  <label className="text-xs text-gray-600">Експертів (n):</label>
+                                  <Input type="number" value={replica.expertsCount} onChange={e => updateReplica(idx, rIdx, { expertsCount: Number(e.target.value) })} className="w-20 h-8" />
+                                </div>
+                                <Button variant="ghost" size="sm" className="text-red-500 h-8 w-8 p-0 ml-auto" onClick={() => removeReplica(idx, rIdx)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -307,10 +406,10 @@ export default function DevToolsPage() {
                           <div key={comm.id} className="bg-gray-50 border border-gray-100 rounded-lg p-4">
                             <h4 className="font-medium text-gray-800 mb-4">{comm.name || 'Комісія'}</h4>
                             <div className="space-y-4">
-                              {comm.replicas?.map((replica: any) => (
+                              {[...(comm.replicas || [])].sort((a: any, b: any) => (a.members?.length || 0) - (b.members?.length || 0)).map((replica: any) => (
                                 <div key={replica.id} className="bg-white border border-gray-200 rounded p-3">
                                   <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                                    Репліка: {replica.type || 'STANDARD'}
+                                    {replica.name || `Репліка: ${replica.type || 'STANDARD'}`}
                                   </div>
                                   <div className="space-y-2 divide-y divide-gray-100">
                                     {[...(replica.members || [])].sort((a: any, b: any) => (a.role === 'HEAD' ? -1 : (b.role === 'HEAD' ? 1 : 0))).map((member: any) => (
