@@ -27,7 +27,6 @@ const formatEnumStatus = (status: string | undefined): string => {
 // INTERFACES
 // ====================================================================
 type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
-type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
 
 interface ProducerDetails {
     id: string
@@ -39,7 +38,7 @@ interface Beverage {
     id: string
     name: string
     status: BeverageStatus
-    type: BeverageType
+    type?: string
     producers: ProducerDetails[]
     originParts?: string[]
 }
@@ -105,7 +104,6 @@ function BeverageCard({ bev }: { bev: Beverage }) {
 }
 
 export default function MyBeveragesClientView({ initialData, nextCursor, currentPage, totalPages, totalCount }: MyBeveragesProps) {
-    const [activeTab, setActiveTab] = useState<AppTabId>("beverages")
     const [currentAuid, setCurrentAuid] = useState<number | null>(null)
     const { t } = useTranslation()
     const router = useRouter()
@@ -150,7 +148,7 @@ export default function MyBeveragesClientView({ initialData, nextCursor, current
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            <AppHeader activeTab="none" />
 
             <main className="flex-1 overflow-auto p-6 flex flex-col relative">
                 {isLoading && (

@@ -1,5 +1,6 @@
 import { sdk } from '@/lib/apiClient';
 import WineLoreDashboard from './DashboardClientView';
+import { getBeverageTypesAction } from '@/app/templates/actions';
 
 export const dynamic = "force-dynamic"
 
@@ -14,6 +15,7 @@ export default async function DashboardPage({
 
     const LIMIT = 20;
     let rawCompetitions: any[] = [];
+    let allBeverages: any[] | undefined = [];
     let totalCount = 0;
     let nextCursor: string | null = null;
 
@@ -35,6 +37,25 @@ export default async function DashboardPage({
         console.error("Failed to load dashboard competitions:", error);
     }
 
+    try {
+        const bevData = await sdk.GetMyBeverages({ limit: 100 });
+        const rawBeverages = bevData.beverages?.items || [];
+        allBeverages = rawBeverages.map((bev: any) => {
+            let beverageType = undefined;
+            if (bev.attributes) {
+                try {
+                    const parsed = JSON.parse(bev.attributes);
+                    if (parsed && parsed.color) {
+                        beverageType = parsed.color; // E.g.: "RED", "WHITE"
+                    }
+                } catch (e) {}
+            }
+            return { ...bev, type: beverageType };
+        });
+    } catch (error) {
+        console.error("Failed to load beverages:", error);
+        allBeverages = undefined; // undefined indicates an error state to the client
+    }
     const totalPages = Math.ceil(totalCount / LIMIT);
 
     // Map backend competitions to the format expected by DashboardClientView
@@ -58,9 +79,22 @@ export default async function DashboardPage({
 
 
 
+    let beverageTypesDict: Record<string, string> = {};
+    try {
+        const typesList = await getBeverageTypesAction();
+        beverageTypesDict = typesList.reduce((acc, t) => {
+            acc[t.id] = t.code; // Use code (e.g. "WINE") so frontend can translate it
+            return acc;
+        }, {} as Record<string, string>);
+    } catch (e) {
+        console.error("Failed to load beverage types map:", e);
+    }
+
     return (
-        <WineLoreDashboard
+        <WineLoreDashboard 
             initialCompetitions={mappedCompetitions}
+            initialBeverages={allBeverages}
+            beverageTypesMap={beverageTypesDict}
             nextCursor={nextCursor}
             currentPage={currentPage}
             totalPages={totalPages}
