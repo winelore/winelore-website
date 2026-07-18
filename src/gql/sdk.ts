@@ -236,7 +236,7 @@ export type GetCommissionTemplatesQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: { id: string, code: string, name: string }, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, categories: Array<{ id: string, name: string, properties: Array<
+export type GetCommissionTemplatesQuery = { commission: { id: string, templateEditions: Array<{ id: string, beverageType: { id: string, code: string, name: string }, templateEdition: { id: string, version: number, status: Types.EvaluationTemplateEditionStatus, template: { id: string, name: string }, categories: Array<{ id: string, name: string, properties: Array<
             | { __typename: 'BooleanProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, boolDefaultValue: boolean | null }
             | { __typename: 'DiscreteNumbersProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, discreteAllowedValues: Array<number>, discreteDefaultValue: number | null }
             | { __typename: 'DoubleProperty', id: string, code: string, name: string, description: string | null, isRequired: boolean, isResult: boolean, doubleMinLimit: number | null, doubleMaxLimit: number | null, doubleDefaultValue: number | null }
@@ -654,18 +654,23 @@ export type DevGetCommissionReplicasByCommissionQueryVariables = Exact<{
 }>;
 
 
-export type DevGetCommissionReplicasByCommissionQuery = { commissionReplicasByCommission: Array<{ id: string, type: Types.CommissionReplicaType, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole }> }> };
+export type DevGetCommissionReplicasByCommissionQuery = { commissionReplicasByCommission: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole }> }> };
 
 export type GetMyBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
+  cursor?: string | number | null | undefined;
+  offset?: number | null | undefined;
   filter?: Types.BeverageFilterInput | null | undefined;
+  producer?: Array<number> | number | null | undefined;
 }>;
 
 
-export type GetMyBeveragesQuery = { beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
+export type GetMyBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
 
 export type GetMyCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
+  cursor?: string | number | null | undefined;
+  offset?: number | null | undefined;
   filter?: Types.CompetitionFilterInput | null | undefined;
 }>;
 
@@ -675,10 +680,11 @@ export type GetMyCompetitionsQuery = { competitions: { items: Array<{ id: string
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
   cursor?: string | number | null | undefined;
+  offset?: number | null | undefined;
 }>;
 
 
-export type GetDashboardCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
+export type GetDashboardCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
 
 
 export const GetCommissionDocument = gql`
@@ -751,6 +757,10 @@ export const GetCommissionTemplatesDocument = gql`
         id
         version
         status
+        template {
+          id
+          name
+        }
         categories {
           id
           name
@@ -1498,6 +1508,7 @@ export const DevGetCommissionReplicasByCommissionDocument = gql`
     query DevGetCommissionReplicasByCommission($commissionId: ID!) {
   commissionReplicasByCommission(commissionId: $commissionId) {
     id
+    name
     type
     members {
       id
@@ -1508,8 +1519,8 @@ export const DevGetCommissionReplicasByCommissionDocument = gql`
 }
     `;
 export const GetMyBeveragesDocument = gql`
-    query GetMyBeverages($limit: Int, $filter: BeverageFilterInput) {
-  beverages(limit: $limit, filter: $filter) {
+    query GetMyBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput, $producer: [Int!]) {
+  beverages(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
     items {
       id
       name
@@ -1527,11 +1538,12 @@ export const GetMyBeveragesDocument = gql`
       }
     }
   }
+  beverageCount(producer: $producer)
 }
     `;
 export const GetMyCompetitionsDocument = gql`
-    query GetMyCompetitions($limit: Int, $filter: CompetitionFilterInput) {
-  competitions(limit: $limit, filter: $filter) {
+    query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput) {
+  competitions(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
     items {
       id
       name
@@ -1552,8 +1564,8 @@ export const GetMyCompetitionsDocument = gql`
 }
     `;
 export const GetDashboardCompetitionsDocument = gql`
-    query GetDashboardCompetitions($limit: Int, $cursor: ID) {
-  competitions(limit: $limit, cursor: $cursor) {
+    query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {
+  competitions(limit: $limit, cursor: $cursor, offset: $offset) {
     items {
       id
       name
@@ -1572,6 +1584,7 @@ export const GetDashboardCompetitionsDocument = gql`
       }
     }
   }
+  competitionCount
 }
     `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>

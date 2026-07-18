@@ -160,8 +160,12 @@ const en = {
     enterTastingSession: "Enter Tasting Session",
     backToCommission: "Back to Commission",
     startNextPanel: "Start Next Panel",
+    panel: "Panel",
+    emptyPanel: "No candidates in this panel",
     results: {
       pageTitle: "Results: {{name}}",
+      resultsTitle: "Results",
+      candidates: "Candidates",
       statusCompleted: "Completed",
       statusInProgress: "In Progress",
       progressComplete: "{{complete}} of {{expected}} evaluations complete",
@@ -257,6 +261,8 @@ const en = {
     voiceRecorded: "Voice ({{seconds}}s)",
     voiceMicError: "Microphone access denied. Check browser permissions.",
     voiceUploadFailed: "Voice upload failed — submitting text only.",
+    myScore:"My Score",
+    averageScore: "Average Score",
   },
   status: {
     IN_PROGRESS: "In Progress",

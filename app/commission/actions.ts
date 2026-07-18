@@ -134,7 +134,13 @@ export async function submitEvaluationAction(
         }, {
             headers
         });
-        
+        if (!submitResponse) {
+            throw new Error("Не вдалося зберегти оцінку (можливо, дані більше не існують на сервері).");
+        }
+
+        if (!submitResponse.submitEvaluation) {
+            throw new Error("Не вдалося зберегти оцінку (сервер повернув порожню відповідь).");
+        }
         // Note: We do not mark the candidate as evaluated here because other commission members
         // still need to submit their evaluations. The HEAD of the commission will advance/mark
         // the candidate as evaluated from the waiting dashboard.
@@ -398,6 +404,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         myTastingSummary: null as MyTastingSummaryData | null,
         isPanelFinished: false,
         currentPanelName: "",
+        currentPanelId: null as string | null,
         nextPanelFirstCandidateId: null as string | null,
         ...emptyFeatureFlags,
     };
@@ -541,6 +548,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             myTastingSummary,
             isPanelFinished,
             currentPanelName,
+            currentPanelId,
             nextPanelFirstCandidateId,
             ...featureFlags,
         };

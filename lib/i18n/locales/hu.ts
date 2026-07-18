@@ -154,8 +154,12 @@ const hu = {
         enterTastingSession: "Belépés a kóstolási szakaszba",
         backToCommission: "Vissza a bizottsághoz",
         startNextPanel: "Következő panel indítása",
+        panel: "Panel",
+        emptyPanel: "Nincsenek jelöltek ebben a panelben",
         results: {
             pageTitle: "Eredmények: {{name}}",
+            resultsTitle: "Eredmények",
+            candidates: "Jelöltek",
             statusCompleted: "Befejezve",
             statusInProgress: "Folyamatban",
             progressComplete: "{{complete}} / {{expected}} értékelés kész",
@@ -257,6 +261,8 @@ const hu = {
         voiceRecorded: "Hang ({{seconds}}mp)",
         voiceMicError: "Mikrofon hozzáférés megtagadva. Ellenőrizze a böngésző beállításait.",
         voiceUploadFailed: "A hangfeltöltés sikertelen — csak szöveg beküldése.",
+        myScore:"Pontszámom",
+        averageScore: "Átlagpontszám",
     },
     status: {
         IN_PROGRESS: "Folyamatban",
