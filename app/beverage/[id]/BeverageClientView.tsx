@@ -149,7 +149,6 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
 
     const roleKey = producer.role as "MAKER" | "OWNER" | "DISTRIBUTOR"
 
-    // Виправлення TS2322: змінна повинна бути типу string
     let displayRole: string = producer.role;
     if (roleKey === "MAKER") {
         displayRole = (t("roles.maker") as string) || "Maker";
@@ -340,10 +339,15 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                                         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover/card:bg-indigo-600 group-hover/card:text-white group-hover/card:border-indigo-600 transition-all duration-300 shadow-sm">
                                             <Wine className="h-7 w-7" />
                                         </div>
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{t("beverage.producers")}</p>
-                                            <p className="text-sm font-bold text-slate-700 mt-0.5 group-hover/card:text-indigo-700 transition-colors">
-                                                {beverage.producers.length} {beverage.producers.length === 1 ? t("commission.results.producer") : t("beverage.producers")}
+                                            <p
+                                                className="text-sm font-bold text-slate-700 mt-0.5 group-hover/card:text-indigo-700 transition-colors truncate"
+                                                title={beverage.producers.map(p => p.displayName || (p.username ? `@${p.username}` : t("common.unknownUser"))).join(", ")}
+                                            >
+                                                {beverage.producers.length > 0
+                                                    ? beverage.producers.map(p => p.displayName || (p.username ? `@${p.username}` : t("common.unknownUser"))).join(", ")
+                                                    : (t("common.na") as string || "N/A")}
                                             </p>
                                         </div>
                                     </div>
