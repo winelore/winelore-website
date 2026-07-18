@@ -52,6 +52,23 @@ interface CandidateRow {
     expertBreakdown: ExpertBreakdownEntry[];
     myEvaluation: any;
 }
+
+function computeRanks( candidates: Array<{ id: string; numericScore: number | null }> ): Map<string, number> {
+    const ranks = new Map<string, number>();
+    const scored = candidates
+        .filter((c) => c.numericScore !== null)
+        .sort((a, b) => (b.numericScore as number) - (a.numericScore as number));
+    let rank = 1;
+    for (let i = 0; i < scored.length; i++) {
+        if (i > 0 && scored[i].numericScore !== scored[i - 1].numericScore) {
+            rank = i + 1;
+        }
+        ranks.set(scored[i].id, rank);
+    }
+    return ranks;
+}
+
+
 function getBeverageProducerAuids(candidate: any): string[] {
     const producers = candidate.sample?.batch?.beverage?.producers;
     if (!Array.isArray(producers)) return [];
@@ -285,6 +302,33 @@ export default function WaitPanelResults({
         candidateHasEvaluations,
         t,
     ]);
+
+    const maxScoreByProperty = useMemo(() => {
+        const maxes: Record<string, number> = {};
+        for (const prop of policyOutputProperties) {
+            let max = 0;
+            candidateRows.forEach((row) => {
+                const numeric = row.outcomeOverall?.[prop.code]?.numeric;
+                if (numeric !== null && numeric !== undefined && numeric > max) max = numeric;
+            });
+            maxes[prop.code] = max;
+        }
+        return maxes;
+    }, [candidateRows, policyOutputProperties]);
+    const ranks = useMemo(() => {
+        const byProperty: Record<string, Map<string, number>> = {};
+        for (const prop of policyOutputProperties) {
+            byProperty[prop.code] = computeRanks(
+                candidateRows.map((row) => ({
+                    id: row.candidate.id,
+                    numericScore: row.outcomeOverall?.[prop.code]?.numeric ?? null,
+                }))
+            );
+        }
+        return byProperty;
+    }, [candidateRows, policyOutputProperties]);
+
+
     const filteredAndSortedRows = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         let rows: CandidateRow[] = candidateRows;
@@ -407,7 +451,7 @@ export default function WaitPanelResults({
                         {policyOutputProperties.map((prop) => (
                             <th
                                 key={prop.code}
-                                className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 bg-indigo-50/30 min-w-[8rem]"
+                                className="py-4 px-6 font-bold text-indigo-700 text-sm text-center border-l border-slate-100 min-w-[8rem]"
                             >
                                 <OutcomePropertyLabel code={prop.code} />
                             </th>
@@ -470,18 +514,35 @@ export default function WaitPanelResults({
                                     </td>
                                     {/* Average Score */}
                                     {policyOutputProperties.map((prop) => {
-                                        const outcome = row.outcomeOverall?.[prop.code];
+                                        const val = row.outcomeOverall?.[prop.code];
+                                        const propMax = maxScoreByProperty[prop.code] ?? 0;
+                                        const scoreBarWidth =
+                                            val?.numeric !== null &&
+                                            val?.numeric !== undefined &&
+                                            propMax > 0
+                                                ? (val.numeric / propMax) * 100
+                                                : 0;
+                                        const propRank = ranks[prop.code]?.get(row.candidate.id);
                                         return (
-                                            <td
-                                                key={prop.code}
-                                                className="py-4 px-6 text-center border-l border-slate-50 font-bold text-lg text-slate-700"
-                                            >
-                                                {outcome?.average ?? "-"}
-                                                {outcome?.isPreview && (
-                                                    <span className="block mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mx-auto">
-                                                            {t("commission.results.previewBadge")}
-                                                        </span>
+                                            <td key={prop.code} className={`py-4 px-6 text-center border-l border-slate-50 font-bold text-lg relative ${val?.isPreview ? "text-amber-700" : "text-indigo-700"}`}>
+                                                {scoreBarWidth > 0 && (
+                                                    <div
+                                                        className="absolute inset-y-2 left-2 bg-indigo-100/60 rounded-md -z-0 print:hidden"
+                                                        style={{
+                                                            width: `calc(${scoreBarWidth}% - 1rem)`,
+                                                        }}
+                                                    />
                                                 )}
+                                                <div className="relative z-10 flex flex-col items-center gap-1">
+                                                    <span>
+                                                        {val?.average ?? "-"}
+                                                    </span>
+                                                    {sortMode === "score" && sortScorePropertyCode === prop.code && propRank != null && (
+                                                        <span className="text-xs font-semibold text-slate-400">
+                                                            #{propRank}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                         );
                                     })}
