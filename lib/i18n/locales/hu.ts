@@ -388,6 +388,33 @@ const hu = {
         noAwardsDesc: "Ez az ital még nem kapott versenyeredményeket.",
         commission: "Bizottság",
         awardedOn: "Díjazva: {{date}}",
+        tabs: {
+          overview: "Áttekintés",
+          batches: "Évjáratok és tételek",
+          awards: "Díjak",
+          specs: "Technikai adatok",
+        },
+        batches: {
+          title: "Regisztrált évjáratok",
+          subtitle: "Évjáratok, tételek és palackozási adatok.",
+          emptyTitle: "Nincsenek regisztrált évjáratok",
+          emptyDesc: "Ehhez az italhoz még nem regisztráltak tételeket vagy évjáratokat.",
+          vintage: "Évjárat",
+          abv: "Alkoholtartalom (ABV)",
+          volume: "Térfogat",
+          lotNumber: "Tételszám",
+          noVintage: "Évjárat nélküli (NV)",
+        },
+        specs: {
+          title: "Technikai specifikációk",
+          subtitle: "További paraméterek és rendszerattribútumok.",
+          emptyTitle: "Nincsenek további adatok",
+          emptyDesc: "Ehhez az italhoz nincsenek további technikai attribútumok megadva.",
+          key: "Paraméter",
+          value: "Érték",
+        },
+        viewOnMaps: "Megtekintés Google Térképen",
+        coordinates: "Koordináták:",
     },
 } as const
 

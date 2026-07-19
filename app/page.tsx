@@ -48,7 +48,12 @@ export default async function DashboardPage({
                     if (parsed && parsed.color) {
                         beverageType = parsed.color; // E.g.: "RED", "WHITE"
                     }
-                } catch (e) {}
+                } catch (e) {
+                    const match = bev.attributes.match(/color=([^,\}]+)/);
+                    if (match) {
+                        beverageType = match[1].trim().replace(/^["']|["']$/g, "");
+                    }
+                }
             }
             return { ...bev, type: beverageType };
         });

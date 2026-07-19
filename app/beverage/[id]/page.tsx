@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { fetchGraphQL } from "@/lib/apiClient"
+import { fetchGraphQL, fetchGraphQLRaw } from "@/lib/apiClient"
 import { getGeographicInfo } from "@/lib/geocoding"
 import { getUsernamesAction } from "@/app/userActions"
 import { GET_BEVERAGE, GET_BEVERAGE_AWARDS, GET_COMMISSION_FOR_AWARD } from "./queries"
@@ -84,7 +84,10 @@ export default async function BeveragePage({ params }: PageProps) {
                     colorVal = parsed.color
                 }
             } catch (e) {
-                console.error("Failed to parse beverage attributes:", e)
+                const match = beverage.attributes.match(/color=([^,\}]+)/)
+                if (match) {
+                    colorVal = match[1].trim().replace(/^["']|["']$/g, "")
+                }
             }
         }
 
@@ -110,13 +113,52 @@ export default async function BeveragePage({ params }: PageProps) {
             console.error("Failed to fetch beverage awards:", error)
         }
 
+        let batches: any[] = []
+        try {
+            const batchesQuery = `
+              query GetBeverageBatches($beverageId: ID!) {
+                batches(beverageId: $beverageId) {
+                  items {
+                    id
+                    volumeMl
+                    lotNumber
+                    attributes
+                    createdAt
+                  }
+                }
+              }
+            `
+            const batchesData = await fetchGraphQLRaw<any, any>(batchesQuery, { beverageId })
+            batches = batchesData?.batches?.items || []
+        } catch (error) {
+            console.error("Failed to fetch beverage batches:", error)
+        }
+
+        let beverageTypeName = ""
+        try {
+            const typeQuery = `
+              query GetBeverageType($id: ID!) {
+                beverageType(id: $id) {
+                  name
+                }
+              }
+            `
+            const typeData = await fetchGraphQLRaw<any, any>(typeQuery, { id: beverage.typeId })
+            beverageTypeName = typeData?.beverageType?.name || ""
+        } catch (error) {
+            console.error("Failed to fetch beverage type name:", error)
+        }
+
         const initialData = {
             beverage: {
                 ...beverage,
-                type: colorVal,
+                type: colorVal || "WINE", // keep fallback to avoid TS issues
+                colorType: colorVal,
+                beverageTypeName,
                 originParts
             },
-            awards: awardsWithCompetitionInfo
+            awards: awardsWithCompetitionInfo,
+            batches
         }
 
         return <BeverageClientView initialData={initialData} currentAuid={currentAuid} />

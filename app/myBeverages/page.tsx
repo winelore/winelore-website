@@ -62,7 +62,10 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
                             colorVal = parsed.color;
                         }
                     } catch (e) {
-                        console.error("Failed to parse beverage attributes in myBeverages page.tsx:", e);
+                        const match = bev.attributes.match(/color=([^,\}]+)/);
+                        if (match) {
+                            colorVal = match[1].trim().replace(/^["']|["']$/g, "");
+                        }
                     }
                 }
 

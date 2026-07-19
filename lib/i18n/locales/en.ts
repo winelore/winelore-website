@@ -388,6 +388,33 @@ const en = {
     noAwardsDesc: "This beverage hasn't received any competition awards yet.",
     commission: "Commission",
     awardedOn: "Awarded on {{date}}",
+    tabs: {
+      overview: "Overview",
+      batches: "Vintages & Batches",
+      awards: "Awards",
+      specs: "Technical Specs",
+    },
+    batches: {
+      title: "Registered Vintages",
+      subtitle: "Vintages, batches, and bottling specifications.",
+      emptyTitle: "No vintages registered",
+      emptyDesc: "No batches or vintages have been registered for this beverage yet.",
+      vintage: "Vintage",
+      abv: "ABV",
+      volume: "Volume",
+      lotNumber: "Lot Number",
+      noVintage: "Non-vintage (NV)",
+    },
+    specs: {
+      title: "Technical Specifications",
+      subtitle: "Additional parameters and system attributes.",
+      emptyTitle: "No additional specs",
+      emptyDesc: "There are no additional technical attributes configured for this beverage.",
+      key: "Parameter",
+      value: "Value",
+    },
+    viewOnMaps: "View on Google Maps",
+    coordinates: "Coordinates:",
   },
 } as const
 
