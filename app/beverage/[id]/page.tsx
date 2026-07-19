@@ -76,7 +76,7 @@ export default async function BeveragePage({ params }: PageProps) {
             }
         }
 
-        let colorVal = "WINE"
+        let colorVal: string | null = null
         if (beverage.attributes) {
             try {
                 const parsed = JSON.parse(beverage.attributes)
