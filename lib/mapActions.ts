@@ -87,16 +87,6 @@ export async function getRegionInfo(lat: number, lng: number) {
             console.error("E-Ambrosia API error:", apiError);
         }
 
-        // 3. Fallback (Резервний список для України)
-        if (countryGIs.length === 0 && countryCode === 'UA') {
-            countryGIs = [
-                { id: 'ua-1', name: 'Шабський / Shabskyi', type: 'PDO', status: 'Registered' },
-                { id: 'ua-2', name: 'Ялпуг / Yalpuh', type: 'PDO', status: 'Registered' },
-                { id: 'ua-3', name: 'Закарпаття / Zakarpattya', type: 'PGI', status: 'Registered' },
-                { id: 'ua-4', name: 'Аша-Абаг / Asha-Abag', type: 'PDO', status: 'Registered' }
-            ];
-        }
-
         // 4. СМАРТ-ФІЛЬТР для областей
         let localGIs = countryGIs;
 
