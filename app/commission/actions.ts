@@ -87,6 +87,84 @@ export async function startCommissionAction(id: string) {
         throw new Error(err.message || "Failed to start commission replica");
     }
 }
+
+export async function renameCommissionAction(commissionId: string, name: string) {
+    if (!isValidUuid(commissionId)) throw new Error("Invalid UUID parameter");
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RenameCommission($id: ID!, $name: String!) {
+                renameCommission(id: $id, name: $name) { id name }
+            }
+        `, { id: commissionId, name }, headers);
+        return { success: true, commission: data.renameCommission };
+    } catch (err: any) {
+        console.error("Server Action Error (renameCommissionAction):", err);
+        return { success: false, error: err.message || "Failed to rename commission" };
+    }
+}
+
+export async function updateCommissionDatesAction(
+    commissionId: string,
+    plannedStartDate: string | null,
+    plannedEndDate: string | null
+) {
+    if (!isValidUuid(commissionId)) throw new Error("Invalid UUID parameter");
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation UpdateCommissionDates($id: ID!, $input: PlannedDatesInput!) {
+                updateCommissionDates(id: $id, input: $input) { id }
+            }
+        `, {
+            id: commissionId,
+            input: {
+                start: plannedStartDate ? new Date(plannedStartDate).toISOString() : null,
+                end: plannedEndDate ? new Date(plannedEndDate).toISOString() : null
+            }
+        }, headers);
+        return { success: true, commission: data.updateCommissionDates };
+    } catch (err: any) {
+        console.error("Server Action Error (updateCommissionDatesAction):", err);
+        return { success: false, error: err.message || "Failed to update dates" };
+    }
+}
+
+// CreateCommissionReplicaInput fields confirmed via introspection: commissionId (required),
+// name (optional), type (required, CommissionReplicaType enum), chaoticCurrentCandidateChangesEnabled
+// (optional Boolean), members (required — NON_NULL list of NON_NULL items, but an empty array is valid).
+// We don't add members here since that's out of scope for now; the shape of each member item
+// (CommissionReplicaMemberInput) is still unconfirmed — ask if member assignment gets added later.
+export async function createCommissionReplicaAction(input: {
+    commissionId: string;
+    name?: string;
+    type: "STANDARD" | "TRAINEE";
+    chaoticCurrentCandidateChangesEnabled?: boolean;
+}) {
+    if (!isValidUuid(input.commissionId)) throw new Error("Invalid UUID parameter");
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation CreateCommissionReplica($input: CreateCommissionReplicaInput!) {
+                createCommissionReplica(input: $input) {
+                    id
+                    name
+                    type
+                    status
+                }
+            }
+        `, {
+            input: {
+                ...input,
+                members: [],
+            }
+        }, headers);
+        return { success: true, replica: data.createCommissionReplica };
+    } catch (err: any) {
+        console.error("Server Action Error (createCommissionReplicaAction):", err);
+        return { success: false, error: err.message || "Failed to create replica" };
+    }
+}
 export async function getVoiceUploadUrlAction(
     fileName: string,
     contentType: string,
@@ -114,7 +192,7 @@ export async function submitEvaluationAction(
     if (!isValidUuid(candidateId)) throw new Error("Invalid candidateId parameter");
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
-        
+
         const cookieStore = await cookies();
         const auid = cookieStore.get("auid")?.value;
         if (!auid) {
@@ -134,7 +212,7 @@ export async function submitEvaluationAction(
         }, {
             headers
         });
-        
+
         // Note: We do not mark the candidate as evaluated here because other commission members
         // still need to submit their evaluations. The HEAD of the commission will advance/mark
         // the candidate as evaluated from the waiting dashboard.
@@ -162,7 +240,7 @@ export async function getCommissionDataAction(commissionId: string) {
             console.log(`🔍 Fetching templates for commission ${commissionId}...`);
             const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
             const commissionWithTemplates = templateResult.commission;
-            
+
             if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
                 // Find WINE template or default to the first template link
                 const link = commissionWithTemplates.templateEditions.find(l => l.beverageType.code === "WINE") || commissionWithTemplates.templateEditions[0];
@@ -174,7 +252,7 @@ export async function getCommissionDataAction(commissionId: string) {
         }
 
         // Check if template edition is valid (categories exist, properties are non-null and not empty)
-        const isValidTemplate = templateEdition && templateEdition.categories && templateEdition.categories.length > 0 && 
+        const isValidTemplate = templateEdition && templateEdition.categories && templateEdition.categories.length > 0 &&
             templateEdition.categories.every((c: any) => c.properties && c.properties.length > 0 && c.properties.every((p: any) => p.id && p.code && p.name));
 
         if (!isValidTemplate) {
@@ -598,5 +676,29 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
         throw new Error(err.message || "Failed to mark candidate as evaluated");
+    }
+}
+
+export async function renameCommissionReplicaAction(id: string, name?: string) {
+    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RenameCommissionReplica($id: ID!, $name: String) {
+                renameCommissionReplica(id: $id, name: $name) {
+                    id
+                    name
+                    type
+                    status
+                }
+            }
+        `, {
+            id,
+            name
+        }, headers);
+        return { success: true, replica: data.renameCommissionReplica };
+    } catch (err: any) {
+        console.error("Server Action Error (renameCommissionReplicaAction):", err);
+        return { success: false, error: err.message || "Failed to rename replica" };
     }
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Settings, X, Save, Plus } from "lucide-react"
+import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -12,7 +12,8 @@ import Link from "next/link"
 import {
     startCompetitionAction,
     getCompetitionDataAction,
-    updateCompetitionSettingsAction,
+    updateCompetitionDatesAction,
+    updateCompetitionNameAction,
     createCommission
 } from "../actions"
 
@@ -252,36 +253,63 @@ export default function CompetitionClientView({
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [isMutating, setIsMutating] = useState(false)
-    const [isEditingSettings, setIsEditingSettings] = useState(false)
-    const [editFormData, setEditFormData] = useState({
+    const [isEditingName, setIsEditingName] = useState(false)
+    const [editNameData, setEditNameData] = useState("")
+    const [isEditingDates, setIsEditingDates] = useState(false)
+    const [editDatesData, setEditDatesData] = useState({
         plannedStartAt: "",
         plannedEndAt: "",
-        // commissions: [] as any[]
     })
 
     const initialData = localData
 
-    const openEditCompetitionSettings = () => {
-        setEditFormData({
+    const openEditName = () => {
+        setEditNameData(initialData.name)
+        setIsEditingName(true)
+    }
+
+    const openEditDates = () => {
+        setEditDatesData({
             plannedStartAt: initialData.plannedStartAt ? initialData.plannedStartAt.substring(0, 16) : "",
             plannedEndAt: initialData.plannedEndAt ? initialData.plannedEndAt.substring(0, 16) : ""
         })
-        setIsEditingSettings(true)
+        setIsEditingDates(true)
     }
 
-    const handleSaveCompetitionSettings = async () => {
+    const handleSaveName = async () => {
+        if (!editNameData.trim()) {
+            alert("Name cannot be empty")
+            return
+        }
         setIsMutating(true)
         try {
-            const res = await updateCompetitionSettingsAction(
-                initialData.id,
-                editFormData.plannedStartAt || null,
-                editFormData.plannedEndAt || null,
-            )
+            const res = await updateCompetitionNameAction(initialData.id, editNameData.trim())
             if (res.success) {
-                setIsEditingSettings(false)
+                setIsEditingName(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save settings")
+                alert(res.error || "Failed to save name")
+            }
+        } catch (err: any) {
+            alert(err.message || "An error occurred")
+        } finally {
+            setIsMutating(false)
+        }
+    }
+
+    const handleSaveDates = async () => {
+        setIsMutating(true)
+        try {
+            const res = await updateCompetitionDatesAction(
+                initialData.id,
+                editDatesData.plannedStartAt || null,
+                editDatesData.plannedEndAt || null,
+            )
+            if (res.success) {
+                setIsEditingDates(false)
+                router.refresh()
+            } else {
+                alert(res.error || "Failed to save dates")
             }
         } catch (err: any) {
             alert(err.message || "An error occurred")
@@ -445,10 +473,21 @@ export default function CompetitionClientView({
 
                             {/* Timeline and Dates */}
                             <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
-                                <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2 mb-4">
-                                    <Calendar className="w-5 h-5 text-indigo-500" />
-                                    {t("competition.timelineDetails")}
-                                </h3>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
+                                        <Calendar className="w-5 h-5 text-indigo-500" />
+                                        {t("competition.timelineDetails")}
+                                    </h3>
+                                    {isHolder && (
+                                        <button
+                                            onClick={openEditDates}
+                                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
+                                            title="Edit planned dates"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
                                     {/* Planned Start */}
                                     <div className="relative">
@@ -524,9 +563,20 @@ export default function CompetitionClientView({
                                         <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
                                             {t("competition.panel")}
                                         </span>
-                                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5 truncate">
-                                                {initialData.name}
-                                            </h2>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
+                                                    {initialData.name}
+                                                </h2>
+                                                {isHolder && (
+                                                    <button
+                                                        onClick={openEditName}
+                                                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
+                                                        title="Edit competition name"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                             <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                             <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                                                 initialData.status === "STARTED"
@@ -555,15 +605,6 @@ export default function CompetitionClientView({
                                             </p>
                                         </div>
                                     </div>
-                                    {isHolder && (
-                                        <button
-                                            onClick={openEditCompetitionSettings}
-                                            className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-2xl transition-all shadow-sm shrink-0 flex items-center justify-center cursor-pointer active:scale-95"
-                                            title="Configure Competition Settings"
-                                        >
-                                            <Settings className="w-5 h-5 animate-hover-spin" />
-                                        </button>
-                                    )}
                                 </div>
 
                                 <div className="border-t border-slate-100 pt-6">
@@ -685,17 +726,16 @@ export default function CompetitionClientView({
                 </div>
             </main>
 
-            {isEditingSettings && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            {isEditingName && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-md flex flex-col">
                         {/* Header */}
-                        <div className="flex justify-between items-center p-6 md:p-8 border-b border-slate-100">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">Configure Competition Settings</h3>
-                                <p className="text-xs text-slate-500 mt-1">Adjust timeline, commissions and mini-games parameters</p>
+                                <h3 className="text-lg font-bold text-slate-800">Edit Competition Name</h3>
                             </div>
                             <button
-                                onClick={() => setIsEditingSettings(false)}
+                                onClick={() => setIsEditingName(false)}
                                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
@@ -703,44 +743,28 @@ export default function CompetitionClientView({
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
-                            {/* Competition Timeline */}
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Competition Dates</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="pl-4 border-l-2 border-indigo-500">
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Start</label>
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
-                                            value={editFormData.plannedStartAt}
-                                            onChange={e => setEditFormData({ ...editFormData, plannedStartAt: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="pl-4 border-l-2 border-indigo-500">
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Completion</label>
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
-                                            value={editFormData.plannedEndAt}
-                                            onChange={e => setEditFormData({ ...editFormData, plannedEndAt: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="p-6 space-y-2">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Name</label>
+                            <input
+                                type="text"
+                                autoFocus
+                                className="w-full text-sm font-semibold text-slate-700 outline-none border-b border-slate-200 focus:border-indigo-500 py-1.5"
+                                value={editNameData}
+                                onChange={e => setEditNameData(e.target.value)}
+                            />
                         </div>
 
                         {/* Footer */}
-                        <div className="flex justify-end gap-3 p-6 md:p-8 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
+                        <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
                             <button
-                                onClick={() => setIsEditingSettings(false)}
+                                onClick={() => setIsEditingName(false)}
                                 disabled={isMutating}
                                 className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={handleSaveCompetitionSettings}
+                                onClick={handleSaveName}
                                 disabled={isMutating}
                                 className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
                             >
@@ -752,7 +776,78 @@ export default function CompetitionClientView({
                                 ) : (
                                     <>
                                         <Save className="w-4 h-4" />
-                                        <span>Save Settings</span>
+                                        <span>Save</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isEditingDates && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-lg flex flex-col">
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Edit Planned Dates</h3>
+                            </div>
+                            <button
+                                onClick={() => setIsEditingDates(false)}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="pl-4 border-l-2 border-indigo-500">
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Start</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
+                                        value={editDatesData.plannedStartAt}
+                                        onChange={e => setEditDatesData({ ...editDatesData, plannedStartAt: e.target.value })}
+                                    />
+                                </div>
+                                <div className="pl-4 border-l-2 border-indigo-500">
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Completion</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
+                                        value={editDatesData.plannedEndAt}
+                                        onChange={e => setEditDatesData({ ...editDatesData, plannedEndAt: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
+                            <button
+                                onClick={() => setIsEditingDates(false)}
+                                disabled={isMutating}
+                                className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveDates}
+                                disabled={isMutating}
+                                className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
+                            >
+                                {isMutating ? (
+                                    <>
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                        <span>Saving...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-4 h-4" />
+                                        <span>Save</span>
                                     </>
                                 )}
                             </button>

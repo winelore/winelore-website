@@ -140,6 +140,48 @@ export async function updateCompetitionSettingsAction(
     }
 }
 
+export async function updateCompetitionDatesAction(
+    competitionId: string,
+    plannedStartDate: string | null,
+    plannedEndDate: string | null
+) {
+    if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
+    try {
+        const mutation = `
+            mutation UpdateCompetitionDates($id: ID!, $input: PlannedDatesInput!) {
+                updateCompetitionDates(id: $id, input: $input) { id }
+            }
+        `;
+        await executeGraphQL(mutation, {
+            id: competitionId,
+            input: {
+                start: plannedStartDate ? new Date(plannedStartDate).toISOString() : null,
+                end: plannedEndDate ? new Date(plannedEndDate).toISOString() : null
+            }
+        });
+        return { success: true };
+    } catch (err: any) {
+        console.error("Server Action Error (updateCompetitionDatesAction):", err);
+        return { success: false, error: err.message || "Failed to update dates" };
+    }
+}
+
+export async function updateCompetitionNameAction(competitionId: string, newName: string) {
+    if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
+    try {
+        const mutation = `
+            mutation ChangeCompetitionName($id: ID!, $newName: String!) {
+                changeCompetitionName(id: $id, newName: $newName) { id name }
+            }
+        `;
+        await executeGraphQL(mutation, { id: competitionId, newName });
+        return { success: true };
+    } catch (err: any) {
+        console.error("Server Action Error (updateCompetitionNameAction):", err);
+        return { success: false, error: err.message || "Failed to update name" };
+    }
+}
+
 export async function getCompetitionSeriesListAction() {
     try {
         const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
