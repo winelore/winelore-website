@@ -1,6 +1,8 @@
 import { sdk } from '@/lib/apiClient';
 import WineLoreDashboard from './DashboardClientView';
 import { getBeverageTypesAction } from '@/app/templates/actions';
+import { cookies } from 'next/headers';
+import LandingClientView from '@/app/LandingClientView';
 
 export const dynamic = "force-dynamic"
 
@@ -9,9 +11,17 @@ export default async function DashboardPage({
 }: {
     searchParams: Promise<{ cursor?: string; page?: string }>
 }) {
+    const cookieStore = await cookies();
+    const auid = cookieStore.get("auid")?.value;
+
+    if (!auid) {
+        return <LandingClientView />;
+    }
+
     const resolvedParams = await searchParams;
     const cursor = resolvedParams.cursor;
-    const currentPage = parseInt(resolvedParams.page || "1", 10);
+    const parsedPage = parseInt(resolvedParams.page || "1", 10);
+    const currentPage = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
 
     const LIMIT = 20;
     let rawCompetitions: any[] = [];
