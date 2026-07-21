@@ -7,7 +7,7 @@ import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { SEARCH_MAP_BEVERAGES, GET_BEVERAGE_DETAILS_MAP } from "./queries"
-import { getRegionInfo } from "@/lib/mapActions"
+import { getRegionInfo, getVisiblePolygons } from "@/lib/mapActions"
 import { getUsernamesAction } from "@/app/userActions"
 
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -28,35 +28,28 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
 
     const getRoleColors = (role: string) => {
         switch (role.toUpperCase()) {
-            case "MAKER":
-                return "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100/70"
-            case "OWNER":
-                return "bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100/70"
-            case "DISTRIBUTOR":
-                return "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100/70"
-            case "BOTTLER":
-                return "bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100/70"
-            default:
-                return "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+            case "MAKER": return "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100/70"
+            case "OWNER": return "bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100/70"
+            case "DISTRIBUTOR": return "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100/70"
+            case "BOTTLER": return "bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100/70"
+            default: return "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
         }
     }
 
     let displayRole: string = producer.role
     const roleUpper = producer.role.toUpperCase()
-    if (roleUpper === "MAKER") {
-        displayRole = (t("roles.maker" as any) as string) || "Maker"
-    } else if (roleUpper === "OWNER") {
-        displayRole = (t("roles.owner" as any) as string) || "Owner"
-    } else if (roleUpper === "DISTRIBUTOR") {
-        displayRole = (t("roles.distributor" as any) as string) || "Distributor"
-    } else if (roleUpper === "BOTTLER") {
-        displayRole = "Bottler"
-    }
+    if (roleUpper === "MAKER") displayRole = (t("roles.maker" as any) as string) || "Maker"
+    else if (roleUpper === "OWNER") displayRole = (t("roles.owner" as any) as string) || "Owner"
+    else if (roleUpper === "DISTRIBUTOR") displayRole = (t("roles.distributor" as any) as string) || "Distributor"
+    else if (roleUpper === "BOTTLER") displayRole = "Bottler"
 
     const renderName = () => {
-        if (producer.displayName) return producer.displayName
-        if (producer.username) return `@${producer.username}`
-        return (t("common.unknownUser" as any) as string) || "Unknown User"
+        if (producer.displayName) return producer.displayName;
+        if (producer.username) {
+            if (/^\d+$/.test(producer.username)) return `User ${producer.username}`;
+            return `@${producer.username}`;
+        }
+        return (t("common.unknownUser" as any) as string) || "Unknown User";
     }
 
     return (
@@ -73,6 +66,8 @@ export default function MapClientView() {
     const { t, formatDateTime, formatStatus, formatBeverageType } = useTranslation()
 
     const [beverages, setBeverages] = useState<any[]>([])
+    const [visiblePolygons, setVisiblePolygons] = useState<any[]>([])
+
     const [selectedBev, setSelectedBev] = useState<any | null>(null)
     const [isLoadingDetails, setIsLoadingDetails] = useState(false)
     const [regionData, setRegionData] = useState<any | null>(null)
@@ -84,6 +79,22 @@ export default function MapClientView() {
     const producersLabel = t("beverage.producers" as any) === "beverage.producers" ? "Producers" : t("beverage.producers" as any);
     const createdLabel = t("beverage.created" as any) === "beverage.created" ? "Created" : t("beverage.created" as any);
     const geoLabel = t("map.geography" as any) === "map.geography" ? "Geography" : t("map.geography" as any);
+
+    const fetchPolygonsForMarkers = async (markers: any[]) => {
+        if (markers.length === 0) return;
+        const markersToFetch = markers.slice(0, 15).map(m => ({ lat: m.latitude, lng: m.longitude }));
+        const polygons = await getVisiblePolygons(markersToFetch);
+
+        if (polygons && polygons.length > 0) {
+            setVisiblePolygons(prev => {
+                const merged = [...prev];
+                polygons.forEach(p => {
+                    if (!merged.some(m => m.name === p.name)) merged.push(p);
+                });
+                return merged.slice(-50); // Зберігаємо до 50 полігонів в пам'яті фронтенда
+            });
+        }
+    }
 
     const handleBoundsChange = useCallback(async ({ lat, lng, radiusKm }: { lat: number, lng: number, radiusKm: number }) => {
         try {
@@ -97,6 +108,7 @@ export default function MapClientView() {
             if (response?.search?.items) {
                 const validMarkers = response.search.items.filter((i: any) => i.latitude && i.longitude);
                 setBeverages(validMarkers);
+                fetchPolygonsForMarkers(validMarkers);
             }
         } catch (err) {
             console.error("Failed to fetch map markers", err);
@@ -203,6 +215,8 @@ export default function MapClientView() {
                         beverages={beverages}
                         onSelectBeverage={handleSelectBeverage}
                         onBoundsChange={handleBoundsChange}
+                        selectedRegionGeoJson={regionData?.geojson}
+                        visiblePolygons={visiblePolygons}
                     />
                 </div>
 
@@ -269,7 +283,6 @@ export default function MapClientView() {
                                 ) : (
                                     <div className="space-y-6">
 
-                                        {/* Блок з Виробниками */}
                                         <div className="flex items-center gap-4 p-5 bg-white rounded-[24px] border border-slate-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 group/card cursor-default">
                                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover/card:bg-indigo-600 group-hover/card:text-white group-hover/card:border-indigo-600 transition-all duration-300 shadow-sm">
                                                 <Wine className="h-7 w-7" />
@@ -292,7 +305,6 @@ export default function MapClientView() {
                                             </div>
                                         </div>
 
-                                        {/* Блок з Датою */}
                                         <div className="flex items-center gap-4 p-5 bg-white rounded-[24px] border border-slate-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 group/card cursor-default">
                                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover/card:bg-indigo-600 group-hover/card:text-white group-hover/card:border-indigo-600 transition-all duration-300 shadow-sm">
                                                 <Calendar className="h-7 w-7" />
@@ -307,7 +319,6 @@ export default function MapClientView() {
                                             </div>
                                         </div>
 
-                                        {/* Блок координат та Nominatim географії */}
                                         <div>
                                             <div className="flex items-center gap-3 mb-5 group/geo-header cursor-default mt-2">
                                                 <div className="relative flex items-center justify-center w-10 h-10 shrink-0 rounded-[14px] bg-white border border-slate-200 shadow-sm transition-all duration-300 group-hover/geo-header:border-indigo-200 group-hover/geo-header:shadow-md group-hover/geo-header:-translate-y-0.5">
@@ -341,7 +352,6 @@ export default function MapClientView() {
                                             ) : null}
                                         </div>
 
-                                        {/* Блок реєстру ЄС E-Ambrosia */}
                                         {!loadingRegion && regionData && (
                                             <div className="pt-2 pb-8">
                                                 <div className="flex items-center gap-3 mb-5 group/eu cursor-default">
