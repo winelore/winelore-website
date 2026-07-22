@@ -707,6 +707,14 @@ export type GetDashboardCompetitionsQueryVariables = Exact<{
 
 export type GetDashboardCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
 
+export type GetCommissionsQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type GetCommissionsQuery = { commissions: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, replicas: Array<{ members: Array<{ auid: Array<number>, role: Types.CommissionReplicaMemberRole }> }> }> } };
+
 
 export const GetBeverageDocument = gql`
     query GetBeverage($id: ID!) {
@@ -1670,6 +1678,23 @@ export const GetDashboardCompetitionsDocument = gql`
   competitionCount
 }
     `;
+export const GetCommissionsDocument = gql`
+    query GetCommissions($limit: Int, $offset: Int) {
+  commissions(limit: $limit, offset: $offset) {
+    items {
+      id
+      name
+      status
+      replicas {
+        members {
+          auid
+          role
+        }
+      }
+    }
+  }
+}
+    `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
@@ -1843,6 +1868,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
+    },
+    GetCommissions(variables?: Types.GetCommissionsQueryVariables, options?: C): Promise<Types.GetCommissionsQuery> {
+      return requester<Types.GetCommissionsQuery, Types.GetCommissionsQueryVariables>(GetCommissionsDocument, variables, options) as Promise<Types.GetCommissionsQuery>;
     }
   };
 }

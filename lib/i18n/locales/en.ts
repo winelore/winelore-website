@@ -1,6 +1,6 @@
 const en = {
   common: {
-    feed: "Feed",
+    home: "Home",
     competitions: "Competitions",
     wines: "Wines",
     beverages: "Beverages",
@@ -27,6 +27,22 @@ const en = {
   },
   dashboard: {
     holderId: "Holder: {{ids}}",
+    title: "Main Dashboard",
+    subtitle: "Your latest activities and current tasks.",
+    myCompetitions: "My Competitions",
+    allCompetitions: "All competitions",
+    noRecentCompetitions: "No recent competitions",
+    myBeverages: "My Beverages",
+    allBeverages: "All beverages",
+    noRecentBeverages: "No beverages added",
+    activeCommissions: "Active Commissions",
+    noActiveCommissions: "No active commissions",
+    myTemplates: "My Templates",
+    allTemplates: "All templates",
+    noTemplates: "No templates created",
+    welcomeTitle: "Welcome back! 👋",
+    welcomeSubtitle: "Here is what's happening with your activities today.",
+    viewAll: "View all",
   },
   myBeverages: {
     title: "My Beverages",
@@ -415,6 +431,20 @@ const en = {
     },
     viewOnMaps: "View on Google Maps",
     coordinates: "Coordinates:",
+  },
+  templatesPage: {
+    title: "My Evaluation Templates",
+    subtitle: "Evaluation templates created personally by you.",
+    createNew: "Create New Template",
+    createdAt: "Created",
+    type: "Type",
+    categories: "Categories",
+    totalScores: "Total Scores",
+    versionStatus: "Version Status",
+    active: "Active",
+    evaluationStructure: "Evaluation Structure & Metrics",
+    notFound: "No templates found",
+    createFirst: "Create your first evaluation template using the button above."
   },
 } as const
 

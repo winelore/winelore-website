@@ -24,3 +24,21 @@ export const GET_DASHBOARD_COMPETITIONS = gql(`
       competitionCount
   }
 `);
+
+export const GET_COMMISSIONS = gql(`
+  query GetCommissions($limit: Int, $offset: Int) {
+      commissions(limit: $limit, offset: $offset) {
+          items {
+              id
+              name
+              status
+              replicas {
+                  members {
+                      auid
+                      role
+                  }
+              }
+          }
+      }
+  }
+`);

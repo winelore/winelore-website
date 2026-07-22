@@ -2,7 +2,7 @@ import type { TranslationKey } from "./en"
 
 const uk: TranslationKey = {
   common: {
-    feed: "Стрічка",
+    home: "Головна",
     competitions: "Конкурси",
     wines: "Вина",
     beverages: "Напої",
@@ -29,6 +29,22 @@ const uk: TranslationKey = {
   },
   dashboard: {
     holderId: "Організатор: {{ids}}",
+    title: "Головна панель",
+    subtitle: "Ваші останні активності та актуальні завдання.",
+    myCompetitions: "Мої змагання",
+    allCompetitions: "Всі змагання",
+    noRecentCompetitions: "Немає недавніх змагань",
+    myBeverages: "Мої напої",
+    allBeverages: "Всі напої",
+    noRecentBeverages: "Немає доданих напоїв",
+    activeCommissions: "Активні комісії",
+    noActiveCommissions: "Немає активних комісій",
+    myTemplates: "Мої шаблони",
+    allTemplates: "Всі шаблони",
+    noTemplates: "Немає створених шаблонів",
+    welcomeTitle: "З поверненням! 👋",
+    welcomeSubtitle: "Ось що відбувається з вашими активностями сьогодні.",
+    viewAll: "Переглянути всі",
   },
   myBeverages: {
     title: "Мої напої",
@@ -417,6 +433,20 @@ const uk: TranslationKey = {
     },
     viewOnMaps: "Показати на Google Картах",
     coordinates: "Координати:",
+  },
+  templatesPage: {
+    title: "Мої шаблони оцінювання",
+    subtitle: "Шаблони оцінювання, створені вами особисто.",
+    createNew: "Створити новий шаблон",
+    createdAt: "Створено",
+    type: "Тип",
+    categories: "Категорій",
+    totalScores: "Всього оцінок",
+    versionStatus: "Статус версії",
+    active: "Активний",
+    evaluationStructure: "Структура оцінювання та показники",
+    notFound: "Ваші шаблони не знайдені",
+    createFirst: "Створіть свій перший шаблон оцінювання за допомогою кнопки вище."
   },
 }
 
