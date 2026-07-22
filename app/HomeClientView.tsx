@@ -183,7 +183,7 @@ function CommissionCard({ commission }: { commission: any }) {
 function TemplateCard({ template }: { template: any }) {
     return (
         <Link
-            href={`/templates`}
+            href={`/templates?templateId=${template.id}-${template.latestEdition?.version || 0}`}
             className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex items-center gap-4"
         >
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
@@ -302,11 +302,17 @@ export default function HomeClientView({
                             </div>
                             
                             {myTemplates.length > 0 ? (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-4 shadow-sm h-full">
-                                    <div className="flex flex-col gap-3">
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-4 shadow-sm h-full flex flex-col">
+                                    <div className="flex flex-col gap-3 flex-1">
                                         {myTemplates.slice(0, 8).map((template, idx) => (
                                             <TemplateCard key={`${template.id}-${idx}`} template={template} />
                                         ))}
+                                    </div>
+                                    <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
+                                        <Link href="/templates" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-amber-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                            {t("dashboard.viewAll")}
+                                            <ChevronRight className="w-4 h-4" />
+                                        </Link>
                                     </div>
                                 </div>
                             ) : (
@@ -332,6 +338,12 @@ export default function HomeClientView({
                                         {myCommissions.slice(0, 8).map(comm => (
                                             <CommissionCard key={comm.id} commission={comm} />
                                         ))}
+                                    </div>
+                                    <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
+                                        <Link href="/myCommissions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-emerald-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                            {t("dashboard.viewAll")}
+                                            <ChevronRight className="w-4 h-4" />
+                                        </Link>
                                     </div>
                                 </div>
                             ) : (

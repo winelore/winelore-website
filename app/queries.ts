@@ -25,13 +25,21 @@ export const GET_DASHBOARD_COMPETITIONS = gql(`
   }
 `);
 
-export const GET_COMMISSIONS = gql(`
+import { parse } from 'graphql';
+
+export const GET_COMMISSIONS = parse(`
   query GetCommissions($limit: Int, $offset: Int) {
       commissions(limit: $limit, offset: $offset) {
           items {
               id
               name
               status
+              startedAt
+              endedAt
+              competition {
+                  id
+                  name
+              }
               replicas {
                   members {
                       auid

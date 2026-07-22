@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/AppHeader"
 import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2 } from "lucide-react"
 import Cookies from "js-cookie"
 import TemplateCreatorModal from "./TemplateCreatorModal"
+import { useSearchParams } from "next/navigation"
 
 interface Property {
     id: string
@@ -43,6 +44,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const { t } = useTranslation()
+    const searchParams = useSearchParams()
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
     const [currentAuid, setCurrentAuid] = useState<number>(0)
 
@@ -53,6 +55,13 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
             if (!isNaN(parsed)) setCurrentAuid(parsed)
         }
     }, [])
+
+    useEffect(() => {
+        const templateIdParam = searchParams.get("templateId")
+        if (templateIdParam) {
+            setExpandedTemplateId(templateIdParam)
+        }
+    }, [searchParams])
 
     // Refresh template list when initialTemplates prop changes
     useEffect(() => {
@@ -106,7 +115,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                     <div className="flex flex-col gap-4">
                         {myTemplates.map((template, idx) => {
                             const edition = template.latestEdition
-                            const uniqueKey = `${template.id}-${edition?.version || idx}`
+                            const uniqueKey = `${template.id}-${edition?.version || 0}`
                             const isExpanded = expandedTemplateId === uniqueKey
                             const propertiesCount = edition?.categories.reduce((acc, cat) => acc + cat.properties.length, 0) || 0
 

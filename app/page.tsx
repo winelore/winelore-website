@@ -58,15 +58,28 @@ export default async function HomePage() {
 
         // 2. Active Commissions
         try {
-            const commData = await fetchGraphQL(GET_COMMISSIONS, { limit: 50 });
-            const allCommissions = commData.commissions?.items || [];
+            let allCommissions: any[] = [];
+            let currentOffset = 0;
+            let hasMore = true;
+            
+            while (hasMore) {
+                const commData = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
+                const items = commData.commissions?.items || [];
+                allCommissions = allCommissions.concat(items);
+                
+                if (items.length < 100) {
+                    hasMore = false;
+                } else {
+                    currentOffset += 100;
+                }
+            }
             myCommissions = allCommissions.filter((comm: any) => {
                 const isMember = comm.replicas?.some((r: any) => 
                     r.members?.some((m: any) => m.auid?.includes(currentAuid))
                 );
-                const isStatusValid = ["NOT_STARTED", "IN_PROGRESS"].includes(comm.status);
+                const isStatusValid = ["PLANNED", "APPROVED", "STARTED", "IN_PROGRESS"].includes(comm.status);
                 return isMember && isStatusValid;
-            }).slice(0, 5);
+            }).slice(0, 8);
         } catch (error) {
             console.error("Failed to load commissions:", error);
         }
