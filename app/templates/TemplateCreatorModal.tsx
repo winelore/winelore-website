@@ -33,6 +33,26 @@ interface CategoryState {
     properties: PropertyState[]
 }
 
+export const PROPERTY_TYPE_LABELS: Record<string, string> = {
+    Int: "Ціле число",
+    Double: "Дробове число",
+    Discrete: "Вибір із чисел",
+    Enum: "Вибір із варіантів",
+    Boolean: "Так / Ні",
+    Smart: "Розрахункове (Формула)",
+}
+
+function transliterate(str: string): string {
+    const map: Record<string, string> = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'h', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ye', 'ж': 'zh', 'з': 'z',
+        'и': 'y', 'і': 'i', 'ї': 'yi', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p',
+        'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+        'ь': '', 'ю': 'yu', 'я': 'ya',
+        'ы': 'y', 'э': 'e', 'ё': 'yo', 'ъ': ''
+    }
+    return str.toLowerCase().split('').map(char => map[char] || char).join('')
+}
+
 function parseExpression(input: string): any {
     const tokens: { type: string; value: string }[] = []
     let i = 0
@@ -149,6 +169,9 @@ export default function TemplateCreatorModal({
     const dragPropKey = useRef<{ catId: string; propIdx: number } | null>(null)
     const [dragOverCatIdx, setDragOverCatIdx] = useState<number | null>(null)
     const [dragOverPropKey, setDragOverPropKey] = useState<{ catId: string; propIdx: number } | null>(null)
+
+    const [draggableCatId, setDraggableCatId] = useState<string | null>(null)
+    const [draggablePropId, setDraggablePropId] = useState<string | null>(null)
 
     const prevCodeRef = useRef<Map<string, string>>(new Map())
 
@@ -290,8 +313,7 @@ export default function TemplateCreatorModal({
                     const updated = { ...p, ...fields }
 
                     if (fields.name !== undefined) {
-                        updated.code = fields.name
-                            .toLowerCase()
+                        updated.code = transliterate(fields.name)
                             .replace(/[^a-z0-9_]/g, "_")
                             .replace(/_+/g, "_")
                             .replace(/^_+|_+$/g, "")
@@ -528,7 +550,7 @@ export default function TemplateCreatorModal({
         })
         dragCatIdx.current = null; setDragOverCatIdx(null)
     }
-    const handleCatDragEnd = () => { dragCatIdx.current = null; setDragOverCatIdx(null) }
+    const handleCatDragEnd = () => { dragCatIdx.current = null; setDragOverCatIdx(null); setDraggableCatId(null) }
 
     const handlePropDragStart = (catId: string, propIdx: number) => { dragPropKey.current = { catId, propIdx } }
     const handlePropDragOver = (e: React.DragEvent, catId: string, propIdx: number) => { e.preventDefault(); setDragOverPropKey({ catId, propIdx }) }
@@ -547,7 +569,7 @@ export default function TemplateCreatorModal({
         })
         dragPropKey.current = null; setDragOverPropKey(null)
     }
-    const handlePropDragEnd = () => { dragPropKey.current = null; setDragOverPropKey(null) }
+    const handlePropDragEnd = () => { dragPropKey.current = null; setDragOverPropKey(null); setDraggablePropId(null) }
 
     if (!isOpen) return null
 
@@ -654,7 +676,7 @@ export default function TemplateCreatorModal({
                     {categories.map((cat, catIdx) => (
                         <div
                             key={cat.id}
-                            draggable
+                            draggable={draggableCatId === cat.id}
                             onDragStart={() => handleCatDragStart(catIdx)}
                             onDragOver={(e) => handleCatDragOver(e, catIdx)}
                             onDrop={() => handleCatDrop(catIdx)}
@@ -679,7 +701,12 @@ export default function TemplateCreatorModal({
                             </div>
 
                             <div className="flex items-start gap-2 max-w-[85%]">
-                                <div className="mt-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0">
+                                <div
+                                    onMouseDown={() => setDraggableCatId(cat.id)}
+                                    onMouseUp={() => setDraggableCatId(null)}
+                                    onMouseLeave={() => setDraggableCatId(null)}
+                                    className="mt-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0 p-1"
+                                >
                                     <GripVertical className="w-4 h-4" />
                                 </div>
                                 <div className="flex flex-col gap-1 flex-1">
@@ -717,7 +744,7 @@ export default function TemplateCreatorModal({
                                     return (
                                         <div
                                             key={p.id}
-                                            draggable
+                                            draggable={draggablePropId === p.id}
                                             onDragStart={() => handlePropDragStart(cat.id, propIdx)}
                                             onDragOver={(e) => handlePropDragOver(e, cat.id, propIdx)}
                                             onDrop={() => handlePropDrop(cat.id, propIdx)}
@@ -728,7 +755,12 @@ export default function TemplateCreatorModal({
                                                     : "bg-white hover:bg-slate-50"
                                             }`}
                                         >
-                                            <div className="cursor-grab active:cursor-grabbing text-slate-300 shrink-0">
+                                            <div
+                                                onMouseDown={() => setDraggablePropId(p.id)}
+                                                onMouseUp={() => setDraggablePropId(null)}
+                                                onMouseLeave={() => setDraggablePropId(null)}
+                                                className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors shrink-0 p-1"
+                                            >
                                                 <GripVertical className="w-4 h-4" />
                                             </div>
                                             <input
@@ -736,8 +768,8 @@ export default function TemplateCreatorModal({
                                                 value={p.name}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { name: e.target.value })}
                                                 placeholder="Назва показника..."
-                                                className={`flex-1 min-w-[140px] px-3 py-1.5 border rounded-lg text-sm font-medium ${
-                                                    errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
+                                                className={`flex-1 min-w-[160px] px-3 py-1.5 border rounded-lg text-sm font-medium ${
+                                                    errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200 bg-white"
                                                 }`}
                                             />
                                             <input
@@ -747,40 +779,81 @@ export default function TemplateCreatorModal({
                                                 onBlur={(e) => handleCodeCommit(p.id, e.target.value)}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { code: e.target.value })}
                                                 placeholder="код"
-                                                className={`w-24 shrink-0 px-3 py-1.5 border rounded-lg text-sm font-mono ${
+                                                className={`w-40 shrink-0 px-3 py-1.5 border rounded-lg text-sm font-mono ${
                                                     isCodeDuplicate ? "border-rose-500 bg-rose-50" : "border-slate-200"
                                                 }`}
                                             />
                                             <select
                                                 value={p.type}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { type: e.target.value as any })}
-                                                className="shrink-0 px-2 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold"
+                                                className="shrink-0 px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold bg-white cursor-pointer"
                                             >
-                                                <option value="Int">Int</option>
-                                                <option value="Double">Double</option>
-                                                <option value="Discrete">Discrete</option>
-                                                <option value="Enum">Enum</option>
-                                                <option value="Boolean">Boolean</option>
-                                                <option value="Smart">Smart</option>
+                                                <option value="Int">Ціле число</option>
+                                                <option value="Double">Дробове число</option>
+                                                <option value="Discrete">Вибір із чисел</option>
+                                                <option value="Enum">Вибір із варіантів</option>
+                                                <option value="Boolean">Так / Ні</option>
+                                                <option value="Smart">Розрахункове (Формула)</option>
                                             </select>
 
                                             {(p.type === "Int" || p.type === "Double") && (
-                                                <>
+                                                <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 px-2 py-1 border border-slate-200 rounded-lg">
+                                                    <span className="text-xs font-medium text-slate-400">від</span>
                                                     <input
                                                         type="number"
                                                         value={p.minLimit ?? ""}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { minLimit: Number(e.target.value) })}
-                                                        placeholder="мін"
-                                                        className="w-16 shrink-0 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { minLimit: e.target.value === "" ? undefined : Number(e.target.value) })}
+                                                        placeholder="0"
+                                                        className="w-14 px-1.5 py-0.5 border border-slate-200 rounded-md bg-white text-sm text-center font-medium focus:outline-hidden focus:border-indigo-500"
                                                     />
+                                                    <span className="text-xs font-medium text-slate-400">до</span>
                                                     <input
                                                         type="number"
                                                         value={p.maxLimit ?? ""}
-                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { maxLimit: Number(e.target.value) })}
-                                                        placeholder="макс"
-                                                        className="w-16 shrink-0 px-2 py-1.5 border border-slate-200 rounded-lg text-sm"
+                                                        onChange={(e) => handlePropertyChange(cat.id, p.id, { maxLimit: e.target.value === "" ? undefined : Number(e.target.value) })}
+                                                        placeholder="100"
+                                                        className="w-14 px-1.5 py-0.5 border border-slate-200 rounded-md bg-white text-sm text-center font-medium focus:outline-hidden focus:border-indigo-500"
                                                     />
-                                                </>
+                                                </div>
+                                            )}
+
+                                            {p.type === "Discrete" && (
+                                                <input
+                                                    type="text"
+                                                    value={p.allowedValuesStr}
+                                                    onChange={(e) => handlePropertyChange(cat.id, p.id, { allowedValuesStr: e.target.value })}
+                                                    placeholder="Варіанти через кому: 1, 2, 3, 5..."
+                                                    title="Дозволені числові значення через кому"
+                                                    className={`flex-1 min-w-[150px] px-3 py-1.5 border rounded-lg text-sm font-mono bg-white ${
+                                                        errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
+                                                    }`}
+                                                />
+                                            )}
+
+                                            {p.type === "Enum" && (
+                                                <input
+                                                    type="text"
+                                                    value={p.allowedValuesStr}
+                                                    onChange={(e) => handlePropertyChange(cat.id, p.id, { allowedValuesStr: e.target.value })}
+                                                    placeholder="Варіанти через кому: ЧЕРВОНЕ, БІЛЕ..."
+                                                    title="Дозволені текстові значення через кому"
+                                                    className={`flex-1 min-w-[150px] px-3 py-1.5 border rounded-lg text-sm font-mono bg-white ${
+                                                        errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
+                                                    }`}
+                                                />
+                                            )}
+
+                                            {p.type === "Smart" && (
+                                                <input
+                                                    type="text"
+                                                    value={p.expressionStr}
+                                                    onChange={(e) => handlePropertyChange(cat.id, p.id, { expressionStr: e.target.value })}
+                                                    placeholder="Формула: code_a + code_b * 0.5"
+                                                    title="Формула розрахункового показника"
+                                                    className={`flex-1 min-w-[180px] px-3 py-1.5 border rounded-lg text-sm font-mono bg-white ${
+                                                        errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
+                                                    }`}
+                                                />
                                             )}
 
                                             <div className="ml-auto flex items-center gap-1 shrink-0">

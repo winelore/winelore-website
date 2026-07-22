@@ -5,7 +5,7 @@ import { LocaleProvider } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
 import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2, Pencil } from "lucide-react"
 import Cookies from "js-cookie"
-import TemplateCreatorModal from "./TemplateCreatorModal"
+import TemplateCreatorModal, { PROPERTY_TYPE_LABELS } from "./TemplateCreatorModal"
 
 interface Property {
     id: string
@@ -220,8 +220,8 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                                                                         )}
                                                                     </div>
                                                                     <div className="flex items-center gap-1.5 shrink-0">
-                                                                        <span className="bg-slate-100 text-slate-500 rounded-md px-1.5 py-0.5 text-[9px] font-mono font-bold border border-slate-200/50">
-                                                                            {prop.type}
+                                                                        <span className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60">
+                                                                            {PROPERTY_TYPE_LABELS[prop.type] || prop.type}
                                                                         </span>
                                                                         {prop.isRequired && (
                                                                             <span className="text-rose-500 font-bold" title="Обов'язкове">*</span>
