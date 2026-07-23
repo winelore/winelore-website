@@ -5,7 +5,7 @@
  * Running this on the server side completely bypasses browser CORS restrictions.
  */
 async function executeGraphQL(query: string, variables: any) {
-    const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+    const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export async function getCompetitionSeriesCount(auid: number) {
   `;
 
     try {
-        const res = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+        const res = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

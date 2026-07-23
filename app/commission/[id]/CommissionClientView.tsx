@@ -624,7 +624,7 @@ export default function CommissionClientView({
                                         <Layers className="w-4 h-4 text-indigo-500" />
                                         {t("commission.tastingReplicas")}
                                     </h3>
-                                    {isCompetitionHolder && (
+                                    {isCompetitionHolder && !isAddingReplica && (
                                         <button
                                             onClick={openAddReplica}
                                             disabled={isMutating}
@@ -635,15 +635,134 @@ export default function CommissionClientView({
                                         </button>
                                     )}
                                 </div>
-                                {localReplicas.length === 0 && (
+
+                                {isAddingReplica && (
+                                    <div className="mb-4 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-800">Add Tasting Replica</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddingReplica(false)}
+                                                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Name (optional)</label>
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                placeholder="e.g. Replica B"
+                                                className="w-full text-xs font-semibold text-slate-700 outline-none border-b border-slate-300 focus:border-indigo-500 py-1 bg-transparent"
+                                                value={newReplicaName}
+                                                onChange={e => setNewReplicaName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Type</label>
+                                            <div className="flex gap-2">
+                                                {(["STANDARD", "TRAINEE"] as const).map(type => (
+                                                    <button
+                                                        key={type}
+                                                        type="button"
+                                                        onClick={() => setNewReplicaType(type)}
+                                                        className={`flex-1 rounded-xl px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+                                                            newReplicaType === type
+                                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                                                                : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"
+                                                        }`}
+                                                    >
+                                                        {type}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 mt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddingReplica(false)}
+                                                disabled={isMutating}
+                                                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleAddReplica}
+                                                disabled={isMutating}
+                                                className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-1 disabled:opacity-75 cursor-pointer"
+                                            >
+                                                {isMutating ? (
+                                                    <>
+                                                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                        <span>Adding...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <span>Add Replica</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {localReplicas.length === 0 && !isAddingReplica && (
                                     <p className="text-xs text-slate-400 text-center py-3">
                                         No replicas yet. Add one to get started.
                                     </p>
                                 )}
+
                                 <div className="flex flex-col gap-2">
                                     {localReplicas.map((r) => {
                                         const isSelected = r.id === selectedReplicaId
                                         const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
+                                        
+                                        if (isEditingReplica && isSelected) {
+                                            return (
+                                                <div key={r.id} className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl flex flex-col gap-2 w-full">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-900">Rename Tasting Replica</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsEditingReplica(false)}
+                                                            className="text-slate-400 hover:text-slate-600 transition-colors p-0.5 cursor-pointer"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        placeholder="e.g. Replica B"
+                                                        className="w-full text-xs font-semibold text-slate-800 outline-none border-b border-indigo-300 focus:border-indigo-600 py-1 bg-transparent"
+                                                        value={editReplicaName}
+                                                        onChange={e => setEditReplicaName(e.target.value)}
+                                                    />
+                                                    <div className="flex justify-end gap-2 mt-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsEditingReplica(false)}
+                                                            disabled={isMutating}
+                                                            className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleSaveReplica}
+                                                            disabled={isMutating}
+                                                            className="px-2.5 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-1 transition-all cursor-pointer"
+                                                        >
+                                                            {isMutating ? "Saving..." : "Save"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        }
+
                                         return (
                                             <button
                                                 key={r.id}
@@ -801,20 +920,53 @@ export default function CommissionClientView({
                                     <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
                                         {t("commission.session")}
                                     </span>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
-                                            {initialData.name}
-                                        </h2>
-                                        {isCompetitionHolder && (
-                                            <button
-                                                onClick={openEditName}
-                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                title="Edit commission name"
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </div>
+                                    {isEditingName ? (
+                                        <div className="mt-2 w-full max-w-lg mb-2">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-slate-800">Name</h3>
+                                                    <p className="text-[13px] text-slate-500">Used to identify this session</p>
+                                                </div>
+                                                <div className="flex items-center gap-4 mt-1">
+                                                    <button
+                                                        onClick={() => setIsEditingName(false)}
+                                                        className="text-sm font-medium text-slate-500 hover:text-slate-700 cursor-pointer transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={handleSaveName}
+                                                        disabled={isMutating}
+                                                        className="text-sm font-medium text-emerald-600 hover:text-emerald-700 disabled:opacity-50 cursor-pointer transition-colors"
+                                                    >
+                                                        {isMutating ? "Saving..." : "Save"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                className="w-full rounded-[14px] border border-slate-300 px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-shadow"
+                                                value={editNameData}
+                                                onChange={e => setEditNameData(e.target.value)}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
+                                                {initialData.name}
+                                            </h2>
+                                            {isCompetitionHolder && (
+                                                <button
+                                                    onClick={openEditName}
+                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
+                                                    title="Edit commission name"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                     <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                                             replicaStatus === "STARTED"
@@ -886,25 +1038,56 @@ export default function CommissionClientView({
                                     {t("commission.timelineDetails")}
                                 </h3>
                                 {isCompetitionHolder && (
-                                    <button
-                                        onClick={openEditDates}
-                                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                        title="Edit planned dates"
-                                    >
-                                        <Pencil className="w-4 h-4" />
-                                    </button>
+                                    isEditingDates ? (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsEditingDates(false)}
+                                                disabled={isMutating}
+                                                className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleSaveDates}
+                                                disabled={isMutating}
+                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                                            >
+                                                {isMutating ? "Saving..." : "Save"}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={openEditDates}
+                                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
+                                            title="Edit planned dates"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                    )
                                 )}
                             </div>
+
                             <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
                                 {/* Planned Start */}
                                 <div className="relative">
                                     <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
                                     <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.plannedStart")}</span>
                                     <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                        <p className="text-xs font-semibold text-slate-800">
-                                            {formatDateTime(initialData.plannedStartAt)}
-                                        </p>
-                                        {selectedReplica?.status === "PLANNED" && initialData.plannedStartAt && (
+                                        {isEditingDates ? (
+                                            <input
+                                                type="datetime-local"
+                                                className="text-xs font-semibold text-slate-800 border-b border-indigo-500 outline-none bg-transparent py-0.5"
+                                                value={editDatesData.plannedStartAt}
+                                                onChange={e => setEditDatesData({ ...editDatesData, plannedStartAt: e.target.value })}
+                                            />
+                                        ) : (
+                                            <p className="text-xs font-semibold text-slate-800">
+                                                {formatDateTime(initialData.plannedStartAt)}
+                                            </p>
+                                        )}
+                                        {!isEditingDates && selectedReplica?.status === "PLANNED" && initialData.plannedStartAt && (
                                             <a
                                                 href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
                                                 target="_blank"
@@ -917,13 +1100,24 @@ export default function CommissionClientView({
                                     </div>
                                 </div>
                                 {/* Planned End */}
-                                {initialData.plannedEndAt && (
+                                {(initialData.plannedEndAt || isEditingDates) && (
                                     <div className="relative">
                                         <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-400 border-2 border-white" />
                                         <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.plannedEnd")}</span>
-                                        <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                                            {formatDateTime(initialData.plannedEndAt)}
-                                        </p>
+                                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                            {isEditingDates ? (
+                                                <input
+                                                    type="datetime-local"
+                                                    className="text-xs font-semibold text-slate-800 border-b border-indigo-500 outline-none bg-transparent py-0.5"
+                                                    value={editDatesData.plannedEndAt}
+                                                    onChange={e => setEditDatesData({ ...editDatesData, plannedEndAt: e.target.value })}
+                                                />
+                                            ) : (
+                                                <p className="text-xs font-semibold text-slate-800">
+                                                    {formatDateTime(initialData.plannedEndAt)}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                                 {/* Actual Start */}
@@ -1113,8 +1307,7 @@ export default function CommissionClientView({
                             @keyframes fadeInSlide {
                                 from {
                                     opacity: 0;
-                                    transform: translateY(4px);
-                                }
+                                    transform: translateY(4px)                                 }
                                 to {
                                     opacity: 1;
                                     transform: translateY(0);
@@ -1127,248 +1320,6 @@ export default function CommissionClientView({
                     </div>
 
                 </div>
-
-                {isEditingName && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-md flex flex-col">
-                            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                                <h3 className="text-lg font-bold text-slate-800">Edit Commission Name</h3>
-                                <button
-                                    onClick={() => setIsEditingName(false)}
-                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-2">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Name</label>
-                                <input
-                                    type="text"
-                                    autoFocus
-                                    className="w-full text-sm font-semibold text-slate-700 outline-none border-b border-slate-200 focus:border-indigo-500 py-1.5"
-                                    value={editNameData}
-                                    onChange={e => setEditNameData(e.target.value)}
-                                />
-                            </div>
-                            <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
-                                <button
-                                    onClick={() => setIsEditingName(false)}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveName}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
-                                >
-                                    {isMutating ? (
-                                        <>
-                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            <span>Saving...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-4 h-4" />
-                                            <span>Save</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {isEditingReplica && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-md flex flex-col">
-                            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                                <h3 className="text-lg font-bold text-slate-800">Rename Tasting Replica</h3>
-                                <button
-                                    onClick={() => setIsEditingReplica(false)}
-                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div className="space-y-2">
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Name (optional)</label>
-                                    <input
-                                        type="text"
-                                        autoFocus
-                                        placeholder="e.g. Replica B"
-                                        className="w-full text-sm font-semibold text-slate-700 outline-none border-b border-slate-200 focus:border-indigo-500 py-1.5"
-                                        value={editReplicaName}
-                                        onChange={e => setEditReplicaName(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
-                                <button
-                                    onClick={() => setIsEditingReplica(false)}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveReplica}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
-                                >
-                                    {isMutating ? (
-                                        <>
-                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            <span>Saving...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-4 h-4" />
-                                            <span>Save Changes</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {isEditingDates && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-lg flex flex-col">
-                            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                                <h3 className="text-lg font-bold text-slate-800">Edit Planned Dates</h3>
-                                <button
-                                    onClick={() => setIsEditingDates(false)}
-                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="p-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="pl-4 border-l-2 border-indigo-500">
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Start</label>
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
-                                            value={editDatesData.plannedStartAt}
-                                            onChange={e => setEditDatesData({ ...editDatesData, plannedStartAt: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="pl-4 border-l-2 border-indigo-500">
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Planned Completion</label>
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full text-sm font-semibold text-slate-700 mt-1 outline-none border-b border-transparent focus:border-indigo-500 py-1"
-                                            value={editDatesData.plannedEndAt}
-                                            onChange={e => setEditDatesData({ ...editDatesData, plannedEndAt: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
-                                <button
-                                    onClick={() => setIsEditingDates(false)}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveDates}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
-                                >
-                                    {isMutating ? (
-                                        <>
-                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            <span>Saving...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-4 h-4" />
-                                            <span>Save</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {isAddingReplica && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-md flex flex-col">
-                            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                                <h3 className="text-lg font-bold text-slate-800">Add Tasting Replica</h3>
-                                <button
-                                    onClick={() => setIsAddingReplica(false)}
-                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div className="space-y-2">
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Name (optional)</label>
-                                    <input
-                                        type="text"
-                                        autoFocus
-                                        placeholder="e.g. Replica B"
-                                        className="w-full text-sm font-semibold text-slate-700 outline-none border-b border-slate-200 focus:border-indigo-500 py-1.5"
-                                        value={newReplicaName}
-                                        onChange={e => setNewReplicaName(e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Type</label>
-                                    <div className="flex gap-2">
-                                        {(["STANDARD", "TRAINEE"] as const).map(type => (
-                                            <button
-                                                key={type}
-                                                onClick={() => setNewReplicaType(type)}
-                                                className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
-                                                    newReplicaType === type
-                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
-                                                        : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
-                                                }`}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[32px]">
-                                <button
-                                    onClick={() => setIsAddingReplica(false)}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleAddReplica}
-                                    disabled={isMutating}
-                                    className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
-                                >
-                                    {isMutating ? (
-                                        <>
-                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            <span>Adding...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Plus className="w-4 h-4" />
-                                            <span>Add Replica</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </main>
         </div>
     )

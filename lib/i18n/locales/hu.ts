@@ -71,6 +71,7 @@ const hu = {
         stepCompleted: "Verseny lezárva",
         stepCompletedDesc: "Kóstolás befejezve",
         calendarDetails: "WineLore verseny: {{name}}",
+        addCommission: "Bizottság hozzáadása",
     },
     commission: {
         session: "Bizottsági ülés",

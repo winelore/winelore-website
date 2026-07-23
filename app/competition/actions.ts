@@ -77,7 +77,7 @@ export async function updateCompetitionSettingsAction(
     if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
 
     const executeMutation = async (query: string, variables: any) => {
-        const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+        const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query, variables }),
@@ -184,7 +184,7 @@ export async function updateCompetitionNameAction(competitionId: string, newName
 
 export async function getCompetitionSeriesListAction() {
     try {
-        const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+        const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -218,7 +218,7 @@ interface CreateCommissionParams {
 }
 
 async function executeGraphQL(query: string, variables: any) {
-    const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+    const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
