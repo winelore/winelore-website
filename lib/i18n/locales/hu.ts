@@ -9,6 +9,7 @@ const hu = {
         signIn: "Bejelentkezés",
         myBeverages: "Saját italok",
         myCompetitions: "Saját versenyek",
+        myCommissions: "Saját bizottságok",
         myAssessments: "Saját értékelések",
         axusIdProfile: "AXUS ID Profil",
         na: "N/A",
@@ -43,6 +44,12 @@ const hu = {
         welcomeTitle: "Üdvözöljük újra! 👋",
         welcomeSubtitle: "Íme, mi történik a mai tevékenységeivel.",
         viewAll: "Összes megtekintése",
+    },
+    beverages: {
+        errorTitle: "Betöltési hiba",
+        errorDescription: "Nem sikerült betölteni az italok listáját. Kérjük, frissítse az oldalt.",
+        emptyTitle: "Nincsenek italok",
+        emptyDescription: "Még nincsenek itt italok.",
     },
     myBeverages: {
         title: "Saját italok",

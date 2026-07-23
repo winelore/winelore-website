@@ -150,15 +150,15 @@ export default function BeveragesClientView({
                         {initialBeverages === undefined && (
                             <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-red-50 border border-red-100 rounded-[32px] shadow-xl shadow-red-200/50">
                                 <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-                                <h3 className="text-lg font-bold text-red-800">Помилка завантаження</h3>
-                                <p className="text-sm text-red-600 mt-1 max-w-md">Не вдалося завантажити список напоїв. Спробуйте оновити сторінку.</p>
+                                <h3 className="text-lg font-bold text-red-800">{t("beverages.errorTitle")}</h3>
+                                <p className="text-sm text-red-600 mt-1 max-w-md">{t("beverages.errorDescription")}</p>
                             </div>
                         )}
                         {initialBeverages !== undefined && initialBeverages.length === 0 && (
                             <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50">
                                 <Wine className="w-12 h-12 text-slate-300 mb-4" />
-                                <h3 className="text-lg font-bold text-slate-700">Немає напоїв</h3>
-                                <p className="text-sm text-slate-500 mt-1 max-w-md">Тут ще немає жодного напою.</p>
+                                <h3 className="text-lg font-bold text-slate-700">{t("beverages.emptyTitle")}</h3>
+                                <p className="text-sm text-slate-500 mt-1 max-w-md">{t("beverages.emptyDescription")}</p>
                             </div>
                         )}
                     </div>

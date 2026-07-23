@@ -60,6 +60,8 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
         const templateIdParam = searchParams.get("templateId")
         if (templateIdParam) {
             setExpandedTemplateId(templateIdParam)
+        } else {
+            setExpandedTemplateId(null)
         }
     }, [searchParams])
 

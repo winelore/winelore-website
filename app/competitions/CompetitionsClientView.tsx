@@ -37,12 +37,12 @@ interface DashboardProps {
     currentPage: number
     totalPages?: number
     // Legacy props to keep local dev server working before full merge
+    nextCursor?: string | null
     nextHistory?: string
     prevCursor?: string | null
     prevHistory?: string
     hasPrev?: boolean
     hasNext?: boolean
-
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -282,28 +282,6 @@ export default function CompetitionsClientView({
                                 <button
                                     onClick={handleNext}
                                     disabled={currentPage >= totalPages || isLoading}
-                                    className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-                                >
-                                    <ChevronRight className="h-5 w-5" />
-                                </button>
-                            </div>
-                        ) : (hasPrev || hasNext) ? (
-                            <div className="mt-2 flex items-center justify-center gap-3">
-                                <button
-                                    onClick={handlePrev}
-                                    disabled={!hasPrev || isLoading}
-                                    className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-                                >
-                                    <ChevronLeft className="h-5 w-5" />
-                                </button>
-
-                                <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
-                                {currentPage}
-                            </span>
-
-                                <button
-                                    onClick={handleNext}
-                                    disabled={!hasNext || isLoading}
                                     className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
                                 >
                                     <ChevronRight className="h-5 w-5" />

@@ -9,6 +9,7 @@ const en = {
     signIn: "Sign In",
     myBeverages: "My Beverages",
     myCompetitions: "My Competitions",
+    myCommissions: "My Commissions",
     myAssessments: "My Assessments",
     axusIdProfile: "AXUS ID Profile",
     na: "N/A",
@@ -43,6 +44,12 @@ const en = {
     welcomeTitle: "Welcome back! 👋",
     welcomeSubtitle: "Here is what's happening with your activities today.",
     viewAll: "View all",
+  },
+  beverages: {
+    errorTitle: "Loading Error",
+    errorDescription: "Failed to load the list of beverages. Please try refreshing the page.",
+    emptyTitle: "No beverages",
+    emptyDescription: "There are no beverages here yet.",
   },
   myBeverages: {
     title: "My Beverages",

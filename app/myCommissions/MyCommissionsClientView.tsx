@@ -236,8 +236,9 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
     const handleJumpToPage = (pageNumber: number) => {
         setIsLoading(true)
         const targetOffset = (pageNumber - 1) * 16
-        // Simple history tracking for jump - we just clear history and use the offset
-        router.push(`${pathname}?offset=${targetOffset}`)
+        const prevOffsetVal = Math.max(0, targetOffset - 16)
+        const histParam = targetOffset > 0 ? `&h=${prevOffsetVal}` : ''
+        router.push(`${pathname}?offset=${targetOffset}${histParam}`)
     }
 
     useEffect(() => {

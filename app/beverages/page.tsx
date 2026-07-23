@@ -2,7 +2,6 @@ import { sdk } from '@/lib/apiClient';
 import BeveragesClientView from './BeveragesClientView';
 import { getBeverageTypesAction } from '@/app/templates/actions';
 
-import { cookies } from "next/headers"
 
 export const dynamic = "force-dynamic"
 
@@ -13,7 +12,8 @@ export default async function DashboardPage({
 }) {
     const resolvedParams = await searchParams;
     const cursor = resolvedParams.cursor;
-    const currentPage = parseInt(resolvedParams.page || "1", 10);
+    const parsedPage = parseInt(resolvedParams.page || "1", 10);
+    const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
     const LIMIT = 16;
     
     let allBeverages: any[] | undefined = [];
@@ -21,18 +21,11 @@ export default async function DashboardPage({
     let nextCursor: string | null = null;
 
     try {
-        const cookieStore = await cookies()
-        const currentAuidStr = cookieStore.get("auid")?.value
-        const currentAuid = currentAuidStr ? parseInt(currentAuidStr, 10) : undefined;
-
         const args: any = { limit: LIMIT };
         if (cursor) {
             args.cursor = cursor;
         } else if (currentPage > 1) {
             args.offset = (currentPage - 1) * LIMIT;
-        }
-        if (currentAuid) {
-            args.producer = [currentAuid];
         }
 
         const bevData = await sdk.GetMyBeverages(args);

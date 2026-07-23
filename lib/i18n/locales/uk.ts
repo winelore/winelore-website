@@ -11,6 +11,7 @@ const uk: TranslationKey = {
     signIn: "Увійти",
     myBeverages: "Мої напої",
     myCompetitions: "Мої конкурси",
+    myCommissions: "Мої комісії",
     myAssessments: "Мої оцінювання",
     axusIdProfile: "Профіль AXUS ID",
     na: "Н/Д",
@@ -45,6 +46,12 @@ const uk: TranslationKey = {
     welcomeTitle: "З поверненням! 👋",
     welcomeSubtitle: "Ось що відбувається з вашими активностями сьогодні.",
     viewAll: "Переглянути всі",
+  },
+  beverages: {
+    errorTitle: "Помилка завантаження",
+    errorDescription: "Не вдалося завантажити список напоїв. Спробуйте оновити сторінку.",
+    emptyTitle: "Немає напоїв",
+    emptyDescription: "Тут ще немає жодного напою.",
   },
   myBeverages: {
     title: "Мої напої",

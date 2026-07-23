@@ -16,7 +16,8 @@ export default async function MyCommissionsPage({searchParams, }: {
 
     const LIMIT = 16;
     let offset = parseInt(offsetStr || "0", 10);
-    if (isNaN(offset)) offset = 0;
+    if (isNaN(offset) || offset < 0) offset = 0;
+    offset = Math.floor(offset / LIMIT) * LIMIT;
 
     const cookieStore = await cookies()
     const currentAuidStr = cookieStore.get("auid")?.value
