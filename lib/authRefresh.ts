@@ -1,6 +1,6 @@
 import { parseJwt } from "./pkce";
 
-const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || "http://hayabusa.proxy.rlwy.net:58687/graphql";
+const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || "https://axusid.thewinelore.com/graphql";
 
 const USER_DETAILS_QUERY = `
   query UserDetails($auid: ID!) {
