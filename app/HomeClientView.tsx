@@ -384,7 +384,7 @@ export default function HomeClientView({
                         {/* Templates (Utility - spans 1 column) */}
                         <div className="flex flex-col gap-4">
                             <div className="flex items-center gap-2 px-2">
-                                <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
+                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
                                     <ClipboardList className="w-5 h-5" />
                                 </div>
                                 <h2 className="text-xl font-bold text-slate-800">{t("dashboard.myTemplates")}</h2>
@@ -398,7 +398,7 @@ export default function HomeClientView({
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/templates" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-amber-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                        <Link href="/templates" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
                                             {t("dashboard.viewAll")}
                                             <ChevronRight className="w-4 h-4" />
                                         </Link>
@@ -415,7 +415,7 @@ export default function HomeClientView({
                         {/* Active Commissions */}
                         <div className="lg:col-span-2 flex flex-col gap-4">
                             <div className="flex items-center gap-2 px-2">
-                                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
                                     <Activity className="w-5 h-5" />
                                 </div>
                                 <h2 className="text-xl font-bold text-slate-800">{t("dashboard.activeCommissions")}</h2>
@@ -429,7 +429,7 @@ export default function HomeClientView({
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myCommissions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-emerald-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                        <Link href="/myCommissions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
                                             {t("dashboard.viewAll")}
                                             <ChevronRight className="w-4 h-4" />
                                         </Link>
@@ -446,7 +446,7 @@ export default function HomeClientView({
                         {/* Beverages */}
                         <div className="lg:col-span-1 flex flex-col gap-4">
                             <div className="flex items-center gap-2 px-2">
-                                <div className="p-2 bg-rose-100 text-rose-600 rounded-xl">
+                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
                                     <Wine className="w-5 h-5" />
                                 </div>
                                 <h2 className="text-xl font-bold text-slate-800">{t("dashboard.myBeverages")}</h2>
@@ -460,7 +460,7 @@ export default function HomeClientView({
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myBeverages" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-rose-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                        <Link href="/myBeverages" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
                                             {t("dashboard.viewAll")}
                                             <ChevronRight className="w-4 h-4" />
                                         </Link>

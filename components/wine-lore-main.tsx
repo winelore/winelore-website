@@ -60,7 +60,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         </div>
 
         <div className="px-5">
-          <div className="h-[1px] w-full bg-border/60" />
+          <div className="h-[1px] w-full bg-border" />
         </div>
 
         {/* Group 2: Navigation Links */}
@@ -89,7 +89,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         </div>
 
         <div className="px-5">
-          <div className="h-[1px] w-full bg-border/60" />
+          <div className="h-[1px] w-full bg-border" />
         </div>
 
         {/* Group 3: My Commissions */}
@@ -104,7 +104,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
         </div>
 
         <div className="px-5">
-          <div className="h-[1px] w-full bg-border/60" />
+          <div className="h-[1px] w-full bg-border" />
         </div>
 
         {/* Group 4: AXUS ID Profile */}
