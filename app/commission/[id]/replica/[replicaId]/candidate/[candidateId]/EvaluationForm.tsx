@@ -649,26 +649,20 @@ export default function EvaluationForm({
                     ]
 
                     return (
-                        // Змінено p-6 на p-4 для зменшення загальної висоти
                         <div key={category.id}
                              className="border border-slate-100 rounded-2xl p-4 bg-slate-50/30 w-full flex flex-col h-full">
-                            {/* Зменшено відступи під заголовком: mb-3 замість mb-4 */}
                             <h2 className="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
                                 <TranslatedText text={category.name}/>
                             </h2>
 
-                            {/* Зменшено відступ між полями (повзунками): gap-3 замість gap-5 */}
                             <div className="flex flex-col gap-3 flex-1">
                                 {orderedProperties.map((prop, propIndex) => {
                                     const currentValue = values[prop.code]
                                     const isSmart = prop.__typename === "SmartProperty"
                                     const isResult = prop.isResult === true
 
-                                    // ВИДАЛЕНО: логіку обчислення startsResultSection та блок "Результати"
-
                                     return (
                                         <React.Fragment key={prop.id}>
-                                            {/* Зменшено padding блоку: p-2.5 замість p-3 */}
                                             <div
                                                 className={`flex flex-col gap-2.5 p-2.5 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
                                                 <div
@@ -750,11 +744,9 @@ export default function EvaluationForm({
                                                             const min = rawMin
                                                             const max = rawMax
                                                             const step = prop.__typename === "DoubleProperty" ? 0.1 : 1
-                                                            const configuredDefault = prop.__typename === "IntProperty" ? prop.intDefaultValue : prop.doubleDefaultValue
+                                                            // const configuredDefault = prop.__typename === "IntProperty" ? prop.intDefaultValue : prop.doubleDefaultValue
                                                             const hasValue = currentValue !== undefined && currentValue !== null && currentValue !== ""
-                                                            const sliderValue = hasValue
-                                                                ? currentValue
-                                                                : configuredDefault ?? (min + max) / 2
+                                                            const sliderValue = hasValue ? currentValue : min
                                                             const isOutOfRange = currentValue !== undefined && currentValue !== null && currentValue !== "" && (
                                                                 currentValue < min || currentValue > max
                                                             )
@@ -772,8 +764,20 @@ export default function EvaluationForm({
                                                                                 min={min}
                                                                                 max={max}
                                                                                 step={step}
+                                                                                hasValue={hasValue}
                                                                                 showSteps={true}
                                                                                 value={[sliderValue]}
+                                                                                onPointerDown={() => {
+                                                                                    if (!hasValue) {
+                                                                                        setNumericDrafts(prev => {
+                                                                                            const next = { ...prev }
+                                                                                            delete next[prop.code]
+                                                                                            return next
+                                                                                        })
+                                                                                        setNumericErrors(prev => ({ ...prev, [prop.code]: null }))
+                                                                                        handleValueChange(prop.code, normalizeNumericValue(min))
+                                                                                    }
+                                                                                }}
                                                                                 onValueChange={(val) => {
                                                                                     setNumericDrafts(prev => {
                                                                                         const next = {...prev}
@@ -783,7 +787,7 @@ export default function EvaluationForm({
                                                                                     setNumericErrors(prev => ({...prev, [prop.code]: null}))
                                                                                     handleValueChange(prop.code, normalizeNumericValue(val[0]))
                                                                                 }}
-                                                                                className="cursor-pointer relative z-10"
+                                                                                className={`cursor-pointer relative z-10 transition-opacity ${!hasValue ? "opacity-50 [&_[role=slider]]:opacity-0" : ""}`}
                                                                             />
                                                                         </div>
                                                                         <input

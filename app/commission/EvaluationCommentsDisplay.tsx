@@ -104,18 +104,19 @@ function SubmittedScores({
         return (
             <div
                 key={score.code}
-                className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs shadow-sm ${
+                className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs shadow-sm w-fit ${
                     isResult
                         ? "border border-indigo-300 bg-indigo-600 text-white"
                         : "border border-slate-200 bg-white"
                 }`}
             >
-                <span className={`mr-1 ${isResult ? "text-indigo-100" : "text-slate-500"}`}>
-                    <TranslatedText text={displayName} />
-                </span>
-                <span className={`font-bold ${isResult ? "text-white" : "text-slate-800"}`}>
+                <span className={`font-bold mr-1.5 ${isResult ? "text-white" : "text-slate-800"}`}>
                     {displayValue}
                 </span>
+                <span className={`${isResult ? "text-indigo-100" : "text-slate-500"}`}>
+                    <TranslatedText text={displayName} />
+                </span>
+
             </div>
         );
     };

@@ -446,7 +446,7 @@ export default function CompetitionClientView({
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            <AppHeader activeTab="competitions" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col gap-8">

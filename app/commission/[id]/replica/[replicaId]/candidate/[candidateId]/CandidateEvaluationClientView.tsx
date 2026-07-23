@@ -3,7 +3,7 @@
 import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import { MapPin } from "lucide-react"
+import { MapPin, LayoutList } from "lucide-react"
 
 interface EvaluationCategory {
   id: string
@@ -15,6 +15,7 @@ interface CandidateEvaluationClientViewProps {
   replicaName?: string | null
   candidateCode: string
   commissionName: string
+  panelName?: string
   currentIndex: number
   totalCandidates: number
   candidatesLeft: number
@@ -31,6 +32,7 @@ export default function CandidateEvaluationClientView({
   replicaName,
   candidateCode,
   commissionName,
+  panelName,
   currentIndex,
   totalCandidates,
   candidatesLeft,
@@ -60,6 +62,13 @@ export default function CandidateEvaluationClientView({
                             <p className="text-slate-500">
                                 <span className="font-medium text-slate-700">{t("evaluation.commission")}:</span> {commissionName}
                             </p>
+                            {panelName && (
+                                <div className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                    <LayoutList className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                                    <span className="font-medium text-slate-800">Panel:</span>
+                                    <span className="font-normal text-slate-600">{panelName}</span>
+                                </div>
+                            )}
                             {originParts.length > 0 && (
                                 <div className="flex items-center gap-1.5 text-slate-600 border-l-2 border-slate-100 pl-4">
                                     <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
