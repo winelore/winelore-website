@@ -80,13 +80,6 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
             <span>{t("common.myCompetitions")}</span>
           </a>
           <a
-            href="/myCommissions"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
-          >
-            <Activity className="h-5 w-5 stroke-[1.5] text-foreground" />
-            <span>{t("common.myCommissions")}</span>
-          </a>
-          <a
             href="/templates"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
@@ -99,7 +92,22 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
           <div className="h-[1px] w-full bg-border/60" />
         </div>
 
-        {/* Group 3: AXUS ID Profile */}
+        {/* Group 3: My Commissions */}
+        <div className="px-2 py-1.5">
+          <a
+            href="/myCommissions"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
+          >
+            <Activity className="h-5 w-5 stroke-[1.5] text-foreground" />
+            <span>{t("common.myCommissions")}</span>
+          </a>
+        </div>
+
+        <div className="px-5">
+          <div className="h-[1px] w-full bg-border/60" />
+        </div>
+
+        {/* Group 4: AXUS ID Profile */}
         <div className="px-2 pb-3 pt-1.5">
           <a
             href={AXUS_ACCOUNT_URL}

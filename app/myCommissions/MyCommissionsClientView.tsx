@@ -47,7 +47,7 @@ function getStatusColor(status: string) {
     switch (status) {
         case "IN_PROGRESS":
         case "STARTED":
-            return "text-emerald-500"
+            return "text-indigo-500"
         case "READY":
         case "PLANNED":
         case "APPROVED":
@@ -66,7 +66,7 @@ function getStatusBgColor(status: string) {
     switch (status) {
         case "IN_PROGRESS":
         case "STARTED":
-            return "bg-emerald-50 border-emerald-100"
+            return "bg-indigo-50 border-indigo-100"
         case "READY":
         case "PLANNED":
         case "APPROVED":
@@ -148,17 +148,17 @@ function CommissionCard({ comm }: { comm: Commission }) {
     return (
         <Link
             href={`/commission/${comm.id}`}
-            className="group bg-white border border-slate-100 rounded-[32px] p-7 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-emerald-100 flex flex-col min-h-[140px]"
+            className="group bg-white border border-slate-100 rounded-[32px] p-7 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 flex flex-col min-h-[140px]"
         >
             <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
                     <Activity className="h-7 w-7" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 truncate block">
                         {comm.competition.name}
                     </span>
-                    <h3 className="text-xl font-bold text-slate-800 truncate group-hover:text-emerald-600 transition-colors">
+                    <h3 className="text-xl font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
                         {comm.name}
                     </h3>
                 </div>
@@ -182,7 +182,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
                     )}
                 </span>
                 
-                <ChevronRightIcon className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                <ChevronRightIcon className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors" />
             </div>
         </Link>
     )
@@ -252,7 +252,7 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
             <main className="flex-1 overflow-auto p-6 flex flex-col relative">
                 {isLoading && (
                     <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-3xl">
-                        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
                     </div>
                 )}
 
@@ -282,7 +282,7 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
                         <button
                             onClick={handlePrev}
                             disabled={!hasPrev || isLoading}
-                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-emerald-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
@@ -297,8 +297,8 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
                                     disabled={isLoading || p === currentPage}
                                     className={`flex items-center justify-center h-10 w-10 rounded-full text-sm font-semibold transition-all duration-300 shadow-xl ${
                                         p === currentPage
-                                            ? "bg-emerald-600 text-white shadow-emerald-200/50 pointer-events-none"
-                                            : "bg-white border border-slate-100 text-slate-600 shadow-slate-200/50 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-emerald-100"
+                                            ? "bg-indigo-600 text-white shadow-indigo-200/50 pointer-events-none"
+                                            : "bg-white border border-slate-100 text-slate-600 shadow-slate-200/50 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100"
                                     }`}
                                 >
                                     {p}
@@ -309,7 +309,7 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
                         <button
                             onClick={handleNext}
                             disabled={!hasNext || isLoading}
-                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-emerald-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
                         >
                             <ChevronRight className="h-5 w-5" />
                         </button>
@@ -319,7 +319,7 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
                         <button
                             onClick={handlePrev}
                             disabled={!hasPrev || isLoading}
-                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-emerald-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
@@ -331,7 +331,7 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
                         <button
                             onClick={handleNext}
                             disabled={!hasNext || isLoading}
-                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-emerald-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
+                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
                         >
                             <ChevronRight className="h-5 w-5" />
                         </button>

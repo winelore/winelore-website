@@ -234,17 +234,17 @@ function CommissionCard({ commission }: { commission: any }) {
     return (
         <Link
             href={`/commission/${commission.id}`}
-            className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-emerald-100 flex flex-col min-h-[140px]"
+            className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col min-h-[140px]"
         >
             <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
                     <Activity className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 truncate block">
                         {commission.competition?.name}
                     </span>
-                    <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-emerald-600 transition-colors">
+                    <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
                         {commission.name}
                     </h3>
                 </div>
@@ -275,7 +275,7 @@ function TemplateCard({ template }: { template: any }) {
             href={`/templates?templateId=${template.id}-${template.latestEdition?.version || 0}`}
             className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex items-center gap-4"
         >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
                 <ClipboardList className="h-6 w-6" />
             </div>
             <div className="flex-1 min-w-0">
@@ -291,11 +291,11 @@ function TemplateCard({ template }: { template: any }) {
                         </span>
                     )}
                 </div>
-                <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-amber-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
                     {template.name}
                 </h3>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500 transition-colors" />
+            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors" />
         </Link>
     )
 }
