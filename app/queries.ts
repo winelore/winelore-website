@@ -24,3 +24,4 @@ export const GET_DASHBOARD_COMPETITIONS = gql(`
       competitionCount
   }
 `);
+

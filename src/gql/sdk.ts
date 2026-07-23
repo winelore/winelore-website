@@ -434,7 +434,7 @@ export type GetCompetitionPageQueryVariables = Exact<{
 }>;
 
 
-export type GetCompetitionPageQuery = { competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } } | null, commissionsByCompetition: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, plannedDates: { start: string | null, end: string | null } | null }> } };
+export type GetCompetitionPageQuery = { competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } } | null, commissionsByCompetition: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null }> } };
 
 export type StartCompetitionMutationVariables = Exact<{
   id: string | number;
@@ -1310,6 +1310,10 @@ export const GetCompetitionPageDocument = gql`
       }
       startedAt
       endedAt
+      wineJumperMiniGameEnabled
+      voiceCommentsEnabled
+      propertyCommentsEnabled
+      beverageOriginDuringEvaluationEnabled
     }
   }
 }

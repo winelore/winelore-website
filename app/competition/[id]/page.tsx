@@ -24,10 +24,11 @@ export default async function CompetitionStartPage({ params }: PageProps) {
 
     try {
         const data = await fetchGraphQL(GET_COMPETITION_PAGE, { id: competitionId });
-
+        // console.log("GraphQL Data:", data);
         if (data) {
-            competition = data.competition;
-            commissions = data.commissionsByCompetition?.items || [];
+            const responseData = data.data || data;
+            competition = responseData.competition;
+            commissions = responseData.commissionsByCompetition?.items || [];
         } else {
             console.error("Порожня відповідь від GraphQL (data is undefined)");
         }
@@ -89,7 +90,11 @@ export default async function CompetitionStartPage({ params }: PageProps) {
             plannedStartAt: comm.plannedDates?.start || null,
             plannedEndAt: comm.plannedDates?.end || null,
             startedAt: comm.startedAt || null,
-            endedAt: comm.endedAt || null
+            endedAt: comm.endedAt || null,
+            wineJumperMiniGameEnabled: comm.wineJumperMiniGameEnabled || false,
+            voiceCommentsEnabled: comm.voiceCommentsEnabled || false,
+            propertyCommentsEnabled: comm.propertyCommentsEnabled || false,
+            beverageOriginDuringEvaluationEnabled: comm.beverageOriginDuringEvaluationEnabled || false
         }))
     };
 

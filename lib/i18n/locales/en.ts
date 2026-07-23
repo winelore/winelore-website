@@ -73,6 +73,7 @@ const en = {
     stepCompleted: "Competition Completed",
     stepCompletedDesc: "Tasting concluded",
     calendarDetails: "WineLore competition: {{name}}",
+    addCommission: "Add Commission",
   },
   commission: {
     session: "Commission Session",
