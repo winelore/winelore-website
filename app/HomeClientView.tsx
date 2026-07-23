@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { FileText, Trophy, Wine, User, Layers, CheckCircle, Clock, ChevronRight, Activity, CalendarDays, ClipboardList } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, CheckCircle, Clock, ChevronRight, Activity, CalendarDays, ClipboardList, PlayCircle, AlertCircle, Calendar, Timer } from "lucide-react"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
@@ -30,6 +30,23 @@ function getStatusColor(status: string) {
             return "text-muted-foreground"
         default:
             return "text-muted-foreground"
+    }
+}
+
+function getStatusBgColor(status: string) {
+    switch (status) {
+        case "IN_PROGRESS":
+        case "STARTED":
+            return "bg-emerald-50 border-emerald-100"
+        case "READY":
+        case "PLANNED":
+        case "APPROVED":
+            return "bg-blue-50 border-blue-100"
+        case "FINISHED":
+        case "COMPLETED":
+            return "bg-slate-50 border-slate-100"
+        default:
+            return "bg-slate-50 border-slate-100"
     }
 }
 
@@ -103,7 +120,7 @@ function CompetitionCard({ competition, usernames }: { competition: any; usernam
     return (
         <Link
             href={`/competition/${competition.id}`}
-            className="group bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col min-h-[120px]"
+            className="group bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col min-h-[140px]"
         >
             <div className="flex items-start gap-3">
                 <AvatarPlaceholder className="h-10 w-10 shrink-0" />
@@ -124,6 +141,21 @@ function CompetitionCard({ competition, usernames }: { competition: any; usernam
                     <TranslatedText text={competition.description} />
                 </p>
             )}
+            
+            <div className="mt-auto pt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                {competition.series?.name && (
+                    <div className="flex items-center gap-1.5">
+                        <Layers className="h-3.5 w-3.5" />
+                        <span>{competition.series.name}</span>
+                    </div>
+                )}
+                {competition.holder && competition.holder.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
+                        <span>{t("dashboard.holderId", { ids: competition.holder.map((id: number) => usernames[id] || String(id)).join(", ") })}</span>
+                    </div>
+                )}
+            </div>
         </Link>
     )
 }
@@ -157,25 +189,82 @@ function BeverageCard({ bev, typeMap }: { bev: any; typeMap?: Record<string, str
 }
 
 function CommissionCard({ commission }: { commission: any }) {
+    const [timeStr, setTimeStr] = useState<string>("")
+    const { t } = useTranslation()
+
+    useEffect(() => {
+        let intervalId: NodeJS.Timeout;
+
+        const updateTime = () => {
+            if (commission.status === "STARTED" && commission.startedAt) {
+                const start = new Date(commission.startedAt).getTime()
+                const now = new Date().getTime()
+                const diff = Math.max(0, now - start)
+
+                const hours = Math.floor(diff / (1000 * 60 * 60))
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
+                setTimeStr(`${time} ${seconds}s`)
+            } else if (commission.status === "COMPLETED" && commission.startedAt && commission.endedAt) {
+                const start = new Date(commission.startedAt).getTime()
+                const end = new Date(commission.endedAt).getTime()
+                const diff = Math.max(0, end - start)
+
+                const hours = Math.floor(diff / (1000 * 60 * 60))
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
+                setTimeStr(t("time.lasted", { time }))
+            } else {
+                setTimeStr("")
+            }
+        }
+
+        updateTime()
+
+        if (commission.status === "STARTED") {
+            intervalId = setInterval(updateTime, 1000)
+        }
+
+        return () => clearInterval(intervalId)
+    }, [commission.status, commission.startedAt, commission.endedAt, t])
+
     return (
         <Link
             href={`/commission/${commission.id}`}
-            className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex items-center gap-4"
+            className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-emerald-100 flex flex-col min-h-[140px]"
         >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-                <Activity className="h-6 w-6" />
-            </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold tracking-widest uppercase ${getStatusColor(commission.status)}`}>
-                        {formatStatus(commission.status)}
-                    </span>
+            <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                    <Activity className="h-6 w-6" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-emerald-600 transition-colors">
-                    {commission.name}
-                </h3>
+                <div className="flex-1 min-w-0">
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 truncate block">
+                        {commission.competition?.name}
+                    </span>
+                    <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-emerald-600 transition-colors">
+                        {commission.name}
+                    </h3>
+                </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+
+            <div className="flex items-center justify-between mt-auto pt-4">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(commission.status)} ${getStatusBgColor(commission.status)} border`}>
+                    {commission.status === "STARTED" ? <PlayCircle className="w-3 h-3" /> :
+                        commission.status === "COMPLETED" ? <CheckCircle className="w-3 h-3" /> :
+                            commission.status === "CANCELLED" ? <AlertCircle className="w-3 h-3" /> :
+                                <Calendar className="w-3 h-3" />}
+                    {formatStatus(commission.status)}
+                </span>
+                {timeStr && (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                        <Timer className="w-3 h-3" />
+                        {timeStr}
+                    </div>
+                )}
+            </div>
         </Link>
     )
 }
