@@ -39,6 +39,8 @@ interface DashboardProps {
     nextCursor: string | null
     currentPage: number
     totalPages?: number
+    totalCompetitionsCount?: number
+    totalBeveragesCount?: number
     // Legacy props to keep local dev server working before full merge
     nextHistory?: string
     prevCursor?: string | null
@@ -237,7 +239,9 @@ export default function WineLoreDashboard({
                                               hasPrev,
                                               hasNext,
                                               currentPage,
-                                              totalPages = 1 // default for local
+                                              totalPages = 1, // default for local
+                                              totalCompetitionsCount = 0,
+                                              totalBeveragesCount = 0
                                           }: DashboardProps) {
   const searchParams = useSearchParams()
   const rawTab = searchParams.get("tab")
@@ -245,6 +249,7 @@ export default function WineLoreDashboard({
   const [activeTab, setActiveTab] = useState<AppTabId>(initialTab)
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useTranslation()
 
   useEffect(() => {
     let tabParam = searchParams.get("tab") as string
@@ -341,6 +346,16 @@ export default function WineLoreDashboard({
 
             {activeTab === "competitions" && (
                 <>
+                    <div className="flex items-center justify-between mb-4 shrink-0">
+                        <div>
+                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("common.competitions")}</h2>
+                        </div>
+                        {totalCompetitionsCount !== undefined && (
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                {t("common.competitionsCount", { count: totalCompetitionsCount })}
+                            </span>
+                        )}
+                    </div>
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
                         {initialCompetitions.map((competition) => (
                             <CompetitionCard
@@ -388,34 +403,22 @@ export default function WineLoreDashboard({
                                 <ChevronRight className="h-5 w-5" />
                             </button>
                         </div>
-                    ) : (hasPrev || hasNext) ? (
-                        <div className="mt-2 flex items-center justify-center gap-3">
-                            <button
-                                onClick={handlePrev}
-                                disabled={!hasPrev || isLoading}
-                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-                            >
-                                <ChevronLeft className="h-5 w-5" />
-                            </button>
-
-                            <span className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-slate-600">
-                                {currentPage}
-                            </span>
-
-                            <button
-                                onClick={handleNext}
-                                disabled={!hasNext || isLoading}
-                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-                            >
-                                <ChevronRight className="h-5 w-5" />
-                            </button>
-                        </div>
                     ) : null}
                 </>
             )}
 
             {activeTab === "beverages" && (
                 <>
+                    <div className="flex items-center justify-between mb-4 shrink-0">
+                        <div>
+                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("common.beverages")}</h2>
+                        </div>
+                        {totalBeveragesCount !== undefined && (
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                {t("common.beveragesCount", { count: totalBeveragesCount })}
+                            </span>
+                        )}
+                    </div>
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
                         {beveragesToDisplay?.map((bev) => (
                             <BeverageCard

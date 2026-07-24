@@ -24,6 +24,7 @@ export default async function MyCompetitionsPage({searchParams, }: {
     const currentAuid = parseInt(currentAuidStr, 10);
 
     let rawCompetitions: any[] = [];
+    let totalCount = 0;
 
     try {
         const response = await fetchGraphQL(GET_MY_COMPETITIONS, {
@@ -32,6 +33,7 @@ export default async function MyCompetitionsPage({searchParams, }: {
             filter: { holders: [[currentAuid]] }
         });
         rawCompetitions = response.competitions?.items || [];
+        //totalCount = response.myCompetitionsCount || 0;
     } catch (error) {
         console.error("Failed to fetch competitions:", error);
     }
@@ -64,6 +66,7 @@ export default async function MyCompetitionsPage({searchParams, }: {
             hasPrev={historyArray.length > 0}
             hasNext={hasNextPage}
             currentPage={currentPage}
+            totalCount={totalCount}
         />
     )
 }

@@ -61,6 +61,7 @@ interface MyCompetitionsProps {
     hasPrev: boolean
     hasNext: boolean
     currentPage: number
+    totalCount?: number
 }
 
 function CompetitionCard({ comp }: { comp: Competition }) {
@@ -151,7 +152,7 @@ function CompetitionCard({ comp }: { comp: Competition }) {
     )
 }
 
-export default function MyCompetitionsClientView({ initialData, nextCursor, nextHistory, prevCursor, prevHistory, hasPrev, hasNext, currentPage }: MyCompetitionsProps) {
+export default function MyCompetitionsClientView({ initialData, nextCursor, nextHistory, prevCursor, prevHistory, hasPrev, hasNext, currentPage, totalCount = 0 }: MyCompetitionsProps) {
     const [currentAuid, setCurrentAuid] = useState<number | null>(null)
     const { t } = useTranslation()
     const router = useRouter()
@@ -200,9 +201,9 @@ export default function MyCompetitionsClientView({ initialData, nextCursor, next
                         <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myCompetitions.title")}</h2>
                         <p className="text-sm text-slate-500 mt-1">{t("myCompetitions.subtitle")}</p>
                     </div>
-                    {/*<span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                        {t("myCompetitions.count", { count: initialData.competitions.length })}
-                    </span>*/}
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                        {t("common.competitionsCount", { count: totalCount })}
+                    </span>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">

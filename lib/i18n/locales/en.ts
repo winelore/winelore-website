@@ -10,6 +10,8 @@ const en = {
     myBeverages: "My Beverages",
     myCompetitions: "My Competitions",
     myAssessments: "My Assessments",
+    competitionsCount: "{{count}} Competitions",
+    beveragesCount: "{{count}} Beverages",
     axusIdProfile: "AXUS ID Profile",
     na: "N/A",
     total: "Total",
@@ -31,7 +33,6 @@ const en = {
   myBeverages: {
     title: "My Beverages",
     subtitle: "Your registered beverages catalog.",
-    count: "{{count}} Beverages",
     emptyTitle: "No beverages added yet",
     emptyDescription: "You haven't registered any beverages to the system.",
     origin: "Origin:",
@@ -39,7 +40,6 @@ const en = {
   myCompetitions: {
     title: "My Competitions",
     subtitle: "Manage and monitor the competitions you organize.",
-    count: "{{count}} Competitions",
     emptyTitle: "No competitions found",
     emptyDescription: "You are not listed as a holder for any competitions yet.",
   },

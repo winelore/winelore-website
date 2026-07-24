@@ -26,8 +26,10 @@ export default async function DashboardPage({
     const LIMIT = 20;
     let rawCompetitions: any[] = [];
     let allBeverages: any[] | undefined = [];
-    let totalCount = 0;
     let nextCursor: string | null = null;
+
+    let totalCount = 0;
+    let totalBeverageCount = 0;
 
     try {
         const args: any = { limit: LIMIT };
@@ -49,6 +51,7 @@ export default async function DashboardPage({
 
     try {
         const bevData = await sdk.GetMyBeverages({ limit: 100 });
+        totalBeverageCount = bevData.beverageCount || 0;
         const rawBeverages = bevData.beverages?.items || [];
         allBeverages = rawBeverages.map((bev: any) => {
             let beverageType = undefined;
@@ -113,6 +116,8 @@ export default async function DashboardPage({
             nextCursor={nextCursor}
             currentPage={currentPage}
             totalPages={totalPages}
+            totalCompetitionsCount={totalCount}
+            totalBeveragesCount={totalBeverageCount}
         />
     );
 }

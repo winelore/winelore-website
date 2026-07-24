@@ -12,6 +12,8 @@ const uk: TranslationKey = {
     myBeverages: "Мої напої",
     myCompetitions: "Мої конкурси",
     myAssessments: "Мої оцінювання",
+    competitionsCount: "{{count}} конкурсів",
+    beveragesCount: "{{count}} напоїв",
     axusIdProfile: "Профіль AXUS ID",
     na: "Н/Д",
     total: "Всього",
@@ -33,7 +35,6 @@ const uk: TranslationKey = {
   myBeverages: {
     title: "Мої напої",
     subtitle: "Каталог ваших зареєстрованих напоїв.",
-    count: "{{count}} напоїв",
     emptyTitle: "Напої ще не додано",
     emptyDescription: "Ви ще не зареєстрували жодного напою в системі.",
     origin: "Походження:",
@@ -41,7 +42,6 @@ const uk: TranslationKey = {
   myCompetitions: {
     title: "Мої конкурси",
     subtitle: "Керуйте та відстежуйте конкурси, які ви організовуєте.",
-    count: "{{count}} конкурсів",
     emptyTitle: "Конкурси не знайдено",
     emptyDescription: "Вас ще не додано як організатора жодного конкурсу.",
   },
