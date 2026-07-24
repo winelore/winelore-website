@@ -1,11 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { LocaleProvider } from "@/lib/i18n/context"
+import { LocaleProvider, useTranslation } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
 import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2 } from "lucide-react"
 import Cookies from "js-cookie"
 import TemplateCreatorModal from "./TemplateCreatorModal"
+import { useSearchParams } from "next/navigation"
 
 interface Property {
     id: string
@@ -42,6 +43,8 @@ interface Template {
 export default function TemplatesClientView({ initialTemplates }: { initialTemplates: Template[] }) {
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const { t } = useTranslation()
+    const searchParams = useSearchParams()
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
     const [currentAuid, setCurrentAuid] = useState<number>(0)
 
@@ -52,6 +55,15 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
             if (!isNaN(parsed)) setCurrentAuid(parsed)
         }
     }, [])
+
+    useEffect(() => {
+        const templateIdParam = searchParams.get("templateId")
+        if (templateIdParam) {
+            setExpandedTemplateId(templateIdParam)
+        } else {
+            setExpandedTemplateId(null)
+        }
+    }, [searchParams])
 
     // Refresh template list when initialTemplates prop changes
     useEffect(() => {
@@ -76,7 +88,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab="competitions" />
+            <AppHeader activeTab="none" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col gap-8">
@@ -86,10 +98,10 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                         <div>
                             <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                                 <Layers className="w-8 h-8 text-indigo-600" />
-                                Мої шаблони оцінювання
+                                {t("templatesPage.title")}
                             </h2>
                             <p className="text-sm text-slate-500 mt-1">
-                                Шаблони оцінювання, створені вами особисто.
+                                {t("templatesPage.subtitle")}
                             </p>
                         </div>
                         <button
@@ -97,25 +109,26 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                             className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"
                         >
                             <Plus className="w-4 h-4" />
-                            <span>Створити новий шаблон</span>
+                            <span>{t("templatesPage.createNew")}</span>
                         </button>
                     </div>
 
                     {/* Template list */}
                     <div className="flex flex-col gap-4">
-                        {myTemplates.map((template) => {
-                            const isExpanded = expandedTemplateId === template.id
+                        {myTemplates.map((template, idx) => {
                             const edition = template.latestEdition
+                            const uniqueKey = `${template.id}-${edition?.version || 0}`
+                            const isExpanded = expandedTemplateId === uniqueKey
                             const propertiesCount = edition?.categories.reduce((acc, cat) => acc + cat.properties.length, 0) || 0
 
                             return (
                                 <div 
-                                    key={template.id} 
+                                    key={uniqueKey} 
                                     className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-xl shadow-slate-200/45 transition-all hover:shadow-2xl hover:shadow-slate-350/50"
                                 >
                                     {/* Main Row */}
                                     <div 
-                                        onClick={() => toggleExpandTemplate(template.id)}
+                                        onClick={() => toggleExpandTemplate(uniqueKey)}
                                         className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
                                     >
                                         <div className="flex items-start gap-4">
@@ -132,28 +145,28 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                                                 <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
                                                     <span className="flex items-center gap-1">
                                                         <Calendar className="w-3.5 h-3.5" />
-                                                        Створено: {new Date(template.createdAt).toLocaleDateString()}
+                                                        {t("templatesPage.createdAt")}: {new Date(template.createdAt).toLocaleDateString()}
                                                     </span>
                                                     <span className="text-slate-300">|</span>
-                                                    <span>Тип: <span className="text-slate-700 uppercase font-bold">{template.beverageType}</span></span>
+                                                    <span>{t("templatesPage.type")}: <span className="text-slate-700 uppercase font-bold">{template.beverageType}</span></span>
                                                     <span className="text-slate-300">|</span>
-                                                    <span>Категорій: <span className="text-indigo-600 font-bold">{edition?.categories.length || 0}</span></span>
+                                                    <span>{t("templatesPage.categories")}: <span className="text-indigo-600 font-bold">{edition?.categories.length || 0}</span></span>
                                                     <span className="text-slate-300">|</span>
-                                                    <span>Всього оцінок: <span className="text-indigo-600 font-bold">{propertiesCount}</span></span>
+                                                    <span>{t("templatesPage.totalScores")}: <span className="text-indigo-600 font-bold">{propertiesCount}</span></span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
                                             <div className="flex flex-col items-end">
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Статус версії</span>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t("templatesPage.versionStatus")}</span>
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                     <span className="text-xs font-extrabold text-slate-700 bg-slate-100 border border-slate-200/50 rounded-md px-1.5 py-0.5">
                                                         v{edition?.version || 1}
                                                     </span>
                                                     <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-md px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
                                                         <CheckCircle2 className="w-3 h-3" />
-                                                        Активний
+                                                        {t("templatesPage.active")}
                                                     </span>
                                                 </div>
                                             </div>
@@ -168,7 +181,7 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                                         <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/15">
                                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
                                                 <Settings className="w-4 h-4 text-indigo-500" />
-                                                Структура оцінювання та показники
+                                                {t("templatesPage.evaluationStructure")}
                                             </h4>
 
                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -215,8 +228,8 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                         {myTemplates.length === 0 && (
                             <div className="flex flex-col items-center justify-center p-12 border border-dashed border-slate-200 rounded-[32px] bg-white text-center text-slate-500 gap-3 shadow-sm">
                                 <AlertCircle className="w-12 h-12 text-slate-300 animate-pulse" />
-                                <span className="text-base font-bold text-slate-700">Ваші шаблони не знайдені</span>
-                                <p className="text-sm text-slate-400 max-w-sm">Створіть свій перший шаблон оцінювання за допомогою кнопки вище.</p>
+                                <span className="text-base font-bold text-slate-700">{t("templatesPage.notFound")}</span>
+                                <p className="text-sm text-slate-400 max-w-sm">{t("templatesPage.createFirst")}</p>
                             </div>
                         )}
                     </div>
