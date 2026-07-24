@@ -10,6 +10,8 @@ const hu = {
         myBeverages: "Saját italok",
         myCompetitions: "Saját versenyek",
         myAssessments: "Saját értékelések",
+        competitionsCount: "{{count}} verseny",
+        beveragesCount: "{{count}} ital",
         axusIdProfile: "AXUS ID Profil",
         na: "N/A",
         total: "Összesen",
@@ -31,7 +33,6 @@ const hu = {
     myBeverages: {
         title: "Saját italok",
         subtitle: "Az Ön által regisztrált italok katalógusa.",
-        count: "{{count}} ital",
         emptyTitle: "Még nincsenek hozzáadva italok",
         emptyDescription: "Még nem regisztrált egyetlen italt sem a rendszerbe.",
         origin: "Származás:",
@@ -39,7 +40,6 @@ const hu = {
     myCompetitions: {
         title: "Saját versenyek",
         subtitle: "Az Ön által szervezett versenyek kezelése és nyomon követése.",
-        count: "{{count}} verseny",
         emptyTitle: "Nem találhatók versenyek",
         emptyDescription: "Ön még nem szerepel szervezőként egyetlen versenyen sem.",
     },
