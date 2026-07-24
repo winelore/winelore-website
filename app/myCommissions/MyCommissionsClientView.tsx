@@ -47,7 +47,7 @@ function getStatusColor(status: string) {
     switch (status) {
         case "IN_PROGRESS":
         case "STARTED":
-            return "text-indigo-500"
+            return "text-emerald-500"
         case "READY":
         case "PLANNED":
         case "APPROVED":
@@ -66,7 +66,7 @@ function getStatusBgColor(status: string) {
     switch (status) {
         case "IN_PROGRESS":
         case "STARTED":
-            return "bg-indigo-50 border-indigo-100"
+            return "bg-emerald-50 border-emerald-100"
         case "READY":
         case "PLANNED":
         case "APPROVED":
