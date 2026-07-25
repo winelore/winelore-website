@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import Link from "next/link"
-import { Activity, PlayCircle, CheckCircle, AlertCircle, Calendar, ChevronLeft, ChevronRight, Loader2, ChevronRight as ChevronRightIcon, Timer } from "lucide-react"
+import { Activity, PlayCircle, CheckCircle, AlertCircle, Calendar, ChevronLeft, ChevronRight, Loader2, Timer } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
@@ -181,8 +181,6 @@ function CommissionCard({ comm }: { comm: Commission }) {
                         </>
                     )}
                 </span>
-                
-                <ChevronRightIcon className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors" />
             </div>
         </Link>
     )
