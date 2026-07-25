@@ -91,6 +91,28 @@ export async function getEvaluationTemplatesAction() {
                                 ... on BooleanProperty {
                                     boolDefaultValue: defaultValue
                                 }
+                                ... on SmartProperty {
+                                    expression {
+                                        __typename
+                                        type
+                                        ... on ConstantExpression { value }
+                                        ... on VariableExpression { code }
+                                        ... on BinaryExpression {
+                                            left {
+                                                __typename
+                                                type
+                                                ... on ConstantExpression { value }
+                                                ... on VariableExpression { code }
+                                            }
+                                            right {
+                                                __typename
+                                                type
+                                                ... on ConstantExpression { value }
+                                                ... on VariableExpression { code }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -141,6 +163,7 @@ export async function getEvaluationTemplatesAction() {
                             maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
                             allowedValues: prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
                             defaultValue: prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
+                            expression: prop.expression ?? undefined,
                         };
                     })
                 }))

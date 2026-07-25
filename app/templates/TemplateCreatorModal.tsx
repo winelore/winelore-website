@@ -134,6 +134,31 @@ function parseExpression(input: string): any {
     return ast
 }
 
+function astToString(ast: any): string {
+    if (!ast) return ""
+    const type = ast.type || ast.__typename
+    if (type === "VariableExpression" || type === "VARIABLE") {
+        return ast.code || ast.variableCode || ""
+    }
+    if (type === "ConstantExpression" || type === "CONSTANT") {
+        return String(ast.value ?? ast.constantValue ?? "")
+    }
+    const leftStr = astToString(ast.left)
+    const rightStr = astToString(ast.right)
+    let op = ""
+    switch (type) {
+        case "ADD": op = "+"; break;
+        case "SUBTRACT": op = "-"; break;
+        case "MULTIPLY": op = "*"; break;
+        case "DIVIDE": op = "/"; break;
+        default: op = "+"; break;
+    }
+    if (leftStr && rightStr) {
+        return `(${leftStr} ${op} ${rightStr})`
+    }
+    return leftStr || rightStr || ""
+}
+
 function computeDuplicateCodes(categories: CategoryState[]): Set<string> {
     const seen = new Map<string, number>()
     for (const cat of categories) {
@@ -215,7 +240,7 @@ export default function TemplateCreatorModal({
                                         minLimit: p.minLimit !== undefined && p.minLimit !== null ? Number(p.minLimit) : undefined,
                                         maxLimit: p.maxLimit !== undefined && p.maxLimit !== null ? Number(p.maxLimit) : undefined,
                                         allowedValuesStr: Array.isArray(p.allowedValues) ? p.allowedValues.join(", ") : "",
-                                        expressionStr: p.expressionRaw || ""
+                                        expressionStr: p.expressionRaw || (p.expression ? astToString(p.expression) : "")
                                     }))
                                 }))
                                 setCategories(mappedCategories)
@@ -483,7 +508,6 @@ export default function TemplateCreatorModal({
                             }
                             checkVariables(ast)
                             propInput.expression = ast
-                            propInput.expressionRaw = p.expressionStr
                         } catch (parseErr: any) {
                             newErrorPropIds.add(p.id)
                             throw new Error(`Помилка у формулі оцінки "${p.name}": ${parseErr.message}`)
