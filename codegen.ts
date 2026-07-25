@@ -50,7 +50,7 @@ const config: CodegenConfig = {
             ]
         },
         './src/gql/axus/sdk.ts': {
-            schema: 'http://hayabusa.proxy.rlwy.net:58687/graphql',
+            schema: 'https://axusid.thewinelore.com/graphql',
             documents: ['src/gql/axus/operations.graphql'],
             plugins: [
                 'typescript',

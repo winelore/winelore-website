@@ -428,7 +428,7 @@ export default function CommissionClientView({
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            <AppHeader activeTab="competitions" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 {showMyTastingSummary && (
@@ -504,7 +504,7 @@ export default function CommissionClientView({
                                     {t("commission.tastingReplicas")}
                                 </h3>
                                 <div className="flex flex-col gap-2">
-                                    {localReplicas.map((r) => {
+                                    {[...localReplicas].sort((a, b) => (a.members?.length || 0) - (b.members?.length || 0)).map((r) => {
                                         const isSelected = r.id === selectedReplicaId
                                         const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
                                         return (

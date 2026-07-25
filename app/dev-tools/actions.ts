@@ -3,12 +3,22 @@
 import { cookies } from 'next/headers';
 import { sdk } from '@/lib/apiClient';
 
-export type CommissionConfig = {
-  expertsCount: number;
-  winesCount: number;
-  evaluatedWinesCount?: number;
-  type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';
+export type ReplicaConfig = {
   name: string;
+  expertsCount: number;
+};
+
+export type PanelConfig = {
+  name: string;
+  winesCount: number;
+};
+
+export type CommissionConfig = {
+  name: string;
+  type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';
+  panels: PanelConfig[];
+  replicas: ReplicaConfig[];
+  evaluatedWinesCount?: number;
 };
 
 export type SeederFormData = {
@@ -21,7 +31,7 @@ function generateAuid() {
   return Math.floor(Math.random() * 10000) + 1;
 }
 
-const isValidUuid = (id?: string | null) => 
+const isValidUuid = (id?: string | null) =>
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id || '');
 
 export async function seedCompetitionScenarioAction(data: SeederFormData) {
@@ -30,7 +40,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
 
   try {
     log('🚀 Початок генерації сценарію Data Seeder (New State Machine)...');
-    
+
     // Отримуємо заголовки авторизації для створення об'єктів
     const cookieStore = await cookies();
     const auid = cookieStore.get("auid")?.value;
@@ -41,20 +51,20 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
     }
     const auidInt = parseInt(auid, 10);
     const headers = { "actor": auid, "x-actor": auid };
-    
+
     log(`🔑 Авторизовано! Актор ID: ${auidInt}`);
     console.log(`🔑 [SEEDER SUCCESS] Актор ID: ${auidInt}`);
-    
+
     const uniqueSuffix = `#${Math.floor(Math.random() * 9000) + 1000}`;
     const finalSeriesName = `${data.seriesName || 'Test Series'} ${uniqueSuffix}`;
     const finalCompetitionName = `${data.competitionName} ${uniqueSuffix}`;
-    
+
     // Fetch default beverage type for candidates
     let beverageTypeId = '';
     try {
       const bevTypesRes = await sdk.DevGetBeverageTypes();
       log(`📋 Дамп типів напоїв з бази: ${JSON.stringify(bevTypesRes.beverageTypes?.items)}`);
-      
+
       const existingWine = bevTypesRes.beverageTypes?.items?.find(i => i.code === "WINE");
 
       if (existingWine) {
@@ -69,7 +79,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
       log(`⚠️ Помилка отримання або створення BeverageTypes: ${e instanceof Error ? e.message : 'Unknown Error'}`);
       throw new Error("Не вдалося ініціалізувати типи напоїв на бекенді.");
     }
-    
+
     // 0. Створення серії змагань
     const seriesRes = await sdk.DevCreateCompetitionSeries({
       input: {
@@ -94,7 +104,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
     const now = new Date();
     const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // -1 день (у минулому)
     const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 днів
-    
+
     console.log("SENDING DATES TO BACKEND:", JSON.stringify({
       start: startDate.toISOString(),
       end: endDate.toISOString()
@@ -118,13 +128,13 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
     // 1.1 Перехід змагання по State Machine
     await sdk.DevSubmitCompetitionForReview({ id: competitionId });
     log(`⏳ Змагання на рев'ю (IN_REVIEW)`);
-    
+
     await sdk.DevApproveCompetition({ id: competitionId });
     log(`✅ Змагання підтверджено (APPROVED)`);
-    
+
     await sdk.DevPlanCompetition({ id: competitionId });
     log(`📅 Змагання заплановано (PLANNED)`);
-    
+
     await sdk.DevStartCompetition({ id: competitionId });
     log(`✅ Конкурс успішно схвалено та переведено в статус РОЗПОЧАТО!`);
     console.log(`✅ [SEEDER SUCCESS] Competition approved and started`);
@@ -138,10 +148,10 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
       const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
       const firstActive = evalTemplatesRes.evaluationTemplateEditions?.items?.find((i: any) => i.status === 'PUBLISHED' || i.status === 'ACTIVE');
       activeTemplateEditionId = firstActive?.id || evalTemplatesRes.evaluationTemplateEditions?.items?.[0]?.id || '';
-      
+
       if (activeTemplateEditionId) {
          log(`📄 Знайдено шаблон оцінювання: ${activeTemplateEditionId}`);
-         
+
          const query = `
            query GetTemplate($id: ID!) {
              evaluationTemplateEdition(id: $id) {
@@ -181,8 +191,8 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
 
     // Helper for creating commission and seeding data
     const seedCommission = async (
-      name: string, 
-      config: CommissionConfig, 
+      name: string,
+      config: CommissionConfig,
       type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED'
     ) => {
       // 2. Створення комісії
@@ -227,7 +237,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
             typeId: beverageTypeId,
             producers: [{ auid: auidInt, role: "MAKER" }]
         }));
-        
+
         const bevRes = await sdk.DevCreateBeverage({
           input: {
             name: `Test Wine ${uniqueSuffix} - Comm${config.name.replace(/\s+/g, '')}-${i}`,
@@ -262,7 +272,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
           anonymizedCode: `WINE-${Math.floor(Math.random() * 1000)}`
         });
       }
-      
+
       await sdk.DevAddCommissionCandidates({
         commissionId,
         panelId,
@@ -289,7 +299,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
         input: { auid: [headAuid], role: 'HEAD' }
       });
       const headMemberUuid = headRes.addCommissionReplicaMember.members.find(m => m.auid?.includes(headAuid))?.id;
-      log(`   Голову "${config.headName}" додано (AUID: ${headAuid}, UUID: ${headMemberUuid})`);
+      log(`   Голову додано (AUID: ${headAuid}, UUID: ${headMemberUuid})`);
 
       const experts = [];
       for (let i = 0; i < config.expertsCount; i++) {
@@ -312,7 +322,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
 
       await sdk.DevPlanCommission({ id: commissionId });
       log(`📅 Комісія запланована (PLANNED)`);
-      
+
       await sdk.DevStartCommission({ id: commissionId });
       log(`▶️ Комісія активована (STARTED)`);
 
@@ -350,7 +360,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
       if (evalCount > 0) {
         log(`   Імітуємо оцінювання для ${evalCount} вин...`);
         const winesToEvaluate = replicaCandidates.slice(0, evalCount);
-        
+
         for (const wine of winesToEvaluate) {
           log(`   ➡️ Встановлення кандидата ${wine.id} як поточного...`);
           try {
@@ -366,10 +376,10 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
           for (const expert of allMembersToEvaluate) {
             const randomScore = Math.floor(Math.random() * 51) + 50;
             try {
-              const scores = evaluationProperties.length > 0 
+              const scores = evaluationProperties.length > 0
                 ? evaluationProperties.map(code => {
                     const max100 = code === 'typicity' || code === 'total_score';
-                    const score = max100 
+                    const score = max100
                         ? Math.floor(Math.random() * 51) + 50  // 50-100
                         : Math.floor(Math.random() * 5) + 5;   // 5-9 for 10-point scales
                     return { code, value: score.toString() };
@@ -417,7 +427,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
         id: commissionId,
         name,
         replicaId,
-        head: { name: config.headName, auid: headAuid },
+        head: { auid: headAuid },
         experts,
         type
       });
@@ -428,23 +438,23 @@ export async function seedCompetitionScenarioAction(data: SeederFormData) {
     }
 
     log('🎉 Генерація сценарію успішно завершена!');
-    
-    return { 
-      success: true, 
-      logs, 
-      competitionId, 
-      commissions: resultCommissions 
+
+    return {
+      success: true,
+      logs,
+      competitionId,
+      commissions: resultCommissions
     };
   } catch (e: any) {
     const errorMessage = e?.message || JSON.stringify(e);
     log(`❌ Критична помилка генератора: ${errorMessage}`);
-    
+
     // НАШ РЯТІВНИЙ КРОК: виводимо повний об'єкт помилки у консоль сервера
     console.error("================ GENERATOR ERROR DUMP ================");
     // Виводимо весь об'єкт помилки з усіма потрохами, включаючи extensions від сервера Kotlin
     console.error(JSON.stringify(e, null, 2));
     console.error("======================================================");
-    
+
     // Возвращаем объект СЮДА, вместо throw! Тогда Next.js покажет текст на экране.
     return { success: false, logs, error: e?.message || "Internal Error" };
   }
@@ -454,12 +464,12 @@ export async function getCompetitionsListAction() {
   try {
     const res = await sdk.DevGetCompetitionsList();
     const competitions = res.competitions.items || [];
-    
+
     // Fetch commissions for each competition
     const enhancedCompetitions = await Promise.all(competitions.map(async (comp) => {
       const commissionsRes = await sdk.DevGetCommissionsByCompetition({ competitionId: comp.id, limit: 100 });
       const commissions = commissionsRes.commissionsByCompetition?.items || [];
-      
+
       const enhancedCommissions = await Promise.all(commissions.map(async (comm) => {
         const replicasRes = await sdk.DevGetCommissionReplicasByCommission({ commissionId: comm.id });
         const replicas = replicasRes.commissionReplicasByCommission || [];
@@ -468,7 +478,7 @@ export async function getCompetitionsListAction() {
           replicas
         };
       }));
-      
+
       return {
         ...comp,
         commissions: enhancedCommissions

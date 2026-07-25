@@ -1,4 +1,4 @@
-import { gql } from '@/gql';
+import { gql } from '@/src/gql';
 
 export const DevApproveCompetitionMutation = gql(`
   mutation DevApproveCompetition($id: ID!) {
@@ -289,6 +289,7 @@ export const DevGetCommissionReplicasByCommissionQuery = gql(`
   query DevGetCommissionReplicasByCommission($commissionId: ID!) {
     commissionReplicasByCommission(commissionId: $commissionId) {
       id
+      name
       type
       members {
         id
