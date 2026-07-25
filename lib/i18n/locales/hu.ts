@@ -1,6 +1,6 @@
 const hu = {
     common: {
-        feed: "Hírfolyam",
+        home: "Főoldal",
         competitions: "Versenyek",
         wines: "Borok",
         beverages: "Italok",
@@ -9,6 +9,7 @@ const hu = {
         signIn: "Bejelentkezés",
         myBeverages: "Saját italok",
         myCompetitions: "Saját versenyek",
+        myCommissions: "Saját bizottságok",
         myAssessments: "Saját értékelések",
         axusIdProfile: "AXUS ID Profil",
         na: "N/A",
@@ -27,6 +28,28 @@ const hu = {
     },
     dashboard: {
         holderId: "Szervező: {{ids}}",
+        title: "Fő műszerfal",
+        subtitle: "A legutóbbi tevékenységei és aktuális feladatai.",
+        myCompetitions: "Saját versenyek",
+        allCompetitions: "Összes verseny",
+        noRecentCompetitions: "Nincsenek legutóbbi versenyek",
+        myBeverages: "Saját italok",
+        allBeverages: "Összes ital",
+        noRecentBeverages: "Nincsenek hozzáadott italok",
+        activeCommissions: "Aktív bizottságok",
+        noActiveCommissions: "Nincsenek aktív bizottságok",
+        myTemplates: "Saját sablonok",
+        allTemplates: "Összes sablon",
+        noTemplates: "Nincsenek létrehozott sablonok",
+        welcomeTitle: "Üdvözöljük újra! 👋",
+        welcomeSubtitle: "Íme, mi történik a mai tevékenységeivel.",
+        viewAll: "Összes megtekintése",
+    },
+    beverages: {
+        errorTitle: "Betöltési hiba",
+        errorDescription: "Nem sikerült betölteni az italok listáját. Kérjük, frissítse az oldalt.",
+        emptyTitle: "Nincsenek italok",
+        emptyDescription: "Még nincsenek itt italok.",
     },
     myBeverages: {
         title: "Saját italok",
@@ -415,6 +438,20 @@ const hu = {
         },
         viewOnMaps: "Megtekintés Google Térképen",
         coordinates: "Koordináták:",
+    },
+    templatesPage: {
+        title: "Saját értékelési sablonok",
+        subtitle: "Az Ön által személyesen létrehozott értékelési sablonok.",
+        createNew: "Új sablon létrehozása",
+        createdAt: "Létrehozva",
+        type: "Típus",
+        categories: "Kategóriák",
+        totalScores: "Összes értékelés",
+        versionStatus: "Verzió állapota",
+        active: "Aktív",
+        evaluationStructure: "Értékelési struktúra és mutatók",
+        notFound: "Nem találhatók sablonok",
+        createFirst: "Hozza létre első értékelési sablonját a fenti gomb segítségével."
     },
 } as const
 
