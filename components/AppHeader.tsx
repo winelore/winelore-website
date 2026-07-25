@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react"
 import { FileText, Trophy, Wine } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 import { useTranslation } from "@/lib/i18n/context"
@@ -11,7 +12,7 @@ import { useEffect, useState } from "react"
 import Cookies from "js-cookie"
 import { getUsernamesAction } from "@/app/userActions"
 
-export type AppTabId = "feed" | "competitions" | "wines" | "beverages"
+export type AppTabId = "feed" | "competitions" | "wines" | "beverages" | "none"
 
 interface AppHeaderProps {
   activeTab: AppTabId
@@ -27,6 +28,7 @@ export function AppHeader({
   wineTab = false,
 }: AppHeaderProps) {
   const { t } = useTranslation()
+  const router = useRouter()
   const [currentUser, setCurrentUser] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -57,13 +59,13 @@ export function AppHeader({
   }, [])
 
   const tabs: { id: AppTabId; label: string; icon: LucideIcon }[] = [
-    //{ id: "feed", label: t("common.feed"), icon: FileText },
-    /*{ id: "competitions", label: t("common.competitions"), icon: Trophy },*/
-    /*{
+    { id: "feed", label: t("common.feed"), icon: FileText },
+    { id: "competitions", label: t("common.competitions"), icon: Trophy },
+    {
       id: wineTab ? "wines" : "beverages",
       label: wineTab ? t("common.wines") : t("common.beverages"),
       icon: Wine,
-    },*/
+    },
   ]
 
   return (
@@ -83,7 +85,13 @@ export function AppHeader({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => onTabChange?.(tab.id)}
+                onClick={() => {
+                  if (onTabChange) {
+                    onTabChange(tab.id)
+                  } else {
+                    router.push(`/?tab=${tab.id}`)
+                  }
+                }}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   isActive
                      ? "border border-slate-100/50 bg-white text-slate-800 shadow-sm"

@@ -1,8 +1,8 @@
 import { gql } from '@/src/gql';
 
 export const GET_DASHBOARD_COMPETITIONS = gql(`
-  query GetDashboardCompetitions($limit: Int, $cursor: ID) {
-      competitions(limit: $limit, cursor: $cursor) {
+  query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {
+      competitions(limit: $limit, cursor: $cursor, offset: $offset) {
           items {
               id
               name
@@ -21,5 +21,6 @@ export const GET_DASHBOARD_COMPETITIONS = gql(`
               }
           }
       }
+      competitionCount
   }
 `);

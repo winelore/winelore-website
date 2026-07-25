@@ -3,6 +3,7 @@ export function parseEvaluationTotal(
     propertyMap: Record<string, { isResult: boolean }> | undefined | null,
 ): number | null {
     if (!scores?.length || !propertyMap) return null
+    if (!scores?.length || !propertyMap) return null
     const resultScore = scores.find((s) => propertyMap[s.code]?.isResult)
     if (resultScore?.value != null && !isNaN(parseFloat(resultScore.value))) {
         return parseFloat(resultScore.value)

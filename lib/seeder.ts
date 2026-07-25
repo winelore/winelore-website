@@ -237,100 +237,53 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
       // Властивості для оцінювання вже завантажені глобально (evaluationProperties)
 
-      // 3. Створення панелі
-      const panelRes = await sdk.DevAddCommissionPanel({
-        commissionId,
-        name: "Панель 1"
-      });
-      const panelId = panelRes.addCommissionPanel.id;
-      log(`   Дефолтну панель створено (ID: ${panelId})`);
-
-      // 4. Додавання вин (Кандидатів) у панель
-      const candidates = [];
-      for (let i = 0; i < config.winesCount; i++) {
-        // Створення реального напою, партії та зразка
-        console.log("📝 [PAYLOAD DUMP] DevCreateBeverage input:", JSON.stringify({
-            name: `Test Wine ${uniqueSuffix} - Comm${config.name.replace(/\s+/g, '')}-${i}`,
-            typeId: beverageTypeId,
-            producers: [{ auid: auidInt, role: "MAKER" }]
-        }));
-        
-        const bevRes = await sdk.DevCreateBeverage({
-          input: {
-            name: `Test Wine ${uniqueSuffix} - Comm${config.name.replace(/\s+/g, '')}-${i}`,
-            typeId: beverageTypeId,
-            producers: [{ auid: auidInt, role: "MAKER" }]
-          }
-        }, { headers });
-        const beverageId = bevRes.createBeverage.id;
-        log(`🍷 [Вино ${i+1}] Створено Beverage! ID: ${beverageId}`);
-        console.log(`🍷 [SEEDER SUCCESS] Beverage ID: ${beverageId}`);
-
-        const batchRes = await sdk.DevCreateBatch({
-          input: {
-            beverageId
-          }
-        }, { headers });
-        const batchId = batchRes.createBatch.id;
-        log(`📦 [Вино ${i+1}] Створено Batch! ID: ${batchId}`);
-        console.log(`📦 [SEEDER SUCCESS] Batch ID: ${batchId}`);
-
-        const sampleRes = await sdk.DevCreateSample({
-          input: {
-            batchId
-          }
-        }, { headers });
-        const sampleId = sampleRes.createSample.id;
-        log(`🧪 [Вино ${i+1}] Створено Sample! ID: ${sampleId}`);
-        console.log(`🧪 [SEEDER SUCCESS] Sample ID: ${sampleId}`);
-
-        candidates.push({
-          sampleId,
-          anonymizedCode: `WINE-${Math.floor(Math.random() * 1000)}`
-        });
-      }
-      
-      await sdk.DevAddCommissionCandidates({
-        commissionId,
-        panelId,
-        candidates
-      });
-      log(`   Додано ${config.winesCount} зразків вин у панель`);
-
-      // 5. Створення репліки та експертів
-      const replicaRes = await sdk.DevCreateCommissionReplica({
-        input: {
+      // 3. Створення панелей та вин
+      let globalCandidateIndex = 0;
+      for (const panelConfig of config.panels) {
+        const panelRes = await sdk.DevAddCommissionPanel({
           commissionId,
-          name: 'Main Table',
-          type: 'STANDARD',
-          chaoticCurrentCandidateChangesEnabled: false,
-          members: []
-        }
-      });
-      const replicaId = replicaRes.createCommissionReplica.id;
-      log(`   Репліку створено (ID: ${replicaId})`);
-
-      const headAuid = auidInt;
-      const headRes = await sdk.DevAddCommissionReplicaMember({
-        id: replicaId,
-        input: { auid: [headAuid], role: 'HEAD' }
-      });
-      const headMemberUuid = headRes.addCommissionReplicaMember.members.find(m => m.auid?.includes(headAuid))?.id;
-      log(`   Голову (поточного користувача) додано (AUID: ${headAuid}, UUID: ${headMemberUuid})`);
-
-      const experts = [];
-      for (let i = 0; i < config.expertsCount; i++) {
-        const expertAuid = generateAuid();
-        const expertRes = await sdk.DevAddCommissionReplicaMember({
-          id: replicaId,
-          input: { auid: [expertAuid], role: 'EXPERT' }
+          name: panelConfig.name
         });
-        const expertUuid = expertRes.addCommissionReplicaMember.members.find(m => m.auid?.includes(expertAuid))?.id;
-        experts.push({ name: `Експерт #${expertAuid}`, auid: expertAuid, uuid: expertUuid });
-      }
-      log(`   Додано ${config.expertsCount} експертів`);
+        const panelId = panelRes.addCommissionPanel.id;
+        log(`   Панель "${panelConfig.name}" створено (ID: ${panelId})`);
 
-      // 6. Життєвий цикл комісії (Перехід за State Machine)
+        const candidates = [];
+        for (let i = 0; i < panelConfig.winesCount; i++) {
+          const wineIndex = globalCandidateIndex++;
+          const bevRes = await sdk.DevCreateBeverage({
+            input: {
+              name: `Test Wine ${uniqueSuffix} - Comm${config.name.replace(/\s+/g, '')}-${wineIndex}`,
+              typeId: beverageTypeId,
+              producers: [{ auid: auidInt, role: "MAKER" }]
+            }
+          }, { headers });
+          const beverageId = bevRes.createBeverage.id;
+
+          const batchRes = await sdk.DevCreateBatch({
+            input: { beverageId }
+          }, { headers });
+          const batchId = batchRes.createBatch.id;
+
+          const sampleRes = await sdk.DevCreateSample({
+            input: { batchId }
+          }, { headers });
+          const sampleId = sampleRes.createSample.id;
+
+          candidates.push({
+            sampleId,
+            anonymizedCode: `WINE-${Math.floor(Math.random() * 1000)}`
+          });
+        }
+        
+        await sdk.DevAddCommissionCandidates({
+          commissionId,
+          panelId,
+          candidates
+        });
+        log(`   Додано ${panelConfig.winesCount} зразків вин у панель "${panelConfig.name}"`);
+      }
+
+      // 4. Життєвий цикл комісії (Перехід за State Machine)
       await sdk.DevSubmitCommissionForReview({ id: commissionId });
       log(`⏳ Комісія на рев'ю (IN_REVIEW)`);
 
@@ -343,110 +296,160 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       await sdk.DevStartCommission({ id: commissionId });
       log(`▶️ Комісія активована (STARTED)`);
 
-      // Життєвий цикл репліки
-      await sdk.DevPlanCommissionReplica({ id: replicaId });
-      log(`📅 Репліка запланована (PLANNED)`);
-
-      // Голова та експерти підтверджують готовність
-      if (headMemberUuid) {
-        await sdk.DevMarkCommissionReplicaMemberReady({ id: replicaId, memberId: headMemberUuid });
-      }
-      for (const expert of experts) {
-        if (expert.uuid) {
-          await sdk.DevMarkCommissionReplicaMemberReady({ id: replicaId, memberId: expert.uuid });
-        }
-      }
-      log(`🤝 Усі члени комісії готові!`);
-
-      await sdk.DevStartCommissionReplica({ id: replicaId });
-      log(`▶️ Репліка активована (STARTED)`);
-
-      const commissionData = await sdk.GetCommission({ id: commissionId });
-      const activeReplica = commissionData.commission?.replicas.find(r => r.id === replicaId);
-      const replicaCandidates = activeReplica?.replicaCandidates || [];
-      log(`   Отримано ${replicaCandidates.length} Replica Candidate IDs`);
-
-      // 7. Імітація оцінювання
+      const totalWinesCount = config.panels.reduce((sum, p) => sum + p.winesCount, 0);
       let evalCount = 0;
       if (type === 'IN_PROGRESS') {
         evalCount = config.evaluatedWinesCount || 0;
       } else if (type === 'FINISHED') {
-        evalCount = config.winesCount;
+        evalCount = totalWinesCount;
       }
 
-      if (evalCount > 0) {
-        log(`   Імітуємо оцінювання для ${evalCount} вин...`);
-        const winesToEvaluate = replicaCandidates.slice(0, evalCount);
-        
-        for (const wine of winesToEvaluate) {
-          log(`   ➡️ Встановлення кандидата ${wine.id} як поточного...`);
-          try {
-            await sdk.DevSetCommissionReplicaCurrentCandidate({
-              id: replicaId,
-              currentCandidateId: wine.id
-            }, { headers: { 'X-ACTOR': headAuid.toString() } });
-          } catch (e: any) {
-            log(`   ⚠️ Не вдалося встановити кандидата: ${e.message}`);
-          }
+      const commissionReplicasOutput = [];
+      const createdReplicas = [];
 
-          const allMembersToEvaluate = [{ auid: headAuid, isHead: true }, ...experts];
-          for (const expert of allMembersToEvaluate) {
-            try {
-              const scores = evaluationProperties.length > 0 
-                ? evaluationProperties.map(prop => {
-                    const range = prop.max - prop.min;
-                    const minAllowed = prop.min + Math.floor(range / 2);
-                    const score = Math.floor(Math.random() * (prop.max - minAllowed + 1)) + minAllowed;
-                    return { code: prop.code, value: score.toString() };
-                  })
-                : [
-                    { code: "appearance_clarity", value: (Math.floor(Math.random() * 5) + 5).toString() },
-                    { code: "appearance_color", value: (Math.floor(Math.random() * 5) + 5).toString() }
-                  ];
-
-              const evalRes = await sdk.SubmitEvaluation({
-                input: {
-                  candidateId: wine.id,
-                  scores,
-                  comments: [{ text: 'Automated evaluation comment from seeder', sortOrder: 1 }]
-                }
-              }, { headers: { 'actor': expert.auid.toString(), 'x-actor': expert.auid.toString() } });
-              log(`   [DEBUG] Evaluation for ${wine.id} by ${expert.auid} submitted. isComplete: ${evalRes.submitEvaluation.isComplete}`);
-            } catch (e: any) {
-              log(`   ⚠️ Помилка оцінювання для вина ${wine.id} експертом ${expert.auid}: ${e.message}`);
-            }
+      // 5. Створення реплік та експертів
+      for (const replicaConfig of config.replicas) {
+        const replicaRes = await sdk.DevCreateCommissionReplica({
+          input: {
+            commissionId,
+            name: replicaConfig.name,
+            type: 'STANDARD',
+            chaoticCurrentCandidateChangesEnabled: false,
+            members: []
           }
-          try {
-            await sdk.MarkCommissionReplicaCandidateAsEvaluated(
-              { id: wine.id },
-              { headers: { 'X-ACTOR': headAuid.toString() } }
-            );
-          } catch (e: any) {
-            log(`   ⚠️ Не вдалося завершити оцінювання кандидата ${wine.id}: ${e.message}`);
+        });
+        const replicaId = replicaRes.createCommissionReplica.id;
+        log(`   Репліку "${replicaConfig.name}" створено (ID: ${replicaId})`);
+
+        // Генеруємо нового голову для репліки!
+        const headAuid = generateAuid();
+        const headRes = await sdk.DevAddCommissionReplicaMember({
+          id: replicaId,
+          input: { auid: [headAuid], role: 'HEAD' }
+        });
+        const headMemberUuid = headRes.addCommissionReplicaMember.members.find(m => m.auid?.includes(headAuid))?.id;
+        log(`   Голову згенеровано (AUID: ${headAuid}, UUID: ${headMemberUuid})`);
+
+        const experts = [];
+        for (let i = 0; i < replicaConfig.expertsCount; i++) {
+          const expertAuid = generateAuid();
+          const expertRes = await sdk.DevAddCommissionReplicaMember({
+            id: replicaId,
+            input: { auid: [expertAuid], role: 'EXPERT' }
+          });
+          const expertUuid = expertRes.addCommissionReplicaMember.members.find(m => m.auid?.includes(expertAuid))?.id;
+          experts.push({ name: `Експерт #${expertAuid}`, auid: expertAuid, uuid: expertUuid });
+        }
+        log(`   Додано ${replicaConfig.expertsCount} експертів`);
+
+        // Життєвий цикл репліки
+        await sdk.DevPlanCommissionReplica({ id: replicaId });
+        log(`📅 Репліка "${replicaConfig.name}" запланована (PLANNED)`);
+
+        // Голова та експерти підтверджують готовність
+        if (headMemberUuid) {
+          await sdk.DevMarkCommissionReplicaMemberReady({ id: replicaId, memberId: headMemberUuid });
+        }
+        for (const expert of experts) {
+          if (expert.uuid) {
+            await sdk.DevMarkCommissionReplicaMemberReady({ id: replicaId, memberId: expert.uuid });
           }
         }
-        log(`   ✅ Оцінювання завершено`);
+        log(`🤝 Усі члени репліки "${replicaConfig.name}" готові!`);
+
+        await sdk.DevStartCommissionReplica(
+          { id: replicaId },
+          { headers: { 'actor': headAuid.toString(), 'x-actor': headAuid.toString() } }
+        );
+        log(`▶️ Репліка "${replicaConfig.name}" активована (STARTED)`);
+
+        createdReplicas.push({ replicaId, replicaName: replicaConfig.name, headAuid, experts });
+        
+        commissionReplicasOutput.push({
+          replicaId,
+          replicaName: replicaConfig.name,
+          head: { auid: headAuid },
+          experts
+        });
       }
 
-      if (evalCount < replicaCandidates.length) {
-        const nextWine = replicaCandidates[evalCount];
-        log(`   ➡️ Встановлення кандидата ${nextWine.id} як поточного (наступного для оцінювання)...`);
-        try {
-          await sdk.DevSetCommissionReplicaCurrentCandidate({
-            id: replicaId,
-            currentCandidateId: nextWine.id
-          }, { headers: { 'X-ACTOR': headAuid.toString() } });
-        } catch (e: any) {
-          log(`   ⚠️ Не вдалося встановити наступного кандидата: ${e.message}`);
+      // 7. Імітація оцінювання для всіх реплік
+      for (const rep of createdReplicas) {
+        const commissionData = await sdk.GetCommission({ id: commissionId });
+        const activeReplica = commissionData.commission?.replicas.find(r => r.id === rep.replicaId);
+        const replicaCandidates = activeReplica?.replicaCandidates || [];
+
+        if (evalCount > 0 && replicaCandidates.length > 0) {
+          log(`   Імітуємо оцінювання для ${evalCount} вин у "${rep.replicaName}"...`);
+          const winesToEvaluate = replicaCandidates.slice(0, evalCount);
+          
+          for (const wine of winesToEvaluate) {
+            try {
+              await sdk.DevSetCommissionReplicaCurrentCandidate({
+                id: rep.replicaId,
+                currentCandidateId: wine.id
+              }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+            } catch (e: any) {
+              log(`   ⚠️ Не вдалося встановити кандидата: ${e.message}`);
+            }
+
+            const allMembersToEvaluate = [{ auid: rep.headAuid, isHead: true }, ...rep.experts];
+            for (const expert of allMembersToEvaluate) {
+              try {
+                const scores = evaluationProperties.length > 0 
+                  ? evaluationProperties.map(prop => {
+                      const range = prop.max - prop.min;
+                      const minAllowed = prop.min + Math.floor(range / 2);
+                      const score = Math.floor(Math.random() * (prop.max - minAllowed + 1)) + minAllowed;
+                      return { code: prop.code, value: score.toString() };
+                    })
+                  : [
+                      { code: "appearance_clarity", value: (Math.floor(Math.random() * 5) + 5).toString() },
+                      { code: "appearance_color", value: (Math.floor(Math.random() * 5) + 5).toString() }
+                    ];
+
+                await sdk.SubmitEvaluation({
+                  input: {
+                    candidateId: wine.id,
+                    scores,
+                    comments: [{ text: 'Automated evaluation comment from seeder', sortOrder: 1 }]
+                  }
+                }, { headers: { 'actor': expert.auid.toString(), 'x-actor': expert.auid.toString() } });
+              } catch (e: any) {
+                log(`   ⚠️ Помилка оцінювання для вина ${wine.id} експертом ${expert.auid}: ${e.message}`);
+              }
+            }
+            try {
+              await sdk.MarkCommissionReplicaCandidateAsEvaluated(
+                { id: wine.id },
+                { headers: { 'X-ACTOR': rep.headAuid.toString() } }
+              );
+            } catch (e: any) {
+              if (!e.message || !e.message.includes('Replica is not started')) {
+                log(`   ⚠️ Не вдалося завершити оцінювання кандидата ${wine.id}: ${e.message}`);
+              }
+            }
+          }
+          log(`   ✅ Оцінювання у "${rep.replicaName}" завершено`);
+        }
+
+        if (evalCount < replicaCandidates.length) {
+          const nextWine = replicaCandidates[evalCount];
+          try {
+            await sdk.DevSetCommissionReplicaCurrentCandidate({
+              id: rep.replicaId,
+              currentCandidateId: nextWine.id
+            }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+          } catch (e: any) {
+            log(`   ⚠️ Не вдалося встановити наступного кандидата: ${e.message}`);
+          }
         }
       }
 
       resultCommissions.push({
         id: commissionId,
         name,
-        replicaId,
-        head: { auid: headAuid },
-        experts,
+        replicas: commissionReplicasOutput,
         type
       });
     };
