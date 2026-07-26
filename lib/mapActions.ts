@@ -1,163 +1,105 @@
 "use server"
 
-// Глобальний кеш для уникнення лімітів API та пришвидшення роботи
-const globalForCache = global as unknown as {
-    eAmbrosiaCache: any[] | null,
-    eAmbrosiaTime: number,
-    polygonCache: Map<string, any>,
-    gridCache: Map<string, string>
-};
+import {
+    findWineRegionsInBounds,
+    findWineRegionsForPoint,
+    toWineRegionLayer,
+} from "@/lib/wineRegions"
+import type {
+    WineRegionBounds,
+    WineRegionFeatureCollection,
+} from "@/lib/wineRegionTypes"
 
-if (!globalForCache.eAmbrosiaCache) {
-    globalForCache.eAmbrosiaCache = null;
-    globalForCache.eAmbrosiaTime = 0;
+const globalForMapCache = globalThis as typeof globalThis & {
+    reverseGeocodeCache?: Map<string, {
+        region?: string
+        countryCode?: string
+        countryName?: string
+    }>
 }
-if (!globalForCache.polygonCache) globalForCache.polygonCache = new Map();
-if (!globalForCache.gridCache) globalForCache.gridCache = new Map();
 
-async function getEAmbrosiaData() {
-    const now = Date.now();
-    if (globalForCache.eAmbrosiaCache && (now - globalForCache.eAmbrosiaTime < 24 * 60 * 60 * 1000)) {
-        return globalForCache.eAmbrosiaCache;
+async function reverseGeocode(lat: number, lng: number) {
+    if (!globalForMapCache.reverseGeocodeCache) {
+        globalForMapCache.reverseGeocodeCache = new Map()
     }
 
-    const res = await fetch('https://webgate.ec.europa.eu/eambrosia-api/api/v1/geographical-indications', {
-        cache: 'no-store',
-        headers: { 'Accept': 'application/json' }
-    });
+    const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`
+    const cached = globalForMapCache.reverseGeocodeCache.get(cacheKey)
+    if (cached) return cached
 
-    if (!res.ok) throw new Error("API EU Error");
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-    const rawData = await res.json();
-
-    const wineData = rawData
-        .filter((gi: any) =>
-            gi.productCategory?.toLowerCase().includes('wine') ||
-            gi.productCategoryCode === 'Wine' ||
-            gi.productCategoryCode === '2204'
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&accept-language=en&zoom=5`,
+            {
+                headers: {
+                    "Accept": "application/json",
+                    "User-Agent": "WineLoreWebsite/1.0 (contact@winelore.com)",
+                },
+                signal: controller.signal,
+            },
         )
-        .map((gi: any) => ({
-            id: gi.id || gi.fileNumber,
-            name: gi.name,
-            type: gi.type || gi.protectionType || 'PDO',
-            status: gi.status || 'Registered',
-            countryCode: gi.countryCode,
-            country: gi.country,
-            countries: gi.countries
-        }));
 
-    globalForCache.eAmbrosiaCache = wineData;
-    globalForCache.eAmbrosiaTime = now;
+        if (!response.ok) return {}
 
-    return wineData;
+        const data = await response.json()
+        const result = {
+            region: data.address?.state
+                || data.address?.region
+                || data.address?.county,
+            countryCode: data.address?.country_code?.toUpperCase(),
+            countryName: data.address?.country,
+        }
+        globalForMapCache.reverseGeocodeCache.set(cacheKey, result)
+        return result
+    } catch (error) {
+        console.warn("Reverse geocoding failed:", error)
+        return {}
+    } finally {
+        clearTimeout(timeoutId)
+    }
 }
 
 export async function getRegionInfo(lat: number, lng: number) {
     try {
-        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en&polygon_geojson=1&zoom=5`, {
-            headers: { 'User-Agent': 'WineLore-App/1.0' }
-        });
-        const geoData = await geoRes.json();
-
-        const countryCode = geoData.address?.country_code?.toUpperCase();
-        const countryName = geoData.address?.country;
-        const state = geoData.address?.state || '';
-        const region = state || geoData.address?.region || geoData.address?.county;
-        const geojson = geoData.geojson || null;
-
-        if (!countryCode) {
-            return { region, countryCode, countryName, eAmbrosiaGIs: [], geojson };
+        const [geography, matches] = await Promise.all([
+            reverseGeocode(lat, lng),
+            findWineRegionsForPoint(lat, lng),
+        ])
+        const geojson: WineRegionFeatureCollection = {
+            type: "FeatureCollection",
+            features: matches,
         }
+        const wineRegions = matches.map((feature) => ({
+            id: feature.properties.id,
+            name: feature.properties.name,
+            type: "Wine region",
+            status: feature.properties.status || "mapped",
+            countryCode: feature.properties.country,
+            localName: feature.properties.localName,
+        }))
 
-        let countryGIs: any[] = [];
-
-        try {
-            const eAmbroData = await getEAmbrosiaData();
-            countryGIs = eAmbroData.filter((gi: any) => {
-                const stringifiedGi = JSON.stringify(gi).toUpperCase();
-                return stringifiedGi.includes(`"${countryCode}"`) || stringifiedGi.includes(`"${countryName?.toUpperCase()}"`);
-            });
-        } catch (apiError) {
-            console.error("E-Ambrosia API error:", apiError);
+        return {
+            ...geography,
+            wineRegions,
+            geojson,
         }
-
-        let localGIs = countryGIs;
-
-        if (countryCode === 'UA' && state) {
-            const stateLower = state.toLowerCase();
-            if (stateLower.includes('zakarpattia') || stateLower.includes('transcarpathia')) {
-                localGIs = countryGIs.filter(gi => gi.name.toLowerCase().includes('zakarpat'));
-            } else if (stateLower.includes('odesa') || stateLower.includes('odessa')) {
-                localGIs = countryGIs.filter(gi =>
-                    gi.name.toLowerCase().includes('shab') ||
-                    gi.name.toLowerCase().includes('yalpuh') ||
-                    gi.name.toLowerCase().includes('asha')
-                );
-            } else {
-                localGIs = [];
-            }
-        } else if (state) {
-            const stateBaseName = state.split(' ')[0].toLowerCase();
-            const matchedLocal = countryGIs.filter(gi => gi.name.toLowerCase().includes(stateBaseName));
-            if (matchedLocal.length > 0) localGIs = matchedLocal;
-        }
-
-        return { region, countryCode, countryName, eAmbrosiaGIs: localGIs, geojson };
     } catch (error) {
         console.error("Failed to get region info:", error);
-        return { error: 'Internal Server Error', eAmbrosiaGIs: [], geojson: null };
+        return {
+            error: "Internal Server Error",
+            wineRegions: [],
+            geojson: null,
+        }
     }
 }
 
-// Функція для фонового завантаження геометрії регіонів
-export async function getVisiblePolygons(markers: {lat: number, lng: number}[]) {
-    const polygons: any[] = [];
-    const missingGrids: any[] = [];
+export async function getVisiblePolygons(bounds: WineRegionBounds) {
+    const matches = await findWineRegionsInBounds(bounds)
 
-    // Групуємо по сітці, щоб уникати дублікатів
-    for (const m of markers) {
-        const gridKey = `${m.lat.toFixed(0)}_${m.lng.toFixed(0)}`;
-        if (globalForCache.gridCache.has(gridKey)) {
-            const regionName = globalForCache.gridCache.get(gridKey);
-            if (regionName && regionName !== "UNKNOWN" && regionName !== "FETCHING") {
-                const poly = globalForCache.polygonCache.get(regionName);
-                if (poly && !polygons.some(p => p.name === poly.name)) {
-                    polygons.push(poly);
-                }
-            }
-        } else {
-            missingGrids.push({ lat: m.lat, lng: m.lng, gridKey });
-        }
-    }
-
-    // Завантажуємо нові полігони (максимум 3 за раз, щоб не блокував Nominatim)
-    const toProcess = missingGrids.slice(0, 3);
-    for (const item of toProcess) {
-        globalForCache.gridCache.set(item.gridKey, "FETCHING");
-
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${item.lat}&lon=${item.lng}&format=json&accept-language=en&polygon_geojson=1&zoom=5`, {
-                headers: { 'User-Agent': 'WineLore-App/1.0' }
-            });
-            const data = await res.json();
-            const regionName = data.address?.state || data.address?.region || data.address?.country;
-
-            if (regionName && data.geojson) {
-                const polyData = { name: regionName, geojson: data.geojson };
-                globalForCache.polygonCache.set(regionName, polyData);
-                globalForCache.gridCache.set(item.gridKey, regionName);
-
-                if (!polygons.some(p => p.name === polyData.name)) polygons.push(polyData);
-            } else {
-                globalForCache.gridCache.set(item.gridKey, "UNKNOWN");
-            }
-
-            if (toProcess.length > 1) await new Promise(r => setTimeout(r, 600));
-        } catch (e) {
-            console.error("Nominatim fetch error:", e);
-            globalForCache.gridCache.delete(item.gridKey);
-        }
-    }
-
-    return polygons;
+    return matches
+        .map(toWineRegionLayer)
+        .sort((left, right) => left.name.localeCompare(right.name))
 }

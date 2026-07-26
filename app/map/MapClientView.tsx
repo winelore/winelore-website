@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useEffect } from "react"
+import React, { useState, useCallback, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
 import { Wine, MapPin, Shield, X, Globe, Loader2, Info, Calendar } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
@@ -9,6 +9,7 @@ import { fetchGraphQL } from "@/lib/apiClient"
 import { SEARCH_MAP_BEVERAGES, GET_BEVERAGE_DETAILS_MAP } from "./queries"
 import { getRegionInfo, getVisiblePolygons } from "@/lib/mapActions"
 import { getUsernamesAction } from "@/app/userActions"
+import type { WineRegionLayer } from "@/lib/wineRegionTypes"
 
 const MapComponent = dynamic(() => import('./MapComponent'), {
     ssr: false,
@@ -62,11 +63,12 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
 }
 
 export default function MapClientView() {
-    const [activeTab, setActiveTab] = useState<AppTabId>("feed")
+    const [activeTab, setActiveTab] = useState<AppTabId>("none")
     const { t, formatDateTime, formatStatus, formatBeverageType } = useTranslation()
 
     const [beverages, setBeverages] = useState<any[]>([])
-    const [visiblePolygons, setVisiblePolygons] = useState<any[]>([])
+    const [visiblePolygons, setVisiblePolygons] = useState<WineRegionLayer[]>([])
+    const polygonRequestIdRef = useRef(0)
 
     const [selectedBev, setSelectedBev] = useState<any | null>(null)
     const [isLoadingDetails, setIsLoadingDetails] = useState(false)
@@ -80,23 +82,43 @@ export default function MapClientView() {
     const createdLabel = t("beverage.created" as any) === "beverage.created" ? "Created" : t("beverage.created" as any);
     const geoLabel = t("map.geography" as any) === "map.geography" ? "Geography" : t("map.geography" as any);
 
-    const fetchPolygonsForMarkers = async (markers: any[]) => {
-        if (markers.length === 0) return;
-        const markersToFetch = markers.slice(0, 15).map(m => ({ lat: m.latitude, lng: m.longitude }));
-        const polygons = await getVisiblePolygons(markersToFetch);
+    const fetchPolygonsForBounds = useCallback(async (bounds: {
+        south: number
+        west: number
+        north: number
+        east: number
+    }) => {
+        const requestId = ++polygonRequestIdRef.current
 
-        if (polygons && polygons.length > 0) {
-            setVisiblePolygons(prev => {
-                const merged = [...prev];
-                polygons.forEach(p => {
-                    if (!merged.some(m => m.name === p.name)) merged.push(p);
-                });
-                return merged.slice(-50); // Зберігаємо до 50 полігонів в пам'яті фронтенда
-            });
+        try {
+            const polygons = await getVisiblePolygons(bounds)
+            if (requestId === polygonRequestIdRef.current) {
+                setVisiblePolygons(polygons || [])
+            }
+        } catch (error) {
+            console.error("Failed to fetch wine regions", error)
         }
-    }
+    }, [])
 
-    const handleBoundsChange = useCallback(async ({ lat, lng, radiusKm }: { lat: number, lng: number, radiusKm: number }) => {
+    const handleBoundsChange = useCallback(async ({
+        lat,
+        lng,
+        radiusKm,
+        south,
+        west,
+        north,
+        east,
+    }: {
+        lat: number
+        lng: number
+        radiusKm: number
+        south: number
+        west: number
+        north: number
+        east: number
+    }) => {
+        void fetchPolygonsForBounds({ south, west, north, east })
+
         try {
             const response = await fetchGraphQL(SEARCH_MAP_BEVERAGES as any, {
                 lat,
@@ -108,12 +130,11 @@ export default function MapClientView() {
             if (response?.search?.items) {
                 const validMarkers = response.search.items.filter((i: any) => i.latitude && i.longitude);
                 setBeverages(validMarkers);
-                fetchPolygonsForMarkers(validMarkers);
             }
         } catch (err) {
             console.error("Failed to fetch map markers", err);
         }
-    }, [])
+    }, [fetchPolygonsForBounds])
 
     const handleSelectBeverage = async (searchHit: any) => {
         setSelectedBev({ id: searchHit.id, name: searchHit.name });
@@ -177,6 +198,11 @@ export default function MapClientView() {
     const startResizing = (e: React.MouseEvent) => {
         e.preventDefault();
         setIsResizing(true);
+    }
+
+    const closeBeverageDetails = () => {
+        setSelectedBev(null)
+        setRegionData(null)
     }
 
     useEffect(() => {
@@ -267,7 +293,8 @@ export default function MapClientView() {
                                 </div>
 
                                 <button
-                                    onClick={() => setSelectedBev(null)}
+                                    onClick={closeBeverageDetails}
+                                    aria-label="Close beverage details"
                                     className="relative z-10 shrink-0 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-200"
                                 >
                                     <X className="w-5 h-5" />
@@ -362,24 +389,24 @@ export default function MapClientView() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <h3 className="text-[11px] font-extrabold uppercase tracking-widest truncate bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">
-                                                            EU E-Ambrosia Register
+                                                            Wine Regions
                                                         </h3>
-                                                        <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-0.5 truncate">Official PDO / PGI</p>
+                                                        <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-0.5 truncate">Mapped origin areas</p>
                                                     </div>
                                                     <div className="flex-1 h-px bg-gradient-to-r from-blue-200 to-transparent ml-2"></div>
                                                 </div>
 
-                                                {regionData.eAmbrosiaGIs && regionData.eAmbrosiaGIs.length > 0 ? (
+                                                {regionData.wineRegions && regionData.wineRegions.length > 0 ? (
                                                     <div className="space-y-4">
                                                         <div className="flex items-start gap-3 bg-blue-50/50 text-blue-800 p-4 rounded-[20px] border border-blue-100/50">
                                                             <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                                                             <p className="text-xs font-medium leading-relaxed">
-                                                                Found <strong className="font-extrabold">{regionData.eAmbrosiaGIs.length}</strong> protected geographical indications (PDO/PGI) recognized by the EU for {regionData.countryName}.
+                                                                This origin falls within <strong className="font-extrabold">{regionData.wineRegions.length}</strong> mapped wine {regionData.wineRegions.length === 1 ? "region" : "regions"}. A geographic match does not by itself establish a beverage&apos;s regional designation.
                                                             </p>
                                                         </div>
 
                                                         <div className="space-y-3">
-                                                            {regionData.eAmbrosiaGIs.map((gi: any) => (
+                                                            {regionData.wineRegions.map((gi: any) => (
                                                                 <div key={gi.id} className="group/gi bg-white border border-slate-100 p-5 rounded-[24px] shadow-sm hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100/50 transition-all duration-300 cursor-default flex flex-col">
                                                                     <div className="flex items-start justify-between gap-3 mb-3">
                                                                         <h4 className="text-sm font-bold text-slate-800 leading-tight group-hover/gi:text-blue-700 transition-colors">
@@ -390,9 +417,9 @@ export default function MapClientView() {
                                                                         </span>
                                                                     </div>
                                                                     <div className="flex items-center gap-2 mt-auto">
-                                                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${gi.status === 'Registered' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${gi.status?.toLowerCase() === 'registered' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                                                                         <p className="text-[10px] font-extrabold tracking-widest uppercase text-slate-400 group-hover/gi:text-slate-500 transition-colors truncate">
-                                                                            {gi.status}
+                                                                            {gi.status?.toLowerCase() === 'registered' ? 'Registered wine region' : 'Mapped wine region'}
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -402,8 +429,8 @@ export default function MapClientView() {
                                                 ) : (
                                                     <div className="bg-white border border-slate-100 p-8 rounded-[24px] text-center shadow-sm">
                                                         <Shield className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                                                        <p className="text-sm font-bold text-slate-700">No EU GIs found</p>
-                                                        <p className="text-xs text-slate-500 mt-1">There are no protected indications registered for this country.</p>
+                                                        <p className="text-sm font-bold text-slate-700">No mapped wine region at this origin</p>
+                                                        <p className="text-xs text-slate-500 mt-1">The point is outside the currently mapped wine-region coverage.</p>
                                                     </div>
                                                 )}
                                             </div>
