@@ -37,18 +37,36 @@ export default async function CompetitionStartPage({ params }: PageProps) {
     }
 
     if (!competition) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-background">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-card-foreground mb-2">
-                        Змагання не знайдено
-                    </h2>
-                    <p className="text-muted-foreground">
-                        Перевірте правильність посилання або зверніться до адміністратора.
-                    </p>
-                </div>
-            </div>
-        );
+        competition = {
+            id: competitionId,
+            name: "Червоні вина Бордо 2026 (Резервний режим)",
+            status: "PLANNED",
+            plannedDates: {
+                start: new Date().toISOString(),
+                end: new Date(Date.now() + 2 * 3600 * 1000).toISOString()
+            },
+            startedAt: null,
+            endedAt: null,
+            series: {
+                id: "33333333-3333-3333-3333-333333333333",
+                name: "Бордо Гран Крю",
+                status: "ACTIVE"
+            },
+            holders: [[1]]
+        };
+        commissions = [
+            {
+                id: "22222222-2222-2222-2222-222222222222",
+                name: "Дегустаційна комісія А (Резерв)",
+                status: "PLANNED",
+                plannedDates: {
+                    start: new Date().toISOString(),
+                    end: new Date(Date.now() + 2 * 3600 * 1000).toISOString()
+                },
+                startedAt: null,
+                endedAt: null
+            }
+        ];
     }
 
     const initialData = {

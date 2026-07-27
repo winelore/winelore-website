@@ -39,16 +39,24 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const commission = await getCommissionDataAction(commissionId)
     if (!commission) notFound()
 
-    // 3. Fetch all replica candidates for this replica
-    const replicaCandidates = await getReplicaCandidatesAction(currentReplicaId)
-    
-    const currentIndex = replicaCandidates.findIndex((c: any) => c.id === candidateId)
-    const currentReplicaCandidate = replicaCandidates[currentIndex] || replicaCandidate
-    const currentCandidate = currentReplicaCandidate.candidate
-    const evaluatedCount = replicaCandidates.filter((c: any) => isReplicaCandidateFinished(c.status)).length
-    const candidatesLeft = replicaCandidates.length - evaluatedCount
+    // 3. Fetch all replica candidates and isolate the PANEL
+    const replicaCandidatesAll = await getReplicaCandidatesAction(currentReplicaId)
 
-    // Fetch candidate origin only when the competition allows it during evaluation
+    // Find current candidate to determine its panel
+    const currentIndexAll = replicaCandidatesAll.findIndex((c: any) => c.id === candidateId)
+    const currentReplicaCandidate = replicaCandidatesAll[currentIndexAll] || replicaCandidate
+    const currentCandidate = currentReplicaCandidate.candidate
+    const currentPanelId = currentCandidate.panelId
+
+    const panelCandidates = replicaCandidatesAll.filter((c: any) => c.candidate.panelId === currentPanelId)
+
+    const currentIndex = panelCandidates.findIndex((c: any) => c.id === candidateId)
+    const evaluatedCount = panelCandidates.filter((c: any) => isReplicaCandidateFinished(c.status)).length
+    const candidatesLeft = panelCandidates.length - evaluatedCount
+
+    const panelName = commission.panels?.find((p: any) => p.id === currentPanelId)?.name || "Panel"
+
+    // Fetch candidate origin
     const originVisible = commission.competition.beverageOriginDuringEvaluationEnabled
     const origin = currentCandidate?.sample?.batch?.beverage?.origin
     let originInfo = null
@@ -64,8 +72,9 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             replicaName={replicaCandidate.replica.name}
             candidateCode={currentCandidate?.anonymizedCode || candidateId}
             commissionName={commission.name}
+            panelName={panelName}
             currentIndex={currentIndex}
-            totalCandidates={replicaCandidates.length}
+            totalCandidates={panelCandidates.length}
             candidatesLeft={candidatesLeft}
             categories={categories}
             candidateId={candidateId}

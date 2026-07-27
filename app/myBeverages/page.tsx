@@ -7,7 +7,13 @@ import { getGeographicInfo } from "@/lib/geocoding"
 import { GET_MY_BEVERAGES } from "./queries"
 import MyBeveragesClientView from "./MyBeveragesClientView"
 
-export default async function MyBeveragesPage() {
+export default async function MyBeveragesPage({ searchParams, }: { searchParams: Promise<{ cursor?: string; page?: string }> }) {
+    const resolvedParams = await searchParams;
+    const cursor = resolvedParams.cursor;
+    const currentPage = parseInt(resolvedParams.page || "1", 10);
+
+    const LIMIT = 16;
+
     const cookieStore = await cookies()
     const currentAuidStr = cookieStore.get("auid")?.value
     if (!currentAuidStr) {
@@ -16,12 +22,25 @@ export default async function MyBeveragesPage() {
     const currentAuid = parseInt(currentAuidStr, 10);
 
     let myBeverages: any[] = [];
+    let totalCount = 0;
+    let nextCursor: string | null = null;
 
     try {
-        const response = await fetchGraphQL(GET_MY_BEVERAGES, {
-            filter: { producers: [[currentAuid]] }
-        });
+        const args: any = {
+            limit: LIMIT,
+            filter: { producers: [[currentAuid]] },
+            producer: [currentAuid]
+        };
+
+        if (cursor) {
+            args.cursor = cursor;
+        } else if (currentPage > 1) {
+            args.offset = (currentPage - 1) * LIMIT;
+        }
+
+        const response = await fetchGraphQL(GET_MY_BEVERAGES, args);
         const rawBeverages = response.beverages?.items || [];
+        totalCount = response.beverageCount || 0;
 
         myBeverages = await Promise.all(
             rawBeverages.map(async (bev: any) => {
@@ -43,16 +62,34 @@ export default async function MyBeveragesPage() {
                             colorVal = parsed.color;
                         }
                     } catch (e) {
-                        console.error("Failed to parse beverage attributes in myBeverages page.tsx:", e);
+                        const match = bev.attributes.match(/color=([^,\}]+)/);
+                        if (match) {
+                            colorVal = match[1].trim().replace(/^["']|["']$/g, "");
+                        }
                     }
                 }
 
                 return { ...bev, type: colorVal, originParts };
             })
         );
+
+        if (rawBeverages.length > 0) {
+            nextCursor = rawBeverages[rawBeverages.length - 1].id;
+        }
+
     } catch (error) {
         console.error("Failed to fetch beverages:", error)
     }
 
-    return <MyBeveragesClientView initialData={{ beverages: myBeverages }} />
+    const totalPages = Math.ceil(totalCount / LIMIT);
+
+    return (
+        <MyBeveragesClientView
+            initialData={{ beverages: myBeverages }}
+            nextCursor={nextCursor}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+        />
+    )
 }

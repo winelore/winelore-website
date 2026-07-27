@@ -40,7 +40,7 @@ const GET_ALL_WINES = gql(`
 import { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { print } from 'graphql';
 
-const GRAPHQL_ENDPOINT = '[http://switchback.proxy.rlwy.net:43233/graphql](http://switchback.proxy.rlwy.net:43233/graphql)';
+const GRAPHQL_ENDPOINT = '[http://localhost:8080/graphql](http://localhost:8080/graphql)';
 
 export async function fetchGraphQL<TResult, TVariables>(
   document: TypedDocumentNode<TResult, TVariables>,
