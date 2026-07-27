@@ -739,10 +739,12 @@ export async function renameCommissionReplicaAction(id: string, name?: string) {
             id,
             name
         }, headers);
-        return { success: true, replica: data.renameCommissionReplica };
+        return {success: true, replica: data.renameCommissionReplica};
     } catch (err: any) {
         console.error("Server Action Error (renameCommissionReplicaAction):", err);
-        return { success: false, error: err.message || "Failed to rename replica" };
+        return {success: false, error: err.message || "Failed to rename replica"};
+    }
+}
 export async function startNextPanelAction(replicaId: string, nextCandidateId: string) {
     if (!isValidUuid(replicaId) || !isValidUuid(nextCandidateId)) return null;
     try {
