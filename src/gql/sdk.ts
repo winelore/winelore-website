@@ -87,6 +87,11 @@ export type CoordinatesInput = {
   longitude: number;
 };
 
+export type CountriesType =
+  | 'GLOBAL'
+  | 'NOT_SPECIFIED'
+  | 'SPECIFIC';
+
 export type CreateBatchInput = {
   attributes?: string | null | undefined;
   beverageId: string | number;
@@ -434,7 +439,7 @@ export type GetCompetitionPageQueryVariables = Exact<{
 }>;
 
 
-export type GetCompetitionPageQuery = { competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } } | null, commissionsByCompetition: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, plannedDates: { start: string | null, end: string | null } | null }> } };
+export type GetCompetitionPageQuery = { competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } } | null, commissionsByCompetition: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null }> } };
 
 export type StartCompetitionMutationVariables = Exact<{
   id: string | number;
@@ -688,6 +693,15 @@ export type GetMyBeveragesQueryVariables = Exact<{
 
 export type GetMyBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
 
+export type GetMyCompetitionSeriesQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  offset?: number | null | undefined;
+  cursor?: string | number | null | undefined;
+}>;
+
+
+export type GetMyCompetitionSeriesQuery = { competitionSeriesList: { items: Array<{ id: string, name: string, status: Types.CompetitionSeriesStatus, countriesType: Types.CountriesType, countriesCodes: Array<string> | null, owners: Array<Array<number>>, createdAt: string }> } };
+
 export type GetMyCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
   cursor?: string | number | null | undefined;
@@ -706,14 +720,6 @@ export type GetDashboardCompetitionsQueryVariables = Exact<{
 
 
 export type GetDashboardCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
-
-export type GetCommissionsQueryVariables = Exact<{
-  limit?: number | null | undefined;
-  offset?: number | null | undefined;
-}>;
-
-
-export type GetCommissionsQuery = { commissions: { items: Array<{ id: string, name: string, status: Types.CommissionStatus, replicas: Array<{ members: Array<{ auid: Array<number>, role: Types.CommissionReplicaMemberRole }> }> }> } };
 
 
 export const GetBeverageDocument = gql`
@@ -1318,6 +1324,10 @@ export const GetCompetitionPageDocument = gql`
       }
       startedAt
       endedAt
+      wineJumperMiniGameEnabled
+      voiceCommentsEnabled
+      propertyCommentsEnabled
+      beverageOriginDuringEvaluationEnabled
     }
   }
 }
@@ -1632,6 +1642,21 @@ export const GetMyBeveragesDocument = gql`
   beverageCount(producer: $producer)
 }
     `;
+export const GetMyCompetitionSeriesDocument = gql`
+    query GetMyCompetitionSeries($limit: Int, $offset: Int, $cursor: ID) {
+  competitionSeriesList(limit: $limit, offset: $offset, cursor: $cursor) {
+    items {
+      id
+      name
+      status
+      countriesType
+      countriesCodes
+      owners
+      createdAt
+    }
+  }
+}
+    `;
 export const GetMyCompetitionsDocument = gql`
     query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput) {
   competitions(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
@@ -1676,23 +1701,6 @@ export const GetDashboardCompetitionsDocument = gql`
     }
   }
   competitionCount
-}
-    `;
-export const GetCommissionsDocument = gql`
-    query GetCommissions($limit: Int, $offset: Int) {
-  commissions(limit: $limit, offset: $offset) {
-    items {
-      id
-      name
-      status
-      replicas {
-        members {
-          auid
-          role
-        }
-      }
-    }
-  }
 }
     `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
@@ -1863,14 +1871,14 @@ export function getSdk<C>(requester: Requester<C>) {
     GetMyBeverages(variables?: Types.GetMyBeveragesQueryVariables, options?: C): Promise<Types.GetMyBeveragesQuery> {
       return requester<Types.GetMyBeveragesQuery, Types.GetMyBeveragesQueryVariables>(GetMyBeveragesDocument, variables, options) as Promise<Types.GetMyBeveragesQuery>;
     },
+    GetMyCompetitionSeries(variables?: Types.GetMyCompetitionSeriesQueryVariables, options?: C): Promise<Types.GetMyCompetitionSeriesQuery> {
+      return requester<Types.GetMyCompetitionSeriesQuery, Types.GetMyCompetitionSeriesQueryVariables>(GetMyCompetitionSeriesDocument, variables, options) as Promise<Types.GetMyCompetitionSeriesQuery>;
+    },
     GetMyCompetitions(variables?: Types.GetMyCompetitionsQueryVariables, options?: C): Promise<Types.GetMyCompetitionsQuery> {
       return requester<Types.GetMyCompetitionsQuery, Types.GetMyCompetitionsQueryVariables>(GetMyCompetitionsDocument, variables, options) as Promise<Types.GetMyCompetitionsQuery>;
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
-    },
-    GetCommissions(variables?: Types.GetCommissionsQueryVariables, options?: C): Promise<Types.GetCommissionsQuery> {
-      return requester<Types.GetCommissionsQuery, Types.GetCommissionsQueryVariables>(GetCommissionsDocument, variables, options) as Promise<Types.GetCommissionsQuery>;
     }
   };
 }

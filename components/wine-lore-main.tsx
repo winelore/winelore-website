@@ -107,6 +107,21 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
           <div className="h-[1px] w-full bg-border" />
         </div>
 
+        {/* Group 3: My competition series */}
+        <div className="px-2 py-1.5">
+          <a
+              href="/myCompetitionSeries"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
+          >
+            <Activity className="h-5 w-5 stroke-[1.5] text-foreground" />
+            <span>My Competition Series</span>
+          </a>
+        </div>
+
+        <div className="px-5">
+          <div className="h-[1px] w-full bg-border" />
+        </div>
+
         {/* Group 4: AXUS ID Profile */}
         <div className="px-2 pb-3 pt-1.5">
           <a
