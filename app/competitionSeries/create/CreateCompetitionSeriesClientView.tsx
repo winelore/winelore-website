@@ -7,6 +7,7 @@ import { Trophy, ArrowLeft, Loader2 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { createCompetitionSeriesAction } from "../actions"
+import CountryMultiSelect from "../CountryMultiSelect"
 
 const COUNTRIES_TYPE_VALUES = ["GLOBAL", "NOT_SPECIFIED", "SPECIFIC"] as const
 
@@ -17,7 +18,7 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
 
     const [name, setName] = useState("")
     const [countriesType, setCountriesType] = useState<string>(COUNTRIES_TYPE_VALUES[0])
-    const [countriesCodesRaw, setCountriesCodesRaw] = useState("")
+    const [countriesCodes, setCountriesCodes] = useState<string[]>([])
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -33,18 +34,11 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
             return
         }
 
-        const countriesCodes = showCountryCodes
-            ? countriesCodesRaw
-                .split(",")
-                .map((c) => c.trim().toUpperCase())
-                .filter(Boolean)
-            : undefined
-
         setSubmitting(true)
         const result = await createCompetitionSeriesAction({
             name: trimmedName,
             countriesType,
-            countriesCodes,
+            countriesCodes: showCountryCodes ? countriesCodes : undefined,
             owners: [[currentAuid]],
         })
         setSubmitting(false)
@@ -65,7 +59,7 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
                 <div className="w-full max-w-2xl flex flex-col gap-6">
 
                     <Link
-                        href="/myCompetitionSeries"
+                        href="/competitionSeries"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -116,17 +110,10 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
 
                             {showCountryCodes && (
                                 <div className="flex flex-col gap-2">
-                                    <label htmlFor="countries-codes" className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
                                         {t("myCompetitionSeries.countriesCodesLabel")}
                                     </label>
-                                    <input
-                                        id="countries-codes"
-                                        type="text"
-                                        value={countriesCodesRaw}
-                                        onChange={(e) => setCountriesCodesRaw(e.target.value)}
-                                        placeholder="UA, PL, DE"
-                                        className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
-                                    />
+                                    <CountryMultiSelect value={countriesCodes} onChange={setCountriesCodes} />
                                 </div>
                             )}
 

@@ -20,6 +20,7 @@ import {
 import { useTranslation } from "@/lib/i18n/context"
 import { getDateLocale } from "@/lib/i18n"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
+import { useUsernames } from "@/hooks/useUsernames"
 import {
     type CompetitionSeries,
     changeCompetitionSeriesNameAction,
@@ -32,6 +33,7 @@ import {
     suspendCompetitionSeriesAction,
     archiveCompetitionSeriesAction,
 } from "../actions"
+import CountryMultiSelect from "../CountryMultiSelect"
 
 const STATUS_STYLES: Record<string, string> = {
     APPROVED: "bg-emerald-50 text-emerald-600 border border-emerald-100",
@@ -61,7 +63,7 @@ export default function CompetitionSeriesClientView({
     const [series, setSeries] = useState(initialSeries)
     const [name, setName] = useState(initialSeries.name)
     const [countriesType, setCountriesType] = useState(initialSeries.countriesType)
-    const [countriesCodesRaw, setCountriesCodesRaw] = useState((initialSeries.countriesCodes || []).join(", "))
+    const [countriesCodes, setCountriesCodes] = useState<string[]>(initialSeries.countriesCodes || [])
     const [newOwnerAuid, setNewOwnerAuid] = useState("")
 
     const [savingField, setSavingField] = useState<string | null>(null)
@@ -74,6 +76,7 @@ export default function CompetitionSeriesClientView({
 
     const isEditable = isOwner && series.status !== "ARCHIVED"
     const owners = flattenOwners(series.owners)
+    const { usernames } = useUsernames(owners)
 
     function withError<T>(fn: () => Promise<T>) {
         setError(null)
@@ -101,11 +104,9 @@ export default function CompetitionSeriesClientView({
 
     async function handleSaveCountries() {
         setSavingField("countries")
-        const countriesCodes = countriesType === "SPECIFIC"
-            ? countriesCodesRaw.split(",").map((c) => c.trim().toUpperCase()).filter(Boolean)
-            : undefined
+        const codes = countriesType === "SPECIFIC" ? countriesCodes : undefined
         try {
-            const result = await changeCompetitionSeriesCountriesAction(series.id, { countriesType, countriesCodes })
+            const result = await changeCompetitionSeriesCountriesAction(series.id, { countriesType, countriesCodes: codes })
             if (result.success && result.series) {
                 setSeries((prev) => ({
                     ...prev,
@@ -178,7 +179,7 @@ export default function CompetitionSeriesClientView({
                 <div className="w-full max-w-3xl flex flex-col gap-6">
 
                     <Link
-                        href="/myCompetitionSeries"
+                        href="/competitionSeries"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -292,18 +293,13 @@ export default function CompetitionSeriesClientView({
                                     ))}
                                 </select>
                                 {countriesType === "SPECIFIC" && (
-                                    <input
-                                        type="text"
-                                        value={countriesCodesRaw}
-                                        disabled={!isEditable}
-                                        onChange={(e) => setCountriesCodesRaw(e.target.value)}
-                                        placeholder="UA, PL, DE"
-                                        className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
-                                    />
+                                    <div className="flex-1">
+                                        <CountryMultiSelect value={countriesCodes} onChange={setCountriesCodes} disabled={!isEditable} />
+                                    </div>
                                 )}
                                 {isEditable && (
                                     countriesType !== series.countriesType ||
-                                    countriesCodesRaw !== (series.countriesCodes || []).join(", ")
+                                    countriesCodes.join(",") !== (series.countriesCodes || []).join(",")
                                 ) && (
                                     <SaveButton loading={savingField === "countries"} onClick={handleSaveCountries} />
                                 )}
@@ -320,8 +316,9 @@ export default function CompetitionSeriesClientView({
                                     <span
                                         key={auid}
                                         className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-sm font-semibold text-slate-600"
+                                        title={`AUID: ${auid}`}
                                     >
-                                        {auid}
+                                        {usernames[auid] || auid}
                                         {isEditable && (
                                             <button
                                                 type="button"
