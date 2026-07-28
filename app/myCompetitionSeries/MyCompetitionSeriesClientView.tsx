@@ -101,19 +101,19 @@ export default function MyCompetitionSeriesClientView({ initialData }: { initial
 
                     <div className="flex items-center justify-between gap-4">
                         <div>
-                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("competitionSeries.title")}</h2>
-                            <p className="text-sm text-slate-500 mt-1">{t("competitionSeries.subtitle")}</p>
+                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myCompetitionSeries.title")}</h2>
+                            <p className="text-sm text-slate-500 mt-1">{t("myCompetitionSeries.subtitle")}</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {t("competitionSeries.count", { count: initialData.series.length })}
+                                {t("myCompetitionSeries.count", { count: initialData.series.length })}
                             </span>
                             <Link
                                 href="/competitionSeries/create"
                                 className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
-                                {t("competitionSeries.startButton")}
+                                {t("myCompetitionSeries.createButton")}
                             </Link>
                         </div>
                     </div>
@@ -126,14 +126,14 @@ export default function MyCompetitionSeriesClientView({ initialData }: { initial
                         {initialData.series.length === 0 && (
                             <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50">
                                 <Trophy className="w-12 h-12 text-slate-300 mb-4" />
-                                <h3 className="text-lg font-bold text-slate-700">{t("competitionSeries.emptyTitle")}</h3>
-                                <p className="text-sm text-slate-500 mt-1 max-w-md">{t("competitionSeries.emptyDescription")}</p>
+                                <h3 className="text-lg font-bold text-slate-700">{t("myCompetitionSeries.emptyTitle")}</h3>
+                                <p className="text-sm text-slate-500 mt-1 max-w-md">{t("myCompetitionSeries.emptyDescription")}</p>
                                 <Link
                                     href="/competitionSeries/create"
                                     className="mt-6 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-6 py-3 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    {t("competitionSeries.startButton")}
+                                    {t("myCompetitionSeries.createButton")}
                                 </Link>
                             </div>
                         )}

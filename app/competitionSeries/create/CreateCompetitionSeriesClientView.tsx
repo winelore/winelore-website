@@ -8,11 +8,7 @@ import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { createCompetitionSeriesAction } from "../actions"
 
-const COUNTRIES_TYPE_OPTIONS = [
-    { value: "GLOBAL", label: "Глобальна серія" },
-    { value: "NOT_SPECIFIED", label: "Країна не вказана" },
-    { value: "SPECIFIC", label: "Визначені країни" },
-]
+const COUNTRIES_TYPE_VALUES = ["GLOBAL", "NOT_SPECIFIED", "SPECIFIC"] as const
 
 export default function CreateCompetitionSeriesClientView({ currentAuid }: { currentAuid: number }) {
     const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
@@ -20,7 +16,7 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
     const router = useRouter()
 
     const [name, setName] = useState("")
-    const [countriesType, setCountriesType] = useState(COUNTRIES_TYPE_OPTIONS[0].value)
+    const [countriesType, setCountriesType] = useState<string>(COUNTRIES_TYPE_VALUES[0])
     const [countriesCodesRaw, setCountriesCodesRaw] = useState("")
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -33,7 +29,7 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
 
         const trimmedName = name.trim()
         if (!trimmedName) {
-            setError("Введіть назву серії")
+            setError(t("evaluation.fillRequired"))
             return
         }
 
@@ -69,11 +65,11 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
                 <div className="w-full max-w-2xl flex flex-col gap-6">
 
                     <Link
-                        href="/competitionSeries"
+                        href="/myCompetitionSeries"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        {t("competitionSeries.title")}
+                        {t("myCompetitionSeries.title")}
                     </Link>
 
                     <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
@@ -82,29 +78,29 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
                                 <Trophy className="h-7 w-7" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">{t("competitionSeries.startButton")}</h2>
-                                <p className="text-sm text-slate-500 mt-0.5">Нова серія почнеться в статусі "Чернетка"</p>
+                                <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">{t("myCompetitionSeries.createTitle")}</h2>
+                                <p className="text-sm text-slate-500 mt-0.5">{t("myCompetitionSeries.createSubtitle")}</p>
                             </div>
                         </div>
 
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="series-name" className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                    Назва серії
+                                    {t("myCompetitionSeries.nameLabel")}
                                 </label>
                                 <input
                                     id="series-name"
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="Наприклад, Wine Championship 2026"
+                                    placeholder={t("myCompetitionSeries.namePlaceholder")}
                                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
                                 />
                             </div>
 
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="countries-type" className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                    Охоплення країн
+                                    {t("myCompetitionSeries.countriesTypeLabel")}
                                 </label>
                                 <select
                                     id="countries-type"
@@ -112,8 +108,8 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
                                     onChange={(e) => setCountriesType(e.target.value)}
                                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all bg-white"
                                 >
-                                    {COUNTRIES_TYPE_OPTIONS.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    {COUNTRIES_TYPE_VALUES.map((value) => (
+                                        <option key={value} value={value}>{t(`competitionSeriesCountriesType.${value}`)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -121,7 +117,7 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
                             {showCountryCodes && (
                                 <div className="flex flex-col gap-2">
                                     <label htmlFor="countries-codes" className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        Коди країн (через кому)
+                                        {t("myCompetitionSeries.countriesCodesLabel")}
                                     </label>
                                     <input
                                         id="countries-codes"
@@ -146,7 +142,7 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
                                 className="mt-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold px-6 py-3.5 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                             >
                                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {submitting ? "Створення..." : t("competitionSeries.startButton")}
+                                {submitting ? t("myCompetitionSeries.creating") : t("myCompetitionSeries.createButton")}
                             </button>
                         </form>
                     </div>

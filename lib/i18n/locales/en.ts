@@ -41,6 +41,38 @@ const en = {
     emptyTitle: "No competitions found",
     emptyDescription: "You are not listed as a holder for any competitions yet.",
   },
+  myCompetitionSeries: {
+    title: "Competition Series",
+    subtitle: "Manage your competition series and create competitions based on them.",
+    count: "{{count}} Series",
+    emptyTitle: "No competition series found",
+    emptyDescription: "Once you create or get access to a competition series, it will appear here.",
+    createTitle: "Create New Series",
+    createSubtitle: "Define a new competition series.",
+    nameLabel: "Series Name",
+    namePlaceholder: "e.g., World Wine Awards 2026",
+    countriesTypeLabel: "Countries Type",
+    createButton: "Create Series",
+    creating: "Creating...",
+    editTitle: "Edit Competition Series",
+    editSubtitle: "Change settings and manage the series status.",
+    createdOn: "Created",
+    saveChanges: "Save Changes",
+    saving: "Saving...",
+    statusSection: "Status & Lifecycle",
+    ownersSection: "Owners & Access",
+    addOwner: "Add Owner",
+    removeOwner: "Remove",
+    placeholderAuid: "Enter AUID",
+    countriesCodesLabel: "Country Codes (comma-separated)",
+    actions: {
+      submit: "Submit for Review",
+      approve: "Approve Series",
+      publish: "Publish Series",
+      suspend: "Suspend Series",
+      archive: "Archive Series",
+    },
+  },
   competition: {
     series: "Competition Series",
     timelineDetails: "Timeline Details",
@@ -289,6 +321,11 @@ const en = {
     STANDARD: "Standard",
     TRAINEE: "Trainee",
   },
+  competitionSeriesCountriesType: {
+    GLOBAL: "Global Series",
+    NOT_SPECIFIED: "Country Not Specified",
+    SPECIFIC: "Specific Countries",
+  },
   time: {
     ended: "Ended",
     startsInDays: "Starts in {{days}}d",
@@ -303,7 +340,7 @@ const en = {
     inDaysHours: "In {{days}}d {{hours}}h",
     inHoursMinutes: "In {{hours}}h {{minutes}}m",
   },
-    meta: {
+  meta: {
     title: "WineLore - Beverage Competitions Dashboard",
     description: "Discover and participate in beverage competitions on WineLore",
   },
@@ -361,10 +398,10 @@ const en = {
 
 type DeepStringValues<T> = {
   [K in keyof T]: T[K] extends string
-    ? string
-    : T[K] extends Record<string, unknown>
-      ? DeepStringValues<T[K]>
-      : T[K]
+      ? string
+      : T[K] extends Record<string, unknown>
+          ? DeepStringValues<T[K]>
+          : T[K]
 }
 
 export type TranslationKey = DeepStringValues<typeof en>

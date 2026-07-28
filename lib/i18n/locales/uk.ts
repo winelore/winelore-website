@@ -83,6 +83,7 @@ const uk: TranslationKey = {
     creating: "Створення...",
     editTitle: "Редагувати серію змагань",
     editSubtitle: "Змінюйте налаштування та керуйте статусом серії.",
+    createdOn: "Створено",
     saveChanges: "Зберегти зміни",
     saving: "Збереження...",
     statusSection: "Статус та життєвий цикл",
@@ -353,6 +354,11 @@ const uk: TranslationKey = {
   replicaType: {
     STANDARD: "Стандартна",
     TRAINEE: "Стажерська",
+  },
+  competitionSeriesCountriesType: {
+    GLOBAL: "Глобальна серія",
+    NOT_SPECIFIED: "Країна не вказана",
+    SPECIFIC: "Визначені країни",
   },
   time: {
     ended: "Завершено",
