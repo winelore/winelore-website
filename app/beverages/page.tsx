@@ -77,6 +77,7 @@ export default async function DashboardPage({
             nextCursor={nextCursor}
             currentPage={currentPage}
             totalPages={totalPages}
+            totalCount={totalCount}
         />
     );
 }

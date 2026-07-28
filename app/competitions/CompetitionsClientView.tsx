@@ -43,6 +43,7 @@ interface DashboardProps {
     prevHistory?: string
     hasPrev?: boolean
     hasNext?: boolean
+    totalCount?: number
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -184,12 +185,13 @@ export default function CompetitionsClientView({
                                               hasPrev,
                                               hasNext,
                                               currentPage,
-                                              totalPages = 1 // default for local
+                                              totalPages = 1, // default for local
+                                              totalCount = 0
                                           }: DashboardProps) {
     const activeTab = "competitions"
     const router = useRouter()
     const pathname = usePathname()
-
+    const { t } = useTranslation()
     const [isLoading, setIsLoading] = useState(false)
 
     // Fetch usernames for all competition holders on the dashboard
@@ -234,6 +236,16 @@ export default function CompetitionsClientView({
             <AppHeader activeTab={activeTab} />
 
             <main className="flex-1 overflow-auto p-6 flex flex-col relative">
+                <div className="flex items-center justify-between mb-4 shrink-0">
+                    <div>
+                        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("common.competitions")}</h2>
+                    </div>
+                    {totalCount !== undefined && (
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                {t("common.competitionsCount", { count: totalCount })}
+                            </span>
+                    )}
+                </div>
                 {isLoading && (
                     <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-3xl">
                         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
