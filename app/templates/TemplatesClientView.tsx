@@ -39,7 +39,7 @@ interface Template {
     latestEdition?: TemplateEdition
 }
 
-export default function TemplatesClientView({ initialTemplates }: { initialTemplates: Template[] }) {
+export default function TemplatesClientView({ initialTemplates, totalCount }: { initialTemplates: Template[], totalCount?: number }) {
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
@@ -93,9 +93,11 @@ export default function TemplatesClientView({ initialTemplates }: { initialTempl
                             </p>
                         </div>
                         <div className="flex flex-col md:flex-row items-center gap-4">
+
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {myTemplates.length} шаблонів
+                                {totalCount} шаблонів
                             </span>
+
                             <button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"

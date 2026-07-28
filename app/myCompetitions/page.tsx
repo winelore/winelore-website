@@ -30,10 +30,11 @@ export default async function MyCompetitionsPage({searchParams, }: {
         const response = await fetchGraphQL(GET_MY_COMPETITIONS, {
             limit: LIMIT + 1,
             cursor: cursor || undefined,
-            filter: { holders: [[currentAuid]] }
+            filter: { holders: [[currentAuid]] },
+            holder: [currentAuid]
         });
         rawCompetitions = response.competitions?.items || [];
-        //totalCount = response.myCompetitionsCount || 0;
+        totalCount = response.myCompetitionsCount || 0;
     } catch (error) {
         console.error("Failed to fetch competitions:", error);
     }
