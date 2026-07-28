@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getEvaluationTemplatesAction } from "./actions";
 import TemplatesClientView from "./TemplatesClientView";
 import { cookies } from "next/headers";
@@ -20,5 +21,9 @@ export default async function TemplatesPage() {
         console.error("Failed to load templates:", error);
     }
 
-    return <TemplatesClientView initialTemplates={templates} totalCount={totalCount} />;
+    return (
+        <Suspense fallback={<div>Loading templates...</div>}>
+            <TemplatesClientView initialTemplates={templates} totalCount={totalCount} />
+        </Suspense>
+    );
 }

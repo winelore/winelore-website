@@ -17,7 +17,6 @@ async function rawGraphQL(query: string, variables?: Record<string, any>) {
     return json.data;
 }
 
-
 export async function getBeverageTypesAction(): Promise<{ id: string; code: string; name: string }[]> {
     try {
         const query = `
@@ -39,9 +38,7 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
     }
 }
 
-
 export async function getEvaluationTemplatesAction(ownerAuid?: number) {
-
     try {
         const query = `
             query GetEvaluationTemplateEditions($limit: Int, $owner: [Int!]) {
@@ -72,6 +69,50 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                                 name
                                 description
                                 isRequired
+                                isResult
+                                ... on IntProperty {
+                                    intMinLimit: minLimit
+                                    intMaxLimit: maxLimit
+                                    intDefaultValue: defaultValue
+                                }
+                                ... on DoubleProperty {
+                                    doubleMinLimit: minLimit
+                                    doubleMaxLimit: maxLimit
+                                    doubleDefaultValue: defaultValue
+                                }
+                                ... on DiscreteNumbersProperty {
+                                    discreteAllowedValues: allowedValues
+                                    discreteDefaultValue: defaultValue
+                                }
+                                ... on EnumProperty {
+                                    enumAllowedValues: allowedValues
+                                    enumDefaultValue: defaultValue
+                                }
+                                ... on BooleanProperty {
+                                    boolDefaultValue: defaultValue
+                                }
+                                ... on SmartProperty {
+                                    expression {
+                                        __typename
+                                        type
+                                        ... on ConstantExpression { value }
+                                        ... on VariableExpression { code }
+                                        ... on BinaryExpression {
+                                            left {
+                                                __typename
+                                                type
+                                                ... on ConstantExpression { value }
+                                                ... on VariableExpression { code }
+                                            }
+                                            right {
+                                                __typename
+                                                type
+                                                ... on ConstantExpression { value }
+                                                ... on VariableExpression { code }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -79,19 +120,28 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                 evaluationTemplateCount(owner: $owner)
             }
         `;
-        const variables: any = { limit: 50 };
+        const variables: any = { limit: 100 };
         if (ownerAuid) {
             variables.owner = [ownerAuid];
         }
         const data = await rawGraphQL(query, variables);
         const items = data?.evaluationTemplateEditions?.items || [];
-
+        const latestTemplatesMap = new Map<string, any>();
+        for (const item of items) {
+            if (!item.template) continue;
+            const templateId = item.template.id;
+            const existing = latestTemplatesMap.get(templateId);
+            if (!existing || item.version > existing.version) {
+                latestTemplatesMap.set(templateId, item);
+            }
+        }
         // Map editions to templates
-        const templates = items.map((item: any) => ({
+        const templates = Array.from(latestTemplatesMap.values()).map((item: any) => ({
             id: item.template.id,
             name: item.template.name,
             owners: (item.template.owners as number[][] | null) ?? [],
             beverageType: item.template.beverageType?.name ?? item.template.beverageType?.code ?? "",
+            beverageTypeId: item.template.beverageType?.id ?? "",
             status: item.template.status,
             createdAt: item.template.createdAt,
             latestEdition: {
@@ -101,14 +151,23 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                 categories: item.categories.map((cat: any) => ({
                     id: cat.id,
                     name: cat.name,
-                    properties: cat.properties.map((prop: any) => ({
-                        id: prop.id,
-                        code: prop.code,
-                        name: prop.name,
-                        description: prop.description,
-                        type: prop.__typename ? prop.__typename.replace("Property", "") : "Boolean",
-                        isRequired: prop.isRequired
-                    }))
+                    properties: cat.properties.map((prop: any) => {
+                        const typeName = prop.__typename ? prop.__typename.replace("Property", "") : "Boolean";
+                        return {
+                            id: prop.id,
+                            code: prop.code,
+                            name: prop.name,
+                            description: prop.description,
+                            type: typeName === "DiscreteNumbers" ? "Discrete" : typeName,
+                            isRequired: prop.isRequired,
+                            isResult: prop.isResult ?? false,
+                            minLimit: prop.intMinLimit ?? prop.doubleMinLimit ?? undefined,
+                            maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
+                            allowedValues: prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
+                            defaultValue: prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
+                            expression: prop.expression ?? undefined,
+                        };
+                    })
                 }))
             }
         }));
@@ -132,7 +191,6 @@ export async function createGlobalTemplateAction(
     try {
         console.log(`🚀 Creating global template "${templateName}"...`);
         
-        // 1. Create evaluation template
         const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
         const templateRes = await sdk.CreateEvaluationTemplate({
             input: {
@@ -144,7 +202,6 @@ export async function createGlobalTemplateAction(
         const templateId = templateRes.createEvaluationTemplate.id;
         console.log(`  Created template: ${templateId}`);
 
-        // 2. Create template edition
         const editionRes = await sdk.CreateEvaluationTemplateEdition({
             input: {
                 templateId,
@@ -155,7 +212,6 @@ export async function createGlobalTemplateAction(
         const editionId = editionRes.createEvaluationTemplateEdition.id;
         console.log(`  Created template edition: ${editionId}`);
 
-        // 3. Activate the edition
         await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
         console.log(`  Activated template edition: ${editionId}`);
 
@@ -164,6 +220,68 @@ export async function createGlobalTemplateAction(
         return { success: true, templateId, editionId };
     } catch (err: any) {
         console.error("❌ Failed to create template on backend:", err.message);
+        throw err;
+    }
+}
+
+export async function getTemplateByIdAction(id: string) {
+    try {
+        const allTemplates = await getEvaluationTemplatesAction();
+        const template = allTemplates.templates.find((t: any) => t.id === id);
+        
+        if (!template) {
+            throw new Error(`Template with ID ${id} not found`);
+        }
+        return template;
+    } catch (err: any) {
+        console.error(`❌ Failed to fetch template by id (${id}):`, err.message);
+        throw err;
+    }
+}
+
+export async function updateGlobalTemplateAction(
+    templateId: string,
+    templateName: string,
+    categories: any[],
+    beverageTypeId?: string,
+    ownerAuid: number = 1
+) {
+    try {
+        console.log(`🔄 Updating global template "${templateId}"...`);
+        const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
+
+        if (sdk.UpdateEvaluationTemplate) {
+            await sdk.UpdateEvaluationTemplate({
+                id: templateId,
+                input: {
+                    name: templateName,
+                    ...(beverageTypeId && { beverageTypeId })
+                }
+            }, { headers: actorHeaders });
+        }
+
+        const currentTemplate = await getTemplateByIdAction(templateId);
+        const nextVersion = (currentTemplate?.latestEdition?.version || 1) + 1;
+
+        const editionRes = await sdk.CreateEvaluationTemplateEdition({
+            input: {
+                templateId,
+                version: nextVersion,
+                categories
+            }
+        }, { headers: actorHeaders });
+        
+        const editionId = editionRes.createEvaluationTemplateEdition.id;
+        console.log(`  Created new template edition: ${editionId} (v${nextVersion})`);
+
+        await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
+        console.log(`  Activated new template edition: ${editionId}`);
+
+        revalidatePath('/templates');
+
+        return { success: true, templateId, editionId };
+    } catch (err: any) {
+        console.error("❌ Failed to update template on backend:", err.message);
         throw err;
     }
 }
