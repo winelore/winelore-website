@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
-import { Wine, MapPin, Shield, X, Globe, Loader2, Info, Calendar } from "lucide-react"
+import { Wine, MapPin, Shield, X, Globe, Loader2, Info, Calendar, Users } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { fetchGraphQL } from "@/lib/apiClient"
@@ -44,20 +44,18 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
     else if (roleUpper === "DISTRIBUTOR") displayRole = (t("roles.distributor" as any) as string) || "Distributor"
     else if (roleUpper === "BOTTLER") displayRole = "Bottler"
 
+    // Виправлено: тепер завжди @username, без перевірки на цифри
     const renderName = () => {
         if (producer.displayName) return producer.displayName;
-        if (producer.username) {
-            if (/^\d+$/.test(producer.username)) return `User ${producer.username}`;
-            return `@${producer.username}`;
-        }
+        if (producer.username) return `@${producer.username}`;
         return (t("common.unknownUser" as any) as string) || "Unknown User";
     }
 
     return (
-        <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all duration-300 hover:-translate-y-0.5 ${getRoleColors(producer.role)}`}>
-            <span className="font-bold text-slate-900">{renderName()}</span>
-            <span className="opacity-30 text-current font-normal">•</span>
-            <span className="uppercase tracking-wider text-[8px] font-extrabold">{displayRole}</span>
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all duration-300 hover:-translate-y-0.5 ${getRoleColors(producer.role)}`}>
+            <span className="font-bold text-slate-900 truncate max-w-[120px]">{renderName()}</span>
+            <span className="opacity-30 text-current font-normal shrink-0">•</span>
+            <span className="uppercase tracking-wider text-[8px] font-extrabold shrink-0">{displayRole}</span>
         </div>
     )
 }
@@ -75,7 +73,7 @@ export default function MapClientView() {
     const [regionData, setRegionData] = useState<any | null>(null)
     const [loadingRegion, setLoadingRegion] = useState(false)
 
-    const [sidebarWidth, setSidebarWidth] = useState(400)
+    const [sidebarWidth, setSidebarWidth] = useState(420)
     const [isResizing, setIsResizing] = useState(false)
 
     const producersLabel = t("beverage.producers" as any) === "beverage.producers" ? "Producers" : t("beverage.producers" as any);
@@ -101,30 +99,15 @@ export default function MapClientView() {
     }, [])
 
     const handleBoundsChange = useCallback(async ({
-        lat,
-        lng,
-        radiusKm,
-        south,
-        west,
-        north,
-        east,
-    }: {
-        lat: number
-        lng: number
-        radiusKm: number
-        south: number
-        west: number
-        north: number
-        east: number
+                                                      lat, lng, radiusKm, south, west, north, east,
+                                                  }: {
+        lat: number, lng: number, radiusKm: number, south: number, west: number, north: number, east: number
     }) => {
         void fetchPolygonsForBounds({ south, west, north, east })
 
         try {
             const response = await fetchGraphQL(SEARCH_MAP_BEVERAGES as any, {
-                lat,
-                lng,
-                radiusKm,
-                limit: 500
+                lat, lng, radiusKm, limit: 500
             }) as any;
 
             if (response?.search?.items) {
@@ -209,7 +192,7 @@ export default function MapClientView() {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isResizing) return;
             let newWidth = window.innerWidth - e.clientX;
-            const minWidth = 320;
+            const minWidth = 360;
             const maxWidth = window.innerWidth * 0.8;
             if (newWidth < minWidth) newWidth = minWidth;
             if (newWidth > maxWidth) newWidth = maxWidth;
@@ -246,13 +229,15 @@ export default function MapClientView() {
                     />
                 </div>
 
+                {/* Бокова панель */}
                 <div
-                    className={`absolute top-0 right-0 h-full bg-slate-50 shadow-2xl z-10 flex flex-col border-l border-slate-200/60
+                    className={`absolute top-0 right-0 h-full bg-slate-50/80 backdrop-blur-3xl shadow-2xl z-10 flex flex-col border-l border-slate-200/60
                         ${selectedBev ? 'translate-x-0' : 'translate-x-full'} 
                         ${isResizing ? 'transition-none' : 'transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]'}
                     `}
                     style={{ width: `${sidebarWidth}px` }}
                 >
+                    {/* Зона для ресайзу */}
                     <div
                         className="absolute top-0 bottom-0 left-0 w-2 hover:bg-indigo-500/20 active:bg-indigo-500/40 cursor-col-resize z-50 transition-colors duration-200 group/resizer"
                         onMouseDown={startResizing}
@@ -261,28 +246,30 @@ export default function MapClientView() {
                     </div>
 
                     {selectedBev && (
-                        <>
-                            <div className="group/header pl-8 pr-6 py-6 border-b border-slate-200/60 flex items-start justify-between gap-4 bg-white relative overflow-hidden transition-colors hover:bg-slate-50/50">
-                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover/header:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        <div className="flex flex-col h-full w-full">
+
+                            {/* "Липка" шапка (Sticky Header) - завжди зверху */}
+                            <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/60 px-6 py-5 flex items-start justify-between gap-4 group/header transition-colors">
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-transparent opacity-0 group-hover/header:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                                 <div className="flex items-start gap-4 relative z-10 flex-1 min-w-0">
-                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover/header:bg-indigo-600 group-hover/header:text-white group-hover/header:border-indigo-600 transition-all duration-300 shadow-sm group-hover/header:shadow-lg group-hover/header:shadow-indigo-200/50">
-                                        <Wine className="w-7 h-7" />
+                                    <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover/header:bg-indigo-600 group-hover/header:text-white group-hover/header:border-indigo-600 transition-all duration-300 shadow-sm">
+                                        <Wine className="w-6 h-6 sm:w-7 sm:h-7" />
                                     </div>
                                     <div className="flex-1 min-w-0 pt-0.5">
-                                        <h2 className="text-xl font-extrabold text-slate-800 truncate group-hover/header:text-indigo-900 transition-colors">
+                                        <h2 className="text-lg sm:text-xl font-extrabold text-slate-800 truncate group-hover/header:text-indigo-900 transition-colors" title={selectedBev.name}>
                                             {selectedBev.name}
                                         </h2>
 
                                         {selectedBev.status ? (
-                                            <div className="flex items-center gap-2 mt-1.5">
+                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                                 {selectedBev.type && (
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-[9px] font-extrabold uppercase tracking-widest text-slate-500">
                                                         {formatBeverageType(selectedBev.type) || selectedBev.type}
                                                     </span>
                                                 )}
-                                                <p className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 border border-indigo-100/50 group-hover/header:border-indigo-200 transition-colors">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                                <p className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-[9px] font-extrabold uppercase tracking-widest text-indigo-600 border border-indigo-100/50">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                                                     {formatStatus(selectedBev.status) || selectedBev.status}
                                                 </p>
                                             </div>
@@ -292,16 +279,18 @@ export default function MapClientView() {
                                     </div>
                                 </div>
 
+                                {/* Зафіксована кнопка закриття */}
                                 <button
                                     onClick={closeBeverageDetails}
                                     aria-label="Close beverage details"
-                                    className="relative z-10 shrink-0 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-200"
+                                    className="relative z-10 shrink-0 p-2 mt-1 bg-slate-100 text-slate-400 hover:text-rose-600 hover:bg-rose-100 rounded-full transition-all duration-200"
                                 >
-                                    <X className="w-5 h-5" />
+                                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto pl-8 pr-6 py-6 bg-slate-50/50">
+                            {/* Контент, що скролиться (з вирівняними відступами p-6) */}
+                            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
                                 {isLoadingDetails ? (
                                     <div className="flex flex-col items-center justify-center h-48 space-y-4">
                                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
@@ -310,47 +299,57 @@ export default function MapClientView() {
                                 ) : (
                                     <div className="space-y-6">
 
-                                        <div className="flex items-center gap-4 p-5 bg-white rounded-[24px] border border-slate-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 group/card cursor-default">
-                                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover/card:bg-indigo-600 group-hover/card:text-white group-hover/card:border-indigo-600 transition-all duration-300 shadow-sm">
-                                                <Wine className="h-7 w-7" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">
-                                                    {producersLabel}
-                                                </p>
-                                                {selectedBev.producers && selectedBev.producers.length > 0 ? (
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {selectedBev.producers.map((p: any) => (
-                                                            <ProducerBadge key={p.id || p.auid?.join('')} producer={p} />
-                                                        ))}
+                                        {/* Блок з Виробниками та Датою - Новий компактний дизайн */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* Картка виробників */}
+                                            <div className="bg-white p-4 sm:p-5 rounded-[20px] border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-300 min-w-0 flex flex-col gap-3 group/card">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover/card:bg-indigo-600 group-hover/card:text-white transition-colors">
+                                                        <Users className="w-4 h-4" />
                                                     </div>
-                                                ) : (
-                                                    <p className="text-sm font-bold text-slate-700 mt-0.5 group-hover/card:text-indigo-700 transition-colors truncate">
-                                                        {t("common.na" as any) as string || "N/A"}
+                                                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                        {producersLabel}
                                                     </p>
-                                                )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    {selectedBev.producers && selectedBev.producers.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {selectedBev.producers.map((p: any) => (
+                                                                <ProducerBadge key={p.id || p.auid?.join('')} producer={p} />
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm font-bold text-slate-700">
+                                                            {t("common.na" as any) as string || "N/A"}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Картка дати */}
+                                            <div className="bg-white p-4 sm:p-5 rounded-[20px] border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-300 min-w-0 flex flex-col gap-3 group/card">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover/card:bg-indigo-600 group-hover/card:text-white transition-colors">
+                                                        <Calendar className="w-4 h-4" />
+                                                    </div>
+                                                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                        {createdLabel}
+                                                    </p>
+                                                </div>
+                                                <div className="flex-1 flex items-center">
+                                                    <p suppressHydrationWarning className="text-sm font-bold text-slate-700 group-hover/card:text-indigo-700 transition-colors">
+                                                        {formatDateTime(selectedBev.createdAt)}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4 p-5 bg-white rounded-[24px] border border-slate-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 group/card cursor-default">
-                                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover/card:bg-indigo-600 group-hover/card:text-white group-hover/card:border-indigo-600 transition-all duration-300 shadow-sm">
-                                                <Calendar className="h-7 w-7" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                                                    {createdLabel}
-                                                </p>
-                                                <p suppressHydrationWarning className="text-sm font-bold text-slate-700 mt-0.5 group-hover/card:text-indigo-700 transition-colors truncate">
-                                                    {formatDateTime(selectedBev.createdAt)}
-                                                </p>
-                                            </div>
-                                        </div>
-
+                                        {/* Блок Географії */}
                                         <div>
-                                            <div className="flex items-center gap-3 mb-5 group/geo-header cursor-default mt-2">
-                                                <div className="relative flex items-center justify-center w-10 h-10 shrink-0 rounded-[14px] bg-white border border-slate-200 shadow-sm transition-all duration-300 group-hover/geo-header:border-indigo-200 group-hover/geo-header:shadow-md group-hover/geo-header:-translate-y-0.5">
-                                                    <div className="absolute inset-0 rounded-[14px] bg-indigo-50 opacity-0 group-hover/geo-header:opacity-100 transition-opacity duration-300"></div>
-                                                    <MapPin className="w-5 h-5 text-slate-400 group-hover/geo-header:text-indigo-500 relative z-10 transition-colors duration-300" />
+                                            <div className="flex items-center gap-3 mb-4 group/geo-header cursor-default mt-2">
+                                                <div className="relative flex items-center justify-center w-9 h-9 shrink-0 rounded-[12px] bg-white border border-slate-200 shadow-sm transition-all duration-300 group-hover/geo-header:border-indigo-200 group-hover/geo-header:-translate-y-0.5">
+                                                    <div className="absolute inset-0 rounded-[12px] bg-indigo-50 opacity-0 group-hover/geo-header:opacity-100 transition-opacity duration-300"></div>
+                                                    <MapPin className="w-4 h-4 text-slate-400 group-hover/geo-header:text-indigo-500 relative z-10 transition-colors duration-300" />
                                                 </div>
                                                 <div className="min-w-0">
                                                     <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 truncate group-hover/geo-header:text-indigo-600 transition-colors duration-300">
@@ -379,12 +378,13 @@ export default function MapClientView() {
                                             ) : null}
                                         </div>
 
+                                        {/* Блок Регіонів (Wine Regions) */}
                                         {!loadingRegion && regionData && (
                                             <div className="pt-2 pb-8">
-                                                <div className="flex items-center gap-3 mb-5 group/eu cursor-default">
-                                                    <div className="relative flex items-center justify-center w-10 h-10 shrink-0 rounded-[14px] bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30 transition-all duration-300 group-hover/eu:shadow-lg group-hover/eu:shadow-blue-500/50 group-hover/eu:-translate-y-0.5">
-                                                        <div className="absolute inset-0 rounded-[14px] bg-white/20 opacity-0 group-hover/eu:opacity-100 transition-opacity duration-300"></div>
-                                                        <Shield className="w-5 h-5 text-white relative z-10" />
+                                                <div className="flex items-center gap-3 mb-4 group/eu cursor-default">
+                                                    <div className="relative flex items-center justify-center w-9 h-9 shrink-0 rounded-[12px] bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30 transition-all duration-300 group-hover/eu:shadow-lg group-hover/eu:shadow-blue-500/50 group-hover/eu:-translate-y-0.5">
+                                                        <div className="absolute inset-0 rounded-[12px] bg-white/20 opacity-0 group-hover/eu:opacity-100 transition-opacity duration-300"></div>
+                                                        <Shield className="w-4 h-4 text-white relative z-10" />
                                                         <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-yellow-300 rounded-full animate-pulse shadow-[0_0_4px_rgba(253,224,71,0.8)]"></div>
                                                     </div>
                                                     <div className="min-w-0">
@@ -407,7 +407,7 @@ export default function MapClientView() {
 
                                                         <div className="space-y-3">
                                                             {regionData.wineRegions.map((gi: any) => (
-                                                                <div key={gi.id} className="group/gi bg-white border border-slate-100 p-5 rounded-[24px] shadow-sm hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100/50 transition-all duration-300 cursor-default flex flex-col">
+                                                                <div key={gi.id} className="group/gi bg-white border border-slate-100 p-5 rounded-[20px] shadow-sm hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100/50 transition-all duration-300 cursor-default flex flex-col">
                                                                     <div className="flex items-start justify-between gap-3 mb-3">
                                                                         <h4 className="text-sm font-bold text-slate-800 leading-tight group-hover/gi:text-blue-700 transition-colors">
                                                                             {gi.name}
@@ -438,7 +438,7 @@ export default function MapClientView() {
                                     </div>
                                 )}
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
             </main>
