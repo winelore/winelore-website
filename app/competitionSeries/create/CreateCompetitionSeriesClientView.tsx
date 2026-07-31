@@ -59,7 +59,7 @@ export default function CreateCompetitionSeriesClientView({ currentAuid }: { cur
                 <div className="w-full max-w-2xl flex flex-col gap-6">
 
                     <Link
-                        href="/competitionSeries"
+                        href="/myCompetitionSeries"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
                     >
                         <ArrowLeft className="w-4 h-4" />

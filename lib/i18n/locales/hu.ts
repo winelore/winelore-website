@@ -10,6 +10,7 @@ const hu = {
         myBeverages: "Saját italok",
         myCompetitions: "Saját versenyek",
         myCommissions: "Saját bizottságok",
+        myCompetitionSeries: "My Competition Series",
         myAssessments: "Saját értékelések",
         competitionsCount: "{{count}} verseny",
         competitionsCount_plural: "{{count}} verseny",
@@ -96,6 +97,7 @@ const hu = {
         removeOwner: "Eltávolítás",
         placeholderAuid: "Adja meg az AUID-t",
         countriesCodesLabel: "Országkódok (vesszővel elválasztva)",
+        loadMore: "Load more",
         actions: {
             submit: "Beküldés ellenőrzésre",
             approve: "Sorozat jóváhagyása",

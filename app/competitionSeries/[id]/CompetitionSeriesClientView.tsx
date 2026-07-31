@@ -12,7 +12,6 @@ import {
     X,
     Loader2,
     Send,
-    CheckCircle2,
     Rocket,
     PauseCircle,
     Archive,
@@ -27,8 +26,8 @@ import {
     changeCompetitionSeriesCountriesAction,
     addCompetitionSeriesOwnerAction,
     removeCompetitionSeriesOwnerAction,
+    findAuidByUsernameAction,
     submitCompetitionSeriesForReviewAction,
-    approveCompetitionSeriesAction,
     publishCompetitionSeriesAction,
     suspendCompetitionSeriesAction,
     archiveCompetitionSeriesAction,
@@ -64,7 +63,7 @@ export default function CompetitionSeriesClientView({
     const [name, setName] = useState(initialSeries.name)
     const [countriesType, setCountriesType] = useState(initialSeries.countriesType)
     const [countriesCodes, setCountriesCodes] = useState<string[]>(initialSeries.countriesCodes || [])
-    const [newOwnerAuid, setNewOwnerAuid] = useState("")
+    const [newOwnerUsername, setNewOwnerUsername] = useState("")
 
     const [savingField, setSavingField] = useState<string | null>(null)
     const [transitioning, setTransitioning] = useState<string | null>(null)
@@ -122,14 +121,20 @@ export default function CompetitionSeriesClientView({
     }
 
     async function handleAddOwner() {
-        const auid = parseInt(newOwnerAuid, 10)
-        if (!Number.isFinite(auid)) return
+        const username = newOwnerUsername.trim()
+        if (!username) return
         setSavingField("owners")
+        setError(null)
         try {
-            const result = await addCompetitionSeriesOwnerAction(series.id, [auid])
+            const lookup = await findAuidByUsernameAction(username)
+            if (!lookup.success || lookup.auid === undefined) {
+                setError(lookup.error === "ownerNotFound" ? t("myCompetitionSeries.ownerNotFound") : (lookup.error || t("myCompetitionSeries.ownerNotFound")))
+                return
+            }
+            const result = await addCompetitionSeriesOwnerAction(series.id, [lookup.auid])
             if (result.success && result.series) {
                 setSeries((prev) => ({ ...prev, owners: result.series.owners }))
-                setNewOwnerAuid("")
+                setNewOwnerUsername("")
             } else {
                 setError(result.error || "Не вдалося додати власника")
             }
@@ -179,7 +184,7 @@ export default function CompetitionSeriesClientView({
                 <div className="w-full max-w-3xl flex flex-col gap-6">
 
                     <Link
-                        href="/competitionSeries"
+                        href="/myCompetitionSeries"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -219,14 +224,6 @@ export default function CompetitionSeriesClientView({
                                         icon={Send}
                                         loading={transitioning === "submit"}
                                         onClick={() => handleTransition("submit", submitCompetitionSeriesForReviewAction)}
-                                    />
-                                )}
-                                {series.status === "IN_REVIEW" && (
-                                    <ActionButton
-                                        label={t("myCompetitionSeries.actions.approve")}
-                                        icon={CheckCircle2}
-                                        loading={transitioning === "approve"}
-                                        onClick={() => handleTransition("approve", approveCompetitionSeriesAction)}
                                     />
                                 )}
                                 {(series.status === "APPROVED" || series.status === "SUSPENDED") && (
@@ -336,16 +333,22 @@ export default function CompetitionSeriesClientView({
                             {isEditable && (
                                 <div className="flex gap-2 mt-1">
                                     <input
-                                        type="number"
-                                        value={newOwnerAuid}
-                                        onChange={(e) => setNewOwnerAuid(e.target.value)}
-                                        placeholder={t("myCompetitionSeries.placeholderAuid")}
-                                        className="w-32 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+                                        type="text"
+                                        value={newOwnerUsername}
+                                        onChange={(e) => setNewOwnerUsername(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault()
+                                                handleAddOwner()
+                                            }
+                                        }}
+                                        placeholder={t("myCompetitionSeries.placeholderUsername")}
+                                        className="w-48 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
                                     />
                                     <button
                                         type="button"
                                         onClick={handleAddOwner}
-                                        disabled={savingField === "owners" || !newOwnerAuid}
+                                        disabled={savingField === "owners" || !newOwnerUsername.trim()}
                                         className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 text-sm font-semibold border border-slate-100 transition-all disabled:opacity-50"
                                     >
                                         {savingField === "owners" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}

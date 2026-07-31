@@ -12,6 +12,7 @@ const uk: TranslationKey = {
     myBeverages: "Мої напої",
     myCompetitions: "Мої конкурси",
     myCommissions: "Мої комісії",
+    myCompetitionSeries: "Мої серії змагань",
     myAssessments: "Мої оцінювання",
     competitionsCount: "{{count}} конкурс",
     competitionsCount_plural: "{{count}} конкурсів",
@@ -98,6 +99,7 @@ const uk: TranslationKey = {
     removeOwner: "Видалити",
     placeholderAuid: "Введіть AUID",
     countriesCodesLabel: "Коди країн (через кому)",
+    loadMore: "Завантажити ще",
     actions: {
       submit: "Відправити на перевірку",
       approve: "Схвалити серію",

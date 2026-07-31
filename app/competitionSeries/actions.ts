@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { fetchGraphQL } from "@/lib/apiClient";
+import { getAxusGraphQLEndpoint } from "@/lib/axusEndpoint";
 import { GET_MY_COMPETITIONS_SERIES } from "../myCompetitionSeries/queries";
 
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT
@@ -53,6 +54,76 @@ export interface CompetitionSeries {
     countriesCodes: string[] | null;
     owners: number[][];
     createdAt: string;
+}
+
+// NOTE: competitionSeriesList has no owner filter on the backend yet, so "my series"
+// is filtered client-side after each page is fetched. offset/limit therefore walk the
+// FULL list of series, not just the current user's — hasMore reflects whether the
+// underlying list has more pages, not whether more "my" items exist. Replace with a
+// server-side owner filter once available; that will make this genuinely efficient.
+export async function getMyCompetitionSeriesPageAction(offset: number, limit: number = 24) {
+    try {
+        const cookieStore = await cookies();
+        const currentAuidStr = cookieStore.get("auid")?.value;
+        if (!currentAuidStr) {
+            return { success: false, items: [] as CompetitionSeries[], hasMore: false, error: "Unauthorized" };
+        }
+        const currentAuid = parseInt(currentAuidStr, 10);
+
+        const response = await fetchGraphQL(GET_MY_COMPETITIONS_SERIES, { limit, offset }) as any;
+        const pageItems: CompetitionSeries[] = response.competitionSeriesList?.items || [];
+
+        const myItems = pageItems.filter((series) => series.owners?.flat?.().includes(currentAuid));
+
+        return {
+            success: true,
+            items: JSON.parse(JSON.stringify(myItems)) as CompetitionSeries[],
+            hasMore: pageItems.length === limit,
+        };
+    } catch (err: any) {
+        console.error("Server Action Error (getMyCompetitionSeriesPageAction):", err);
+        return { success: false, items: [] as CompetitionSeries[], hasMore: false, error: err.message || "Failed to load competition series" };
+    }
+}
+
+// Resolves a username to an AUID via AXUS ID GraphQL (never the WineLore backend).
+export async function findAuidByUsernameAction(username: string): Promise<{ success: boolean; auid?: number; error?: string }> {
+    const trimmed = username.trim().replace(/^@/, "");
+    if (!trimmed) {
+        return { success: false, error: "Enter a username" };
+    }
+    try {
+        const response = await fetch(getAxusGraphQLEndpoint(), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: `query OwnerByUsername($username: String!) { ownerByUsername(username: $username) }`,
+                variables: { username: trimmed },
+            }),
+            cache: "no-store",
+        });
+
+        const json = await response.json();
+        const firstError = json.errors?.[0]
+
+        if (firstError) {
+            const code = firstError.extensions?.code
+            if (code === "USERNAME_NOT_FOUND" || firstError.message?.includes("not found")) {
+                return { success: false, error: "ownerNotFound" }
+            }
+            return { success: false, error: firstError.message || "ownerNotFound" }
+        }
+
+        const auidStr = json.data?.ownerByUsername;
+        const auid = auidStr ? parseInt(String(auidStr), 10) : NaN;
+        if (!auidStr || !Number.isFinite(auid)) {
+            return { success: false, error: "ownerNotFound" };
+        }
+        return { success: true, auid };
+    } catch (err: any) {
+        console.error("Server Action Error (findAuidByUsernameAction):", err);
+        return { success: false, error: err.message || "ownerNotFound" };
+    }
 }
 
 // NOTE: there is no confirmed single-item query (e.g. `competitionSeries(id: ID!)`)

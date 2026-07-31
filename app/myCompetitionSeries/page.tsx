@@ -1,12 +1,12 @@
-
 export const dynamic = "force-dynamic"
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { fetchGraphQL } from "@/lib/apiClient"
-import { GET_MY_COMPETITIONS_SERIES } from "./queries"
+import { getMyCompetitionSeriesPageAction } from "../competitionSeries/actions"
 
-import MyCompetitionSeriesClientView from "./MyCompetitionSeriesClientView.tsx"
+import MyCompetitionSeriesClientView from "./MyCompetitionSeriesClientView"
+
+const PAGE_SIZE = 24
 
 export default async function MyCompetitionsSeriesPage() {
     const cookieStore = await cookies()
@@ -14,26 +14,14 @@ export default async function MyCompetitionsSeriesPage() {
     if (!currentAuidStr) {
         redirect("/auth/login")
     }
-    const currentAuid = parseInt(currentAuidStr, 10);
 
-    let myCompetitionSeries: any[] = [];
-    try {
-        const response = await fetchGraphQL(GET_MY_COMPETITIONS_SERIES, {
-            limit: 100,
-        }) as any;
+    const { items, hasMore } = await getMyCompetitionSeriesPageAction(0, PAGE_SIZE)
 
-        // console.log(response)
-
-        const allSeries = response.competitionSeriesList?.items || [];
-
-        myCompetitionSeries = allSeries.filter((series: any) =>
-            series.owners?.flat?.().includes(currentAuid)
-        );
-
-        myCompetitionSeries = JSON.parse(JSON.stringify(myCompetitionSeries));
-    } catch (error) {
-        console.error("Failed to fetch competition series:", error);
-    }
-
-    return <MyCompetitionSeriesClientView initialData={{ series: myCompetitionSeries }} />
+    return (
+        <MyCompetitionSeriesClientView
+            initialData={{ series: items }}
+            initialHasMore={hasMore}
+            pageSize={PAGE_SIZE}
+        />
+    )
 }
