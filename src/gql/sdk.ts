@@ -710,10 +710,11 @@ export type GetMyCompetitionsQueryVariables = Exact<{
   cursor?: string | number | null | undefined;
   offset?: number | null | undefined;
   filter?: Types.CompetitionFilterInput | null | undefined;
+  holder?: Array<number> | number | null | undefined;
 }>;
 
 
-export type GetMyCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
+export type GetMyCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
 
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -1685,7 +1686,7 @@ export const GetMyBeveragesDocument = gql`
 }
     `;
 export const GetMyCompetitionsDocument = gql`
-    query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput) {
+    query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput, $holder: [Int!]) {
   competitions(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
     items {
       id
@@ -1704,6 +1705,7 @@ export const GetMyCompetitionsDocument = gql`
       holders
     }
   }
+  competitionCount(holder: $holder)
 }
     `;
 export const GetDashboardCompetitionsDocument = gql`

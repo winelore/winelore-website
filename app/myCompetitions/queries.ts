@@ -1,7 +1,7 @@
 import { gql } from "@/src/gql"
 
 export const GET_MY_COMPETITIONS = gql(`
-  query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput) {
+  query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput, $holder: [Int!]) {
     competitions(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
       items {
         id
@@ -20,5 +20,6 @@ export const GET_MY_COMPETITIONS = gql(`
         holders
       }
     }
+    competitionCount(holder: $holder)
   }
 `)

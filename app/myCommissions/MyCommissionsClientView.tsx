@@ -41,6 +41,7 @@ interface MyCommissionsProps {
     hasNext: boolean
     currentPage: number
     totalPages?: number
+    totalCount?: number
 }
 
 function getStatusColor(status: string) {
@@ -186,9 +187,9 @@ function CommissionCard({ comm }: { comm: Commission }) {
     )
 }
 
-export default function MyCommissionsClientView({ initialData, nextOffset, nextHistory, prevOffset, prevHistory, hasPrev, hasNext, currentPage, totalPages = 1 }: MyCommissionsProps) {
+export default function MyCommissionsClientView({ initialData, nextOffset, nextHistory, prevOffset, prevHistory, hasPrev, hasNext, currentPage, totalPages = 1, totalCount = 0 }: MyCommissionsProps) {
     const [currentAuid, setCurrentAuid] = useState<number | null>(null)
-    const { t } = useTranslation()
+    const { t, tCount } = useTranslation()
     const router = useRouter()
     const pathname = usePathname()
     const [isLoading, setIsLoading] = useState(false)
@@ -256,9 +257,14 @@ export default function MyCommissionsClientView({ initialData, nextOffset, nextH
 
                 <div className="flex items-center justify-between mb-4 shrink-0">
                     <div>
-                        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">My Commissions</h2>
+                        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("common.myCommissions")}</h2>
                         <p className="text-sm text-slate-500 mt-1">Manage and monitor the commissions you participate in.</p>
                     </div>
+                    {totalCount !== undefined && (
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                            {tCount("common.commissionsCount", totalCount)}
+                        </span>
+                    )}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">

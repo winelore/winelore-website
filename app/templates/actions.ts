@@ -38,10 +38,10 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
     }
 }
 
-export async function getEvaluationTemplatesAction() {
+export async function getEvaluationTemplatesAction(ownerAuid?: number) {
     try {
         const query = `
-            query GetEvaluationTemplateEditions($limit: Int) {
+            query GetEvaluationTemplateEditions($limit: Int, $owner: [Int!]) {
                 evaluationTemplateEditions(limit: $limit) {
                     items {
                         id
@@ -117,24 +117,26 @@ export async function getEvaluationTemplatesAction() {
                         }
                     }
                 }
+                evaluationTemplateCount(owner: $owner)
             }
         `;
-        const data = await rawGraphQL(query, { limit: 100 });
+        const variables: any = { limit: 100 };
+        if (ownerAuid) {
+            variables.owner = [ownerAuid];
+        }
+        const data = await rawGraphQL(query, variables);
         const items = data?.evaluationTemplateEditions?.items || [];
-
         const latestTemplatesMap = new Map<string, any>();
-
         for (const item of items) {
             if (!item.template) continue;
             const templateId = item.template.id;
             const existing = latestTemplatesMap.get(templateId);
-
             if (!existing || item.version > existing.version) {
                 latestTemplatesMap.set(templateId, item);
             }
         }
-
-        return Array.from(latestTemplatesMap.values()).map((item: any) => ({
+        // Map editions to templates
+        const templates = Array.from(latestTemplatesMap.values()).map((item: any) => ({
             id: item.template.id,
             name: item.template.name,
             owners: (item.template.owners as number[][] | null) ?? [],
@@ -169,6 +171,11 @@ export async function getEvaluationTemplatesAction() {
                 }))
             }
         }));
+
+        return {
+            templates,
+            totalCount: data?.evaluationTemplateCount || 0
+        };
     } catch (err: any) {
         console.error("❌ Failed to fetch templates from backend:", err.message);
         throw err;
@@ -220,7 +227,7 @@ export async function createGlobalTemplateAction(
 export async function getTemplateByIdAction(id: string) {
     try {
         const allTemplates = await getEvaluationTemplatesAction();
-        const template = allTemplates.find((t) => t.id === id);
+        const template = allTemplates.templates.find((t: any) => t.id === id);
         
         if (!template) {
             throw new Error(`Template with ID ${id} not found`);
