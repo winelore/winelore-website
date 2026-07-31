@@ -176,7 +176,7 @@ export default function CommissionClientView({
     initialData: InitialData;
     serverAuid?: number | null;
 }) {
-    const { t, formatStatus, formatReplicaType, formatDateTime, formatShortDateTime } = useTranslation()
+    const { t, tCount, formatStatus, formatReplicaType, formatDateTime, formatShortDateTime } = useTranslation()
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
@@ -245,7 +245,7 @@ export default function CommissionClientView({
         ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
         : t("common.unknownCreator")
 
-    const isHolder = initialData.competition.holders.includes(currentAuid)
+    const isHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
 
     useEffect(() => {
         const prevStatus = prevReplicaStatusRef.current
@@ -716,7 +716,7 @@ export default function CommissionClientView({
                             <div className="flex items-center gap-3 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl p-4 mt-4">
                                 <Layers className="h-5 w-5 text-indigo-500 shrink-0" />
                                 <span className="text-sm text-slate-500 font-medium">
-                                    {t("commission.replicaBeverages", { count: selectedReplica?.candidateCount || 0 })}
+                                    {tCount("commission.replicaBeverages", selectedReplica?.candidateCount || 0)}
                                 </span>
                             </div>
                         </div>
@@ -930,7 +930,7 @@ export default function CommissionClientView({
                                                     
                                                     {!isEveryoneReady && (
                                                         <span className="text-xs text-slate-500 font-medium animate-fade-in-slide">
-                                                            {t("commission.waitingMembers", { count: nonReadyCount })}
+                                                            {tCount("commission.waitingMembers", nonReadyCount)}
                                                         </span>
                                                     )}
                                                     {isEveryoneReady && (

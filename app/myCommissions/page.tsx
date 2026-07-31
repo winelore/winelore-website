@@ -35,7 +35,7 @@ export default async function MyCommissionsPage({searchParams, }: {
         let hasMore = true;
         
         while (hasMore && myCommissions.length <= LIMIT) {
-            const commData = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
+            const commData: any = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
             const items = commData.commissions?.items || [];
             
             const userItems = items.filter((comm: any) => {
@@ -73,7 +73,7 @@ export default async function MyCommissionsPage({searchParams, }: {
         let currentOffset = 0;
         let hasMore = true;
         while (hasMore) {
-            const commData = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
+            const commData: any = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
             const items = commData.commissions?.items || [];
             const userItems = items.filter((comm: any) => {
                 return comm.replicas?.some((r: any) => 
@@ -120,6 +120,7 @@ export default async function MyCommissionsPage({searchParams, }: {
             hasNext={hasNextPage}
             currentPage={currentPage}
             totalPages={totalPages}
+            totalCount={rawCommissions.length}
         />
     )
 }

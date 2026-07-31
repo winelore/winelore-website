@@ -682,6 +682,23 @@ export type DevGetCommissionReplicasByCommissionQueryVariables = Exact<{
 
 export type DevGetCommissionReplicasByCommissionQuery = { commissionReplicasByCommission: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole }> }> };
 
+export type SearchMapBeveragesQueryVariables = Exact<{
+  lat?: number | null | undefined;
+  lng?: number | null | undefined;
+  radiusKm?: number | null | undefined;
+  limit?: number | null | undefined;
+}>;
+
+
+export type SearchMapBeveragesQuery = { search: { items: Array<{ id: string, name: string, latitude: number | null, longitude: number | null }> } };
+
+export type GetBeverageDetailsMapQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type GetBeverageDetailsMapQuery = { beverage: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: string, createdAt: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } | null };
+
 export type GetMyBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
   cursor?: string | number | null | undefined;
@@ -707,10 +724,11 @@ export type GetMyCompetitionsQueryVariables = Exact<{
   cursor?: string | number | null | undefined;
   offset?: number | null | undefined;
   filter?: Types.CompetitionFilterInput | null | undefined;
+  holder?: Array<number> | number | null | undefined;
 }>;
 
 
-export type GetMyCompetitionsQuery = { competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
+export type GetMyCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
 
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -1619,6 +1637,45 @@ export const DevGetCommissionReplicasByCommissionDocument = gql`
   }
 }
     `;
+export const SearchMapBeveragesDocument = gql`
+    query SearchMapBeverages($lat: Float, $lng: Float, $radiusKm: Float, $limit: Int) {
+  search(
+    latitude: $lat
+    longitude: $lng
+    maxDistanceKm: $radiusKm
+    types: [BEVERAGE]
+    limit: $limit
+  ) {
+    items {
+      id
+      name
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const GetBeverageDetailsMapDocument = gql`
+    query GetBeverageDetailsMap($id: ID!) {
+  beverage(id: $id) {
+    id
+    name
+    status
+    typeId
+    attributes
+    createdAt
+    producers {
+      id
+      auid
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
 export const GetMyBeveragesDocument = gql`
     query GetMyBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput, $producer: [Int!]) {
   beverages(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
@@ -1658,7 +1715,7 @@ export const GetMyCompetitionSeriesDocument = gql`
 }
     `;
 export const GetMyCompetitionsDocument = gql`
-    query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput) {
+    query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput, $holder: [Int!]) {
   competitions(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
     items {
       id
@@ -1677,6 +1734,7 @@ export const GetMyCompetitionsDocument = gql`
       holders
     }
   }
+  competitionCount(holder: $holder)
 }
     `;
 export const GetDashboardCompetitionsDocument = gql`
@@ -1867,6 +1925,12 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     DevGetCommissionReplicasByCommission(variables: Types.DevGetCommissionReplicasByCommissionQueryVariables, options?: C): Promise<Types.DevGetCommissionReplicasByCommissionQuery> {
       return requester<Types.DevGetCommissionReplicasByCommissionQuery, Types.DevGetCommissionReplicasByCommissionQueryVariables>(DevGetCommissionReplicasByCommissionDocument, variables, options) as Promise<Types.DevGetCommissionReplicasByCommissionQuery>;
+    },
+    SearchMapBeverages(variables?: Types.SearchMapBeveragesQueryVariables, options?: C): Promise<Types.SearchMapBeveragesQuery> {
+      return requester<Types.SearchMapBeveragesQuery, Types.SearchMapBeveragesQueryVariables>(SearchMapBeveragesDocument, variables, options) as Promise<Types.SearchMapBeveragesQuery>;
+    },
+    GetBeverageDetailsMap(variables: Types.GetBeverageDetailsMapQueryVariables, options?: C): Promise<Types.GetBeverageDetailsMapQuery> {
+      return requester<Types.GetBeverageDetailsMapQuery, Types.GetBeverageDetailsMapQueryVariables>(GetBeverageDetailsMapDocument, variables, options) as Promise<Types.GetBeverageDetailsMapQuery>;
     },
     GetMyBeverages(variables?: Types.GetMyBeveragesQueryVariables, options?: C): Promise<Types.GetMyBeveragesQuery> {
       return requester<Types.GetMyBeveragesQuery, Types.GetMyBeveragesQueryVariables>(GetMyBeveragesDocument, variables, options) as Promise<Types.GetMyBeveragesQuery>;
