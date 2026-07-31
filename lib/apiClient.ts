@@ -3,8 +3,9 @@ import { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '../src/gql/sdk';
+import { getGraphQLEndpoint } from './graphqlEndpoint';
 
-const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT || process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+const GRAPHQL_ENDPOINT = getGraphQLEndpoint();
 const CLIENT_GRAPHQL_ENDPOINT = '/api/graphql';
 const DEFAULT_ACTOR = '1';
 
