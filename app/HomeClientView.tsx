@@ -300,18 +300,17 @@ function TemplateCard({ template }: { template: any }) {
     )
 }
 
-export default function HomeClientView({
-    recentCompetitions,
-    myCommissions,
-    recentBeverages,
-    myTemplates,
-    beverageTypesMap
-}: {
+export default function HomeClientView({ recentCompetitions, myCommissions, recentBeverages, myTemplates, beverageTypesMap, nextCursor, currentPage, totalPages, totalCompetitionsCount, totalBeveragesCount }: {
     recentCompetitions: any[];
     myCommissions: any[];
     recentBeverages: any[];
     myTemplates: any[];
     beverageTypesMap: Record<string, string>;
+    nextCursor?: string | null;
+    currentPage?: number;
+    totalPages?: number;
+    totalCompetitionsCount?: number;
+    totalBeveragesCount?: number;
 }) {
     // Collect AUIDs for username fetching
     const auidsToFetch = React.useMemo(() => {

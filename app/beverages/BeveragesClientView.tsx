@@ -17,6 +17,7 @@ interface DashboardProps {
     nextCursor?: string | null
     currentPage?: number
     totalPages?: number
+    totalCount?: number
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -81,12 +82,14 @@ export default function BeveragesClientView({
                                               beverageTypesMap,
                                               nextCursor,
                                               currentPage = 1,
-                                              totalPages = 0
+                                              totalPages = 0,
+                                              totalCount = 0
                                           }: DashboardProps) {
     const activeTab = "beverages"
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
     const pathname = usePathname()
+    const { t, tCount } = useTranslation()
 
     const changeBeveragePage = (newPage: number) => {
         setIsLoading(true)
@@ -130,10 +133,22 @@ export default function BeveragesClientView({
             <AppHeader activeTab={activeTab} />
 
             <main className="flex-1 overflow-auto p-6 flex flex-col relative">
+                <div className="flex items-center justify-between mb-4 shrink-0">
+                    <div>
+                        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("common.beverages")}</h2>
+                    </div>
+                    {totalCount !== undefined && (
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                {tCount("common.beveragesCount", totalCount)}
+                            </span>
+                    )}
+                </div>
                 {isLoading && (
                     <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-3xl">
                         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+
                     </div>
+
                 )}
 
 
@@ -152,8 +167,11 @@ export default function BeveragesClientView({
                                 <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
                                 <h3 className="text-lg font-bold text-red-800">{t("beverages.errorTitle")}</h3>
                                 <p className="text-sm text-red-600 mt-1 max-w-md">{t("beverages.errorDescription")}</p>
+
                             </div>
+
                         )}
+
                         {initialBeverages !== undefined && initialBeverages.length === 0 && (
                             <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50">
                                 <Wine className="w-12 h-12 text-slate-300 mb-4" />

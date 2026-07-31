@@ -297,7 +297,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         <div className={`${wineJumperMiniGameEnabled ? "xl:col-span-2" : "w-full"} bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100`}>
                             <h2 className="text-lg font-bold flex items-center gap-2 mb-6 text-slate-800">
                                 <Users className="text-indigo-500 w-5 h-5" />
-                                {t("commission.commissionMembers", { count: members.length })}
+                                {tCount("commission.commissionMembers", members.length)}
                             </h2>
                             <div className="space-y-3">
                                 {members.length === 0 && (
