@@ -154,7 +154,7 @@ function CompetitionCard({ comp }: { comp: Competition }) {
 
 export default function MyCompetitionsClientView({ initialData, nextCursor, nextHistory, prevCursor, prevHistory, hasPrev, hasNext, currentPage, totalCount = 0 }: MyCompetitionsProps) {
     const [currentAuid, setCurrentAuid] = useState<number | null>(null)
-    const { t } = useTranslation()
+    const { t, tCount } = useTranslation()
     const router = useRouter()
     const pathname = usePathname()
     const [isLoading, setIsLoading] = useState(false)
@@ -202,7 +202,7 @@ export default function MyCompetitionsClientView({ initialData, nextCursor, next
                         <p className="text-sm text-slate-500 mt-1">{t("myCompetitions.subtitle")}</p>
                     </div>
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                        {t("common.competitionsCount", { count: totalCount })}
+                        {tCount("common.competitionsCount", totalCount)}
                     </span>
                 </div>
 

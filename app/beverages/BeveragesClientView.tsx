@@ -89,7 +89,7 @@ export default function BeveragesClientView({
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
     const pathname = usePathname()
-    const { t } = useTranslation()
+    const { t, tCount } = useTranslation()
 
     const changeBeveragePage = (newPage: number) => {
         setIsLoading(true)
@@ -139,7 +139,7 @@ export default function BeveragesClientView({
                     </div>
                     {totalCount !== undefined && (
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {t("common.beveragesCount", { count: totalCount })}
+                                {tCount("common.beveragesCount", totalCount)}
                             </span>
                     )}
                 </div>

@@ -250,7 +250,7 @@ export default function WineLoreDashboard({
   const [activeTab, setActiveTab] = useState<AppTabId>(initialTab)
   const router = useRouter()
   const pathname = usePathname()
-  const { t } = useTranslation()
+  const { t, tCount } = useTranslation()
 
   useEffect(() => {
     let tabParam = searchParams.get("tab") as string
@@ -353,7 +353,7 @@ export default function WineLoreDashboard({
                         </div>
                         {totalCompetitionsCount !== undefined && (
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {t("common.competitionsCount", { count: totalCompetitionsCount })}
+                                {tCount("common.competitionsCount", totalCompetitionsCount)}
                             </span>
                         )}
                     </div>
@@ -416,7 +416,7 @@ export default function WineLoreDashboard({
                         </div>
                         {totalBeveragesCount !== undefined && (
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {t("common.beveragesCount", { count: totalBeveragesCount })}
+                                {tCount("common.beveragesCount", totalBeveragesCount)}
                             </span>
                         )}
                     </div>

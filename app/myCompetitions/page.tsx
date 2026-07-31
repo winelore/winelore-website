@@ -34,7 +34,7 @@ export default async function MyCompetitionsPage({searchParams, }: {
             holder: [currentAuid]
         });
         rawCompetitions = response.competitions?.items || [];
-        totalCount = response.myCompetitionsCount || 0;
+        totalCount = response.competitionCount || 0;
     } catch (error) {
         console.error("Failed to fetch competitions:", error);
     }

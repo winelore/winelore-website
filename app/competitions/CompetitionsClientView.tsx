@@ -191,7 +191,7 @@ export default function CompetitionsClientView({
     const activeTab = "competitions"
     const router = useRouter()
     const pathname = usePathname()
-    const { t } = useTranslation()
+    const { t, tCount } = useTranslation()
     const [isLoading, setIsLoading] = useState(false)
 
     // Fetch usernames for all competition holders on the dashboard
@@ -242,7 +242,7 @@ export default function CompetitionsClientView({
                     </div>
                     {totalCount !== undefined && (
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {t("common.competitionsCount", { count: totalCount })}
+                                {tCount("common.competitionsCount", totalCount)}
                             </span>
                     )}
                 </div>

@@ -44,7 +44,7 @@ export default function TemplatesClientView({ initialTemplates, totalCount }: { 
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null) // WIN-65: зберігаємо ID шаблону, який редагуємо
-    const { t } = useTranslation()
+    const { t, tCount } = useTranslation()
     const searchParams = useSearchParams()
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
     const [currentAuid, setCurrentAuid] = useState<number>(0)
@@ -123,7 +123,7 @@ export default function TemplatesClientView({ initialTemplates, totalCount }: { 
                         </div>
 <div className="flex flex-col md:flex-row items-center gap-4">
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {totalCount} шаблонів
+                                {tCount("common.templatesCount", totalCount !== undefined && totalCount > 0 ? totalCount : myTemplates.length)}
                             </span>
                             <button
                             onClick={handleOpenCreateModal}
