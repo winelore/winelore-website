@@ -104,6 +104,7 @@ const uk: TranslationKey = {
     stepCompleted: "Конкурс завершено",
     stepCompletedDesc: "Дегустацію завершено",
     calendarDetails: "Конкурс WineLore: {{name}}",
+    addCommission: "Додати комісію",
   },
   commission: {
     session: "Сесія комісії",

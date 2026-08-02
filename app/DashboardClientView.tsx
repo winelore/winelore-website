@@ -1,13 +1,16 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
-import { FileText, Trophy, Wine, User, Layers, ChevronLeft, ChevronRight, Loader2, Tag, AlertCircle, CheckCircle, MapPin } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, ChevronLeft, ChevronRight, Loader2, Tag, AlertCircle, CheckCircle, MapPin, Plus, X } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
+import Cookies from "js-cookie"
+import { createQuickCompetitionAction } from "./competition/actions"
+import { getCompetitionSeriesListAction } from "./competition/create/actions"
 
 
 
@@ -262,6 +265,54 @@ export default function WineLoreDashboard({
   const [isLoading, setIsLoading] = useState(false)
   const [currentBeveragePage, setCurrentBeveragePage] = useState(1)
   const beveragesPerPage = 16
+  const [isCreatingCompetition, setIsCreatingCompetition] = useState(false)
+  const [newCompName, setNewCompName] = useState("")
+  const [userSeriesList, setUserSeriesList] = useState<{ id: string; name: string }[]>([])
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string>("")
+  const [isSubmittingComp, setIsSubmittingComp] = useState(false)
+
+  const openCreateModal = async () => {
+      setNewCompName("")
+      setIsCreatingCompetition(true)
+      const cookieAuid = Cookies.get("auid")
+      const auid = cookieAuid ? parseInt(cookieAuid, 10) : null
+
+      try {
+          const items = await getCompetitionSeriesListAction()
+          if (Array.isArray(items)) {
+              const mySeries = auid
+                  ? items.filter((s: any) => s.owners && s.owners.flat().includes(Number(auid)))
+                  : items
+              setUserSeriesList(mySeries)
+              if (mySeries.length > 0) {
+                  setSelectedSeriesId(mySeries[0].id)
+              } else {
+                  setSelectedSeriesId("")
+              }
+          }
+      } catch (err) {
+          console.error("Failed to load user series list:", err)
+      }
+  }
+
+  const handleCreateCompetition = async () => {
+      setIsSubmittingComp(true)
+      try {
+          const cookieAuid = Cookies.get("auid")
+          const auid = cookieAuid ? parseInt(cookieAuid, 10) : null
+          const res = await createQuickCompetitionAction(newCompName, auid, selectedSeriesId || null)
+          if (res.success && res.competitionId) {
+              setIsCreatingCompetition(false)
+              router.push(`/competition/${res.competitionId}`)
+          } else {
+              alert(res.error || "Failed to create competition")
+          }
+      } catch (err: any) {
+          alert(err.message || "An error occurred")
+      } finally {
+          setIsSubmittingComp(false)
+      }
+  }
 
   const changeBeveragePage = (newPage: number) => {
       setIsLoading(true)
@@ -351,12 +402,123 @@ export default function WineLoreDashboard({
                         <div>
                             <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("common.competitions")}</h2>
                         </div>
-                        {totalCompetitionsCount !== undefined && (
+                        <div className="flex items-center gap-3">
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {tCount("common.competitionsCount", totalCompetitionsCount)}
+                                {totalCompetitionsCount !== undefined && tCount("common.competitionsCount", totalCompetitionsCount)}
                             </span>
-                        )}
+                            <button
+                                onClick={openCreateModal}
+                                className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Create Competition</span>
+                            </button>
+                        </div>
                     </div>
+
+                    {isCreatingCompetition && (
+                        <div
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fade-in"
+                            onClick={() => setIsCreatingCompetition(false)}
+                        >
+                            <div
+                                className="w-full max-w-md bg-white border border-slate-100 rounded-[28px] p-6 md:p-7 shadow-2xl shadow-slate-900/20 flex flex-col gap-5"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                            <Trophy className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-extrabold text-slate-800 tracking-tight">Create Competition</h3>
+                                            <p className="text-[11px] text-slate-400 font-medium">Quick setup</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCreatingCompetition(false)}
+                                        className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer"
+                                    >
+                                        <X className="w-4.5 h-4.5" />
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Competition Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            placeholder="e.g. Summer Tasting 2026"
+                                            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all bg-slate-50/50"
+                                            value={newCompName}
+                                            onChange={e => setNewCompName(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === "Enter") handleCreateCompetition()
+                                                if (e.key === "Escape") setIsCreatingCompetition(false)
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Competition Series
+                                        </label>
+                                        <select
+                                            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all bg-slate-50/50 cursor-pointer"
+                                            value={selectedSeriesId}
+                                            onChange={e => setSelectedSeriesId(e.target.value)}
+                                        >
+                                            {userSeriesList.length > 0 ? (
+                                                userSeriesList.map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                                ))
+                                            ) : (
+                                                <option value="">— Auto-assign Series —</option>
+                                            )}
+                                        </select>
+                                    </div>
+
+                                    <p className="text-[11px] text-slate-400 font-medium">
+                                        You can edit dates, commissions, and settings later inline.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCreatingCompetition(false)}
+                                        disabled={isSubmittingComp}
+                                        className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleCreateCompetition}
+                                        disabled={isSubmittingComp}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-75 cursor-pointer"
+                                    >
+                                        {isSubmittingComp ? (
+                                            <>
+                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                <span>Creating...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                <span>Create Competition</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
                         {initialCompetitions.map((competition) => (
                             <CompetitionCard
