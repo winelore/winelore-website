@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus } from "lucide-react"
+import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -184,7 +184,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
                         comm.status === 'STARTED' ? 'text-emerald-500' :
                             comm.status === 'COMPLETED' ? 'text-slate-400' : 'text-amber-500'
                     }>
-                        {formatStatus(comm.status)}
+                        {formatStatus(comm.status || "")}
                     </span>
                     {timeStr && (
                         <>
@@ -214,10 +214,16 @@ interface Series {
 }
 
 interface Commission {
-    competitionId: string;
+    id: string;
+    competitionId?: string;
     name: string;
-    plannedStartDate?: string; // ISO string, optional
-    plannedEndDate?: string;   // ISO string, optional
+    status?: string;
+    plannedStartAt?: string | null;
+    plannedEndAt?: string | null;
+    startedAt?: string | null;
+    endedAt?: string | null;
+    plannedStartDate?: string;
+    plannedEndDate?: string;
     wineJumperMiniGameEnabled?: boolean;
     voiceCommentsEnabled?: boolean;
     propertyCommentsEnabled?: boolean;
@@ -260,6 +266,8 @@ export default function CompetitionClientView({
         plannedStartAt: "",
         plannedEndAt: "",
     })
+    const [isAddingCommission, setIsAddingCommission] = useState(false)
+    const [newCommissionName, setNewCommissionName] = useState("")
 
     const initialData = localData
 
@@ -318,14 +326,20 @@ export default function CompetitionClientView({
         }
     }
 
-    const addCommission = async () => {
+    const openAddCommission = () => {
+        setNewCommissionName(`Commission ${initialData.commissions.length + 1}`)
+        setIsAddingCommission(true)
+    }
+
+    const handleAddCommission = async () => {
+        const finalName = newCommissionName.trim() || `Commission ${initialData.commissions.length + 1}`
         setIsMutating(true)
         try {
             const res = await createCommission({
                 competitionId: initialData.id,
-                name: `Commission ${initialData.commissions.length + 1}`,
-                plannedStartDate: initialData.plannedStartAt,
-                plannedEndDate: initialData.plannedEndAt,
+                name: finalName,
+                plannedStartDate: initialData.plannedStartAt || undefined,
+                plannedEndDate: initialData.plannedEndAt || undefined,
                 wineJumperMiniGameEnabled: false,
                 voiceCommentsEnabled: false,
                 propertyCommentsEnabled: true,
@@ -333,6 +347,7 @@ export default function CompetitionClientView({
             })
 
             if (res.success) {
+                setIsAddingCommission(false)
                 router.refresh()
             } else {
                 alert(res.error || "Failed to add commission")
@@ -480,20 +495,29 @@ export default function CompetitionClientView({
                                     </h3>
                                     {isHolder && (
                                         isEditingDates ? (
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5">
                                                 <button
-                                                    onClick={() => setIsEditingDates(false)}
-                                                    disabled={isMutating}
-                                                    className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
+                                                    type="button"
                                                     onClick={handleSaveDates}
                                                     disabled={isMutating}
-                                                    className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                                                    className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                                    title="Save dates"
                                                 >
-                                                    {isMutating ? "Saving..." : "Save"}
+                                                    {isMutating ? (
+                                                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                    ) : (
+                                                        <Check className="w-3.5 h-3.5" />
+                                                    )}
+                                                    <span>Save</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsEditingDates(false)}
+                                                    disabled={isMutating}
+                                                    className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                                                    title="Cancel"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         ) : (
@@ -517,9 +541,13 @@ export default function CompetitionClientView({
                                             {isEditingDates ? (
                                                 <input
                                                     type="datetime-local"
-                                                    className="text-xs font-semibold text-slate-800 border-b border-indigo-500 outline-none bg-transparent py-0.5"
+                                                    className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
                                                     value={editDatesData.plannedStartAt}
                                                     onChange={e => setEditDatesData({ ...editDatesData, plannedStartAt: e.target.value })}
+                                                    onKeyDown={e => {
+                                                        if (e.key === "Enter") handleSaveDates()
+                                                        if (e.key === "Escape") setIsEditingDates(false)
+                                                    }}
                                                 />
                                             ) : (
                                                 <p className="text-xs font-semibold text-slate-800">
@@ -552,9 +580,13 @@ export default function CompetitionClientView({
                                                 {isEditingDates ? (
                                                     <input
                                                         type="datetime-local"
-                                                        className="text-xs font-semibold text-slate-800 border-b border-indigo-500 outline-none bg-transparent py-0.5"
+                                                        className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
                                                         value={editDatesData.plannedEndAt}
                                                         onChange={e => setEditDatesData({ ...editDatesData, plannedEndAt: e.target.value })}
+                                                        onKeyDown={e => {
+                                                            if (e.key === "Enter") handleSaveDates()
+                                                            if (e.key === "Escape") setIsEditingDates(false)
+                                                        }}
                                                     />
                                                 ) : (
                                                     <p className="text-xs font-semibold text-slate-800">
@@ -604,35 +636,40 @@ export default function CompetitionClientView({
                                             {t("competition.panel")}
                                         </span>
                                             {isEditingName ? (
-                                                <div className="mt-2 w-full max-w-lg mb-2">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <div>
-                                                            <h3 className="text-sm font-semibold text-slate-800">Name</h3>
-                                                            <p className="text-[13px] text-slate-500">Used to identify this competition</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-4 mt-1">
-                                                            <button
-                                                                onClick={() => setIsEditingName(false)}
-                                                                className="text-sm font-medium text-slate-500 hover:text-slate-700 cursor-pointer transition-colors"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                            <button
-                                                                onClick={handleSaveName}
-                                                                disabled={isMutating}
-                                                                className="text-sm font-medium text-emerald-600 hover:text-emerald-700 disabled:opacity-50 cursor-pointer transition-colors"
-                                                            >
-                                                                {isMutating ? "Saving..." : "Save"}
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                <div className="flex items-center gap-2 mt-1 w-full">
                                                     <input
                                                         type="text"
                                                         autoFocus
-                                                        className="w-full rounded-[14px] border border-slate-300 px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-shadow"
+                                                        className="text-xl md:text-2xl font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-xl px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[180px] flex-1 max-w-lg"
                                                         value={editNameData}
                                                         onChange={e => setEditNameData(e.target.value)}
+                                                        onKeyDown={e => {
+                                                            if (e.key === "Enter") handleSaveName()
+                                                            if (e.key === "Escape") setIsEditingName(false)
+                                                        }}
                                                     />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSaveName}
+                                                        disabled={isMutating}
+                                                        className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
+                                                        title="Save"
+                                                    >
+                                                        {isMutating ? (
+                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                        ) : (
+                                                            <Check className="w-4 h-4" />
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsEditingName(false)}
+                                                        disabled={isMutating}
+                                                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
+                                                        title="Cancel"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 mt-0.5">
@@ -763,23 +800,75 @@ export default function CompetitionClientView({
                                     </span>
                                         {isHolder && (
                                             <button
-                                                onClick={addCommission}
+                                                onClick={openAddCommission}
                                                 disabled={isMutating}
                                                 className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 text-xs font-semibold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
                                             >
-                                                {isMutating ? (
-                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                                ) : (
-                                                    <Plus className="w-3.5 h-3.5" />
-                                                )}
+                                                <Plus className="w-3.5 h-3.5" />
                                                 <span>{t("competition.addCommission")}</span>
                                             </button>
                                         )}
 
-
-
                                     </div>
                                 </div>
+
+                                {isAddingCommission && (
+                                    <div className="mb-4 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-800">Add Commission</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddingCommission(false)}
+                                                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Commission Name</label>
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                placeholder={`e.g. Commission ${initialData.commissions.length + 1}`}
+                                                className="w-full text-xs font-semibold text-slate-800 outline-none border-b border-slate-300 focus:border-indigo-500 py-1 bg-transparent"
+                                                value={newCommissionName}
+                                                onChange={e => setNewCommissionName(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === "Enter") handleAddCommission()
+                                                    if (e.key === "Escape") setIsAddingCommission(false)
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-end gap-2 mt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddingCommission(false)}
+                                                disabled={isMutating}
+                                                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleAddCommission}
+                                                disabled={isMutating}
+                                                className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-1 disabled:opacity-75 cursor-pointer"
+                                            >
+                                                {isMutating ? (
+                                                    <>
+                                                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                        <span>Adding...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <span>Add Commission</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="flex flex-col gap-4">
                                     {initialData.commissions.map((comm) => (

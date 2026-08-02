@@ -78,10 +78,37 @@ export async function createCompetitionInfrastructure(formData: any) {
                 createCompetition(input: $input) { id }
             }
         `;
+        let seriesId = formData.seriesId;
+        if (!seriesId) {
+            const seriesList = await getCompetitionSeriesListAction();
+            if (seriesList && seriesList.length > 0) {
+                const userAuid = formData.holders?.[0]?.[0];
+                const mySeries = userAuid ? seriesList.find((s: any) =>
+                    s.owners && s.owners.flat().includes(Number(userAuid))
+                ) : null;
+                seriesId = mySeries ? mySeries.id : seriesList[0].id;
+            } else {
+                const createSeriesMutation = `
+                    mutation CreateSeries($input: CreateCompetitionSeriesInput!) {
+                        createCompetitionSeries(input: $input) { id }
+                    }
+                `;
+                const seriesRes = await executeGraphQL(createSeriesMutation, {
+                    input: {
+                        name: "General Series",
+                        countriesType: "GLOBAL",
+                        countriesCodes: [],
+                        owners: formData.holders && formData.holders.length > 0 ? formData.holders : [[1]]
+                    }
+                });
+                seriesId = seriesRes?.createCompetitionSeries?.id;
+            }
+        }
+
         const competitionResult = await executeGraphQL(createCompetitionMutation, {
             input: {
-                name: formData.name,
-                seriesId: formData.seriesId ? formData.seriesId : null,
+                name: formData.name || "New Competition",
+                seriesId: seriesId,
                 holders: formData.holders
             }
         });

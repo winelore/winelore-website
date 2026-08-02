@@ -277,3 +277,77 @@ export async function createCommission(params: CreateCommissionParams) {
         return { success: false, error: error.message || "Internal Server Error" };
     }
 }
+
+export async function createQuickCompetitionAction(name: string, clientAuid?: number | null, seriesId?: string | null) {
+    try {
+        let userAuid = clientAuid;
+        if (!userAuid) {
+            const { cookies } = await import("next/headers");
+            const cookieStore = await cookies();
+            const cookieAuid = cookieStore.get("auid")?.value;
+            if (cookieAuid) userAuid = parseInt(cookieAuid, 10);
+        }
+
+        if (!userAuid) {
+            return { success: false, error: "User authentication required." };
+        }
+
+        let finalSeriesId = seriesId;
+        if (!finalSeriesId) {
+            const seriesList = await getCompetitionSeriesListAction();
+            if (seriesList && seriesList.length > 0) {
+                const mySeries = seriesList.find((s: any) =>
+                    s.owners && s.owners.flat().includes(Number(userAuid))
+                );
+                finalSeriesId = mySeries ? mySeries.id : seriesList[0].id;
+            } else {
+                const createSeriesMutation = `
+                    mutation CreateSeries($input: CreateCompetitionSeriesInput!) {
+                        createCompetitionSeries(input: $input) { id }
+                    }
+                `;
+                const seriesRes = await executeGraphQL(createSeriesMutation, {
+                    input: {
+                        name: "General Series",
+                        countriesType: "GLOBAL",
+                        countriesCodes: [],
+                        owners: [[userAuid]]
+                    }
+                });
+                finalSeriesId = seriesRes?.createCompetitionSeries?.id;
+            }
+        }
+
+        if (!finalSeriesId) {
+            throw new Error("Unable to locate or create a Competition Series.");
+        }
+
+        const createCompetitionMutation = `
+            mutation CreateCompetition($input: CreateCompetitionInput!) {
+                createCompetition(input: $input) {
+                    id
+                    name
+                }
+            }
+        `;
+
+        const finalName = name.trim() || "New Competition";
+        const holders = [[userAuid]];
+
+        const data = await executeGraphQL(createCompetitionMutation, {
+            input: {
+                name: finalName,
+                seriesId: finalSeriesId,
+                holders
+            }
+        });
+
+        const competitionId = data?.createCompetition?.id;
+        if (!competitionId) throw new Error("Failed to create competition.");
+
+        return { success: true, competitionId };
+    } catch (error: any) {
+        console.error("Failed to create quick competition:", error);
+        return { success: false, error: error.message || "Failed to create competition" };
+    }
+}

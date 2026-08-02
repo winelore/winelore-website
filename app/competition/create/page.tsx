@@ -83,14 +83,6 @@ export default function CreateCompetitionPage() {
             return;
         }
 
-        if (!formData.seriesId) {
-            setSubmitError('Please select a valid Competition Series from the list.');
-            return;
-        }
-
-        setIsSubmitting(true);
-        setSubmitError(null);
-
         try {
             const result = await createCompetitionInfrastructure({
                 ...formData,
@@ -101,7 +93,11 @@ export default function CreateCompetitionPage() {
                 throw new Error(result.error);
             }
 
-            router.push('/myCompetitions');
+            if (result.competitionId) {
+                router.push(`/competition/${result.competitionId}`);
+            } else {
+                router.push('/myCompetitions');
+            }
         } catch (err: any) {
             console.error('Cascade activation failed:', err);
 
@@ -171,7 +167,6 @@ export default function CreateCompetitionPage() {
                             Competition Series
                         </label>
                         <select
-                            required
                             className="text-base font-semibold text-[#0F172A] bg-[#F8FAFC] rounded-xl px-4 py-3 w-full outline-none border border-transparent focus:border-[#5046E5] cursor-pointer transition-colors"
                             value={formData.seriesId}
                             onChange={e => handleCompetitionChange('seriesId', e.target.value)}
