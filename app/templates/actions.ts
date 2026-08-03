@@ -38,11 +38,11 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
     }
 }
 
-export async function getEvaluationTemplatesAction(ownerAuid?: number) {
+export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: number = 100, cursor?: string, offset?: number) {
     try {
         const query = `
-            query GetEvaluationTemplateEditions($limit: Int, $owner: [Int!]) {
-                evaluationTemplateEditions(limit: $limit) {
+            query GetEvaluationTemplateEditions($limit: Int, $cursor: ID, $offset: Int, $owner: [Int!]) {
+                evaluationTemplateEditions(limit: $limit, cursor: $cursor, offset: $offset) {
                     items {
                         id
                         version
@@ -120,9 +120,14 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                 evaluationTemplateCount(owner: $owner)
             }
         `;
-        const variables: any = { limit: 100 };
+        const variables: any = { limit };
         if (ownerAuid) {
             variables.owner = [ownerAuid];
+        }
+        if (cursor) {
+            variables.cursor = cursor;
+        } else if (offset !== undefined) {
+            variables.offset = offset;
         }
         const data = await rawGraphQL(query, variables);
         const items = data?.evaluationTemplateEditions?.items || [];
@@ -174,6 +179,7 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
 
         return {
             templates,
+            rawItems: items,
             totalCount: data?.evaluationTemplateCount || 0
         };
     } catch (err: any) {
