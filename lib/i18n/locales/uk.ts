@@ -35,6 +35,7 @@ const uk: TranslationKey = {
     none: "Немає",
     templates: "Мої шаблони оцінювання",
     unknownUser: "Невідомий користувач",
+    outcomePolicy: "Мої політики результатів"
   },
   dashboard: {
     holderId: "Організатор: {{ids}}",

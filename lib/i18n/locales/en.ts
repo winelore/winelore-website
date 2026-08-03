@@ -33,6 +33,7 @@ const en = {
     none: "None",
     templates: "My Evaluation Templates",
     unknownUser: "Unknown User",
+    outcomePolicy: "My Outcome Policy"
   },
   dashboard: {
     holderId: "Holder: {{ids}}",
