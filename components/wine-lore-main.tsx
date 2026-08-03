@@ -87,11 +87,11 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
             <span>{t("common.templates")}</span>
           </a>
           <a
-              href="/outcomePolicy"
+              href="/myOutcomePolicies"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
             <CodeXml className="h-5 w-5 stroke-[1.5] text-foreground" />
-            <span>{t("common.outcomePolicy")}</span>
+            <span>{t("common.outcomePolicies")}</span>
           </a>
         </div>
 

@@ -716,6 +716,15 @@ export type GetMyCompetitionsQueryVariables = Exact<{
 
 export type GetMyCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
 
+export type GetOutcomePoliciesQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  cursor?: string | number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type GetOutcomePoliciesQuery = { outcomePolicies: { items: Array<{ id: string, name: string, createdAt: string }> } };
+
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
   cursor?: string | number | null | undefined;
@@ -1704,6 +1713,17 @@ export const GetMyCompetitionsDocument = gql`
   competitionCount(holder: $holder)
 }
     `;
+export const GetOutcomePoliciesDocument = gql`
+    query GetOutcomePolicies($limit: Int, $cursor: ID, $offset: Int) {
+  outcomePolicies(limit: $limit, cursor: $cursor, offset: $offset) {
+    items {
+      id
+      name
+      createdAt
+    }
+  }
+}
+    `;
 export const GetDashboardCompetitionsDocument = gql`
     query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {
   competitions(limit: $limit, cursor: $cursor, offset: $offset) {
@@ -1904,6 +1924,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetMyCompetitions(variables?: Types.GetMyCompetitionsQueryVariables, options?: C): Promise<Types.GetMyCompetitionsQuery> {
       return requester<Types.GetMyCompetitionsQuery, Types.GetMyCompetitionsQueryVariables>(GetMyCompetitionsDocument, variables, options) as Promise<Types.GetMyCompetitionsQuery>;
+    },
+    GetOutcomePolicies(variables?: Types.GetOutcomePoliciesQueryVariables, options?: C): Promise<Types.GetOutcomePoliciesQuery> {
+      return requester<Types.GetOutcomePoliciesQuery, Types.GetOutcomePoliciesQueryVariables>(GetOutcomePoliciesDocument, variables, options) as Promise<Types.GetOutcomePoliciesQuery>;
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;

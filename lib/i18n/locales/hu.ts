@@ -33,7 +33,7 @@ const hu = {
         none: "Nincs",
         unknownUser: "Ismeretlen felhasználó",
         templates: "Saját értékelési sablonok",
-        outcomes: "Eredményalapú Politika"
+        outcomePolicies: "Eredményalapú Politika"
     },
     dashboard: {
         holderId: "Szervező: {{ids}}",
