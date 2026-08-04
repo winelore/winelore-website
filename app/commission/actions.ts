@@ -1365,46 +1365,71 @@ export async function removeCommissionPanelAction(commissionId: string, panelId:
     }
 }
 
-export async function searchBeveragesAction(search?: string) {
+export async function searchBeveragesAction(search?: string, page: number = 1, limit: number = 8) {
     try {
         const trimmed = search?.trim();
+        const offset = Math.max(0, (page - 1) * limit);
+
         if (trimmed) {
             const data = await rawGraphQL(`
-                query SearchBeverages($query: String!) {
-                    search(query: $query, types: [BEVERAGE]) {
+                query SearchBeverages($query: String!, $limit: Int!, $offset: Int!) {
+                    search(query: $query, types: [BEVERAGE], limit: $limit, offset: $offset) {
                         items {
                             id
                             name
                         }
                     }
                 }
-            `, { query: trimmed });
-            return { success: true, items: (data?.search?.items || []).filter((b: any) => b?.id && b?.name) };
+            `, { query: trimmed, limit, offset });
+            const items = (data?.search?.items || []).filter((b: any) => b?.id && b?.name);
+            const hasMore = items.length === limit;
+            const totalPages = hasMore ? Math.max(page + 1, 2) : page;
+            return {
+                success: true,
+                items,
+                page,
+                limit,
+                totalPages,
+                hasMore,
+            };
         } else {
             const data = await rawGraphQL(`
-                query GetBeverages {
-                    beverages(limit: 50) {
+                query GetBeverages($limit: Int!, $offset: Int!) {
+                    beverages(limit: $limit, offset: $offset) {
                         items {
                             id
                             name
                         }
                     }
+                    beverageCount
                 }
-            `, {});
-            return { success: true, items: (data?.beverages?.items || []).filter((b: any) => b?.id && b?.name) };
+            `, { limit, offset });
+            const items = (data?.beverages?.items || []).filter((b: any) => b?.id && b?.name);
+            const totalCount = data?.beverageCount || items.length;
+            const totalPages = Math.ceil(totalCount / limit);
+            return {
+                success: true,
+                items,
+                page,
+                limit,
+                totalCount,
+                totalPages,
+                hasMore: page < totalPages,
+            };
         }
     } catch (err: any) {
         console.error("Server Action Error (searchBeveragesAction):", err);
-        return { success: false, items: [], error: err.message || "Помилка пошуку напоїв" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка пошуку напоїв" };
     }
 }
 
-export async function getBatchesForBeverageAction(beverageId: string) {
-    if (!isValidUuid(beverageId)) return { success: false, items: [] };
+export async function getBatchesForBeverageAction(beverageId: string, page: number = 1, limit: number = 8) {
+    if (!isValidUuid(beverageId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
     try {
+        const offset = Math.max(0, (page - 1) * limit);
         const data = await rawGraphQL(`
-            query GetBatches($beverageId: ID!) {
-                batches(beverageId: $beverageId, limit: 50) {
+            query GetBatches($beverageId: ID!, $limit: Int!, $offset: Int!) {
+                batches(beverageId: $beverageId, limit: $limit, offset: $offset) {
                     items {
                         id
                         lotNumber
@@ -1412,33 +1437,58 @@ export async function getBatchesForBeverageAction(beverageId: string) {
                         createdAt
                     }
                 }
+                batchCount(beverageId: $beverageId)
             }
-        `, { beverageId });
-        return { success: true, items: data?.batches?.items || [] };
+        `, { beverageId, limit, offset });
+        const items = data?.batches?.items || [];
+        const totalCount = typeof data?.batchCount === 'number' ? data.batchCount : items.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+        return {
+            success: true,
+            items,
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasMore: page < totalPages,
+        };
     } catch (err: any) {
         console.error("Server Action Error (getBatchesForBeverageAction):", err);
-        return { success: false, items: [], error: err.message || "Помилка отримання партій" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання партій" };
     }
 }
 
-export async function getSamplesForBatchAction(batchId: string) {
-    if (!isValidUuid(batchId)) return { success: false, items: [] };
+export async function getSamplesForBatchAction(batchId: string, page: number = 1, limit: number = 8) {
+    if (!isValidUuid(batchId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
     try {
+        const offset = Math.max(0, (page - 1) * limit);
         const data = await rawGraphQL(`
-            query GetSamples($batchId: ID!) {
-                samples(batchId: $batchId, limit: 50) {
+            query GetSamples($batchId: ID!, $limit: Int!, $offset: Int!) {
+                samples(batchId: $batchId, limit: $limit, offset: $offset) {
                     items {
                         id
                         volumeMl
                         createdAt
                     }
                 }
+                sampleCount(batchId: $batchId)
             }
-        `, { batchId });
-        return { success: true, items: data?.samples?.items || [] };
+        `, { batchId, limit, offset });
+        const items = data?.samples?.items || [];
+        const totalCount = typeof data?.sampleCount === 'number' ? data.sampleCount : items.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+        return {
+            success: true,
+            items,
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasMore: page < totalPages,
+        };
     } catch (err: any) {
         console.error("Server Action Error (getSamplesForBatchAction):", err);
-        return { success: false, items: [], error: err.message || "Помилка отримання зразків" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання зразків" };
     }
 }
 

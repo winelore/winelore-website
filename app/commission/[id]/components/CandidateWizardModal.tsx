@@ -63,17 +63,26 @@ export function CandidateWizardModal({
 
     // Step 1 State: Beverages
     const [beverageSearch, setBeverageSearch] = useState("")
+    const [beveragePage, setBeveragePage] = useState(1)
+    const [beverageTotalPages, setBeverageTotalPages] = useState(1)
+    const [hasMoreBeverages, setHasMoreBeverages] = useState(false)
     const [beverages, setBeverages] = useState<BeverageItem[]>([])
     const [isLoadingBeverages, setIsLoadingBeverages] = useState(false)
     const [selectedBeverage, setSelectedBeverage] = useState<BeverageItem | null>(null)
 
     // Step 2 State: Batches
     const [batches, setBatches] = useState<BatchItem[]>([])
+    const [batchPage, setBatchPage] = useState(1)
+    const [batchTotalPages, setBatchTotalPages] = useState(1)
+    const [hasMoreBatches, setHasMoreBatches] = useState(false)
     const [isLoadingBatches, setIsLoadingBatches] = useState(false)
     const [selectedBatch, setSelectedBatch] = useState<BatchItem | null>(null)
 
     // Step 3 State: Samples
     const [samples, setSamples] = useState<SampleItem[]>([])
+    const [samplePage, setSamplePage] = useState(1)
+    const [sampleTotalPages, setSampleTotalPages] = useState(1)
+    const [hasMoreSamples, setHasMoreSamples] = useState(false)
     const [isLoadingSamples, setIsLoadingSamples] = useState(false)
     const [selectedSample, setSelectedSample] = useState<SampleItem | null>(null)
 
@@ -87,27 +96,43 @@ export function CandidateWizardModal({
         if (isOpen) {
             setStep(1)
             setBeverageSearch("")
+            setBeveragePage(1)
+            setBeverageTotalPages(1)
+            setHasMoreBeverages(false)
+            setBatchPage(1)
+            setBatchTotalPages(1)
+            setHasMoreBatches(false)
+            setSamplePage(1)
+            setSampleTotalPages(1)
+            setHasMoreSamples(false)
             setSelectedBeverage(null)
             setSelectedBatch(null)
             setSelectedSample(null)
             setAnonymizedCode("")
             setSubmitError(null)
-            loadBeverages("")
+            loadBeverages("", 1)
         }
     }, [isOpen])
 
-    const loadBeverages = async (query: string) => {
+    const loadBeverages = async (query: string, page: number = 1) => {
         setIsLoadingBeverages(true)
         try {
-            const res = await searchBeveragesAction(query)
+            const res = await searchBeveragesAction(query, page, 8)
             if (res.success && res.items) {
                 setBeverages(res.items)
+                setBeveragePage(page)
+                setBeverageTotalPages(res.totalPages || 1)
+                setHasMoreBeverages(!!res.hasMore)
             } else {
                 setBeverages([])
+                setBeverageTotalPages(1)
+                setHasMoreBeverages(false)
             }
         } catch (err) {
             console.error("Failed to load beverages:", err)
             setBeverages([])
+            setBeverageTotalPages(1)
+            setHasMoreBeverages(false)
         } finally {
             setIsLoadingBeverages(false)
         }
@@ -116,7 +141,42 @@ export function CandidateWizardModal({
     const handleBeverageSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value
         setBeverageSearch(val)
-        loadBeverages(val)
+        setBeveragePage(1)
+        loadBeverages(val, 1)
+    }
+
+    const handleBeveragePageChange = (newPage: number) => {
+        if (newPage < 1) return
+        loadBeverages(beverageSearch, newPage)
+    }
+
+    const loadBatches = async (bevId: string, page: number = 1) => {
+        setIsLoadingBatches(true)
+        try {
+            const res = await getBatchesForBeverageAction(bevId, page, 8)
+            if (res.success && res.items) {
+                setBatches(res.items)
+                setBatchPage(page)
+                setBatchTotalPages(res.totalPages || 1)
+                setHasMoreBatches(!!res.hasMore)
+            } else {
+                setBatches([])
+                setBatchTotalPages(1)
+                setHasMoreBatches(false)
+            }
+        } catch (err) {
+            console.error("Failed to load batches:", err)
+            setBatches([])
+            setBatchTotalPages(1)
+            setHasMoreBatches(false)
+        } finally {
+            setIsLoadingBatches(false)
+        }
+    }
+
+    const handleBatchPageChange = (newPage: number) => {
+        if (newPage < 1 || !selectedBeverage) return
+        loadBatches(selectedBeverage.id, newPage)
     }
 
     const handleSelectBeverage = async (bev: BeverageItem) => {
@@ -124,45 +184,117 @@ export function CandidateWizardModal({
         setSelectedBatch(null)
         setSelectedSample(null)
         setStep(2)
-        setIsLoadingBatches(true)
+        setBatchPage(1)
+        loadBatches(bev.id, 1)
+    }
+
+    const loadSamples = async (bId: string, page: number = 1) => {
+        setIsLoadingSamples(true)
         try {
-            const res = await getBatchesForBeverageAction(bev.id)
+            const res = await getSamplesForBatchAction(bId, page, 8)
             if (res.success && res.items) {
-                setBatches(res.items)
+                setSamples(res.items)
+                setSamplePage(page)
+                setSampleTotalPages(res.totalPages || 1)
+                setHasMoreSamples(!!res.hasMore)
             } else {
-                setBatches([])
+                setSamples([])
+                setSampleTotalPages(1)
+                setHasMoreSamples(false)
             }
         } catch (err) {
-            console.error("Failed to load batches:", err)
-            setBatches([])
+            console.error("Failed to load samples:", err)
+            setSamples([])
+            setSampleTotalPages(1)
+            setHasMoreSamples(false)
         } finally {
-            setIsLoadingBatches(false)
+            setIsLoadingSamples(false)
         }
+    }
+
+    const handleSamplePageChange = (newPage: number) => {
+        if (newPage < 1 || !selectedBatch) return
+        loadSamples(selectedBatch.id, newPage)
     }
 
     const handleSelectBatch = async (batch: BatchItem) => {
         setSelectedBatch(batch)
         setSelectedSample(null)
         setStep(3)
-        setIsLoadingSamples(true)
-        try {
-            const res = await getSamplesForBatchAction(batch.id)
-            if (res.success && res.items) {
-                setSamples(res.items)
-            } else {
-                setSamples([])
-            }
-        } catch (err) {
-            console.error("Failed to load samples:", err)
-            setSamples([])
-        } finally {
-            setIsLoadingSamples(false)
-        }
+        setSamplePage(1)
+        loadSamples(batch.id, 1)
     }
 
     const handleSelectSample = (sample: SampleItem) => {
         setSelectedSample(sample)
         setStep(4)
+    }
+
+    const renderPagination = (
+        currentPage: number,
+        totalPages: number,
+        isLoading: boolean,
+        onPageChange: (page: number) => void
+    ) => {
+        if (totalPages <= 1) return null
+
+        const pages: (number | string)[] = []
+
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i)
+        } else {
+            if (currentPage <= 3) {
+                pages.push(1, 2, 3, 4, "...", totalPages)
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+            } else {
+                pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages)
+            }
+        }
+
+        return (
+            <div className="flex items-center justify-center gap-1.5 pt-3 border-t border-slate-100 mt-2">
+                <button
+                    type="button"
+                    onClick={() => onPageChange(currentPage - 1)}
+                    disabled={currentPage <= 1 || isLoading}
+                    className="flex items-center justify-center h-8 w-8 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer shadow-sm"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                {pages.map((p, i) =>
+                    typeof p === "number" ? (
+                        <button
+                            key={i}
+                            type="button"
+                            onClick={() => onPageChange(p)}
+                            disabled={isLoading || p === currentPage}
+                            className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all shadow-sm ${
+                                p === currentPage
+                                    ? "bg-indigo-600 text-white shadow-indigo-200 pointer-events-none"
+                                    : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-indigo-200 cursor-pointer"
+                            }`}
+                        >
+                            {p}
+                        </button>
+                    ) : (
+                        <span key={i} className="flex items-center justify-center w-6 h-8 text-xs text-slate-400 font-bold">
+                            ...
+                        </span>
+                    )
+                )}
+
+                <button
+                    type="button"
+                    onClick={() => onPageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages || isLoading}
+                    className="flex items-center justify-center h-8 w-8 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer shadow-sm"
+                >
+                    <ChevronRight className="h-4 w-4" />
+                </button>
+            </div>
+        )
     }
 
     const handleSubmit = async () => {
@@ -311,36 +443,41 @@ export function CandidateWizardModal({
                                     {beverageSearch ? t("panels.wizard.noBeveragesFound") : t("panels.wizard.noBeveragesAvailable")}
                                 </div>
                             ) : (
-                                <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-                                    {beverages.map((bev) => {
-                                        const isSelected = selectedBeverage?.id === bev.id
-                                        return (
-                                            <div
-                                                key={bev.id}
-                                                onClick={() => handleSelectBeverage(bev)}
-                                                className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? "bg-indigo-50 border-indigo-300 shadow-sm"
-                                                        : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50/70"
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/50">
-                                                        <Wine className="w-4 h-4" />
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1">
+                                        {beverages.map((bev) => {
+                                            const isSelected = selectedBeverage?.id === bev.id
+                                            return (
+                                                <div
+                                                    key={bev.id}
+                                                    onClick={() => handleSelectBeverage(bev)}
+                                                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-indigo-50 border-indigo-300 shadow-sm"
+                                                            : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50/70"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/50">
+                                                            <Wine className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold text-slate-800 truncate">
+                                                                {bev.name}
+                                                            </p>
+                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                                ID: {bev.id.slice(0, 8)}...
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-bold text-slate-800 truncate">
-                                                            {bev.name}
-                                                        </p>
-                                                        <span className="text-[10px] text-slate-400 font-mono">
-                                                            ID: {bev.id.slice(0, 8)}...
-                                                        </span>
-                                                    </div>
+                                                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                                            </div>
-                                        )
-                                    })}
+                                            )
+                                        })}
+                                    </div>
+
+                                    {/* Pagination Controls */}
+                                    {renderPagination(beveragePage, beverageTotalPages, isLoadingBeverages, handleBeveragePageChange)}
                                 </div>
                             )}
                         </div>
@@ -388,38 +525,43 @@ export function CandidateWizardModal({
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-                                    {batches.map((batch) => {
-                                        const isSelected = selectedBatch?.id === batch.id
-                                        return (
-                                            <div
-                                                key={batch.id}
-                                                onClick={() => handleSelectBatch(batch)}
-                                                className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? "bg-indigo-50 border-indigo-300 shadow-sm"
-                                                        : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50/70"
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/50">
-                                                        <Boxes className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-bold text-slate-800 truncate">
-                                                            {batch.lotNumber ? t("panels.wizard.batchNo", { number: batch.lotNumber }) : t("panels.wizard.batchNoNumber")}
-                                                        </p>
-                                                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                                                            {batch.volumeMl && <span>{batch.volumeMl} мл</span>}
-                                                            <span>•</span>
-                                                            <span className="font-mono">{batch.id.slice(0, 8)}...</span>
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1">
+                                        {batches.map((batch) => {
+                                            const isSelected = selectedBatch?.id === batch.id
+                                            return (
+                                                <div
+                                                    key={batch.id}
+                                                    onClick={() => handleSelectBatch(batch)}
+                                                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-indigo-50 border-indigo-300 shadow-sm"
+                                                            : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50/70"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/50">
+                                                            <Boxes className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold text-slate-800 truncate">
+                                                                {batch.lotNumber ? t("panels.wizard.batchNo", { number: batch.lotNumber }) : t("panels.wizard.batchNoNumber")}
+                                                            </p>
+                                                            <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                                                {batch.volumeMl && <span>{batch.volumeMl} ml</span>}
+                                                                <span>•</span>
+                                                                <span className="font-mono">{batch.id.slice(0, 8)}...</span>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                                            </div>
-                                        )
-                                    })}
+                                            )
+                                        })}
+                                    </div>
+
+                                    {/* Pagination Controls for Batches */}
+                                    {renderPagination(batchPage, batchTotalPages, isLoadingBatches, handleBatchPageChange)}
                                 </div>
                             )}
                         </div>
@@ -467,36 +609,41 @@ export function CandidateWizardModal({
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-                                    {samples.map((sample) => {
-                                        const isSelected = selectedSample?.id === sample.id
-                                        return (
-                                            <div
-                                                key={sample.id}
-                                                onClick={() => handleSelectSample(sample)}
-                                                className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? "bg-indigo-50 border-indigo-300 shadow-sm"
-                                                        : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50/70"
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/50">
-                                                        <FlaskConical className="w-4 h-4" />
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1">
+                                        {samples.map((sample) => {
+                                            const isSelected = selectedSample?.id === sample.id
+                                            return (
+                                                <div
+                                                    key={sample.id}
+                                                    onClick={() => handleSelectSample(sample)}
+                                                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-indigo-50 border-indigo-300 shadow-sm"
+                                                            : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50/70"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/50">
+                                                            <FlaskConical className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold text-slate-800 truncate">
+                                                                {t("panels.wizard.sampleLabel")}: {sample.volumeMl ? `${sample.volumeMl} ml` : t("panels.wizard.volumeNotSpecified")}
+                                                            </p>
+                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                                ID: {sample.id}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-bold text-slate-800 truncate">
-                                                            {t("panels.wizard.sampleLabel")}: {sample.volumeMl ? `${sample.volumeMl} мл` : t("panels.wizard.volumeNotSpecified")}
-                                                        </p>
-                                                        <span className="text-[10px] text-slate-400 font-mono">
-                                                            ID: {sample.id}
-                                                        </span>
-                                                    </div>
+                                                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                                                 </div>
-                                                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                                            </div>
-                                        )
-                                    })}
+                                            )
+                                        })}
+                                    </div>
+
+                                    {/* Pagination Controls for Samples */}
+                                    {renderPagination(samplePage, sampleTotalPages, isLoadingSamples, handleSamplePageChange)}
                                 </div>
                             )}
                         </div>

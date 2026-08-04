@@ -404,7 +404,7 @@ export function PanelsSection({
                                                                 <p className="text-xs font-bold text-slate-800 truncate">
                                                                     {bevName}
                                                                 </p>
-                                                                {cand.anonymizedCode ? (
+                                                                {cand.anonymizedCode && (
                                                                     <span
                                                                         onClick={() => {
                                                                             if (isCompetitionHolder && isDraft) {
@@ -426,23 +426,6 @@ export function PanelsSection({
                                                                         <Tag className="w-3 h-3 text-amber-600" />
                                                                         <span>{cand.anonymizedCode}</span>
                                                                     </span>
-                                                                ) : (
-                                                                    isCompetitionHolder && isDraft && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                setEditCodeState({
-                                                                                    isOpen: true,
-                                                                                    candidateId: cand.id,
-                                                                                    currentCode: null,
-                                                                                    label: bevName,
-                                                                                })
-                                                                            }
-                                                                            className="text-[10px] font-semibold text-slate-400 hover:text-indigo-600 hover:underline cursor-pointer"
-                                                                        >
-                                                                            {t("panels.addCode")}
-                                                                        </button>
-                                                                    )
                                                                 )}
                                                             </div>
                                                             <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
