@@ -655,14 +655,6 @@ export const UserDetailsDocument = gql`
   usernames(auid: $auid) {
     defaultUsername
   }
-  defaultVariation(auid: $auid) {
-    variationId
-  }
-  variations(auid: $auid) {
-    id
-    firstName
-    lastName
-  }
 }
     `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>

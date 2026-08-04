@@ -219,12 +219,4 @@ query UserDetails($auid: ID!) {
     usernames(auid: $auid) {
         defaultUsername
     }
-    defaultVariation(auid: $auid) {
-        variationId
-    }
-        variations(auid: $auid) {
-        id
-        firstName
-        lastName
-    }
 }

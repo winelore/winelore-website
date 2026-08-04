@@ -135,13 +135,21 @@ export function buildExpertBeverageSummary(
             return
         }
 
-        const totalScores = normalizedScores
-            .filter((s) => propertyMap[s.code]?.isResult === true)
+        let totalScores = normalizedScores
+            .filter((s) => propertyMap[s.code]?.isResult === true || s.code === "total_score" || s.code === "typicity")
             .map((s) => ({
                 code: s.code,
                 name: propertyMap[s.code]?.name ?? s.code,
                 value: s.value,
             }))
+
+        if (totalScores.length === 0 && normalizedScores.length > 0) {
+            totalScores = normalizedScores.slice(-2).map((s) => ({
+                code: s.code,
+                name: propertyMap[s.code]?.name ?? s.code,
+                value: s.value,
+            }))
+        }
 
         // Extract vintage from batch attributes
         let vintageVal = undefined;
