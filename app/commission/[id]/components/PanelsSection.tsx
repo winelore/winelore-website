@@ -87,6 +87,21 @@ export function PanelsSection({
     // Delete Candidate
     const [deletingCandidateId, setDeletingCandidateId] = useState<string | null>(null)
 
+    // Custom Delete Confirmation Modal State
+    const [confirmDeleteState, setConfirmDeleteState] = useState<{
+        isOpen: boolean
+        type: "panel" | "candidate"
+        id: string
+        message: string
+        confirmText: string
+    }>({
+        isOpen: false,
+        type: "panel",
+        id: "",
+        message: "",
+        confirmText: "",
+    })
+
     // Wizard Modal State
     const [wizardState, setWizardState] = useState<{
         isOpen: boolean
@@ -148,38 +163,24 @@ export function PanelsSection({
         }
     }
 
-    const handleDeletePanel = async (panelId: string) => {
-        if (!confirm(t("panels.confirmDeletePanel"))) return
-        setDeletingPanelId(panelId)
-        try {
-            const res = await removeCommissionPanelAction(commissionId, panelId)
-            if (res.success) {
-                onRefresh()
-            } else {
-                alert(res.error || "Не вдалося видалити панель")
-            }
-        } catch (err: any) {
-            alert(err.message || "Помилка при видаленні панелі")
-        } finally {
-            setDeletingPanelId(null)
-        }
+    const handleDeletePanel = (panelId: string) => {
+        setConfirmDeleteState({
+            isOpen: true,
+            type: "panel",
+            id: panelId,
+            message: t("panels.confirmDeletePanel"),
+            confirmText: t("panels.deletePanel"),
+        })
     }
 
-    const handleDeleteCandidate = async (candidateId: string) => {
-        if (!confirm(t("panels.confirmDeleteCandidate"))) return
-        setDeletingCandidateId(candidateId)
-        try {
-            const res = await removeCommissionCandidateAction(candidateId)
-            if (res.success) {
-                onRefresh()
-            } else {
-                alert(res.error || "Не вдалося видалити кандидата")
-            }
-        } catch (err: any) {
-            alert(err.message || "Помилка при видаленні зразка")
-        } finally {
-            setDeletingCandidateId(null)
-        }
+    const handleDeleteCandidate = (candidateId: string) => {
+        setConfirmDeleteState({
+            isOpen: true,
+            type: "candidate",
+            id: candidateId,
+            message: t("panels.confirmDeleteCandidate"),
+            confirmText: t("panels.deleteSample"),
+        })
     }
 
     return (
@@ -507,6 +508,73 @@ export function PanelsSection({
                 candidateLabel={editCodeState.label}
                 onCodeUpdated={onRefresh}
             />
+
+            {/* Custom Delete Confirmation Modal */}
+            {confirmDeleteState.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+                    <div className="relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up p-6 flex flex-col items-center text-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-100/60 shadow-xs">
+                            <Trash2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-slate-800">
+                                {confirmDeleteState.type === "panel" ? t("panels.deletePanel") : t("panels.deleteSample")}
+                            </h3>
+                            <p className="text-sm text-slate-500 mt-2">
+                                {confirmDeleteState.message}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 w-full mt-2">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmDeleteState((prev) => ({ ...prev, isOpen: false }))}
+                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
+                                {t("competition.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const { type, id } = confirmDeleteState
+                                    setConfirmDeleteState((prev) => ({ ...prev, isOpen: false }))
+                                    if (type === "panel") {
+                                        setDeletingPanelId(id)
+                                        try {
+                                            const res = await removeCommissionPanelAction(commissionId, id)
+                                            if (res.success) {
+                                                onRefresh()
+                                            } else {
+                                                alert(res.error || "Не вдалося видалити панель")
+                                            }
+                                        } catch (err: any) {
+                                            alert(err.message || "Помилка при видаленні панелі")
+                                        } finally {
+                                            setDeletingPanelId(null)
+                                        }
+                                    } else {
+                                        setDeletingCandidateId(id)
+                                        try {
+                                            const res = await removeCommissionCandidateAction(id)
+                                            if (res.success) {
+                                                onRefresh()
+                                            } else {
+                                                alert(res.error || "Не вдалося видалити кандидата")
+                                            }
+                                        } catch (err: any) {
+                                            alert(err.message || "Помилка при видаленні зразка")
+                                        } finally {
+                                            setDeletingCandidateId(null)
+                                        }
+                                    }
+                                }}
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-md shadow-rose-600/10 transition-colors cursor-pointer"
+                            >
+                                {confirmDeleteState.confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

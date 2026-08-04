@@ -1610,12 +1610,10 @@ export async function removeCommissionCandidateAction(candidateId: string) {
     try {
         const headers = await getActorHeaders();
         const data = await rawGraphQL(`
-            mutation RemoveCommissionCandidate($id: ID!) {
-                removeCommissionCandidate(id: $id) {
-                    id
-                }
+            mutation RemoveCommissionCandidate($candidateId: ID!) {
+                removeCommissionCandidate(candidateId: $candidateId)
             }
-        `, { id: candidateId }, headers);
+        `, { candidateId }, headers);
         return { success: true, result: data.removeCommissionCandidate };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionCandidateAction):", err);
