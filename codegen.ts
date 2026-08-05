@@ -53,7 +53,6 @@ const config: CodegenConfig = {
             schema: process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT,
             documents: ['src/gql/axus/operations.graphql'],
             plugins: [
-                'typescript',
                 'typescript-operations',
                 'typescript-generic-sdk'
             ]
