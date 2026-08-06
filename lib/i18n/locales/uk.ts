@@ -209,6 +209,8 @@ const uk: TranslationKey = {
     continueToResults: "Перейти до результатів",
     enterTastingSession: "Увійти до сесії дегустації",
     backToCommission: "Назад до комісії",
+    backToCompetition: "Назад до конкурсу",
+    backToCompetitions: "Назад до конкурсів",
     startNextPanel: "Почати наступну панель",
     panel: "Панель",
     emptyPanel: "У цій панелі немає кандидатів",
