@@ -1,9 +1,13 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useMemo } from "react"
+import React, {useState, useEffect, useRef, useMemo, useCallback} from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle , Users, Timer, Check, Calendar, Pencil, Plus, X, Save } from "lucide-react"
+import {
+    FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap,
+    CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X, Save,
+    Loader2, Search, Filter, ChevronRight
+} from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -15,9 +19,11 @@ import {
     renameCommissionAction,
     updateCommissionDatesAction,
     createCommissionReplicaAction,
-    renameCommissionReplicaAction
+    renameCommissionReplicaAction,
+    setCommissionTemplateAction
 } from "../actions"
 import { isReplicaCandidateFinished } from "../replicaUtils"
+import { getEvaluationTemplatesAction } from "@/app/templates/actions"
 
 const tabs = (t: any) => [
     { id: "feed", label: t("common.feed"), icon: FileText },
@@ -128,6 +134,18 @@ function StatusSteps({ status }: { status: string }) {
     )
 }
 
+interface BeverageType {
+    id: string;
+    code: string;
+    name: string;
+}
+
+interface TemplateEditionLink {
+    id: string;
+    beverageType: BeverageType;
+    templateEdition: any;
+}
+
 interface Member {
     id: string;
     auid: number[];
@@ -148,6 +166,7 @@ interface Replica {
         candidate?: {
             id: string;
             anonymizedCode: string | null;
+            beverageType?: BeverageType;
         } | null;
     }[];
     currentCandidateId?: string | null;
@@ -168,8 +187,282 @@ interface InitialData {
         holders: number[];
         evaluationTemplateEdition?: any;
     };
+    templateEditions?: TemplateEditionLink[];
     replicas: Replica[];
     members: Member[];
+}
+
+function EvaluationTemplatesBlock({
+                                      commissionId,
+                                      templateEditions,
+                                      beverageTypesInCommission,
+                                      isCompetitionHolder,
+                                      canEdit,
+                                      onRefresh
+                                  }: {
+    commissionId: string,
+    templateEditions: TemplateEditionLink[],
+    beverageTypesInCommission: BeverageType[],
+    isCompetitionHolder: boolean,
+    canEdit: boolean,
+    onRefresh: () => void
+}) {
+    const { t } = useTranslation()
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [selectedBeverageType, setSelectedBeverageType] = useState<BeverageType | null>(null)
+
+    const [catalogTemplates, setCatalogTemplates] = useState<any[]>([])
+    const [isCatalogLoading, setIsCatalogLoading] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [isAssigning, setIsAssigning] = useState(false)
+    const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
+
+    const handleOpenCatalog = async (bevType?: BeverageType) => {
+        setSelectedBeverageType(bevType || null)
+        setSearchQuery("")
+        setIsModalOpen(true)
+        setIsCatalogLoading(true)
+        try {
+            const data = await getEvaluationTemplatesAction()
+            // Якщо натиснули на конкретну картку - фільтруємо по ній, якщо на загальну кнопку - показуємо ВСІ
+            const filtered = bevType
+                ? data.templates.filter((t: any) =>
+                    t.beverageTypeId === bevType.id ||
+                    t.beverageType?.id === bevType.id ||
+                    t.beverageType === bevType.id
+                )
+                : data.templates;
+            setCatalogTemplates(filtered)
+        } catch (e) {
+            console.error("Failed to load templates catalog", e)
+        } finally {
+            setIsCatalogLoading(false)
+        }
+    }
+
+    const handleAssignTemplate = async (templateEditionId: string, templateBevTypeId: string) => {
+        setIsAssigning(true)
+        try {
+            const res = await setCommissionTemplateAction(commissionId, templateBevTypeId, templateEditionId)
+            if (res.success) {
+                setIsModalOpen(false)
+                onRefresh()
+            } else {
+                alert(t("commission.templateAssignError" as any) || res.error)
+            }
+        } catch (e) {
+            alert(t("commission.templateAssignError" as any))
+        } finally {
+            setIsAssigning(false)
+        }
+    }
+
+    const filteredCatalog = catalogTemplates.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    return (
+        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/50 shadow-xs">
+                        <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold tracking-tight text-slate-800">
+                            {t("commission.evaluationTemplates" as any) || "Evaluation Templates"}
+                        </h3>
+                        <p className="text-[10px] text-slate-400 font-medium">
+                            {t("commission.evaluationTemplatesSubtitle" as any) || "One template per beverage type"}
+                        </p>
+                    </div>
+                </div>
+
+                {/* НОВА ЗАГАЛЬНА КНОПКА "+ ASSIGN TEMPLATE" */}
+                {isCompetitionHolder && canEdit && (
+                    <button
+                        onClick={() => handleOpenCatalog()}
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>{t("commission.assignTemplate" as any) || "Assign Template"}</span>
+                    </button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {beverageTypesInCommission.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-8 text-slate-400 text-sm bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl gap-3">
+                        <FileText className="w-8 h-8 opacity-50" />
+                        <p className="font-medium text-slate-500">Немає налаштованих шаблонів або доданих напоїв.</p>
+                        <p className="text-xs">Натисніть кнопку вище, щоб обрати перший шаблон з каталогу.</p>
+                    </div>
+                ) : (
+                    beverageTypesInCommission.map((bevType) => {
+                        const assignedLink = templateEditions.find(te => te.beverageType?.id === bevType.id);
+                        const isAssigned = !!assignedLink;
+                        const te = assignedLink?.templateEdition;
+
+                        return (
+                            <div key={bevType.id} className={`flex flex-col border rounded-2xl p-4 transition-all duration-300 ${isAssigned ? 'bg-slate-50/50 border-slate-200' : 'bg-rose-50/30 border-rose-200 border-dashed'}`}>
+                                <div className="flex justify-between items-start mb-3">
+                                    <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
+                                        {bevType.name || bevType.code}
+                                    </span>
+                                    {isCompetitionHolder && canEdit && (
+                                        <button
+                                            onClick={() => handleOpenCatalog(bevType)}
+                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                        >
+                                            {isAssigned ? (t("commission.changeTemplate" as any) || "Change") : (t("commission.assignTemplate" as any) || "Assign Template")}
+                                        </button>
+                                    )}
+                                </div>
+
+                                {isAssigned && te ? (
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-sm font-extrabold text-slate-800">{te.template?.name || "Standard Template"}</span>
+                                        <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
+                                            <span className="bg-white border px-1.5 rounded-sm">v{te.version}</span>
+                                            <span className="text-slate-300">•</span>
+                                            <span className="uppercase text-emerald-600">{formatEnumStatus(te.status)}</span>
+                                            <span className="text-slate-300">•</span>
+                                            <span>{te.categories?.length || 0} Categories</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
+                                        <AlertCircle className="w-5 h-5 mb-1 opacity-75" />
+                                        <span className="text-xs font-bold">{t("commission.noTemplateForType" as any) || "No template assigned"}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })
+                )}
+            </div>
+
+            {/* Modal Catalog */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div>
+                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog" as any) || "Template Catalog"}</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    {selectedBeverageType
+                                        ? <>Selecting template for <strong className="text-indigo-600">{selectedBeverageType.name}</strong></>
+                                        : "Select a template from the catalog"
+                                    }
+                                </p>
+                            </div>
+                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors cursor-pointer">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl flex-1 border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white transition-colors">
+                                <Search className="w-4 h-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder={t("commission.searchTemplates" as any) || "Search templates..."}
+                                    className="bg-transparent border-none outline-none text-sm w-full text-slate-700"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
+                            {isCatalogLoading ? (
+                                <div className="flex flex-col items-center justify-center h-40 gap-3 text-indigo-500">
+                                    <Loader2 className="w-8 h-8 animate-spin" />
+                                    <span className="text-sm font-bold">Loading catalog...</span>
+                                </div>
+                            ) : filteredCatalog.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-40 text-slate-400">
+                                    <FileText className="w-10 h-10 mb-2 opacity-50" />
+                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound" as any) || "No templates found"}</span>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-4">
+                                    {filteredCatalog.map(template => {
+                                        const ed = template.latestEdition;
+                                        const isExpanded = expandedTemplateId === template.id;
+
+                                        return (
+                                            <div key={template.id} className="border border-slate-200 rounded-2xl bg-white shadow-sm hover:border-indigo-300 transition-all overflow-hidden">
+                                                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5">
+                                                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase tracking-widest border border-slate-200">
+                                                                {template.beverageType}
+                                                            </span>
+                                                        </div>
+                                                        <h4 className="text-sm font-bold text-slate-800">{template.name}</h4>
+                                                        <div className="flex items-center gap-2 mt-1.5 text-[10px] font-semibold text-slate-500">
+                                                            <span className="bg-slate-50 border px-1.5 py-0.5 rounded-md">v{ed.version}</span>
+                                                            <span>•</span>
+                                                            <span>{ed.categories?.length || 0} Categories</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            onClick={() => setExpandedTemplateId(isExpanded ? null : template.id)}
+                                                            className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                            Preview <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                const targetBevId = template.beverageTypeId || template.beverageType?.id || selectedBeverageType?.id;
+
+                                                                if (!targetBevId) {
+                                                                    alert("Помилка: Неможливо визначити тип напою для цього шаблону.");
+                                                                    return;
+                                                                }
+
+                                                                handleAssignTemplate(ed.id, targetBevId);
+                                                            }}
+                                                            disabled={isAssigning}
+                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                                                        >
+                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate" as any) || "Apply")}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Preview (Expanded View) */}
+                                                {isExpanded && ed.categories && (
+                                                    <div className="p-4 bg-slate-50 border-t border-slate-100 max-h-[250px] overflow-y-auto text-xs">
+                                                        <p className="font-bold text-slate-400 mb-3 uppercase tracking-wider text-[9px]">{t("commission.templatePreview" as any) || "Structure Preview"}</p>
+                                                        <div className="flex flex-col gap-3">
+                                                            {ed.categories.map((cat: any) => (
+                                                                <div key={cat.id} className="bg-white border border-slate-200 rounded-xl p-3">
+                                                                    <p className="font-bold text-slate-700 mb-2 border-b pb-1">{cat.name}</p>
+                                                                    <div className="flex flex-col gap-1.5">
+                                                                        {cat.properties?.map((prop: any) => (
+                                                                            <div key={prop.id || prop.code} className="flex justify-between items-center bg-slate-50 rounded-lg px-2.5 py-1.5">
+                                                                                <span className="font-medium text-slate-600 truncate mr-2">{prop.name}</span>
+                                                                                <span className="text-[9px] font-bold text-slate-400 bg-white border px-1.5 rounded uppercase">{prop.type}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
 }
 
 export default function CommissionClientView({
@@ -203,6 +496,27 @@ export default function CommissionClientView({
     const [isEditingReplica, setIsEditingReplica] = useState(false)
     const [editReplicaName, setEditReplicaName] = useState("")
     const initialData = localData
+
+    const beverageTypesInCommission = useMemo(() => {
+        const typesMap = new Map<string, BeverageType>()
+
+        // 1. Беремо типи з уже призначених шаблонів (щоб вони відображалися навіть якщо немає напоїв)
+        if (initialData.templateEditions) {
+            initialData.templateEditions.forEach(te => {
+                if (te.beverageType) typesMap.set(te.beverageType.id, te.beverageType)
+            })
+        }
+
+        // 2. Беремо типи з доданих напоїв (якщо вони є)
+        localData.replicas.forEach(r => {
+            r.replicaCandidates.forEach(rc => {
+                if (rc.candidate?.beverageType) {
+                    typesMap.set(rc.candidate.beverageType.id, rc.candidate.beverageType)
+                }
+            })
+        })
+        return Array.from(typesMap.values())
+    }, [localData.replicas, initialData.templateEditions])
 
     const openEditName = () => {
         setEditNameData(initialData.name)
@@ -312,6 +626,14 @@ export default function CommissionClientView({
             setIsMutating(false)
         }
     }
+
+    const refreshData = useCallback(async () => {
+        const updated = await getCommissionDataAction(localData.id)
+        if (updated) {
+            setLocalData(updated)
+            if (updated.replicas) setLocalReplicas(updated.replicas)
+        }
+    }, [localData.id])
 
     // Detect user's active replica
     const activeReplica = localReplicas.find(r =>
@@ -722,7 +1044,7 @@ export default function CommissionClientView({
                                     {[...localReplicas].sort((a, b) => (a.members?.length || 0) - (b.members?.length || 0)).map((r) => {
                                         const isSelected = r.id === selectedReplicaId
                                         const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
-                                        
+
                                         if (isEditingReplica && isSelected) {
                                             return (
                                                 <div
@@ -1044,83 +1366,14 @@ export default function CommissionClientView({
                         </div>
 
                         {/* Evaluation Template Details */}
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/50 shadow-xs">
-                                        <FileText className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold tracking-tight text-slate-800">
-                                            Шаблон оцінювання
-                                        </h3>
-                                        <p className="text-[10px] text-slate-400 font-medium">
-                                            Конфігурація оцінювання напоїв
-                                        </p>
-                                    </div>
-                                </div>
-                                {initialData.competition?.evaluationTemplateEdition && (
-                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-wider">
-                                        Активний
-                                    </span>
-                                )}
-                            </div>
-
-                            {initialData.competition?.evaluationTemplateEdition ? (
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex flex-col gap-1 bg-slate-50/50 border border-slate-100 rounded-2xl p-4">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Назва шаблону</span>
-                                        <span className="text-sm font-extrabold text-slate-800">
-                                            {initialData.competition.evaluationTemplateEdition.template?.name || "Стандартний шаблон оцінювання"}
-                                        </span>
-                                        <div className="flex items-center gap-3 mt-2 text-[10px] font-semibold text-slate-500">
-                                            <span>Версія: {initialData.competition.evaluationTemplateEdition.version}</span>
-                                            <span className="text-slate-300">|</span>
-                                            <span>Статус: {formatEnumStatus(initialData.competition.evaluationTemplateEdition.status)}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-3">
-                                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Структура оцінювання</h4>
-                                        <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-1">
-                                            {initialData.competition.evaluationTemplateEdition.categories.map((cat: any) => (
-                                                <div key={cat.id || cat.name} className="border border-slate-100 rounded-2xl p-4 bg-slate-50/20">
-                                                    <h5 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-1.5 mb-2.5">
-                                                        {cat.name}
-                                                    </h5>
-                                                    <div className="flex flex-col gap-2">
-                                                        {cat.properties.map((prop: any) => (
-                                                            <div key={prop.id || prop.code} className="flex justify-between items-center bg-white border border-slate-100/80 rounded-xl px-3 py-2 text-xs">
-                                                                <div className="flex flex-col min-w-0 flex-1 pr-3">
-                                                                    <span className="font-bold text-slate-700 truncate">{prop.name}</span>
-                                                                    {prop.description && (
-                                                                        <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                                    <span className="bg-slate-100 text-slate-500 rounded-md px-1.5 py-0.5 text-[9px] font-mono font-bold border border-slate-200/50">
-                                                                        {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
-                                                                    </span>
-                                                                    {prop.isRequired && (
-                                                                        <span className="text-rose-500 font-bold" title="Обов'язкове">*</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center p-6 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center text-slate-500 gap-2">
-                                    <AlertCircle className="w-8 h-8 text-amber-500 animate-pulse" />
-                                    <span className="text-xs font-bold text-slate-700">Немає налаштованого шаблону</span>
-                                    <p className="text-[11px] text-slate-400 max-w-[240px]">Зверніться до адміністратора для налаштування шаблону оцінювання.</p>
-                                </div>
-                            )}
-                        </div>
+                        <EvaluationTemplatesBlock
+                            commissionId={initialData.id}
+                            templateEditions={initialData.templateEditions || []}
+                            beverageTypesInCommission={beverageTypesInCommission}
+                            isCompetitionHolder={isCompetitionHolder}
+                            canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
+                            onRefresh={refreshData}
+                        />
 
                         {/* Timeline and Dates */}
                         <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">

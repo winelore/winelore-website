@@ -42,15 +42,20 @@ export const GET_COMMISSION = gql(`
           role
           isReady
         }
-        replicaCandidates {
-          id
-          status
-          candidate {
-            id
-            anonymizedCode
-            panelId
+          replicaCandidates {
+              id
+              status
+              candidate {
+                  id
+                  anonymizedCode
+                  panelId
+                  beverageType {
+                      id
+                      code
+                      name
+                  }
+              }
           }
-        }
       }
     }
   }

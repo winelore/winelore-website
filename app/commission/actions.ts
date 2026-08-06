@@ -230,6 +230,31 @@ export async function submitEvaluationAction(
     }
 }
 
+export async function setCommissionTemplateAction(
+    commissionId: string,
+    beverageTypeId: string,
+    templateEditionId: string
+) {
+    if (!isValidUuid(commissionId) || !isValidUuid(templateEditionId) || !isValidUuid(beverageTypeId)) {
+        throw new Error("Invalid UUID parameter");
+    }
+    try {
+        const headers = await getActorHeaders();
+        const data = await sdk.SetCommissionTemplateEdition({
+            id: commissionId,
+            beverageTypeId,
+            templateEditionId
+        }, { headers });
+
+        templatesCache.delete(commissionId);
+
+        return { success: true, id: data.setCommissionTemplateEdition?.id };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionTemplateAction):", err);
+        return { success: false, error: err.message || "Failed to assign template" };
+    }
+}
+
 export async function getCommissionDataAction(commissionId: string) {
     if (!isValidUuid(commissionId)) return null;
     try {
@@ -240,35 +265,36 @@ export async function getCommissionDataAction(commissionId: string) {
         const commission = commissionData.commission;
         if (!commission) return null;
 
-        // Fetch template editions dynamically with bootstrapping fallback
-        let templateEdition: any = null;
+        // Fetch template editions
+        let templateEditions: any[] = [];
         try {
             console.log(`🔍 Fetching templates for commission ${commissionId}...`);
             const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
             const commissionWithTemplates = templateResult.commission;
 
-            if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
-                // Find WINE template or default to the first template link
-                const link = commissionWithTemplates.templateEditions.find(l => l.beverageType.code === "WINE") || commissionWithTemplates.templateEditions[0];
-                templateEdition = link?.templateEdition || null;
-                console.log(`✅ Found template edition: ${templateEdition?.id}`);
+            if (commissionWithTemplates && commissionWithTemplates.templateEditions) {
+                templateEditions = commissionWithTemplates.templateEditions.map((link: any) => ({
+                    id: link.id,
+                    beverageType: link.beverageType,
+                    templateEdition: link.templateEdition
+                }));
             }
         } catch (err: any) {
-            console.warn("❌ Failed to fetch template editions from backend, will try to bootstrap:", err.message);
+            console.warn("❌ Failed to fetch template editions from backend:", err.message);
         }
 
-        // Check if template edition is valid (categories exist, properties are non-null and not empty)
-        const isValidTemplate = templateEdition && templateEdition.categories && templateEdition.categories.length > 0 &&
-            templateEdition.categories.every((c: any) => c.properties && c.properties.length > 0 && c.properties.every((p: any) => p.id && p.code && p.name));
+        // Для зворотної сумісності залишаємо один legacy template
+        const validEditions = templateEditions.filter((link: any) => {
+            const te = link.templateEdition;
+            return te && te.categories && te.categories.length > 0 &&
+                te.categories.every((c: any) => c.properties && c.properties.length > 0 && c.properties.every((p: any) => p.id && p.code && p.name));
+        });
 
-        if (!isValidTemplate) {
-            if (commission.status === "DRAFT" || commission.status === "PLANNED") {
-                console.error("❌ Failed to bootstrap template edition: Template is invalid, empty, or missing required properties.");
-                templateEdition = null;
-            } else {
-                console.warn(`⚠️ Skipping template bootstrap: commission is in ${commission.status} status and cannot accept new templates.`);
-                templateEdition = null;
-            }
+        const defaultLink = validEditions.find((l: any) => l.beverageType?.code === "WINE") || validEditions[0];
+        let legacyTemplateEdition = defaultLink?.templateEdition || null;
+
+        if (!legacyTemplateEdition && (commission.status === "DRAFT" || commission.status === "PLANNED")) {
+            legacyTemplateEdition = null;
         }
 
         const candidatesOrder = (commission.candidates || []).map((c: any) => c.id);
@@ -291,7 +317,8 @@ export async function getCommissionDataAction(commissionId: string) {
                 status: rc.status,
                 candidate: rc.candidate ? {
                     id: rc.candidate.id,
-                    anonymizedCode: rc.candidate.anonymizedCode || null
+                    anonymizedCode: rc.candidate.anonymizedCode || null,
+                    beverageType: rc.candidate.beverageType || null
                 } : null
             })).sort((a: any, b: any) => {
                 const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
@@ -300,7 +327,6 @@ export async function getCommissionDataAction(commissionId: string) {
             })
         }));
 
-        // Backwards compatible members representation (from first standard replica or first replica)
         const defaultReplica = replicas.find((r: any) => r.type === "STANDARD") || replicas[0] || null;
         const defaultMembers = defaultReplica ? defaultReplica.members : [];
 
@@ -320,8 +346,9 @@ export async function getCommissionDataAction(commissionId: string) {
                 voiceCommentsEnabled: commission.voiceCommentsEnabled,
                 propertyCommentsEnabled: commission.propertyCommentsEnabled,
                 beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
-                evaluationTemplateEdition: templateEdition
+                evaluationTemplateEdition: legacyTemplateEdition
             },
+            templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
             candidateCount: countData.commissionCandidateCount ?? 0,
             panels: commission.panels || [],
             replicas,
