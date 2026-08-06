@@ -13,13 +13,15 @@ import {
     Check,
     X,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    GripVertical
 } from "lucide-react"
 import {
     addCommissionPanelAction,
     renameCommissionPanelAction,
     removeCommissionPanelAction,
-    removeCommissionCandidateAction
+    removeCommissionCandidateAction,
+    reorderCommissionCandidatesAction
 } from "../../actions"
 import { CandidateWizardModal } from "./CandidateWizardModal"
 import { EditCandidateCodeModal } from "./EditCandidateCodeModal"
@@ -32,6 +34,7 @@ export interface CandidateSample {
         id: string
         lotNumber?: string | null
         volumeMl?: number | null
+        attributes?: string | null
         beverage?: {
             id: string
             name: string
@@ -125,6 +128,68 @@ export function PanelsSection({
         currentCode: null,
         label: "",
     })
+
+    const [draggedItem, setDraggedItem] = useState<{ panelId: string; index: number } | null>(null)
+    const [dragOverItem, setDragOverItem] = useState<{ panelId: string; index: number; position: "top" | "bottom" } | null>(null)
+    const [isReordering, setIsReordering] = useState(false)
+
+    const handleReorder = async (panelId: string, draggedIdx: number, targetCandId: string | null, position: "top" | "bottom" | null) => {
+        const panelObj = panels.find(p => p.id === panelId)
+        const panelCandidates = panelObj?.candidates && panelObj.candidates.length > 0
+            ? panelObj.candidates
+            : candidates.filter(c => c.panelId === panelId)
+        
+        if (!panelCandidates || panelCandidates.length === 0) return
+
+        const draggedCandidate = panelCandidates[draggedIdx]
+        if (!draggedCandidate) return
+
+        // 1. Create a copy of only this panel's candidates
+        const reorderedPanelCandidates = [...panelCandidates]
+
+        // 2. Remove the dragged candidate from the panel list
+        reorderedPanelCandidates.splice(draggedIdx, 1)
+
+        // 3. Determine the insert index in the panel list
+        let insertIdx = -1
+        if (targetCandId) {
+            const targetInFilteredIdx = reorderedPanelCandidates.findIndex(c => c.id === targetCandId)
+            if (targetInFilteredIdx !== -1) {
+                insertIdx = position === "top"
+                    ? targetInFilteredIdx
+                    : targetInFilteredIdx + 1
+            }
+        } else {
+            // No target ID means we dropped at a container dropzone
+            if (position === "top") {
+                insertIdx = 0
+            } else {
+                insertIdx = reorderedPanelCandidates.length
+            }
+        }
+
+        if (insertIdx === -1) {
+            reorderedPanelCandidates.splice(draggedIdx, 0, draggedCandidate)
+        } else {
+            reorderedPanelCandidates.splice(insertIdx, 0, draggedCandidate)
+        }
+
+        const candidateIds = reorderedPanelCandidates.map(c => c.id)
+
+        setIsReordering(true)
+        try {
+            const res = await reorderCommissionCandidatesAction(commissionId, panelId, candidateIds)
+            if (res.success) {
+                onRefresh()
+            } else {
+                alert(res.error || "Не вдалося змінити порядок")
+            }
+        } catch (err: any) {
+            alert(err.message || "Помилка при зміні порядку")
+        } finally {
+            setIsReordering(false)
+        }
+    }
 
     const handleCreatePanel = async () => {
         if (!newPanelName.trim()) return
@@ -376,8 +441,33 @@ export function PanelsSection({
                                     </div>
                                 </div>
 
-                                {/* Candidates in Panel */}
-                                <div className="p-4 flex flex-col gap-2">
+                                <div
+                                    onDragOver={(e) => {
+                                        if (!isCompetitionHolder || !isDraft) return
+                                        e.preventDefault()
+                                    }}
+                                    onDrop={(e) => {
+                                        if (!isCompetitionHolder || !isDraft) return
+                                        e.preventDefault()
+                                        if (!draggedItem || draggedItem.panelId !== panel.id) return
+                                        
+                                        const rect = e.currentTarget.getBoundingClientRect()
+                                        const relativeY = e.clientY - rect.top
+                                        const position = relativeY < rect.height / 2 ? "top" : "bottom"
+                                        
+                                        if (position === "top") {
+                                            if (draggedItem.index !== 0) {
+                                                handleReorder(panel.id, draggedItem.index, null, "top")
+                                            }
+                                        } else {
+                                            const lastIdx = panelCandidates.length - 1
+                                            if (draggedItem.index !== lastIdx) {
+                                                handleReorder(panel.id, draggedItem.index, null, "bottom")
+                                            }
+                                        }
+                                    }}
+                                    className="p-4 pt-12 pb-14 flex flex-col gap-2 relative transition-all"
+                                >
                                     {panelCandidates.length === 0 ? (
                                         <p className="text-xs text-slate-400 py-3 text-center italic">
                                             {t("panels.noCandidatesInPanel")}
@@ -387,16 +477,81 @@ export function PanelsSection({
                                             const bevName = cand.sample?.batch?.beverage?.name || t("commission.results.candidate")
                                             const lotNo = cand.sample?.batch?.lotNumber
                                             const vol = cand.sample?.volumeMl
+                                            
+                                            let vintageVal: string | null = null
+                                            const attrs = cand.sample?.batch?.attributes
+                                            if (attrs) {
+                                                try {
+                                                    const parsed = JSON.parse(attrs)
+                                                    if (parsed && parsed.vintage) {
+                                                        vintageVal = String(parsed.vintage)
+                                                    }
+                                                } catch (e) {}
+                                            }
+
+                                            const isDragged = draggedItem?.panelId === panel.id && draggedItem.index === idx
 
                                             return (
                                                 <div
                                                     key={cand.id}
-                                                    className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-2xs hover:border-indigo-100 transition-all gap-3"
+                                                    draggable={isCompetitionHolder && isDraft}
+                                                    onDragStart={(e) => {
+                                                        if (!isCompetitionHolder || !isDraft) return
+                                                        setDraggedItem({ panelId: panel.id, index: idx })
+                                                        e.dataTransfer.effectAllowed = "move"
+                                                    }}
+                                                    onDragOver={(e) => {
+                                                        if (!isCompetitionHolder || !isDraft) return
+                                                        e.preventDefault()
+                                                        if (!draggedItem || draggedItem.panelId !== panel.id) return
+                                                        
+                                                        const rect = e.currentTarget.getBoundingClientRect()
+                                                        const relativeY = e.clientY - rect.top
+                                                        const position = relativeY < rect.height / 2 ? "top" : "bottom"
+                                                        
+                                                        if (dragOverItem?.index !== idx || dragOverItem?.position !== position) {
+                                                            setDragOverItem({ panelId: panel.id, index: idx, position })
+                                                        }
+                                                    }}
+                                                    onDragLeave={() => {
+                                                        setDragOverItem(null)
+                                                    }}
+                                                    onDrop={(e) => {
+                                                        if (!isCompetitionHolder || !isDraft) return
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        if (!draggedItem || draggedItem.panelId !== panel.id) return
+                                                        
+                                                        const targetPosition = dragOverItem?.index === idx ? dragOverItem.position : "top"
+                                                        handleReorder(panel.id, draggedItem.index, cand.id, targetPosition)
+                                                        setDragOverItem(null)
+                                                     }}
+                                                    onDragEnd={() => {
+                                                        setDraggedItem(null)
+                                                        setDragOverItem(null)
+                                                    }}
+                                                    className={`flex items-center justify-between p-3 bg-white border rounded-xl shadow-2xs hover:border-indigo-150 transition-all gap-3 ${
+                                                        isDragged
+                                                            ? "opacity-40 bg-slate-50 border-dashed border-indigo-200"
+                                                            : "border-slate-100"
+                                                    } ${
+                                                        dragOverItem?.panelId === panel.id && dragOverItem?.index === idx
+                                                            ? dragOverItem.position === "top"
+                                                                ? "border-t-2 border-t-indigo-500 scale-[1.01] bg-indigo-50/10"
+                                                                : "border-b-2 border-b-indigo-500 scale-[1.01] bg-indigo-50/10"
+                                                            : ""
+                                                    }`}
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0">
-                                                        <span className="w-5 text-center text-xs font-bold text-slate-300">
-                                                            {idx + 1}
-                                                        </span>
+                                                        {isCompetitionHolder && isDraft ? (
+                                                            <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 p-1 flex items-center justify-center" title="Drag to reorder">
+                                                                <GripVertical className="w-3.5 h-3.5" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="w-5 text-center text-xs font-bold text-slate-300 shrink-0">
+                                                                {idx + 1}
+                                                            </span>
+                                                        )}
                                                         <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/50">
                                                             <Wine className="w-4 h-4" />
                                                         </div>
@@ -429,11 +584,16 @@ export function PanelsSection({
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                                                            <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 flex-wrap">
                                                                 {lotNo && (
                                                                     <span className="flex items-center gap-1">
                                                                         <Boxes className="w-3 h-3 text-slate-400" />
                                                                         <span>{t("panels.lotNo", { lot: lotNo })}</span>
+                                                                    </span>
+                                                                )}
+                                                                {vintageVal && (
+                                                                    <span className="text-[9px] text-indigo-500 bg-indigo-50/60 font-semibold px-1 rounded-sm shrink-0">
+                                                                        {vintageVal}
                                                                     </span>
                                                                 )}
                                                                 {vol && (

@@ -57,32 +57,37 @@ export function AddMemberModal({
             setSelectedRole("EXPERT")
         }
     }, [isOpen])
-
-    if (!isOpen) return null
-
-    const handleSearch = async () => {
+    useEffect(() => {
         const trimmed = usernameInput.trim().replace(/^@/, "")
         if (!trimmed) {
-            setSearchError(t("commission.enterUsername"))
+            setFoundUser(null)
+            setSearchError(null)
             return
         }
-        setIsSearching(true)
-        setSearchError(null)
-        setFoundUser(null)
-        setSubmitError(null)
-        try {
-            const res = await searchUserByUsernameAction(trimmed)
-            if (res.success && res.user) {
-                setFoundUser(res.user)
-            } else {
-                setSearchError(res.error || t("commission.userNotFound"))
+
+        const timer = setTimeout(async () => {
+            setIsSearching(true)
+            setSearchError(null)
+            setFoundUser(null)
+            setSubmitError(null)
+            try {
+                const res = await searchUserByUsernameAction(trimmed)
+                if (res.success && res.user) {
+                    setFoundUser(res.user)
+                } else {
+                    setSearchError(res.error || t("commission.userNotFound"))
+                }
+            } catch (err: any) {
+                setSearchError(err.message || t("commission.searchError"))
+            } finally {
+                setIsSearching(false)
             }
-        } catch (err: any) {
-            setSearchError(err.message || t("commission.searchError"))
-        } finally {
-            setIsSearching(false)
-        }
-    }
+        }, 400)
+
+        return () => clearTimeout(timer)
+    }, [usernameInput, t])
+
+    if (!isOpen) return null
 
     const handleAddMember = async () => {
         if (!foundUser) return
@@ -136,43 +141,27 @@ export function AddMemberModal({
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                             {t("commission.usernameAxusId")}
                         </label>
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">
-                                    @
-                                </span>
-                                <input
-                                    type="text"
-                                    placeholder="username"
-                                    value={usernameInput}
-                                    onChange={(e) => {
-                                        setUsernameInput(e.target.value)
-                                        if (foundUser) setFoundUser(null)
-                                        if (searchError) setSearchError(null)
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault()
-                                            handleSearch()
-                                        }
-                                    }}
-                                    className="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                    autoFocus
-                                />
-                            </div>
-                            <button
-                                type="button"
-                                onClick={handleSearch}
-                                disabled={isSearching || !usernameInput.trim()}
-                                className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-md shadow-indigo-600/10 transition-all active:scale-95 cursor-pointer disabled:pointer-events-none shrink-0"
-                            >
-                                {isSearching ? (
+                        <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">
+                                @
+                            </span>
+                            <input
+                                type="text"
+                                placeholder="username"
+                                value={usernameInput}
+                                onChange={(e) => {
+                                    setUsernameInput(e.target.value)
+                                    if (foundUser) setFoundUser(null)
+                                    if (searchError) setSearchError(null)
+                                }}
+                                className="w-full pl-8 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                autoFocus
+                            />
+                            {isSearching && (
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-indigo-600 flex items-center">
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Search className="w-4 h-4" />
-                                )}
-                                <span>{t("commission.search")}</span>
-                            </button>
+                                </span>
+                            )}
                         </div>
                         {searchError && (
                             <p className="flex items-center gap-1.5 text-xs text-rose-500 font-semibold mt-2">
@@ -200,9 +189,6 @@ export function AddMemberModal({
                                     <p className="text-xs text-indigo-600 font-semibold">
                                         @{foundUser.username}
                                     </p>
-                                    <span className="inline-block text-[10px] text-slate-400 font-mono mt-0.5">
-                                        AUID: {foundUser.auid}
-                                    </span>
                                 </div>
                                 <div className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0">
                                     <Check className="w-4 h-4" />

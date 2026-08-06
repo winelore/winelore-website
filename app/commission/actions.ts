@@ -547,6 +547,7 @@ export async function getCommissionDataAction(commissionId: string) {
                                     id
                                     lotNumber
                                     volumeMl
+                                    attributes
                                     beverage {
                                         id
                                         name
@@ -566,6 +567,7 @@ export async function getCommissionDataAction(commissionId: string) {
                                 id
                                 lotNumber
                                 volumeMl
+                                attributes
                                 beverage {
                                     id
                                     name
@@ -1194,6 +1196,22 @@ export async function startNextPanelAction(replicaId: string, nextCandidateId: s
     }
 }
 
+const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || 'https://axusid.thewinelore.com/graphql';
+
+async function fetchAxusGraphQL(query: string, variables: Record<string, any> = {}) {
+    const res = await fetch(AXUS_GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+        next: { revalidate: 0 }
+    });
+    const json = await res.json();
+    if (json.errors) {
+        throw new Error(json.errors[0]?.message || 'AXUS ID GraphQL Query Error');
+    }
+    return json.data;
+}
+
 export async function searchUserByUsernameAction(username: string) {
     const trimmed = username.trim().replace(/^@/, "");
     if (!trimmed) return { success: false, error: "Введіть юзернейм" };
@@ -1206,13 +1224,30 @@ export async function searchUserByUsernameAction(username: string) {
 
         let displayName = `@${trimmed}`;
         try {
-            const userDetails = await axusSdk.UserDetails({ auid: String(auid) });
-            const defaultVar = userDetails?.variations?.find(v => v.id === userDetails.defaultVariation?.variationId) || userDetails?.variations?.[0];
-            const fName = defaultVar?.firstName?.trim();
-            const lName = defaultVar?.lastName?.trim();
-            const isPlaceholder = fName === "Default" && lName === "Variation";
-            if ((fName || lName) && !isPlaceholder) {
-                displayName = [fName, lName].filter(Boolean).join(" ");
+            const varData = await fetchAxusGraphQL(`
+                query GetUserVars($auid: ID!) {
+                    defaultVariation(auid: $auid) {
+                        variationId
+                    }
+                    variations(auid: $auid) {
+                        id
+                    }
+                }
+            `, { auid: String(auid) });
+
+            const variationId = varData?.defaultVariation?.variationId || varData?.variations?.[0]?.id;
+            if (variationId) {
+                const nameData = await fetchAxusGraphQL(`
+                    query GetName($variationId: ID!) {
+                        name(variationId: $variationId) {
+                            displayName
+                        }
+                    }
+                `, { variationId });
+                
+                if (nameData?.name?.displayName) {
+                    displayName = nameData.name.displayName;
+                }
             }
         } catch (detailErr) {
             console.warn("Failed to fetch user details for auid", auid, detailErr);
@@ -1435,6 +1470,7 @@ export async function getBatchesForBeverageAction(beverageId: string, page: numb
                         lotNumber
                         volumeMl
                         createdAt
+                        attributes
                     }
                 }
                 batchCount(beverageId: $beverageId)
@@ -1640,5 +1676,24 @@ export async function changeCommissionCandidateCodeAction(candidateId: string, a
     } catch (err: any) {
         console.error("Server Action Error (changeCommissionCandidateCodeAction):", err);
         return { success: false, error: err.message || "Не вдалося змінити код" };
+    }
+}
+
+export async function reorderCommissionCandidatesAction(commissionId: string, panelId: string, candidateIds: string[]) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    if (!isValidUuid(panelId)) return { success: false, error: "Invalid panelId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation ReorderCommissionCandidates($commissionId: ID!, $panelId: ID!, $candidateIds: [ID!]!) {
+                reorderCommissionCandidates(commissionId: $commissionId, panelId: $panelId, candidateIds: $candidateIds) {
+                    id
+                }
+            }
+        `, { commissionId, panelId, candidateIds }, headers);
+        return { success: true, commission: data.reorderCommissionCandidates };
+    } catch (err: any) {
+        console.error("Server Action Error (reorderCommissionCandidatesAction):", err);
+        return { success: false, error: err.message || "Не вдалося змінити порядок кандидатів" };
     }
 }

@@ -33,6 +33,7 @@ interface BatchItem {
     lotNumber?: string | null
     volumeMl?: number | null
     createdAt?: string | null
+    attributes?: string | null
 }
 
 interface SampleItem {
@@ -529,6 +530,16 @@ export function CandidateWizardModal({
                                     <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1">
                                         {batches.map((batch) => {
                                             const isSelected = selectedBatch?.id === batch.id
+                                            let vintageVal: string | null = null
+                                            if (batch.attributes) {
+                                                try {
+                                                    const parsed = JSON.parse(batch.attributes)
+                                                    if (parsed && parsed.vintage) {
+                                                        vintageVal = String(parsed.vintage)
+                                                    }
+                                                } catch (e) {}
+                                            }
+
                                             return (
                                                 <div
                                                     key={batch.id}
@@ -544,8 +555,13 @@ export function CandidateWizardModal({
                                                             <Boxes className="w-4 h-4" />
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="text-sm font-bold text-slate-800 truncate">
-                                                                {batch.lotNumber ? t("panels.wizard.batchNo", { number: batch.lotNumber }) : t("panels.wizard.batchNoNumber")}
+                                                            <p className="text-sm font-bold text-slate-800 truncate flex items-center gap-1.5">
+                                                                <span>{batch.lotNumber ? t("panels.wizard.batchNo", { number: batch.lotNumber }) : t("panels.wizard.batchNoNumber")}</span>
+                                                                {vintageVal && (
+                                                                    <span className="text-xs font-normal text-slate-400 shrink-0">
+                                                                        ({vintageVal})
+                                                                    </span>
+                                                                )}
                                                             </p>
                                                             <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                                                 {batch.volumeMl && <span>{batch.volumeMl} ml</span>}
@@ -574,7 +590,7 @@ export function CandidateWizardModal({
                                 <div className="flex items-center gap-2 min-w-0">
                                     <Boxes className="w-4 h-4 text-indigo-600 shrink-0" />
                                     <span className="text-xs font-bold text-slate-800 truncate">
-                                        {selectedBeverage?.name} — {selectedBatch?.lotNumber ? t("panels.wizard.lotNo", { lot: selectedBatch.lotNumber }) : t("panels.wizard.batchStep")}
+                                        {selectedBeverage?.name} — {selectedBatch?.lotNumber ? t("panels.lotNo", { lot: selectedBatch.lotNumber }) : t("panels.wizard.batchStep")}
                                     </span>
                                 </div>
                                 <button
