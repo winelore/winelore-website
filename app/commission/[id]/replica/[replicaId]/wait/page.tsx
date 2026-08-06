@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, use, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import Cookies from "js-cookie"
-import { Users, Wine, Loader2, ArrowRight } from "lucide-react"
+import { Users, Wine, Loader2, ArrowRight, ArrowLeft } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -196,6 +197,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
                     <div className="max-w-7xl mx-auto space-y-8">
+                        <div>
+                            <Link
+                                href={`/commission/${commissionId}`}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all w-fit"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                {t("commission.backToCommission")}
+                            </Link>
+                        </div>
                         {currentPanelId && (
                             <WaitPanelResults
                                 commissionId={commissionId}
@@ -223,6 +233,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
                     <div className="max-w-7xl mx-auto space-y-8">
+                    <div>
+                        <Link
+                            href={`/commission/${commissionId}`}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all w-fit"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            {t("commission.backToCommission")}
+                        </Link>
+                    </div>
                     <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
@@ -410,6 +429,16 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         <div className="flex min-h-screen flex-col bg-slate-50">
             <AppHeader activeTab="competitions" />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-full max-w-2xl flex justify-start mb-6">
+                    <Link
+                        href={`/commission/${commissionId}`}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        {t("commission.backToCommission")}
+                    </Link>
+                </div>
+
                 <div className="relative mb-10 flex justify-center">
                     <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center animate-pulse border border-indigo-100">
                         <Wine className="w-10 h-10 text-indigo-600" />

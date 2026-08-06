@@ -185,6 +185,8 @@ const hu = {
         continueToResults: "Tovább az eredményekhez",
         enterTastingSession: "Belépés a kóstolási szakaszba",
         backToCommission: "Vissza a bizottsághoz",
+        backToCompetition: "Vissza a versenyhez",
+        backToCompetitions: "Vissza a versenyekhez",
         startNextPanel: "Következő panel indítása",
         panel: "Panel",
         emptyPanel: "Nincsenek jelöltek ebben a panelben",

@@ -191,6 +191,8 @@ const en = {
     continueToResults: "Continue to Results",
     enterTastingSession: "Enter Tasting Session",
     backToCommission: "Back to Commission",
+    backToCompetition: "Back to Competition",
+    backToCompetitions: "Back to Competitions",
     startNextPanel: "Start Next Panel",
     panel: "Panel",
     emptyPanel: "No candidates in this panel",
