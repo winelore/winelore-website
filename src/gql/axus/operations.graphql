@@ -1,5 +1,12 @@
-mutation Login($auid: ID!, $password: String!, $permissions: [String!]) {
-    login(auid: $auid, password: $password, permissions: $permissions) {
+mutation LoginWithPassword($auid: ID!, $password: String!, $permissions: [String!]) {
+    loginWithPassword(auid: $auid, password: $password, permissions: $permissions) {
+        id
+    }
+}
+
+mutation WrapTokenInCredentials($auid: ID!, $tokenId: String) {
+    wrapTokenInCredentials(auid: $auid, tokenId: $tokenId) {
+        auid
         accessToken
         refreshToken
         accessTokenExpiresAt
@@ -21,26 +28,26 @@ mutation RevokeCredentials($refreshToken: String!) {
 mutation CreateUser(
     $contextAuid: ID
     $tokenId: String
-    $username: String!
-    $password: String!
+    $registrationKey: ID!
 ) {
     createUser(
         contextAuid: $contextAuid
         tokenId: $tokenId
-        username: $username
-        password: $password
+        registrationKey: $registrationKey
     ) {
         auid
-        id
+        token {
+            id
+        }
     }
 }
 
-mutation ChangePassword(
+mutation SetPassword(
     $auid: ID!
     $tokenId: String
-    $newPassword: String!
+    $password: String!
 ) {
-    changePassword(auid: $auid, tokenId: $tokenId, newPassword: $newPassword)
+    setPassword(auid: $auid, tokenId: $tokenId, password: $password)
 }
 
 query OwnerByUsername($username: String!) {
@@ -77,13 +84,40 @@ query Variations($auid: ID!) {
     variations(auid: $auid) {
         id
         auid
-        firstName
-        lastName
-        status
-        description
         locationId
         icon
         createdAt
+    }
+}
+
+query VariationName($variationId: ID!) {
+    name(variationId: $variationId) {
+        variationId
+        elements {
+            partType
+            value
+            separatorType
+        }
+        displayName
+    }
+}
+
+query VariationDescription($variationId: ID!) {
+    description(variationId: $variationId) {
+        variationId
+        text
+        updatedAt
+    }
+}
+
+query VariationStatus($variationId: ID!) {
+    status(variationId: $variationId) {
+        variationId
+        text
+        emoji
+        expiresAt
+        updatedAt
+        isExpired
     }
 }
 
@@ -120,91 +154,131 @@ mutation ChangeDefaultUsername($auid: ID!, $username: String!) {
 
 mutation CreateVariation(
     $auid: ID!
-    $firstName: String
-    $lastName: String
-    $status: String
     $description: String
     $locationId: String
     $icon: String
 ) {
     createVariation(
         auid: $auid
-        firstName: $firstName
-        lastName: $lastName
-        status: $status
         description: $description
         locationId: $locationId
         icon: $icon
     ) {
         id
         auid
-        firstName
-        lastName
-        status
-        description
         locationId
         icon
         createdAt
     }
 }
 
-mutation ChangeVariationFirstName(
+mutation ChangeName(
     $auid: ID!
     $variationId: ID!
-    $firstName: String
+    $elements: [NameElementInput!]!
 ) {
-    changeVariationFirstName(
+    changeName(
         auid: $auid
         variationId: $variationId
-        firstName: $firstName
+        elements: $elements
     ) {
-        id
-        firstName
+        variationId
+        elements {
+            partType
+            value
+            separatorType
+        }
+        displayName
     }
 }
 
-mutation ChangeVariationLastName(
+mutation ChangeDescription(
     $auid: ID!
     $variationId: ID!
-    $lastName: String
+    $text: String
 ) {
-    changeVariationLastName(
+    changeDescription(
         auid: $auid
         variationId: $variationId
-        lastName: $lastName
+        text: $text
     ) {
-        id
-        lastName
+        variationId
+        text
+        updatedAt
     }
 }
 
-mutation ChangeVariationStatus(
-    $auid: ID!
-    $variationId: ID!
-    $status: String
-) {
-    changeVariationStatus(
-        auid: $auid
-        variationId: $variationId
-        status: $status
-    ) {
-        id
-        status
+mutation ClearDescription($auid: ID!, $variationId: ID!) {
+    clearDescription(auid: $auid, variationId: $variationId) {
+        variationId
+        text
+        updatedAt
     }
 }
 
-mutation ChangeVariationDescription(
+mutation ChangeStatus(
     $auid: ID!
     $variationId: ID!
-    $description: String
+    $text: String
+    $emoji: String
+    $expiresAt: String
+    $durationMinutes: Int
 ) {
-    changeVariationDescription(
+    changeStatus(
         auid: $auid
         variationId: $variationId
-        description: $description
+        text: $text
+        emoji: $emoji
+        expiresAt: $expiresAt
+        durationMinutes: $durationMinutes
+    ) {
+        variationId
+        text
+        emoji
+        expiresAt
+        updatedAt
+        isExpired
+    }
+}
+
+mutation ClearStatus($auid: ID!, $variationId: ID!) {
+    clearStatus(auid: $auid, variationId: $variationId) {
+        variationId
+        text
+        emoji
+        expiresAt
+        updatedAt
+        isExpired
+    }
+}
+
+mutation ChangeVariationLocationId(
+    $auid: ID!
+    $variationId: ID!
+    $locationId: String
+) {
+    changeVariationLocationId(
+        auid: $auid
+        variationId: $variationId
+        locationId: $locationId
     ) {
         id
-        description
+        locationId
+    }
+}
+
+mutation ChangeVariationIcon(
+    $auid: ID!
+    $variationId: ID!
+    $icon: String
+) {
+    changeVariationIcon(
+        auid: $auid
+        variationId: $variationId
+        icon: $icon
+    ) {
+        id
+        icon
     }
 }
 
@@ -222,9 +296,7 @@ query UserDetails($auid: ID!) {
     defaultVariation(auid: $auid) {
         variationId
     }
-        variations(auid: $auid) {
+    variations(auid: $auid) {
         id
-        firstName
-        lastName
     }
 }

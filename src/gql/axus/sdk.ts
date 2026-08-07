@@ -19,13 +19,54 @@ export type AuthCredentials = {
   __typename?: 'AuthCredentials';
   accessToken: Scalars['String']['output'];
   accessTokenExpiresAt: Scalars['String']['output'];
+  auid: Scalars['ID']['output'];
   refreshToken: Scalars['String']['output'];
+};
+
+export type AuthenticatedToken = {
+  __typename?: 'AuthenticatedToken';
+  auid: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+};
+
+export type CreatedUser = {
+  __typename?: 'CreatedUser';
+  auid: Scalars['ID']['output'];
+  token: Token;
 };
 
 export type DefaultVariation = {
   __typename?: 'DefaultVariation';
   auid: Scalars['ID']['output'];
   variationId: Scalars['ID']['output'];
+};
+
+export type Description = {
+  __typename?: 'Description';
+  text?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
+  variationId: Scalars['ID']['output'];
+};
+
+export type ExternalAuthenticationInput = {
+  clientId: Scalars['String']['input'];
+  providerId: Scalars['String']['input'];
+  refreshToken: Scalars['String']['input'];
+};
+
+export type ExternalIdentity = {
+  __typename?: 'ExternalIdentity';
+  createdAt: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  providerId: Scalars['String']['output'];
+};
+
+export type ExternalIdentityAccessTokenResponse = {
+  __typename?: 'ExternalIdentityAccessTokenResponse';
+  accessToken: Scalars['String']['output'];
+  expiresIn?: Maybe<Scalars['Int']['output']>;
+  scopes: Array<Scalars['String']['output']>;
+  tokenType?: Maybe<Scalars['String']['output']>;
 };
 
 export type Identity = {
@@ -36,27 +77,48 @@ export type Identity = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  acceptParent: Parents;
   addUsername: Usernames;
   changeDefaultUsername: Usernames;
-  changePassword: Scalars['Boolean']['output'];
+  changeDescription: Description;
+  changeName: Name;
+  changeStatus: Status;
   changeUsername: Usernames;
-  changeVariationDescription: Variation;
-  changeVariationFirstName: Variation;
   changeVariationIcon: Variation;
-  changeVariationLastName: Variation;
   changeVariationLocationId: Variation;
-  changeVariationStatus: Variation;
-  createUser: Identity;
+  clearDescription: Description;
+  clearStatus: Status;
+  createUser: CreatedUser;
   createVariation: Variation;
-  generateToken: Token;
-  login: AuthCredentials;
-  loginWithTotp: AuthCredentials;
+  deletePasskey: Scalars['Boolean']['output'];
+  finishPasskeyRegistration: Scalars['Boolean']['output'];
+  linkExternalIdentity: ExternalIdentity;
+  loginWithExternalIdentity: AuthenticatedToken;
+  loginWithPasskey: AuthenticatedToken;
+  loginWithPassword: Token;
+  loginWithToken: Token;
+  loginWithTotp: AuthenticatedToken;
   refreshCredentials: AuthCredentials;
   removeUsername: Usernames;
+  reorderParents: Parents;
+  requestParent: Parents;
   revokeCredentials: Scalars['Boolean']['output'];
   setDefaultVariation: DefaultVariation;
+  setPassword: Scalars['Boolean']['output'];
+  startPasskeyLogin: PasskeyCeremony;
+  startPasskeyRegistration: PasskeyCeremony;
   startTotpEnrollment: TotpEnrollmentResponse;
+  unlinkExternalIdentity: Scalars['Boolean']['output'];
+  updatePasskeyName: Scalars['Boolean']['output'];
   verifyTotpEnrollment: Scalars['Boolean']['output'];
+  wrapTokenInCredentials: AuthCredentials;
+};
+
+
+export type MutationAcceptParentArgs = {
+  auid: Scalars['ID']['input'];
+  parentAuid: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -74,10 +136,30 @@ export type MutationChangeDefaultUsernameArgs = {
 };
 
 
-export type MutationChangePasswordArgs = {
+export type MutationChangeDescriptionArgs = {
   auid: Scalars['ID']['input'];
-  newPassword: Scalars['String']['input'];
+  text?: InputMaybe<Scalars['String']['input']>;
   tokenId?: InputMaybe<Scalars['String']['input']>;
+  variationId: Scalars['ID']['input'];
+};
+
+
+export type MutationChangeNameArgs = {
+  auid: Scalars['ID']['input'];
+  elements: Array<NameElementInput>;
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+  variationId: Scalars['ID']['input'];
+};
+
+
+export type MutationChangeStatusArgs = {
+  auid: Scalars['ID']['input'];
+  durationMinutes?: InputMaybe<Scalars['Int']['input']>;
+  emoji?: InputMaybe<Scalars['String']['input']>;
+  expiresAt?: InputMaybe<Scalars['String']['input']>;
+  text?: InputMaybe<Scalars['String']['input']>;
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+  variationId: Scalars['ID']['input'];
 };
 
 
@@ -89,33 +171,9 @@ export type MutationChangeUsernameArgs = {
 };
 
 
-export type MutationChangeVariationDescriptionArgs = {
-  auid: Scalars['ID']['input'];
-  description?: InputMaybe<Scalars['String']['input']>;
-  tokenId?: InputMaybe<Scalars['String']['input']>;
-  variationId: Scalars['ID']['input'];
-};
-
-
-export type MutationChangeVariationFirstNameArgs = {
-  auid: Scalars['ID']['input'];
-  firstName?: InputMaybe<Scalars['String']['input']>;
-  tokenId?: InputMaybe<Scalars['String']['input']>;
-  variationId: Scalars['ID']['input'];
-};
-
-
 export type MutationChangeVariationIconArgs = {
   auid: Scalars['ID']['input'];
   icon?: InputMaybe<Scalars['String']['input']>;
-  tokenId?: InputMaybe<Scalars['String']['input']>;
-  variationId: Scalars['ID']['input'];
-};
-
-
-export type MutationChangeVariationLastNameArgs = {
-  auid: Scalars['ID']['input'];
-  lastName?: InputMaybe<Scalars['String']['input']>;
   tokenId?: InputMaybe<Scalars['String']['input']>;
   variationId: Scalars['ID']['input'];
 };
@@ -129,9 +187,15 @@ export type MutationChangeVariationLocationIdArgs = {
 };
 
 
-export type MutationChangeVariationStatusArgs = {
+export type MutationClearDescriptionArgs = {
   auid: Scalars['ID']['input'];
-  status?: InputMaybe<Scalars['String']['input']>;
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+  variationId: Scalars['ID']['input'];
+};
+
+
+export type MutationClearStatusArgs = {
+  auid: Scalars['ID']['input'];
   tokenId?: InputMaybe<Scalars['String']['input']>;
   variationId: Scalars['ID']['input'];
 };
@@ -139,35 +203,66 @@ export type MutationChangeVariationStatusArgs = {
 
 export type MutationCreateUserArgs = {
   contextAuid?: InputMaybe<Scalars['ID']['input']>;
-  password: Scalars['String']['input'];
+  registrationKey: Scalars['ID']['input'];
   tokenId?: InputMaybe<Scalars['String']['input']>;
-  username: Scalars['String']['input'];
 };
 
 
 export type MutationCreateVariationArgs = {
   auid: Scalars['ID']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
-  firstName?: InputMaybe<Scalars['String']['input']>;
   icon?: InputMaybe<Scalars['String']['input']>;
-  lastName?: InputMaybe<Scalars['String']['input']>;
   locationId?: InputMaybe<Scalars['String']['input']>;
-  status?: InputMaybe<Scalars['String']['input']>;
   tokenId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
-export type MutationGenerateTokenArgs = {
+export type MutationDeletePasskeyArgs = {
+  auid: Scalars['ID']['input'];
+  credentialId: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationFinishPasskeyRegistrationArgs = {
+  auid: Scalars['ID']['input'];
+  challengeId: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  responseJson: Scalars['String']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationLinkExternalIdentityArgs = {
+  auid: Scalars['ID']['input'];
+  authentication: ExternalAuthenticationInput;
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationLoginWithExternalIdentityArgs = {
+  authentication: ExternalAuthenticationInput;
+  permissions?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+
+export type MutationLoginWithPasskeyArgs = {
+  challengeId: Scalars['ID']['input'];
+  responseJson: Scalars['String']['input'];
+};
+
+
+export type MutationLoginWithPasswordArgs = {
   auid: Scalars['ID']['input'];
   password: Scalars['String']['input'];
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 
-export type MutationLoginArgs = {
+export type MutationLoginWithTokenArgs = {
   auid: Scalars['ID']['input'];
-  password: Scalars['String']['input'];
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
+  tokenId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -189,6 +284,20 @@ export type MutationRemoveUsernameArgs = {
 };
 
 
+export type MutationReorderParentsArgs = {
+  auid: Scalars['ID']['input'];
+  parentAuids: Array<Scalars['ID']['input']>;
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationRequestParentArgs = {
+  auid: Scalars['ID']['input'];
+  parentAuid: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type MutationRevokeCredentialsArgs = {
   refreshToken: Scalars['String']['input'];
 };
@@ -201,8 +310,44 @@ export type MutationSetDefaultVariationArgs = {
 };
 
 
+export type MutationSetPasswordArgs = {
+  auid: Scalars['ID']['input'];
+  password: Scalars['String']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationStartPasskeyLoginArgs = {
+  permissions?: InputMaybe<Array<Scalars['String']['input']>>;
+  relyingPartyId: Scalars['String']['input'];
+};
+
+
+export type MutationStartPasskeyRegistrationArgs = {
+  auid: Scalars['ID']['input'];
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  relyingPartyId: Scalars['String']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type MutationStartTotpEnrollmentArgs = {
   auid: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationUnlinkExternalIdentityArgs = {
+  auid: Scalars['ID']['input'];
+  externalIdentityId: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationUpdatePasskeyNameArgs = {
+  auid: Scalars['ID']['input'];
+  credentialId: Scalars['ID']['input'];
+  name: Scalars['String']['input'];
   tokenId?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -213,10 +358,100 @@ export type MutationVerifyTotpEnrollmentArgs = {
   tokenId?: InputMaybe<Scalars['String']['input']>;
 };
 
+
+export type MutationWrapTokenInCredentialsArgs = {
+  auid: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type Name = {
+  __typename?: 'Name';
+  displayName: Scalars['String']['output'];
+  elements: Array<NameElement>;
+  variationId: Scalars['ID']['output'];
+};
+
+export type NameElement = {
+  __typename?: 'NameElement';
+  partType?: Maybe<NamePartType>;
+  separatorType?: Maybe<NameSeparatorType>;
+  value?: Maybe<Scalars['String']['output']>;
+};
+
+export type NameElementInput = {
+  partType?: InputMaybe<NamePartType>;
+  separatorType?: InputMaybe<NameSeparatorType>;
+  value?: InputMaybe<Scalars['String']['input']>;
+};
+
+export enum NamePartType {
+  Credential = 'CREDENTIAL',
+  FamilyName = 'FAMILY_NAME',
+  Generation = 'GENERATION',
+  GivenName = 'GIVEN_NAME',
+  Title = 'TITLE',
+  Unstructured = 'UNSTRUCTURED'
+}
+
+export enum NameSeparatorType {
+  Apostrophe = 'APOSTROPHE',
+  CommaSpace = 'COMMA_SPACE',
+  Hyphen = 'HYPHEN',
+  Space = 'SPACE'
+}
+
+export type PaginatedIdentities = {
+  __typename?: 'PaginatedIdentities';
+  items: Array<Identity>;
+};
+
+export type Parent = {
+  __typename?: 'Parent';
+  auid: Scalars['ID']['output'];
+  status: ParentStatus;
+};
+
+export enum ParentStatus {
+  Accepted = 'ACCEPTED',
+  Pending = 'PENDING'
+}
+
+export type Parents = {
+  __typename?: 'Parents';
+  auid: Scalars['ID']['output'];
+  parents: Array<Parent>;
+};
+
+export type PasskeyCeremony = {
+  __typename?: 'PasskeyCeremony';
+  challengeId: Scalars['ID']['output'];
+  optionsJson: Scalars['String']['output'];
+};
+
+export type PasskeyCredential = {
+  __typename?: 'PasskeyCredential';
+  auid: Scalars['ID']['output'];
+  backedUp: Scalars['Boolean']['output'];
+  backupEligible: Scalars['Boolean']['output'];
+  createdAt: Scalars['String']['output'];
+  credentialId: Scalars['ID']['output'];
+  lastUsedAt?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  transports: Array<Scalars['String']['output']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   defaultVariation?: Maybe<DefaultVariation>;
+  description?: Maybe<Description>;
+  externalIdentities: Array<ExternalIdentity>;
+  externalIdentityAccessToken: ExternalIdentityAccessTokenResponse;
+  identities: PaginatedIdentities;
+  name?: Maybe<Name>;
   ownerByUsername?: Maybe<Scalars['ID']['output']>;
+  parents?: Maybe<Parents>;
+  passkeys: Array<PasskeyCredential>;
+  status?: Maybe<Status>;
   user?: Maybe<User>;
   usernames?: Maybe<Usernames>;
   variations: Array<Variation>;
@@ -228,8 +463,56 @@ export type QueryDefaultVariationArgs = {
 };
 
 
+export type QueryDescriptionArgs = {
+  variationId: Scalars['ID']['input'];
+};
+
+
+export type QueryExternalIdentitiesArgs = {
+  auid: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryExternalIdentityAccessTokenArgs = {
+  auid: Scalars['ID']['input'];
+  externalIdentityId: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryIdentitiesArgs = {
+  contextAuid: Scalars['ID']['input'];
+  cursor?: InputMaybe<Scalars['ID']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  recursive?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type QueryNameArgs = {
+  variationId: Scalars['ID']['input'];
+};
+
+
 export type QueryOwnerByUsernameArgs = {
   username: Scalars['String']['input'];
+};
+
+
+export type QueryParentsArgs = {
+  auid: Scalars['ID']['input'];
+};
+
+
+export type QueryPasskeysArgs = {
+  auid: Scalars['ID']['input'];
+  tokenId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryStatusArgs = {
+  variationId: Scalars['ID']['input'];
 };
 
 
@@ -245,6 +528,16 @@ export type QueryUsernamesArgs = {
 
 export type QueryVariationsArgs = {
   auid: Scalars['ID']['input'];
+};
+
+export type Status = {
+  __typename?: 'Status';
+  emoji?: Maybe<Scalars['String']['output']>;
+  expiresAt?: Maybe<Scalars['String']['output']>;
+  isExpired: Scalars['Boolean']['output'];
+  text?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
+  variationId: Scalars['ID']['output'];
 };
 
 export type Token = {
@@ -276,23 +569,47 @@ export type Variation = {
   __typename?: 'Variation';
   auid: Scalars['ID']['output'];
   createdAt: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  firstName?: Maybe<Scalars['String']['output']>;
   icon?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  lastName?: Maybe<Scalars['String']['output']>;
   locationId?: Maybe<Scalars['String']['output']>;
-  status?: Maybe<Scalars['String']['output']>;
 };
 
-export type LoginMutationVariables = Exact<{
+export type NameElementInput = {
+  partType?: NamePartType | null | undefined;
+  separatorType?: NameSeparatorType | null | undefined;
+  value?: string | null | undefined;
+};
+
+export type NamePartType =
+  | 'CREDENTIAL'
+  | 'FAMILY_NAME'
+  | 'GENERATION'
+  | 'GIVEN_NAME'
+  | 'TITLE'
+  | 'UNSTRUCTURED';
+
+export type NameSeparatorType =
+  | 'APOSTROPHE'
+  | 'COMMA_SPACE'
+  | 'HYPHEN'
+  | 'SPACE';
+
+export type LoginWithPasswordMutationVariables = Exact<{
   auid: string | number;
   password: string;
   permissions?: Array<string> | string | null | undefined;
 }>;
 
 
-export type LoginMutation = { login: { accessToken: string, refreshToken: string, accessTokenExpiresAt: string } };
+export type LoginWithPasswordMutation = { loginWithPassword: { id: string } };
+
+export type WrapTokenInCredentialsMutationVariables = Exact<{
+  auid: string | number;
+  tokenId?: string | null | undefined;
+}>;
+
+
+export type WrapTokenInCredentialsMutation = { wrapTokenInCredentials: { auid: string, accessToken: string, refreshToken: string, accessTokenExpiresAt: string } };
 
 export type RefreshCredentialsMutationVariables = Exact<{
   refreshToken: string;
@@ -311,21 +628,20 @@ export type RevokeCredentialsMutation = { revokeCredentials: boolean };
 export type CreateUserMutationVariables = Exact<{
   contextAuid?: string | number | null | undefined;
   tokenId?: string | null | undefined;
-  username: string;
+  registrationKey: string | number;
+}>;
+
+
+export type CreateUserMutation = { createUser: { auid: string, token: { id: string } } };
+
+export type SetPasswordMutationVariables = Exact<{
+  auid: string | number;
+  tokenId?: string | null | undefined;
   password: string;
 }>;
 
 
-export type CreateUserMutation = { createUser: { auid: string, id: string } };
-
-export type ChangePasswordMutationVariables = Exact<{
-  auid: string | number;
-  tokenId?: string | null | undefined;
-  newPassword: string;
-}>;
-
-
-export type ChangePasswordMutation = { changePassword: boolean };
+export type SetPasswordMutation = { setPassword: boolean };
 
 export type OwnerByUsernameQueryVariables = Exact<{
   username: string;
@@ -353,7 +669,28 @@ export type VariationsQueryVariables = Exact<{
 }>;
 
 
-export type VariationsQuery = { variations: Array<{ id: string, auid: string, firstName: string | null, lastName: string | null, status: string | null, description: string | null, locationId: string | null, icon: string | null, createdAt: string }> };
+export type VariationsQuery = { variations: Array<{ id: string, auid: string, locationId: string | null, icon: string | null, createdAt: string }> };
+
+export type VariationNameQueryVariables = Exact<{
+  variationId: string | number;
+}>;
+
+
+export type VariationNameQuery = { name: { variationId: string, displayName: string, elements: Array<{ partType: NamePartType | null, value: string | null, separatorType: NameSeparatorType | null }> } | null };
+
+export type VariationDescriptionQueryVariables = Exact<{
+  variationId: string | number;
+}>;
+
+
+export type VariationDescriptionQuery = { description: { variationId: string, text: string | null, updatedAt: string } | null };
+
+export type VariationStatusQueryVariables = Exact<{
+  variationId: string | number;
+}>;
+
+
+export type VariationStatusQuery = { status: { variationId: string, text: string | null, emoji: string | null, expiresAt: string | null, updatedAt: string, isExpired: boolean } | null };
 
 export type DefaultVariationQueryVariables = Exact<{
   auid: string | number;
@@ -388,52 +725,77 @@ export type ChangeDefaultUsernameMutation = { changeDefaultUsername: { auid: str
 
 export type CreateVariationMutationVariables = Exact<{
   auid: string | number;
-  firstName?: string | null | undefined;
-  lastName?: string | null | undefined;
-  status?: string | null | undefined;
   description?: string | null | undefined;
   locationId?: string | null | undefined;
   icon?: string | null | undefined;
 }>;
 
 
-export type CreateVariationMutation = { createVariation: { id: string, auid: string, firstName: string | null, lastName: string | null, status: string | null, description: string | null, locationId: string | null, icon: string | null, createdAt: string } };
+export type CreateVariationMutation = { createVariation: { id: string, auid: string, locationId: string | null, icon: string | null, createdAt: string } };
 
-export type ChangeVariationFirstNameMutationVariables = Exact<{
+export type ChangeNameMutationVariables = Exact<{
   auid: string | number;
   variationId: string | number;
-  firstName?: string | null | undefined;
+  elements: Array<NameElementInput> | NameElementInput;
 }>;
 
 
-export type ChangeVariationFirstNameMutation = { changeVariationFirstName: { id: string, firstName: string | null } };
+export type ChangeNameMutation = { changeName: { variationId: string, displayName: string, elements: Array<{ partType: NamePartType | null, value: string | null, separatorType: NameSeparatorType | null }> } };
 
-export type ChangeVariationLastNameMutationVariables = Exact<{
+export type ChangeDescriptionMutationVariables = Exact<{
   auid: string | number;
   variationId: string | number;
-  lastName?: string | null | undefined;
+  text?: string | null | undefined;
 }>;
 
 
-export type ChangeVariationLastNameMutation = { changeVariationLastName: { id: string, lastName: string | null } };
+export type ChangeDescriptionMutation = { changeDescription: { variationId: string, text: string | null, updatedAt: string } };
 
-export type ChangeVariationStatusMutationVariables = Exact<{
+export type ClearDescriptionMutationVariables = Exact<{
   auid: string | number;
   variationId: string | number;
-  status?: string | null | undefined;
 }>;
 
 
-export type ChangeVariationStatusMutation = { changeVariationStatus: { id: string, status: string | null } };
+export type ClearDescriptionMutation = { clearDescription: { variationId: string, text: string | null, updatedAt: string } };
 
-export type ChangeVariationDescriptionMutationVariables = Exact<{
+export type ChangeStatusMutationVariables = Exact<{
   auid: string | number;
   variationId: string | number;
-  description?: string | null | undefined;
+  text?: string | null | undefined;
+  emoji?: string | null | undefined;
+  expiresAt?: string | null | undefined;
+  durationMinutes?: number | null | undefined;
 }>;
 
 
-export type ChangeVariationDescriptionMutation = { changeVariationDescription: { id: string, description: string | null } };
+export type ChangeStatusMutation = { changeStatus: { variationId: string, text: string | null, emoji: string | null, expiresAt: string | null, updatedAt: string, isExpired: boolean } };
+
+export type ClearStatusMutationVariables = Exact<{
+  auid: string | number;
+  variationId: string | number;
+}>;
+
+
+export type ClearStatusMutation = { clearStatus: { variationId: string, text: string | null, emoji: string | null, expiresAt: string | null, updatedAt: string, isExpired: boolean } };
+
+export type ChangeVariationLocationIdMutationVariables = Exact<{
+  auid: string | number;
+  variationId: string | number;
+  locationId?: string | null | undefined;
+}>;
+
+
+export type ChangeVariationLocationIdMutation = { changeVariationLocationId: { id: string, locationId: string | null } };
+
+export type ChangeVariationIconMutationVariables = Exact<{
+  auid: string | number;
+  variationId: string | number;
+  icon?: string | null | undefined;
+}>;
+
+
+export type ChangeVariationIconMutation = { changeVariationIcon: { id: string, icon: string | null } };
 
 export type SetDefaultVariationMutationVariables = Exact<{
   auid: string | number;
@@ -448,12 +810,20 @@ export type UserDetailsQueryVariables = Exact<{
 }>;
 
 
-export type UserDetailsQuery = { usernames: { defaultUsername: string } | null, defaultVariation: { variationId: string } | null, variations: Array<{ id: string, firstName: string | null, lastName: string | null }> };
+export type UserDetailsQuery = { usernames: { defaultUsername: string } | null, defaultVariation: { variationId: string } | null, variations: Array<{ id: string }> };
 
 
-export const LoginDocument = gql`
-    mutation Login($auid: ID!, $password: String!, $permissions: [String!]) {
-  login(auid: $auid, password: $password, permissions: $permissions) {
+export const LoginWithPasswordDocument = gql`
+    mutation LoginWithPassword($auid: ID!, $password: String!, $permissions: [String!]) {
+  loginWithPassword(auid: $auid, password: $password, permissions: $permissions) {
+    id
+  }
+}
+    `;
+export const WrapTokenInCredentialsDocument = gql`
+    mutation WrapTokenInCredentials($auid: ID!, $tokenId: String) {
+  wrapTokenInCredentials(auid: $auid, tokenId: $tokenId) {
+    auid
     accessToken
     refreshToken
     accessTokenExpiresAt
@@ -475,21 +845,22 @@ export const RevokeCredentialsDocument = gql`
 }
     `;
 export const CreateUserDocument = gql`
-    mutation CreateUser($contextAuid: ID, $tokenId: String, $username: String!, $password: String!) {
+    mutation CreateUser($contextAuid: ID, $tokenId: String, $registrationKey: ID!) {
   createUser(
     contextAuid: $contextAuid
     tokenId: $tokenId
-    username: $username
-    password: $password
+    registrationKey: $registrationKey
   ) {
     auid
-    id
+    token {
+      id
+    }
   }
 }
     `;
-export const ChangePasswordDocument = gql`
-    mutation ChangePassword($auid: ID!, $tokenId: String, $newPassword: String!) {
-  changePassword(auid: $auid, tokenId: $tokenId, newPassword: $newPassword)
+export const SetPasswordDocument = gql`
+    mutation SetPassword($auid: ID!, $tokenId: String, $password: String!) {
+  setPassword(auid: $auid, tokenId: $tokenId, password: $password)
 }
     `;
 export const OwnerByUsernameDocument = gql`
@@ -530,13 +901,43 @@ export const VariationsDocument = gql`
   variations(auid: $auid) {
     id
     auid
-    firstName
-    lastName
-    status
-    description
     locationId
     icon
     createdAt
+  }
+}
+    `;
+export const VariationNameDocument = gql`
+    query VariationName($variationId: ID!) {
+  name(variationId: $variationId) {
+    variationId
+    elements {
+      partType
+      value
+      separatorType
+    }
+    displayName
+  }
+}
+    `;
+export const VariationDescriptionDocument = gql`
+    query VariationDescription($variationId: ID!) {
+  description(variationId: $variationId) {
+    variationId
+    text
+    updatedAt
+  }
+}
+    `;
+export const VariationStatusDocument = gql`
+    query VariationStatus($variationId: ID!) {
+  status(variationId: $variationId) {
+    variationId
+    text
+    emoji
+    expiresAt
+    updatedAt
+    isExpired
   }
 }
     `;
@@ -576,69 +977,100 @@ export const ChangeDefaultUsernameDocument = gql`
 }
     `;
 export const CreateVariationDocument = gql`
-    mutation CreateVariation($auid: ID!, $firstName: String, $lastName: String, $status: String, $description: String, $locationId: String, $icon: String) {
+    mutation CreateVariation($auid: ID!, $description: String, $locationId: String, $icon: String) {
   createVariation(
     auid: $auid
-    firstName: $firstName
-    lastName: $lastName
-    status: $status
     description: $description
     locationId: $locationId
     icon: $icon
   ) {
     id
     auid
-    firstName
-    lastName
-    status
-    description
     locationId
     icon
     createdAt
   }
 }
     `;
-export const ChangeVariationFirstNameDocument = gql`
-    mutation ChangeVariationFirstName($auid: ID!, $variationId: ID!, $firstName: String) {
-  changeVariationFirstName(
-    auid: $auid
-    variationId: $variationId
-    firstName: $firstName
-  ) {
-    id
-    firstName
+export const ChangeNameDocument = gql`
+    mutation ChangeName($auid: ID!, $variationId: ID!, $elements: [NameElementInput!]!) {
+  changeName(auid: $auid, variationId: $variationId, elements: $elements) {
+    variationId
+    elements {
+      partType
+      value
+      separatorType
+    }
+    displayName
   }
 }
     `;
-export const ChangeVariationLastNameDocument = gql`
-    mutation ChangeVariationLastName($auid: ID!, $variationId: ID!, $lastName: String) {
-  changeVariationLastName(
-    auid: $auid
-    variationId: $variationId
-    lastName: $lastName
-  ) {
-    id
-    lastName
+export const ChangeDescriptionDocument = gql`
+    mutation ChangeDescription($auid: ID!, $variationId: ID!, $text: String) {
+  changeDescription(auid: $auid, variationId: $variationId, text: $text) {
+    variationId
+    text
+    updatedAt
   }
 }
     `;
-export const ChangeVariationStatusDocument = gql`
-    mutation ChangeVariationStatus($auid: ID!, $variationId: ID!, $status: String) {
-  changeVariationStatus(auid: $auid, variationId: $variationId, status: $status) {
-    id
-    status
+export const ClearDescriptionDocument = gql`
+    mutation ClearDescription($auid: ID!, $variationId: ID!) {
+  clearDescription(auid: $auid, variationId: $variationId) {
+    variationId
+    text
+    updatedAt
   }
 }
     `;
-export const ChangeVariationDescriptionDocument = gql`
-    mutation ChangeVariationDescription($auid: ID!, $variationId: ID!, $description: String) {
-  changeVariationDescription(
+export const ChangeStatusDocument = gql`
+    mutation ChangeStatus($auid: ID!, $variationId: ID!, $text: String, $emoji: String, $expiresAt: String, $durationMinutes: Int) {
+  changeStatus(
     auid: $auid
     variationId: $variationId
-    description: $description
+    text: $text
+    emoji: $emoji
+    expiresAt: $expiresAt
+    durationMinutes: $durationMinutes
+  ) {
+    variationId
+    text
+    emoji
+    expiresAt
+    updatedAt
+    isExpired
+  }
+}
+    `;
+export const ClearStatusDocument = gql`
+    mutation ClearStatus($auid: ID!, $variationId: ID!) {
+  clearStatus(auid: $auid, variationId: $variationId) {
+    variationId
+    text
+    emoji
+    expiresAt
+    updatedAt
+    isExpired
+  }
+}
+    `;
+export const ChangeVariationLocationIdDocument = gql`
+    mutation ChangeVariationLocationId($auid: ID!, $variationId: ID!, $locationId: String) {
+  changeVariationLocationId(
+    auid: $auid
+    variationId: $variationId
+    locationId: $locationId
   ) {
     id
-    description
+    locationId
+  }
+}
+    `;
+export const ChangeVariationIconDocument = gql`
+    mutation ChangeVariationIcon($auid: ID!, $variationId: ID!, $icon: String) {
+  changeVariationIcon(auid: $auid, variationId: $variationId, icon: $icon) {
+    id
+    icon
   }
 }
     `;
@@ -660,16 +1092,17 @@ export const UserDetailsDocument = gql`
   }
   variations(auid: $auid) {
     id
-    firstName
-    lastName
   }
 }
     `;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
-    Login(variables: LoginMutationVariables, options?: C): Promise<LoginMutation> {
-      return requester<LoginMutation, LoginMutationVariables>(LoginDocument, variables, options) as Promise<LoginMutation>;
+    LoginWithPassword(variables: LoginWithPasswordMutationVariables, options?: C): Promise<LoginWithPasswordMutation> {
+      return requester<LoginWithPasswordMutation, LoginWithPasswordMutationVariables>(LoginWithPasswordDocument, variables, options) as Promise<LoginWithPasswordMutation>;
+    },
+    WrapTokenInCredentials(variables: WrapTokenInCredentialsMutationVariables, options?: C): Promise<WrapTokenInCredentialsMutation> {
+      return requester<WrapTokenInCredentialsMutation, WrapTokenInCredentialsMutationVariables>(WrapTokenInCredentialsDocument, variables, options) as Promise<WrapTokenInCredentialsMutation>;
     },
     RefreshCredentials(variables: RefreshCredentialsMutationVariables, options?: C): Promise<RefreshCredentialsMutation> {
       return requester<RefreshCredentialsMutation, RefreshCredentialsMutationVariables>(RefreshCredentialsDocument, variables, options) as Promise<RefreshCredentialsMutation>;
@@ -680,8 +1113,8 @@ export function getSdk<C>(requester: Requester<C>) {
     CreateUser(variables: CreateUserMutationVariables, options?: C): Promise<CreateUserMutation> {
       return requester<CreateUserMutation, CreateUserMutationVariables>(CreateUserDocument, variables, options) as Promise<CreateUserMutation>;
     },
-    ChangePassword(variables: ChangePasswordMutationVariables, options?: C): Promise<ChangePasswordMutation> {
-      return requester<ChangePasswordMutation, ChangePasswordMutationVariables>(ChangePasswordDocument, variables, options) as Promise<ChangePasswordMutation>;
+    SetPassword(variables: SetPasswordMutationVariables, options?: C): Promise<SetPasswordMutation> {
+      return requester<SetPasswordMutation, SetPasswordMutationVariables>(SetPasswordDocument, variables, options) as Promise<SetPasswordMutation>;
     },
     OwnerByUsername(variables: OwnerByUsernameQueryVariables, options?: C): Promise<OwnerByUsernameQuery> {
       return requester<OwnerByUsernameQuery, OwnerByUsernameQueryVariables>(OwnerByUsernameDocument, variables, options) as Promise<OwnerByUsernameQuery>;
@@ -694,6 +1127,15 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     Variations(variables: VariationsQueryVariables, options?: C): Promise<VariationsQuery> {
       return requester<VariationsQuery, VariationsQueryVariables>(VariationsDocument, variables, options) as Promise<VariationsQuery>;
+    },
+    VariationName(variables: VariationNameQueryVariables, options?: C): Promise<VariationNameQuery> {
+      return requester<VariationNameQuery, VariationNameQueryVariables>(VariationNameDocument, variables, options) as Promise<VariationNameQuery>;
+    },
+    VariationDescription(variables: VariationDescriptionQueryVariables, options?: C): Promise<VariationDescriptionQuery> {
+      return requester<VariationDescriptionQuery, VariationDescriptionQueryVariables>(VariationDescriptionDocument, variables, options) as Promise<VariationDescriptionQuery>;
+    },
+    VariationStatus(variables: VariationStatusQueryVariables, options?: C): Promise<VariationStatusQuery> {
+      return requester<VariationStatusQuery, VariationStatusQueryVariables>(VariationStatusDocument, variables, options) as Promise<VariationStatusQuery>;
     },
     DefaultVariation(variables: DefaultVariationQueryVariables, options?: C): Promise<DefaultVariationQuery> {
       return requester<DefaultVariationQuery, DefaultVariationQueryVariables>(DefaultVariationDocument, variables, options) as Promise<DefaultVariationQuery>;
@@ -710,17 +1152,26 @@ export function getSdk<C>(requester: Requester<C>) {
     CreateVariation(variables: CreateVariationMutationVariables, options?: C): Promise<CreateVariationMutation> {
       return requester<CreateVariationMutation, CreateVariationMutationVariables>(CreateVariationDocument, variables, options) as Promise<CreateVariationMutation>;
     },
-    ChangeVariationFirstName(variables: ChangeVariationFirstNameMutationVariables, options?: C): Promise<ChangeVariationFirstNameMutation> {
-      return requester<ChangeVariationFirstNameMutation, ChangeVariationFirstNameMutationVariables>(ChangeVariationFirstNameDocument, variables, options) as Promise<ChangeVariationFirstNameMutation>;
+    ChangeName(variables: ChangeNameMutationVariables, options?: C): Promise<ChangeNameMutation> {
+      return requester<ChangeNameMutation, ChangeNameMutationVariables>(ChangeNameDocument, variables, options) as Promise<ChangeNameMutation>;
     },
-    ChangeVariationLastName(variables: ChangeVariationLastNameMutationVariables, options?: C): Promise<ChangeVariationLastNameMutation> {
-      return requester<ChangeVariationLastNameMutation, ChangeVariationLastNameMutationVariables>(ChangeVariationLastNameDocument, variables, options) as Promise<ChangeVariationLastNameMutation>;
+    ChangeDescription(variables: ChangeDescriptionMutationVariables, options?: C): Promise<ChangeDescriptionMutation> {
+      return requester<ChangeDescriptionMutation, ChangeDescriptionMutationVariables>(ChangeDescriptionDocument, variables, options) as Promise<ChangeDescriptionMutation>;
     },
-    ChangeVariationStatus(variables: ChangeVariationStatusMutationVariables, options?: C): Promise<ChangeVariationStatusMutation> {
-      return requester<ChangeVariationStatusMutation, ChangeVariationStatusMutationVariables>(ChangeVariationStatusDocument, variables, options) as Promise<ChangeVariationStatusMutation>;
+    ClearDescription(variables: ClearDescriptionMutationVariables, options?: C): Promise<ClearDescriptionMutation> {
+      return requester<ClearDescriptionMutation, ClearDescriptionMutationVariables>(ClearDescriptionDocument, variables, options) as Promise<ClearDescriptionMutation>;
     },
-    ChangeVariationDescription(variables: ChangeVariationDescriptionMutationVariables, options?: C): Promise<ChangeVariationDescriptionMutation> {
-      return requester<ChangeVariationDescriptionMutation, ChangeVariationDescriptionMutationVariables>(ChangeVariationDescriptionDocument, variables, options) as Promise<ChangeVariationDescriptionMutation>;
+    ChangeStatus(variables: ChangeStatusMutationVariables, options?: C): Promise<ChangeStatusMutation> {
+      return requester<ChangeStatusMutation, ChangeStatusMutationVariables>(ChangeStatusDocument, variables, options) as Promise<ChangeStatusMutation>;
+    },
+    ClearStatus(variables: ClearStatusMutationVariables, options?: C): Promise<ClearStatusMutation> {
+      return requester<ClearStatusMutation, ClearStatusMutationVariables>(ClearStatusDocument, variables, options) as Promise<ClearStatusMutation>;
+    },
+    ChangeVariationLocationId(variables: ChangeVariationLocationIdMutationVariables, options?: C): Promise<ChangeVariationLocationIdMutation> {
+      return requester<ChangeVariationLocationIdMutation, ChangeVariationLocationIdMutationVariables>(ChangeVariationLocationIdDocument, variables, options) as Promise<ChangeVariationLocationIdMutation>;
+    },
+    ChangeVariationIcon(variables: ChangeVariationIconMutationVariables, options?: C): Promise<ChangeVariationIconMutation> {
+      return requester<ChangeVariationIconMutation, ChangeVariationIconMutationVariables>(ChangeVariationIconDocument, variables, options) as Promise<ChangeVariationIconMutation>;
     },
     SetDefaultVariation(variables: SetDefaultVariationMutationVariables, options?: C): Promise<SetDefaultVariationMutation> {
       return requester<SetDefaultVariationMutation, SetDefaultVariationMutationVariables>(SetDefaultVariationDocument, variables, options) as Promise<SetDefaultVariationMutation>;

@@ -35,7 +35,8 @@ const uk: TranslationKey = {
     none: "Немає",
     templates: "Мої шаблони оцінювання",
     unknownUser: "Невідомий користувач",
-    outcomePolicies: "Мої політики результатів"
+    outcomePolicies: "Мої політики результатів",
+    outcomePoliciesCount: "{{count}} політик результатів"
   },
   dashboard: {
     holderId: "Організатор: {{ids}}",
@@ -295,7 +296,7 @@ const uk: TranslationKey = {
     voiceRecorded: "Голос ({{seconds}}с)",
     voiceMicError: "Доступ до мікрофона відхилено. Перевірте дозволи браузера.",
     voiceUploadFailed: "Помилка завантаження голосу — надсилається лише текст.",
-    myScore:"Моя оцінка",
+    myScore: "Моя оцінка",
     averageScore: "Середня оцінка",
   },
   status: {
@@ -463,6 +464,34 @@ const uk: TranslationKey = {
     evaluationStructure: "Структура оцінювання та показники",
     notFound: "Ваші шаблони не знайдені",
     createFirst: "Створіть свій перший шаблон оцінювання за допомогою кнопки вище."
+  },
+  myOutcomePolicies: {
+    title: "Мої політики результатів",
+    createButton: "Створити нову політику результатів",
+    subtitle: "Керуйте своїми персоналізованими політиками результатів.",
+    emptyTitle: "Політики ще не створено",
+    emptyDescription: "Створіть свою першу політику результатів за допомогою кнопки вище.",
+    policy: "Політика",
+    createdAt: "Створено",
+    status: "Статус",
+    actions: "Дії",
+    view: "Переглянути",
+    edit: "Редагувати",
+    delete: "Видалити",
+    deleteConfirmation: "Ви впевнені, що хочете видалити цю політику результатів?",
+  },
+  newOutcomePolicy: {
+    back: "Назад до політик результатів",
+    title: "Створити нову політику результатів",
+    namePlaceholder: "Введіть назву політики результатів...",
+    scriptTitle: "Код скрипта",
+    create: "Створити політику",
+    error: "Не вдалося створити політику результатів. Спробуйте ще раз.",
+  },
+  outcomePolicyDetail: {
+    scriptTitle: "Код скрипта",
+    save: "Зберегти скрипт",
+    saved: "Збережено!",
   },
 }
 

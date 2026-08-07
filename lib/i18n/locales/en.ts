@@ -33,7 +33,8 @@ const en = {
     none: "None",
     templates: "My Evaluation Templates",
     unknownUser: "Unknown User",
-    outcomePolicies: "My Outcome Policies"
+    outcomePolicies: "My Outcome Policies",
+    outcomePoliciesCount: "{{count}} Outcome Policy",
   },
   dashboard: {
     holderId: "Holder: {{ids}}",
@@ -293,7 +294,7 @@ const en = {
     voiceRecorded: "Voice ({{seconds}}s)",
     voiceMicError: "Microphone access denied. Check browser permissions.",
     voiceUploadFailed: "Voice upload failed — submitting text only.",
-    myScore:"My Score",
+    myScore: "My Score",
     averageScore: "Average Score",
   },
   status: {
@@ -344,7 +345,7 @@ const en = {
     inDaysHours: "In {{days}}d {{hours}}h",
     inHoursMinutes: "In {{hours}}h {{minutes}}m",
   },
-    meta: {
+  meta: {
     title: "WineLore - Beverage Competitions Dashboard",
     description: "Discover and participate in beverage competitions on WineLore",
   },
@@ -462,14 +463,42 @@ const en = {
     notFound: "No templates found",
     createFirst: "Create your first evaluation template using the button above."
   },
+  myOutcomePolicies: {
+    title: "My Outcome Policies",
+    createButton: "Create New Outcome Policy",
+    subtitle: "Manage your personalized outcome policies.",
+    emptyTitle: "No policies created yet",
+    emptyDescription: "Create your first outcome policy using the button above.",
+    policy: "Policy",
+    createdAt: "Created",
+    status: "Status",
+    actions: "Actions",
+    view: "View",
+    edit: "Edit",
+    delete: "Delete",
+    deleteConfirmation: "Are you sure you want to delete this outcome policy?",
+  },
+  newOutcomePolicy: {
+    back: "Back to Outcome Policies",
+    title: "Create New Outcome Policy",
+    namePlaceholder: "Enter outcome policy name...",
+    scriptTitle: "Script Code",
+    create: "Create Policy",
+    error: "Failed to create outcome policy. Please try again.",
+  },
+  outcomePolicyDetail: {
+    scriptTitle: "Script Code",
+    save: "Save Script",
+    saved: "Saved!",
+  },
 } as const
 
 type DeepStringValues<T> = {
   [K in keyof T]: T[K] extends string
-    ? string
-    : T[K] extends Record<string, unknown>
-      ? DeepStringValues<T[K]>
-      : T[K]
+      ? string
+      : T[K] extends Record<string, unknown>
+          ? DeepStringValues<T[K]>
+          : T[K]
 }
 
 export type TranslationKey = DeepStringValues<typeof en>
