@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check } from "lucide-react"
+import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -464,6 +464,15 @@ export default function CompetitionClientView({
             <AppHeader activeTab="competitions" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+                <div className="w-full max-w-7xl mb-4 flex justify-start">
+                    <Link
+                        href="/myCompetitions"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        {t("commission.backToCompetitions")}
+                    </Link>
+                </div>
                 <div className="w-full max-w-7xl flex flex-col gap-8">
                     <div className="w-full flex flex-col lg:flex-row items-start gap-8">
 

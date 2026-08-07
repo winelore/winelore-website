@@ -109,6 +109,7 @@ export type CreateBeverageTypeInput = {
 export type CreateCommissionInput = {
   beverageOriginDuringEvaluationEnabled?: boolean | null | undefined;
   competitionId: string | number;
+  evaluationVisibleAttributes?: EvaluationVisibleAttributesInput | null | undefined;
   name: string;
   plannedDates?: PlannedDatesInput | null | undefined;
   propertyCommentsEnabled?: boolean | null | undefined;
@@ -201,6 +202,12 @@ export type EvaluationTemplateEditionStatus =
   | 'ACTIVE'
   | 'ARCHIVED'
   | 'DRAFT';
+
+export type EvaluationVisibleAttributesInput = {
+  batch?: Array<string>;
+  beverage?: Array<string>;
+  sample?: Array<string>;
+};
 
 export type PlannedDatesInput = {
   end?: string | null | undefined;

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X, Save, UserPlus, Trash2 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -609,6 +610,15 @@ export default function CommissionClientView({
             <AppHeader activeTab="competitions" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+                <div className="w-full max-w-7xl mb-4 flex justify-start">
+                    <Link
+                        href={initialData.competition?.id ? `/competition/${initialData.competition.id}` : "/myCommissions"}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        {initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
+                    </Link>
+                </div>
                 {showMyTastingSummary && (
                     <div className="w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
                         <div className="flex items-center gap-3">

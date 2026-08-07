@@ -19,9 +19,30 @@ export async function getUsernamesAction(auids: (string | number)[]): Promise<Re
       const res = await axusSdk.UserDetails({ auid });
       const defaultUsername = res?.usernames?.defaultUsername;
       
-      const displayName = defaultUsername ? `@${defaultUsername}` : auid;
-      displayNameCache.set(auid, displayName);
-      result[auid] = displayName;
+      if (defaultUsername) {
+        let varId = res.defaultVariation?.variationId;
+        if (!varId && res.variations && res.variations.length > 0) {
+          varId = res.variations[0].id;
+        }
+
+        let displayName = "";
+        if (varId) {
+          const nameRes = await axusSdk.VariationName({ variationId: varId });
+          const nameText = nameRes?.name?.displayName?.trim();
+          if (nameText && nameText !== "Default Variation") {
+            displayName = nameText;
+          } else {
+            displayName = `@${defaultUsername}`;
+          }
+        } else {
+          displayName = `@${defaultUsername}`;
+        }
+
+        displayNameCache.set(auid, displayName);
+        result[auid] = displayName;
+      } else {
+        result[auid] = auid;
+      }
     } catch (error) {
       console.error(`Failed to fetch user details for AUID ${auid}:`, error);
       result[auid] = auid;
