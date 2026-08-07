@@ -4,6 +4,8 @@ import { Analytics } from '@vercel/analytics/next'
 import { Providers } from './providers'
 import './globals.css'
 
+
+
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 

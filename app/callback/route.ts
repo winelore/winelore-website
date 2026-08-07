@@ -64,20 +64,19 @@ export async function GET(request: NextRequest) {
     try {
       const res = await axusSdk.UserDetails({ auid: String(auid) });
       const defaultUsername = res?.usernames?.defaultUsername || username;
-      let defaultVar = null;
-      if (res?.defaultVariation?.variationId) {
-        defaultVar = res.variations?.find(v => v.id === res.defaultVariation?.variationId);
-      }
-      if (!defaultVar && res?.variations && res.variations.length > 0) {
-        defaultVar = res.variations[0];
+      let varId = res?.defaultVariation?.variationId;
+      if (!varId && res?.variations && res.variations.length > 0) {
+        varId = res.variations[0].id;
       }
 
-      const fName = defaultVar?.firstName?.trim();
-      const lName = defaultVar?.lastName?.trim();
-      const isPlaceholder = fName === "Default" && lName === "Variation";
-
-      if ((fName || lName) && !isPlaceholder) {
-        displayName = [fName, lName].filter(Boolean).join(" ");
+      if (varId) {
+        const nameRes = await axusSdk.VariationName({ variationId: varId });
+        const nameText = nameRes?.name?.displayName?.trim();
+        if (nameText && nameText !== "Default Variation") {
+          displayName = nameText;
+        } else {
+          displayName = `@${defaultUsername}`;
+        }
       } else {
         displayName = `@${defaultUsername}`;
       }

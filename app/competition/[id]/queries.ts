@@ -30,6 +30,10 @@ export const GET_COMPETITION_PAGE = gql(`
               }
               startedAt
               endedAt
+              wineJumperMiniGameEnabled
+              voiceCommentsEnabled
+              propertyCommentsEnabled
+              beverageOriginDuringEvaluationEnabled
           }
       }
   }

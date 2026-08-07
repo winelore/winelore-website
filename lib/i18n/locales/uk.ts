@@ -106,6 +106,7 @@ const uk: TranslationKey = {
     stepCompleted: "Конкурс завершено",
     stepCompletedDesc: "Дегустацію завершено",
     calendarDetails: "Конкурс WineLore: {{name}}",
+    addCommission: "Додати комісію",
   },
   commission: {
     session: "Сесія комісії",
@@ -194,6 +195,8 @@ const uk: TranslationKey = {
     continueToResults: "Перейти до результатів",
     enterTastingSession: "Увійти до сесії дегустації",
     backToCommission: "Назад до комісії",
+    backToCompetition: "Назад до конкурсу",
+    backToCompetitions: "Назад до конкурсів",
     startNextPanel: "Почати наступну панель",
     panel: "Панель",
     emptyPanel: "У цій панелі немає кандидатів",

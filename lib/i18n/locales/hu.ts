@@ -104,6 +104,7 @@ const hu = {
         stepCompleted: "Verseny lezárva",
         stepCompletedDesc: "Kóstolás befejezve",
         calendarDetails: "WineLore verseny: {{name}}",
+        addCommission: "Bizottság hozzáadása",
     },
     commission: {
         session: "Bizottsági ülés",
@@ -186,6 +187,8 @@ const hu = {
         continueToResults: "Tovább az eredményekhez",
         enterTastingSession: "Belépés a kóstolási szakaszba",
         backToCommission: "Vissza a bizottsághoz",
+        backToCompetition: "Vissza a versenyhez",
+        backToCompetitions: "Vissza a versenyekhez",
         startNextPanel: "Következő panel indítása",
         panel: "Panel",
         emptyPanel: "Nincsenek jelöltek ebben a panelben",

@@ -1,9 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import { MapPin, LayoutList } from "lucide-react"
+import { MapPin, LayoutList, ArrowLeft } from "lucide-react"
 
 interface EvaluationCategory {
   id: string
@@ -52,29 +53,38 @@ export default function CandidateEvaluationClientView({
       <AppHeader activeTab="competitions" />
 
         <main className="flex-1 overflow-auto pt-4 pb-8 px-4 flex justify-center">
-            <div className="w-full max-w-[95vw] bg-white rounded-[32px] pt-2 pb-2 px-6 md:pt-5 md:pb-8 md:px-8 shadow-xl shadow-slate-200/50">
+            <div className="w-full max-w-[95vw] bg-white rounded-[32px] pt-4 pb-2 px-6 md:pt-5 md:pb-8 md:px-8 shadow-xl shadow-slate-200/50">
                 <header className="border-b border-slate-100 pb-3 mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl font-extrabold text-slate-800">
-                            {t("evaluation.candidate", { code: candidateCode })}
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm">
-                            <p className="text-slate-500">
-                                <span className="font-medium text-slate-700">{t("evaluation.commission")}:</span> {commissionName}
-                            </p>
-                            {panelName && (
-                                <div className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
-                                    <LayoutList className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-                                    <span className="font-medium text-slate-800">Panel:</span>
-                                    <span className="font-normal text-slate-600">{panelName}</span>
-                                </div>
-                            )}
-                            {originParts.length > 0 && (
-                                <div className="flex items-center gap-1.5 text-slate-600 border-l-2 border-slate-100 pl-4">
-                                    <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                                    <span>{originParts.join(", ")}</span>
-                                </div>
-                            )}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <Link
+                            href={`/commission/${commissionId}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-semibold shadow-xs transition-all shrink-0 w-fit"
+                        >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            {t("commission.backToCommission")}
+                        </Link>
+                        <div>
+                            <h1 className="text-xl font-extrabold text-slate-800">
+                                {t("evaluation.candidate", { code: candidateCode })}
+                            </h1>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm">
+                                <p className="text-slate-500">
+                                    <span className="font-medium text-slate-700">{t("evaluation.commission")}:</span> {commissionName}
+                                </p>
+                                {panelName && (
+                                    <div className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                        <LayoutList className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                                        <span className="font-medium text-slate-800">Panel:</span>
+                                        <span className="font-normal text-slate-600">{panelName}</span>
+                                    </div>
+                                )}
+                                {originParts.length > 0 && (
+                                    <div className="flex items-center gap-1.5 text-slate-600 border-l-2 border-slate-100 pl-4">
+                                        <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                        <span>{originParts.join(", ")}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     {currentIndex !== -1 && (
