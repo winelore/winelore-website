@@ -1,0 +1,740 @@
+"use client"
+
+import React, { useState } from "react"
+import {
+    Layers,
+    Plus,
+    Pencil,
+    Trash2,
+    Wine,
+    Tag,
+    Boxes,
+    FlaskConical,
+    Check,
+    X,
+    Loader2,
+    AlertCircle,
+    GripVertical
+} from "lucide-react"
+import {
+    addCommissionPanelAction,
+    renameCommissionPanelAction,
+    removeCommissionPanelAction,
+    removeCommissionCandidateAction,
+    reorderCommissionCandidatesAction
+} from "../../actions"
+import { CandidateWizardModal } from "./CandidateWizardModal"
+import { EditCandidateCodeModal } from "./EditCandidateCodeModal"
+import { useTranslation } from "@/lib/i18n/context"
+
+export interface CandidateSample {
+    id: string
+    volumeMl?: number | null
+    batch?: {
+        id: string
+        lotNumber?: string | null
+        volumeMl?: number | null
+        attributes?: string | null
+        beverage?: {
+            id: string
+            name: string
+        } | null
+    } | null
+}
+
+export interface Candidate {
+    id: string
+    panelId?: string | null
+    anonymizedCode?: string | null
+    sample?: CandidateSample | null
+}
+
+export interface CommissionPanel {
+    id: string
+    name: string
+    candidates?: Candidate[] | null
+}
+
+interface PanelsSectionProps {
+    commissionId: string
+    panels: CommissionPanel[]
+    candidates: Candidate[]
+    isCompetitionHolder: boolean
+    isDraft?: boolean
+    isPreStart?: boolean
+    onRefresh: () => void
+}
+
+export function PanelsSection({
+    commissionId,
+    panels,
+    candidates,
+    isCompetitionHolder,
+    isDraft = false,
+    onRefresh,
+}: PanelsSectionProps) {
+    const { t } = useTranslation()
+    // Add Panel Inline
+    const [isAddingPanel, setIsAddingPanel] = useState(false)
+    const [newPanelName, setNewPanelName] = useState("")
+    const [isCreatingPanel, setIsCreatingPanel] = useState(false)
+
+    // Edit Panel Name
+    const [editingPanelId, setEditingPanelId] = useState<string | null>(null)
+    const [editPanelName, setEditPanelName] = useState("")
+    const [isSavingPanel, setIsSavingPanel] = useState(false)
+
+    // Delete Panel
+    const [deletingPanelId, setDeletingPanelId] = useState<string | null>(null)
+
+    // Delete Candidate
+    const [deletingCandidateId, setDeletingCandidateId] = useState<string | null>(null)
+
+    // Custom Delete Confirmation Modal State
+    const [confirmDeleteState, setConfirmDeleteState] = useState<{
+        isOpen: boolean
+        type: "panel" | "candidate"
+        id: string
+        message: string
+        confirmText: string
+    }>({
+        isOpen: false,
+        type: "panel",
+        id: "",
+        message: "",
+        confirmText: "",
+    })
+
+    // Wizard Modal State
+    const [wizardState, setWizardState] = useState<{
+        isOpen: boolean
+        panelId: string
+        panelName: string
+    }>({
+        isOpen: false,
+        panelId: "",
+        panelName: "",
+    })
+
+    // Edit Code Modal State
+    const [editCodeState, setEditCodeState] = useState<{
+        isOpen: boolean
+        candidateId: string
+        currentCode?: string | null
+        label?: string
+    }>({
+        isOpen: false,
+        candidateId: "",
+        currentCode: null,
+        label: "",
+    })
+
+    const [draggedItem, setDraggedItem] = useState<{ panelId: string; index: number } | null>(null)
+    const [dragOverItem, setDragOverItem] = useState<{ panelId: string; index: number; position: "top" | "bottom" } | null>(null)
+    const [isReordering, setIsReordering] = useState(false)
+
+    const handleReorder = async (panelId: string, draggedIdx: number, targetCandId: string | null, position: "top" | "bottom" | null) => {
+        const panelObj = panels.find(p => p.id === panelId)
+        const panelCandidates = panelObj?.candidates && panelObj.candidates.length > 0
+            ? panelObj.candidates
+            : candidates.filter(c => c.panelId === panelId)
+        
+        if (!panelCandidates || panelCandidates.length === 0) return
+
+        const draggedCandidate = panelCandidates[draggedIdx]
+        if (!draggedCandidate) return
+
+        // 1. Create a copy of only this panel's candidates
+        const reorderedPanelCandidates = [...panelCandidates]
+
+        // 2. Remove the dragged candidate from the panel list
+        reorderedPanelCandidates.splice(draggedIdx, 1)
+
+        // 3. Determine the insert index in the panel list
+        let insertIdx = -1
+        if (targetCandId) {
+            const targetInFilteredIdx = reorderedPanelCandidates.findIndex(c => c.id === targetCandId)
+            if (targetInFilteredIdx !== -1) {
+                insertIdx = position === "top"
+                    ? targetInFilteredIdx
+                    : targetInFilteredIdx + 1
+            }
+        } else {
+            // No target ID means we dropped at a container dropzone
+            if (position === "top") {
+                insertIdx = 0
+            } else {
+                insertIdx = reorderedPanelCandidates.length
+            }
+        }
+
+        if (insertIdx === -1) {
+            reorderedPanelCandidates.splice(draggedIdx, 0, draggedCandidate)
+        } else {
+            reorderedPanelCandidates.splice(insertIdx, 0, draggedCandidate)
+        }
+
+        const candidateIds = reorderedPanelCandidates.map(c => c.id)
+
+        setIsReordering(true)
+        try {
+            const res = await reorderCommissionCandidatesAction(commissionId, panelId, candidateIds)
+            if (res.success) {
+                onRefresh()
+            } else {
+                alert(res.error || "Не вдалося змінити порядок")
+            }
+        } catch (err: any) {
+            alert(err.message || "Помилка при зміні порядку")
+        } finally {
+            setIsReordering(false)
+        }
+    }
+
+    const handleCreatePanel = async () => {
+        if (!newPanelName.trim()) return
+        setIsCreatingPanel(true)
+        try {
+            const res = await addCommissionPanelAction(commissionId, newPanelName.trim())
+            if (res.success) {
+                setNewPanelName("")
+                setIsAddingPanel(false)
+                onRefresh()
+            } else {
+                alert(res.error || "Не вдалося створити панель")
+            }
+        } catch (err: any) {
+            alert(err.message || "Помилка при створенні панелі")
+        } finally {
+            setIsCreatingPanel(false)
+        }
+    }
+
+    const handleRenamePanel = async (panelId: string) => {
+        if (!editPanelName.trim()) return
+        setIsSavingPanel(true)
+        try {
+            const res = await renameCommissionPanelAction(commissionId, panelId, editPanelName.trim())
+            if (res.success) {
+                setEditingPanelId(null)
+                onRefresh()
+            } else {
+                alert(res.error || "Не вдалося перейменувати панель")
+            }
+        } catch (err: any) {
+            alert(err.message || "Помилка при перейменуванні")
+        } finally {
+            setIsSavingPanel(false)
+        }
+    }
+
+    const handleDeletePanel = (panelId: string) => {
+        setConfirmDeleteState({
+            isOpen: true,
+            type: "panel",
+            id: panelId,
+            message: t("panels.confirmDeletePanel"),
+            confirmText: t("panels.deletePanel"),
+        })
+    }
+
+    const handleDeleteCandidate = (candidateId: string) => {
+        setConfirmDeleteState({
+            isOpen: true,
+            type: "candidate",
+            id: candidateId,
+            message: t("panels.confirmDeleteCandidate"),
+            confirmText: t("panels.deleteSample"),
+        })
+    }
+
+    return (
+        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-5">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100/50 shadow-xs">
+                        <Layers className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <h3 className="text-base font-bold tracking-tight text-slate-800">
+                            {t("panels.title")}
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                            {t("panels.subtitle")}
+                        </p>
+                    </div>
+                </div>
+
+                {isCompetitionHolder && isDraft && !isAddingPanel && (
+                    <button
+                        type="button"
+                        onClick={() => setIsAddingPanel(true)}
+                        className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 text-xs font-bold shadow-md shadow-indigo-600/15 transition-all active:scale-95 cursor-pointer"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>{t("panels.addPanel")}</span>
+                    </button>
+                )}
+            </div>
+
+            {/* Inline Add Panel Input */}
+            {isAddingPanel && (
+                <div className="p-4 bg-slate-50 border border-indigo-100 rounded-2xl flex flex-col gap-3 animate-fade-in">
+                    <span className="text-xs font-bold text-slate-800">{t("panels.newPanelTitle")}</span>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            placeholder={t("panels.panelNamePlaceholder")}
+                            value={newPanelName}
+                            onChange={(e) => setNewPanelName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") handleCreatePanel()
+                                if (e.key === "Escape") setIsAddingPanel(false)
+                            }}
+                            className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                            autoFocus
+                        />
+                        <button
+                            type="button"
+                            onClick={handleCreatePanel}
+                            disabled={isCreatingPanel || !newPanelName.trim()}
+                            className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0"
+                            title={t("common.save")}
+                        >
+                            {isCreatingPanel ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Check className="w-4 h-4" />
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsAddingPanel(false)}
+                            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl text-xs transition-colors cursor-pointer shrink-0"
+                            title={t("competition.cancel")}
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Panels List */}
+            {panels.length === 0 ? (
+                <div className="py-10 text-center flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/40 text-slate-400 gap-2">
+                    <Layers className="w-8 h-8 text-slate-300" />
+                    <span className="text-xs font-bold text-slate-700">{t("panels.noPanelsYet")}</span>
+                    <p className="text-[11px] text-slate-400 max-w-xs">
+                        {t("panels.createPanelDesc")}
+                    </p>
+                </div>
+            ) : (
+                <div className="flex flex-col gap-5">
+                    {panels.map((panel) => {
+                        // Gather candidates belonging to this panel
+                        const panelCandidates =
+                            panel.candidates && panel.candidates.length > 0
+                                ? panel.candidates
+                                : candidates.filter((c) => c.panelId === panel.id)
+
+                        const isRenamingThis = editingPanelId === panel.id
+
+                        return (
+                            <div
+                                key={panel.id}
+                                className="border border-slate-150 rounded-2xl bg-slate-50/30 overflow-hidden transition-all"
+                            >
+                                {/* Panel Card Header */}
+                                <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-3">
+                                    {isRenamingThis ? (
+                                        <div className="flex items-center gap-2 flex-1">
+                                            <input
+                                                type="text"
+                                                value={editPanelName}
+                                                onChange={(e) => setEditPanelName(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") handleRenamePanel(panel.id)
+                                                    if (e.key === "Escape") setEditingPanelId(null)
+                                                }}
+                                                className="flex-1 px-3 py-1.5 bg-slate-50 border border-indigo-300 rounded-lg text-xs font-bold text-slate-800 outline-none"
+                                                autoFocus
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRenamePanel(panel.id)}
+                                                disabled={isSavingPanel}
+                                                className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs cursor-pointer"
+                                                title={t("common.save")}
+                                            >
+                                                {isSavingPanel ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <Check className="w-3.5 h-3.5" />
+                                                )}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingPanelId(null)}
+                                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-xs cursor-pointer"
+                                                title={t("competition.cancel")}
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <h4 className="text-sm font-extrabold text-slate-800 truncate">
+                                                {panel.name}
+                                            </h4>
+                                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
+                                                {t("panels.samplesCount", { count: panelCandidates.length })}
+                                            </span>
+                                            {isCompetitionHolder && isDraft && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingPanelId(panel.id)
+                                                        setEditPanelName(panel.name)
+                                                    }}
+                                                    className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                                    title={t("panels.renamePanel")}
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {isCompetitionHolder && isDraft && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setWizardState({
+                                                            isOpen: true,
+                                                            panelId: panel.id,
+                                                            panelName: panel.name,
+                                                        })
+                                                    }
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    <span>{t("panels.addSample")}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeletePanel(panel.id)}
+                                                    disabled={deletingPanelId === panel.id}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                                                    title={t("panels.deletePanel")}
+                                                >
+                                                    {deletingPanelId === panel.id ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    )}
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div
+                                    onDragOver={(e) => {
+                                        if (!isCompetitionHolder || !isDraft) return
+                                        e.preventDefault()
+                                    }}
+                                    onDrop={(e) => {
+                                        if (!isCompetitionHolder || !isDraft) return
+                                        e.preventDefault()
+                                        if (!draggedItem || draggedItem.panelId !== panel.id) return
+                                        
+                                        const rect = e.currentTarget.getBoundingClientRect()
+                                        const relativeY = e.clientY - rect.top
+                                        const position = relativeY < rect.height / 2 ? "top" : "bottom"
+                                        
+                                        if (position === "top") {
+                                            if (draggedItem.index !== 0) {
+                                                handleReorder(panel.id, draggedItem.index, null, "top")
+                                            }
+                                        } else {
+                                            const lastIdx = panelCandidates.length - 1
+                                            if (draggedItem.index !== lastIdx) {
+                                                handleReorder(panel.id, draggedItem.index, null, "bottom")
+                                            }
+                                        }
+                                    }}
+                                    className="p-4 pt-12 pb-14 flex flex-col gap-2 relative transition-all"
+                                >
+                                    {panelCandidates.length === 0 ? (
+                                        <p className="text-xs text-slate-400 py-3 text-center italic">
+                                            {t("panels.noCandidatesInPanel")}
+                                        </p>
+                                    ) : (
+                                        panelCandidates.map((cand, idx) => {
+                                            const bevName = cand.sample?.batch?.beverage?.name || t("commission.results.candidate")
+                                            const lotNo = cand.sample?.batch?.lotNumber
+                                            const vol = cand.sample?.volumeMl
+                                            
+                                            let vintageVal: string | null = null
+                                            const attrs = cand.sample?.batch?.attributes
+                                            if (attrs) {
+                                                try {
+                                                    const parsed = JSON.parse(attrs)
+                                                    if (parsed && parsed.vintage) {
+                                                        vintageVal = String(parsed.vintage)
+                                                    }
+                                                } catch (e) {}
+                                            }
+
+                                            const isDragged = draggedItem?.panelId === panel.id && draggedItem.index === idx
+
+                                            return (
+                                                <div
+                                                    key={cand.id}
+                                                    draggable={isCompetitionHolder && isDraft}
+                                                    onDragStart={(e) => {
+                                                        if (!isCompetitionHolder || !isDraft) return
+                                                        setDraggedItem({ panelId: panel.id, index: idx })
+                                                        e.dataTransfer.effectAllowed = "move"
+                                                    }}
+                                                    onDragOver={(e) => {
+                                                        if (!isCompetitionHolder || !isDraft) return
+                                                        e.preventDefault()
+                                                        if (!draggedItem || draggedItem.panelId !== panel.id) return
+                                                        
+                                                        const rect = e.currentTarget.getBoundingClientRect()
+                                                        const relativeY = e.clientY - rect.top
+                                                        const position = relativeY < rect.height / 2 ? "top" : "bottom"
+                                                        
+                                                        if (dragOverItem?.index !== idx || dragOverItem?.position !== position) {
+                                                            setDragOverItem({ panelId: panel.id, index: idx, position })
+                                                        }
+                                                    }}
+                                                    onDragLeave={() => {
+                                                        setDragOverItem(null)
+                                                    }}
+                                                    onDrop={(e) => {
+                                                        if (!isCompetitionHolder || !isDraft) return
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        if (!draggedItem || draggedItem.panelId !== panel.id) return
+                                                        
+                                                        const targetPosition = dragOverItem?.index === idx ? dragOverItem.position : "top"
+                                                        handleReorder(panel.id, draggedItem.index, cand.id, targetPosition)
+                                                        setDragOverItem(null)
+                                                     }}
+                                                    onDragEnd={() => {
+                                                        setDraggedItem(null)
+                                                        setDragOverItem(null)
+                                                    }}
+                                                    className={`flex items-center justify-between p-3 bg-white border rounded-xl shadow-2xs hover:border-indigo-150 transition-all gap-3 ${
+                                                        isDragged
+                                                            ? "opacity-40 bg-slate-50 border-dashed border-indigo-200"
+                                                            : "border-slate-100"
+                                                    } ${
+                                                        dragOverItem?.panelId === panel.id && dragOverItem?.index === idx
+                                                            ? dragOverItem.position === "top"
+                                                                ? "border-t-2 border-t-indigo-500 scale-[1.01] bg-indigo-50/10"
+                                                                : "border-b-2 border-b-indigo-500 scale-[1.01] bg-indigo-50/10"
+                                                            : ""
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        {isCompetitionHolder && isDraft ? (
+                                                            <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 p-1 flex items-center justify-center" title="Drag to reorder">
+                                                                <GripVertical className="w-3.5 h-3.5" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="w-5 text-center text-xs font-bold text-slate-300 shrink-0">
+                                                                {idx + 1}
+                                                            </span>
+                                                        )}
+                                                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/50">
+                                                            <Wine className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <p className="text-xs font-bold text-slate-800 truncate">
+                                                                    {bevName}
+                                                                </p>
+                                                                {cand.anonymizedCode && (
+                                                                    <span
+                                                                        onClick={() => {
+                                                                            if (isCompetitionHolder && isDraft) {
+                                                                                setEditCodeState({
+                                                                                    isOpen: true,
+                                                                                    candidateId: cand.id,
+                                                                                    currentCode: cand.anonymizedCode,
+                                                                                    label: bevName,
+                                                                                })
+                                                                            }
+                                                                        }}
+                                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-700 border border-amber-200 ${
+                                                                            isCompetitionHolder && isDraft
+                                                                                ? "cursor-pointer hover:bg-amber-100"
+                                                                                : ""
+                                                                        }`}
+                                                                        title={t("panels.editCode")}
+                                                                    >
+                                                                        <Tag className="w-3 h-3 text-amber-600" />
+                                                                        <span>{cand.anonymizedCode}</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 flex-wrap">
+                                                                {lotNo && (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <Boxes className="w-3 h-3 text-slate-400" />
+                                                                        <span>{t("panels.lotNo", { lot: lotNo })}</span>
+                                                                    </span>
+                                                                )}
+                                                                {vintageVal && (
+                                                                    <span className="text-[9px] text-indigo-500 bg-indigo-50/60 font-semibold px-1 rounded-sm shrink-0">
+                                                                        {vintageVal}
+                                                                    </span>
+                                                                )}
+                                                                {vol && (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <FlaskConical className="w-3 h-3 text-slate-400" />
+                                                                        <span>{vol} ml</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {isCompetitionHolder && isDraft && (
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setEditCodeState({
+                                                                        isOpen: true,
+                                                                        candidateId: cand.id,
+                                                                        currentCode: cand.anonymizedCode,
+                                                                        label: bevName,
+                                                                    })
+                                                                }
+                                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                                                title={t("panels.editCode")}
+                                                            >
+                                                                <Pencil className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteCandidate(cand.id)}
+                                                                disabled={deletingCandidateId === cand.id}
+                                                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                                                title={t("panels.deleteSample")}
+                                                            >
+                                                                {deletingCandidateId === cand.id ? (
+                                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* Candidate Wizard Modal */}
+            <CandidateWizardModal
+                isOpen={wizardState.isOpen}
+                onClose={() => setWizardState((prev) => ({ ...prev, isOpen: false }))}
+                commissionId={commissionId}
+                panelId={wizardState.panelId}
+                panelName={wizardState.panelName}
+                onCandidateAdded={onRefresh}
+            />
+
+            {/* Edit Candidate Code Modal */}
+            <EditCandidateCodeModal
+                isOpen={editCodeState.isOpen}
+                onClose={() => setEditCodeState((prev) => ({ ...prev, isOpen: false }))}
+                candidateId={editCodeState.candidateId}
+                currentCode={editCodeState.currentCode}
+                candidateLabel={editCodeState.label}
+                onCodeUpdated={onRefresh}
+            />
+
+            {/* Custom Delete Confirmation Modal */}
+            {confirmDeleteState.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+                    <div className="relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up p-6 flex flex-col items-center text-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-100/60 shadow-xs">
+                            <Trash2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-slate-800">
+                                {confirmDeleteState.type === "panel" ? t("panels.deletePanel") : t("panels.deleteSample")}
+                            </h3>
+                            <p className="text-sm text-slate-500 mt-2">
+                                {confirmDeleteState.message}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 w-full mt-2">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmDeleteState((prev) => ({ ...prev, isOpen: false }))}
+                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
+                                {t("competition.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const { type, id } = confirmDeleteState
+                                    setConfirmDeleteState((prev) => ({ ...prev, isOpen: false }))
+                                    if (type === "panel") {
+                                        setDeletingPanelId(id)
+                                        try {
+                                            const res = await removeCommissionPanelAction(commissionId, id)
+                                            if (res.success) {
+                                                onRefresh()
+                                            } else {
+                                                alert(res.error || "Не вдалося видалити панель")
+                                            }
+                                        } catch (err: any) {
+                                            alert(err.message || "Помилка при видаленні панелі")
+                                        } finally {
+                                            setDeletingPanelId(null)
+                                        }
+                                    } else {
+                                        setDeletingCandidateId(id)
+                                        try {
+                                            const res = await removeCommissionCandidateAction(id)
+                                            if (res.success) {
+                                                onRefresh()
+                                            } else {
+                                                alert(res.error || "Не вдалося видалити кандидата")
+                                            }
+                                        } catch (err: any) {
+                                            alert(err.message || "Помилка при видаленні зразка")
+                                        } finally {
+                                            setDeletingCandidateId(null)
+                                        }
+                                    }
+                                }}
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-md shadow-rose-600/10 transition-colors cursor-pointer"
+                            >
+                                {confirmDeleteState.confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}

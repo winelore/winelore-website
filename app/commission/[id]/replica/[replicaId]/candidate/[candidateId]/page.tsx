@@ -39,6 +39,12 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const commission = await getCommissionDataAction(commissionId)
     if (!commission) notFound()
 
+    // If this candidate is not the currently active candidate for the replica, redirect to wait
+    const currentReplica = (commission.replicas || []).find((r: any) => r.id === currentReplicaId)
+    if (currentReplica?.currentCandidateId && currentReplica.currentCandidateId !== candidateId) {
+        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
+    }
+
     // 3. Fetch all replica candidates and isolate the PANEL
     const replicaCandidatesAll = await getReplicaCandidatesAction(currentReplicaId)
 

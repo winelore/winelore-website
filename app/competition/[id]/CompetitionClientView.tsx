@@ -824,7 +824,7 @@ export default function CompetitionClientView({
                                 {isAddingCommission && (
                                     <div className="mb-4 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-800">Add Commission</span>
+                                            <span className="text-xs font-bold text-slate-800">{t("competition.addCommissionTitle")}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => setIsAddingCommission(false)}
@@ -834,11 +834,11 @@ export default function CompetitionClientView({
                                             </button>
                                         </div>
                                         <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Commission Name</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("competition.commissionName")}</label>
                                             <input
                                                 type="text"
                                                 autoFocus
-                                                placeholder={`e.g. Commission ${initialData.commissions.length + 1}`}
+                                                placeholder={t("competition.commissionNamePlaceholder", { number: initialData.commissions.length + 1 })}
                                                 className="w-full text-xs font-semibold text-slate-800 outline-none border-b border-slate-300 focus:border-indigo-500 py-1 bg-transparent"
                                                 value={newCommissionName}
                                                 onChange={e => setNewCommissionName(e.target.value)}
@@ -855,7 +855,7 @@ export default function CompetitionClientView({
                                                 disabled={isMutating}
                                                 className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
                                             >
-                                                Cancel
+                                                {t("competition.cancel")}
                                             </button>
                                             <button
                                                 type="button"
@@ -866,12 +866,12 @@ export default function CompetitionClientView({
                                                 {isMutating ? (
                                                     <>
                                                         <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                        <span>Adding...</span>
+                                                        <span>{t("competition.adding")}</span>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Plus className="w-3.5 h-3.5" />
-                                                        <span>Add Commission</span>
+                                                        <span>{t("competition.addCommission")}</span>
                                                     </>
                                                 )}
                                             </button>

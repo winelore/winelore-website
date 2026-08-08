@@ -26,7 +26,7 @@ export default async function CompetitionStartPage({ params }: PageProps) {
         const data = await fetchGraphQL(GET_COMPETITION_PAGE, { id: competitionId });
         // console.log("GraphQL Data:", data);
         if (data) {
-            const responseData = data.data || data;
+            const responseData = (data as any).data || data;
             competition = responseData.competition;
             commissions = responseData.commissionsByCompetition?.items || [];
         } else {

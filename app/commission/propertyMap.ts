@@ -46,9 +46,14 @@ export function buildPropertyMapFromCommissionTemplates(
     for (const cat of templateEdition.categories) {
         if (!cat.properties) continue;
         for (const prop of cat.properties) {
+            const isResultProp =
+                (prop as { isResult?: boolean }).isResult === true ||
+                prop.code === "total_score" ||
+                prop.code === "typicity" ||
+                (prop as { __typename?: string }).__typename === "SmartProperty";
             const meta: PropertyMeta = {
                 name: prop.name,
-                isResult: (prop as { isResult?: boolean }).isResult === true,
+                isResult: isResultProp,
                 kind: kindFromTypename((prop as { __typename?: string }).__typename),
             };
             propertyMap[prop.code] = meta;
