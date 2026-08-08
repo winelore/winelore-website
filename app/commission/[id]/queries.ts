@@ -51,6 +51,11 @@ export const GET_COMMISSION = gql(`
             id
             anonymizedCode
             panelId
+            beverageType {
+                id
+                code
+                name
+            }
           }
         }
       }
