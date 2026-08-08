@@ -91,6 +91,37 @@ query Variations($auid: ID!) {
     }
 }
 
+query VariationName($variationId: ID!) {
+    name(variationId: $variationId) {
+        variationId
+        elements {
+            partType
+            value
+            separatorType
+        }
+        displayName
+    }
+}
+
+query VariationDescription($variationId: ID!) {
+    description(variationId: $variationId) {
+        variationId
+        text
+        updatedAt
+    }
+}
+
+query VariationStatus($variationId: ID!) {
+    status(variationId: $variationId) {
+        variationId
+        text
+        emoji
+        expiresAt
+        updatedAt
+        isExpired
+    }
+}
+
 query DefaultVariation($auid: ID!) {
     defaultVariation(auid: $auid) {
         auid

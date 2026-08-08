@@ -329,6 +329,40 @@ export const VariationsDocument = gql`
   }
 }
     `;
+export const VariationNameDocument = gql`
+    query VariationName($variationId: ID!) {
+  name(variationId: $variationId) {
+    variationId
+    elements {
+      partType
+      value
+      separatorType
+    }
+    displayName
+  }
+}
+    `;
+export const VariationDescriptionDocument = gql`
+    query VariationDescription($variationId: ID!) {
+  description(variationId: $variationId) {
+    variationId
+    text
+    updatedAt
+  }
+}
+    `;
+export const VariationStatusDocument = gql`
+    query VariationStatus($variationId: ID!) {
+  status(variationId: $variationId) {
+    variationId
+    text
+    emoji
+    expiresAt
+    updatedAt
+    isExpired
+  }
+}
+    `;
 export const DefaultVariationDocument = gql`
     query DefaultVariation($auid: ID!) {
   defaultVariation(auid: $auid) {
@@ -548,6 +582,15 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     Variations(variables: VariationsQueryVariables, options?: C): Promise<VariationsQuery> {
       return requester<VariationsQuery, VariationsQueryVariables>(VariationsDocument, variables, options) as Promise<VariationsQuery>;
+    },
+    VariationName(variables: VariationNameQueryVariables, options?: C): Promise<VariationNameQuery> {
+      return requester<VariationNameQuery, VariationNameQueryVariables>(VariationNameDocument, variables, options) as Promise<VariationNameQuery>;
+    },
+    VariationDescription(variables: VariationDescriptionQueryVariables, options?: C): Promise<VariationDescriptionQuery> {
+      return requester<VariationDescriptionQuery, VariationDescriptionQueryVariables>(VariationDescriptionDocument, variables, options) as Promise<VariationDescriptionQuery>;
+    },
+    VariationStatus(variables: VariationStatusQueryVariables, options?: C): Promise<VariationStatusQuery> {
+      return requester<VariationStatusQuery, VariationStatusQueryVariables>(VariationStatusDocument, variables, options) as Promise<VariationStatusQuery>;
     },
     DefaultVariation(variables: DefaultVariationQueryVariables, options?: C): Promise<DefaultVariationQuery> {
       return requester<DefaultVariationQuery, DefaultVariationQueryVariables>(DefaultVariationDocument, variables, options) as Promise<DefaultVariationQuery>;
