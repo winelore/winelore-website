@@ -23,6 +23,13 @@ import {
     renameCommissionReplicaAction,
     setCommissionTemplateAction,
     removeCommissionReplicaMemberAction
+    removeCommissionReplicaMemberAction,
+    setCommissionPartialCandidateEvaluationEnabledAction,
+    setCommissionWineJumperMiniGameEnabledAction,
+    setCommissionVoiceCommentsEnabledAction,
+    setCommissionPropertyCommentsEnabledAction,
+    setCommissionBeverageOriginDuringEvaluationEnabledAction,
+    setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction,
 } from "../actions"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { getEvaluationTemplatesAction } from "@/app/templates/actions"
@@ -162,6 +169,7 @@ interface Replica {
     name: string;
     type: "STANDARD" | "TRAINEE";
     status: string;
+    chaoticCurrentCandidateChangesEnabled?: boolean;
     members: Member[];
     candidateCount: number;
     replicaCandidates: {
@@ -185,6 +193,11 @@ interface InitialData {
     startedAt: string | null;
     endedAt: string | null;
     candidateCount: number;
+    partialCandidateEvaluationEnabled?: boolean;
+    wineJumperMiniGameEnabled?: boolean;
+    voiceCommentsEnabled?: boolean;
+    propertyCommentsEnabled?: boolean;
+    beverageOriginDuringEvaluationEnabled?: boolean;
     competition: {
         id: string;
         name: string;
@@ -750,6 +763,113 @@ export default function CommissionClientView({
             if (updated.replicas) setLocalReplicas(updated.replicas)
         }
     }, [localData.id])
+    const handleTogglePartialEvaluation = async () => {
+        if (isMutating) return;
+        const nextState = !localData.partialCandidateEvaluationEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionPartialCandidateEvaluationEnabledAction(localData.id, nextState);
+            if (res.success) {
+                setLocalData(prev => ({ ...prev, partialCandidateEvaluationEnabled: nextState }));
+            } else {
+                alert(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            alert(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleToggleWineJumper = async () => {
+        if (isMutating) return;
+        const nextState = !localData.wineJumperMiniGameEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionWineJumperMiniGameEnabledAction(localData.id, nextState);
+            if (res.success) {
+                setLocalData(prev => ({ ...prev, wineJumperMiniGameEnabled: nextState }));
+            } else {
+                alert(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            alert(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleToggleVoiceComments = async () => {
+        if (isMutating) return;
+        const nextState = !localData.voiceCommentsEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionVoiceCommentsEnabledAction(localData.id, nextState);
+            if (res.success) {
+                setLocalData(prev => ({ ...prev, voiceCommentsEnabled: nextState }));
+            } else {
+                alert(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            alert(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleTogglePropertyComments = async () => {
+        if (isMutating) return;
+        const nextState = !localData.propertyCommentsEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionPropertyCommentsEnabledAction(localData.id, nextState);
+            if (res.success) {
+                setLocalData(prev => ({ ...prev, propertyCommentsEnabled: nextState }));
+            } else {
+                alert(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            alert(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleToggleBeverageOrigin = async () => {
+        if (isMutating) return;
+        const nextState = !localData.beverageOriginDuringEvaluationEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionBeverageOriginDuringEvaluationEnabledAction(localData.id, nextState);
+            if (res.success) {
+                setLocalData(prev => ({ ...prev, beverageOriginDuringEvaluationEnabled: nextState }));
+            } else {
+                alert(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            alert(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleToggleChaoticCandidateChanges = async () => {
+        if (!selectedReplica || isMutating) return;
+        const nextState = !selectedReplica.chaoticCurrentCandidateChangesEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction(selectedReplica.id, nextState);
+            if (res.success) {
+                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentCandidateChangesEnabled: nextState } : r));
+            } else {
+                alert(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            alert(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
 
     // Detect user's active replica
     const activeReplica = localReplicas.find(r =>
@@ -1542,6 +1662,147 @@ export default function CommissionClientView({
                                 </span>
                             </div>
                         </div>
+
+                        {/* Commission Settings Card */}
+                        {isCompetitionHolder && (
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                                <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
+                                    <Sliders className="w-4 h-4 text-indigo-500" />
+                                    <span>{t("commission.evaluationSettings")}</span>
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {/* Partial Candidate Evaluation */}
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                        <div className="flex flex-col pr-4">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.partialCandidateEvaluationSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.partialCandidateEvaluationSettingDesc")}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleTogglePartialEvaluation}
+                                            disabled={isMutating}
+                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                localData.partialCandidateEvaluationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                localData.partialCandidateEvaluationEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Wine Jumper Mini Game */}
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                        <div className="flex flex-col pr-4">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.wineJumperSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.wineJumperSettingDesc")}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleWineJumper}
+                                            disabled={isMutating}
+                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                localData.wineJumperMiniGameEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                localData.wineJumperMiniGameEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Voice Comments */}
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                        <div className="flex flex-col pr-4">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.voiceCommentsSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.voiceCommentsSettingDesc")}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleVoiceComments}
+                                            disabled={isMutating}
+                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                localData.voiceCommentsEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                localData.voiceCommentsEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Property Text Comments */}
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                        <div className="flex flex-col pr-4">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.propertyCommentsSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.propertyCommentsSettingDesc")}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleTogglePropertyComments}
+                                            disabled={isMutating}
+                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                localData.propertyCommentsEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                localData.propertyCommentsEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Beverage Origin Display */}
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                        <div className="flex flex-col pr-4">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.beverageOriginSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.beverageOriginSettingDesc")}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleBeverageOrigin}
+                                            disabled={isMutating}
+                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                localData.beverageOriginDuringEvaluationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                localData.beverageOriginDuringEvaluationEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Replica Settings Card */}
+                        {isCompetitionHolder && selectedReplica && (
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                                <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
+                                    <Layers className="w-4 h-4 text-indigo-500" />
+                                    <span>{t("commission.replicaSettings", { name: selectedReplica.name })}</span>
+                                </h3>
+
+                                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                    <div className="flex flex-col pr-4">
+                                        <span className="text-xs font-bold text-slate-800">{t("commission.chaoticCandidateChangesTitle")}</span>
+                                        <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.chaoticCandidateChangesDesc")}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleToggleChaoticCandidateChanges}
+                                        disabled={isMutating}
+                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                            selectedReplica.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                        }`}
+                                    >
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                            selectedReplica.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
+                                        }`} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Evaluation Template Details */}
                         <EvaluationTemplatesBlock

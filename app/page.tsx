@@ -89,7 +89,11 @@ export default async function HomePage() {
 
     // 3. Recent Beverages
     try {
-        const bevData = await sdk.GetMyBeverages({ limit: 5 });
+        const bevData = await sdk.GetMyBeverages({
+            limit: 5,
+            filter: { producers: [[currentAuid]] },
+            producer: [currentAuid]
+        });
         const rawBeverages = bevData.beverages?.items || [];
         recentBeverages = rawBeverages.map((bev: any) => {
             let beverageType = undefined;
