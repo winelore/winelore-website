@@ -256,8 +256,8 @@ export async function updateGlobalTemplateAction(
         console.log(`🔄 Updating global template "${templateId}"...`);
         const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
 
-        if (sdk.UpdateEvaluationTemplate) {
-            await sdk.UpdateEvaluationTemplate({
+        if ((sdk as any).UpdateEvaluationTemplate) {
+            await (sdk as any).UpdateEvaluationTemplate({
                 id: templateId,
                 input: {
                     name: templateName,

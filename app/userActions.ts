@@ -41,11 +41,11 @@ export async function getUsernamesAction(auids: (string | number)[]): Promise<Re
         displayNameCache.set(auid, displayName);
         result[auid] = displayName;
       } else {
-        result[auid] = auid;
+        result[auid] = `@${auid}`;
       }
     } catch (error) {
       console.error(`Failed to fetch user details for AUID ${auid}:`, error);
-      result[auid] = auid;
+      result[auid] = `@${auid}`;
     }
   });
 

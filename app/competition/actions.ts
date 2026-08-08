@@ -217,7 +217,6 @@ export async function getCompetitionSeriesListAction() {
         return [];
     }
 }
-
 interface CreateCommissionParams {
     competitionId: string;
     name: string;

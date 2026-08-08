@@ -81,7 +81,7 @@ export async function getCompetitionSeriesCount(auid: number) {
 }
 
 /**
- * Server Action that creates a Competition with just a name and planned start/end dates.
+ * Server Action that handles the cascade generation of the entire competition infrastructure.
  */
 export async function createCompetitionInfrastructure(formData: any) {
     try {
@@ -91,6 +91,7 @@ export async function createCompetitionInfrastructure(formData: any) {
                 createCompetition(input: $input) { id }
             }
         `;
+
         let seriesId = formData.seriesId;
         if (!seriesId) {
             const seriesList = await getCompetitionSeriesListAction();
@@ -143,6 +144,73 @@ export async function createCompetitionInfrastructure(formData: any) {
                     end: formData.plannedEndDate ? new Date(formData.plannedEndDate).toISOString() : null
                 }
             });
+        }
+
+        // 3. Sequentially process and build each Commission node if present
+        if (formData.commissions && Array.isArray(formData.commissions)) {
+            for (const commission of formData.commissions) {
+                const createCommissionMutation = `
+                    mutation CreateCommission($input: CreateCommissionInput!) {
+                        createCommission(input: $input) { id }
+                    }
+                `;
+                const commissionResult = await executeGraphQL(createCommissionMutation, {
+                    input: {
+                        competitionId: competitionId,
+                        name: commission.name
+                    }
+                });
+
+                const commissionId = commissionResult?.createCommission?.id;
+                if (!commissionId) continue;
+
+                // 4. Update the schedule and timeline constraints for the commission
+                if (commission.plannedStartDate || commission.plannedEndDate) {
+                    const updateCommissionDatesMutation = `
+                        mutation UpdateCommissionDates($id: ID!, $input: PlannedDatesInput!) {
+                            updateCommissionDates(id: $id, input: $input) { id }
+                        }
+                    `;
+                    await executeGraphQL(updateCommissionDatesMutation, {
+                        id: commissionId,
+                        input: {
+                            start: commission.plannedStartDate ? new Date(commission.plannedStartDate).toISOString() : null,
+                            end: commission.plannedEndDate ? new Date(commission.plannedEndDate).toISOString() : null
+                        }
+                    });
+                }
+
+                // 5. Configure dynamic functional toggle configurations
+                const setWineJumper = `mutation SetWJ($id: ID!, $v: Boolean!) { setCommissionWineJumperMiniGameEnabled(id: $id, enabled: $v) { id } }`;
+                const setVoice = `mutation SetVoice($id: ID!, $v: Boolean!) { setCommissionVoiceCommentsEnabled(id: $id, enabled: $v) { id } }`;
+                const setProp = `mutation SetProp($id: ID!, $v: Boolean!) { setCommissionPropertyCommentsEnabled(id: $id, enabled: $v) { id } }`;
+                const setOrigin = `mutation SetOrigin($id: ID!, $v: Boolean!) { setCommissionBeverageOriginDuringEvaluationEnabled(id: $id, enabled: $v) { id } }`;
+
+                await Promise.all([
+                    executeGraphQL(setWineJumper, { id: commissionId, v: commission.wineJumperMiniGameEnabled }),
+                    executeGraphQL(setVoice, { id: commissionId, v: commission.voiceCommentsEnabled }),
+                    executeGraphQL(setProp, { id: commissionId, v: commission.propertyCommentsEnabled }),
+                    executeGraphQL(setOrigin, { id: commissionId, v: commission.beverageOriginDuringEvaluationEnabled })
+                ]);
+
+                // 6. Map and bind multiple Replicas under the configured Commission
+                if (commission.replicas && Array.isArray(commission.replicas)) {
+                    for (const replica of commission.replicas) {
+                        const createReplicaMutation = `
+                            mutation CreateCommissionReplica($input: CreateCommissionReplicaInput!) {
+                                createCommissionReplica(input: $input) { id }
+                            }
+                        `;
+                        await executeGraphQL(createReplicaMutation, {
+                            input: {
+                                commissionId: commissionId,
+                                name: replica.name,
+                                type: replica.type
+                            }
+                        });
+                    }
+                }
+            }
         }
 
         return { success: true, competitionId };

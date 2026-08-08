@@ -68,7 +68,7 @@ function BeverageCard({ bev }: { bev: Beverage }) {
                 </div>
                 <div className="flex-1 min-w-0">
                     <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
-                        {formatBeverageType(bev.type)}
+                        {formatBeverageType(bev.type || "")}
                     </span>
                     <h3 className="text-lg font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
                         {bev.name}

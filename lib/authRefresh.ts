@@ -1,6 +1,7 @@
 import { parseJwt } from "./pkce";
+import { getAxusGraphQLEndpoint } from "./axusEndpoint";
 
-const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || "https://axusid.thewinelore.com/graphql";
+const AXUS_GRAPHQL_ENDPOINT = getAxusGraphQLEndpoint();
 
 const USER_DETAILS_QUERY = `
   query UserDetails($auid: ID!) {

@@ -83,6 +83,9 @@ export default function CreateCompetitionPage() {
             return;
         }
 
+        setIsSubmitting(true);
+        setSubmitError(null);
+
         try {
             const result = await createCompetitionInfrastructure({
                 ...formData,
