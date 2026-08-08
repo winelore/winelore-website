@@ -567,7 +567,7 @@ export default function CompetitionClientView({
                                                 <a
                                                     href={getGoogleCalendarUrl(
                                                         initialData.name,
-                                                        t("competition.calendarDetails", { name: initialData.name }),
+                                                        t("competition.calendarDetails" as any, { name: initialData.name }),
                                                         initialData.plannedStartAt,
                                                         initialData.plannedEndAt
                                                     )}

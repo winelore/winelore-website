@@ -1506,7 +1506,7 @@ export default function CommissionResultsClientView({
                                 <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
                                     {commission.replicas.length < 2
                                         ? t("commission.results.notEnoughReplicas")
-                                        : t("commission.results.selectTwoReplicas")}
+                                        : t("commission.results.selectTwoReplicas" as any)}
                                 </div>
                             )}
                         </section>

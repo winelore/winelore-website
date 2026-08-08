@@ -710,7 +710,6 @@ const defaultLink = validEditions.find((l: any) => l.beverageType?.code === "WIN
                 legacyTemplateEdition = null;
             }
         }
-        }
 
         const candidatesOrder = (commission.candidates || []).map((c: any) => c.id);
 

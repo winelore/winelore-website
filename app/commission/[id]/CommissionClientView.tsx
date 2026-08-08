@@ -6,12 +6,6 @@ import { useRouter } from "next/navigation"
 import {
     FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap,
     CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X, Save,
-    Loader2, Search, Filter, ChevronRight, ArrowLeft, ExternalLink
-} from "lucide-react"
-import Link from "next/link"
-import {
-    FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap,
-    CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X, Save,
     Loader2, Search, Filter, ChevronRight, ArrowLeft, ExternalLink, UserPlus, Trash2
 } from "lucide-react"
 import Link from "next/link"
@@ -595,8 +589,6 @@ export default function CommissionClientView({
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
     const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
     const initialData = localData
-
-const initialData = localData
 
     const beverageTypesInCommission = useMemo(() => {
         const typesMap = new Map<string, BeverageType>()

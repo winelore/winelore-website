@@ -300,7 +300,7 @@ export function PanelsSection({
                             onClick={handleCreatePanel}
                             disabled={isCreatingPanel || !newPanelName.trim()}
                             className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0"
-                            title={t("common.save")}
+                            title={t("common.save" as any)}
                         >
                             {isCreatingPanel ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -365,7 +365,7 @@ export function PanelsSection({
                                                 onClick={() => handleRenamePanel(panel.id)}
                                                 disabled={isSavingPanel}
                                                 className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs cursor-pointer"
-                                                title={t("common.save")}
+                                                title={t("common.save" as any)}
                                             >
                                                 {isSavingPanel ? (
                                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

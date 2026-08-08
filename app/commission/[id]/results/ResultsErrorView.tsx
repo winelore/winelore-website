@@ -20,10 +20,10 @@ export default function ResultsErrorView({
             <AppHeader activeTab="competitions" />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-4">
                 <p className="text-slate-700 font-semibold">
-                    {isForbidden ? t("commission.results.accessDenied") : t("commission.results.loadError")}
+                    {isForbidden ? t("commission.results.accessDenied" as any) : t("commission.results.loadError" as any)}
                 </p>
                 <p className="text-slate-500 text-sm max-w-md">
-                    {isForbidden ? t("commission.results.accessDeniedDesc") : t("commission.results.loadErrorDesc")}
+                    {isForbidden ? t("commission.results.accessDeniedDesc" as any) : t("commission.results.loadErrorDesc" as any)}
                 </p>
                 <Link
                     href={`/commission/${commissionId}`}
