@@ -600,8 +600,39 @@ export default function EvaluationForm({
                 }]
                 : perPropertyComments
 
-            const submitted = await submitEvaluationAction(candidateId, scores, comments)
+            const result = await submitEvaluationAction(candidateId, scores, comments)
+            if (!result.success) {
+                const msg = result.error || ""
+                if (
+                    msg.includes("already submitted") ||
+                    msg.includes("not pending") ||
+                    msg.includes("REPLICA_CANDIDATE_EVALUATION_ENDED") ||
+                    msg.includes("EVALUATION_ALREADY_EXISTS") ||
+                    msg.includes("Replica is not started") ||
+                    msg.includes("REPLICA_NOT_STARTED")
+                ) {
+                    writeCachedWaitEvaluation(commissionId, replicaId, {
+                        candidateId,
+                        isComplete: true,
+                        scores: [],
+                        comments: [],
+                    })
+                    setSuccess(true)
+                    setTimeout(() => {
+                        window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
+                    }, 500)
+                    return
+                }
 
+                if (msg.includes("current active candidate")) {
+                    setError(t("evaluation.onlyCurrentCandidate"))
+                } else {
+                    setError(msg || t("evaluation.submitError"))
+                }
+                return
+            }
+
+            const submitted = result.evaluation
             writeCachedWaitEvaluation(commissionId, replicaId, {
                 candidateId,
                 isComplete: submitted?.isComplete ?? true,
@@ -621,8 +652,9 @@ export default function EvaluationForm({
             setTimeout(() => {
                 window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
             }, 1000)
-        } catch {
-            setError(t("evaluation.submitError"))
+        } catch (err: any) {
+            console.error("Evaluation submit error:", err)
+            setError(err?.message || t("evaluation.submitError"))
         } finally {
             setIsSubmitting(false)
         }

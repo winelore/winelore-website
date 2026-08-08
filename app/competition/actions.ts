@@ -83,7 +83,13 @@ export async function updateCompetitionSettingsAction(
             body: JSON.stringify({ query, variables }),
             cache: 'no-store'
         });
-        const json = await response.json();
+        const text = await response.text();
+        let json: any;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            throw new Error(`GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+        }
         if (json.errors && json.errors.length > 0) {
             throw new Error(json.errors[0].message);
         }
@@ -193,7 +199,13 @@ export async function getCompetitionSeriesListAction() {
             cache: 'no-store'
         });
 
-        const json = await response.json();
+        const text = await response.text();
+        let json: any;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            return [];
+        }
 
         if (json.errors && json.errors.length > 0) {
             throw new Error(json.errors[0].message);
@@ -227,11 +239,18 @@ async function executeGraphQL(query: string, variables: any) {
         cache: 'no-store'
     });
 
+    const text = await response.text();
+    let json: any;
+    try {
+        json = JSON.parse(text);
+    } catch {
+        throw new Error(`GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+    }
+
     if (!response.ok) {
         throw new Error(`Server responded with status ${response.status}`);
     }
 
-    const json = await response.json();
     if (json.errors && json.errors.length > 0) {
         throw new Error(json.errors[0].message);
     }

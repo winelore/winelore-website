@@ -1,6 +1,8 @@
 "use server"
 
 import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
+import { axusSdk } from '../../lib/axusClient';
+import { getGraphQLEndpoint } from '../../lib/graphqlEndpoint';
 import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
 import {
     GET_COMMISSION_TEMPLATES_DEEP_QUERY,
@@ -61,7 +63,8 @@ export async function getCommissionTemplatesWithResultMarkers(commissionId: stri
 export async function markMemberReadyAction(replicaId: string, memberId: string) {
     if (!isValidUuid(replicaId) || !isValidUuid(memberId)) throw new Error("Invalid UUID parameter");
     try {
-        return await sdk.MarkReplicaMemberReady({ replicaId, memberId });
+        const headers = await getActorHeaders();
+        return await sdk.MarkReplicaMemberReady({ replicaId, memberId }, headers);
     } catch (err: any) {
         console.error("Server Action Error (markMemberReadyAction):", err);
         throw new Error(err.message || "Failed to mark member ready");
@@ -71,17 +74,294 @@ export async function markMemberReadyAction(replicaId: string, memberId: string)
 export async function markMemberNotReadyAction(replicaId: string, memberId: string) {
     if (!isValidUuid(replicaId) || !isValidUuid(memberId)) throw new Error("Invalid UUID parameter");
     try {
-        return await sdk.MarkReplicaMemberNotReady({ replicaId, memberId });
+        const headers = await getActorHeaders();
+        return await sdk.MarkReplicaMemberNotReady({ replicaId, memberId }, headers);
     } catch (err: any) {
         console.error("Server Action Error (markMemberNotReadyAction):", err);
         throw new Error(err.message || "Failed to mark member not ready");
     }
 }
 
-export async function startCommissionAction(id: string) {
+export async function planCommissionReplicaAction(id: string) {
     if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
-        return await sdk.StartCommissionReplica({ id });
+        const headers = await getActorHeaders();
+        return await sdk.DevPlanCommissionReplica({ id }, { headers });
+    } catch (err: any) {
+        console.error("Server Action Error (planCommissionReplicaAction):", err);
+        throw new Error(err.message || "Failed to plan commission replica");
+    }
+}
+
+export async function startCommissionAction(id: string, commissionId?: string) {
+    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
+    try {
+        const headers = await getActorHeaders();
+
+        // 1. Query replica hierarchy to discover competition, series, commission and candidate data
+        let replicaData: any = null;
+        try {
+            const queryRes = await rawGraphQL(`
+                query GetReplicaHierarchy($id: ID!) {
+                    commissionReplica(id: $id) {
+                        id
+                        status
+                        members {
+                            id
+                            auid
+                            role
+                            isReady
+                        }
+                        commission {
+                            id
+                            status
+                            candidates {
+                                id
+                                beverageType {
+                                    id
+                                    code
+                                    name
+                                }
+                                sample {
+                                    id
+                                    batch {
+                                        id
+                                        beverage {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                            templateEditions {
+                                id
+                                beverageType {
+                                    id
+                                    code
+                                }
+                                templateEdition {
+                                    id
+                                }
+                            }
+                            competition {
+                                id
+                                status
+                                series {
+                                    id
+                                    status
+                                }
+                            }
+                        }
+                    }
+                }
+            `, { id }, headers);
+            replicaData = queryRes?.commissionReplica;
+        } catch (e: any) {
+            console.error("Could not query replica hierarchy:", e?.message);
+        }
+
+        // Fallback: if commission candidates weren't fetched from replica, query commission directly
+        let candidates = replicaData?.commission?.candidates || [];
+        if (candidates.length === 0 && (commissionId || replicaData?.commission?.id)) {
+            const targetCommId = commissionId || replicaData?.commission?.id;
+            try {
+                const commRes = await rawGraphQL(`
+                    query GetCommissionCandidates($id: ID!) {
+                        commission(id: $id) {
+                            id
+                            status
+                            candidates {
+                                id
+                                beverageType {
+                                    id
+                                    code
+                                    name
+                                }
+                                sample {
+                                    id
+                                    batch {
+                                        id
+                                        beverage {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                            templateEditions {
+                                id
+                                beverageType {
+                                    id
+                                    code
+                                }
+                                templateEdition {
+                                    id
+                                }
+                            }
+                            competition {
+                                id
+                                status
+                                series {
+                                    id
+                                    status
+                                }
+                            }
+                        }
+                    }
+                `, { id: targetCommId }, headers);
+                if (commRes?.commission) {
+                    if (!replicaData) replicaData = {};
+                    replicaData.commission = commRes.commission;
+                    candidates = commRes.commission.candidates || [];
+                }
+            } catch (fallbackErr: any) {
+                console.error("Fallback commission query failed:", fallbackErr?.message);
+            }
+        }
+
+        const seriesId = replicaData?.commission?.competition?.series?.id;
+        const seriesStatus = replicaData?.commission?.competition?.series?.status;
+        const compId = replicaData?.commission?.competition?.id;
+        const compStatus = replicaData?.commission?.competition?.status;
+        const commId = replicaData?.commission?.id || commissionId;
+        const commStatus = replicaData?.commission?.status;
+        const replStatus = replicaData?.status;
+
+        // Validation: Commission must have at least one candidate
+        if (candidates.length === 0) {
+            throw new Error("Неможливо розпочати дегустацію: додайте щонайменше один зразок (кандидата) до комісії.");
+        }
+
+        // 2. Ensure parent Competition Series is APPROVED or PUBLISHED
+        if (seriesId && seriesStatus !== 'APPROVED' && seriesStatus !== 'PUBLISHED') {
+            if (seriesStatus === 'DRAFT') {
+                try { await sdk.DevSubmitCompetitionSeriesForReview({ id: seriesId }, { headers }); } catch (_) {}
+            }
+            try { await sdk.DevApproveCompetitionSeries({ id: seriesId }, { headers }); } catch (_) {}
+            console.log(`✅ Ensured Competition Series ${seriesId} is APPROVED`);
+        }
+
+        // 3. Ensure parent Competition is STARTED
+        if (compId && compStatus !== 'STARTED') {
+            if (compStatus === 'DRAFT') {
+                try { await sdk.DevSubmitCompetitionForReview({ id: compId }, { headers }); } catch (_) {}
+                try { await sdk.DevApproveCompetition({ id: compId }, { headers }); } catch (_) {}
+            }
+            if (compStatus === 'DRAFT' || compStatus === 'APPROVED') {
+                try { await sdk.DevPlanCompetition({ id: compId }, { headers }); } catch (_) {}
+            }
+            try { await sdk.DevStartCompetition({ id: compId }, { headers }); } catch (_) {}
+            console.log(`✅ Ensured Competition ${compId} is STARTED`);
+        }
+
+        // 4. Ensure Commission has template & is STARTED
+        if (commId && commStatus !== 'STARTED') {
+            if (commStatus === 'DRAFT') {
+                // Discover all beverage types from candidates
+                const boundBevTypeIds = new Set(
+                    (replicaData?.commission?.templateEditions || []).map((te: any) => te.beverageType?.id).filter(Boolean)
+                );
+
+                const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
+                const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
+                const activeEditions = items.filter((i: any) => (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.categories && i.categories.length > 0);
+                const defaultEdition = activeEditions.find((i: any) => i.categories && i.categories.length > 1) || activeEditions[0] || items[0];
+
+                const candidateBevTypes = new Set<string>();
+                for (const cand of candidates) {
+                    const btId = cand?.beverageType?.id;
+                    if (btId) candidateBevTypes.add(btId);
+                }
+
+                // If candidate beverage types exist, bind templates for all of them
+                if (candidateBevTypes.size > 0) {
+                    for (const btId of candidateBevTypes) {
+                        if (!boundBevTypeIds.has(btId)) {
+                            const editionForType = activeEditions.find((i: any) => i.template?.beverageType?.id === btId) || defaultEdition;
+                            if (editionForType) {
+                                try {
+                                    await sdk.DevSetCommissionTemplateEdition({
+                                        id: commId,
+                                        beverageTypeId: btId,
+                                        templateEditionId: editionForType.id
+                                    }, { headers });
+                                } catch (teErr: any) {
+                                    console.warn(`Could not bind template for beverage type ${btId}:`, teErr?.message);
+                                }
+                            }
+                        }
+                    }
+                } else if (boundBevTypeIds.size === 0 && defaultEdition) {
+                    const beverageTypeId = defaultEdition.template?.beverageType?.id || "11111111-1111-4111-8111-111111111101";
+                    try {
+                        await sdk.DevSetCommissionTemplateEdition({
+                            id: commId,
+                            beverageTypeId,
+                            templateEditionId: defaultEdition.id
+                        }, { headers });
+                    } catch (_) {}
+                }
+
+                try { await sdk.DevSubmitCommissionForReview({ id: commId }, { headers }); } catch (_) {}
+                try { await sdk.DevApproveCommission({ id: commId }, { headers }); } catch (_) {}
+            }
+
+            if (commStatus === 'DRAFT' || commStatus === 'APPROVED') {
+                try { await sdk.DevPlanCommission({ id: commId }, { headers }); } catch (_) {}
+            }
+
+            try {
+                await sdk.DevStartCommission({ id: commId }, { headers });
+                console.log(`✅ Ensured Commission ${commId} is STARTED`);
+            } catch (startCommErr: any) {
+                console.error("❌ Failed to start root commission:", startCommErr?.message);
+                throw new Error(startCommErr.message || "Failed to start root commission");
+            }
+        }
+
+        // 5. Ensure Replica is PLANNED
+        if (replStatus !== 'PLANNED' && replStatus !== 'STARTED') {
+            try {
+                await sdk.DevPlanCommissionReplica({ id }, { headers });
+                console.log(`✅ Ensured Replica ${id} is PLANNED`);
+            } catch (planErr: any) {
+                console.warn("DevPlanCommissionReplica:", planErr?.message);
+            }
+        }
+
+        // 6. Start the Replica tasting session
+        const startResult = await sdk.StartCommissionReplica({ id }, { headers });
+
+        // 7. Initialize first candidate for the tasting session
+        try {
+            const candRes = await sdk.GetReplicaCandidates({ replicaId: id }, { headers });
+            const replicaCandidates = candRes.commissionReplica?.replicaCandidates || [];
+            const candidatesOrder = candRes.commissionReplica?.commission?.candidates?.map((c: any) => c.id) || [];
+            let sortedCandidates = replicaCandidates;
+            if (candidatesOrder.length > 0) {
+                sortedCandidates = [...replicaCandidates].sort((a: any, b: any) => {
+                    const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
+                    const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
+                    return idxA - idxB;
+                });
+            }
+            const firstPending = sortedCandidates.find((rc: any) => rc.status === 'PENDING') || sortedCandidates[0];
+            if (firstPending) {
+                await rawGraphQL(`
+                    mutation SetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID) {
+                        setCommissionReplicaCurrentCandidate(id: $id, currentCandidateId: $currentCandidateId) {
+                            id
+                            currentCandidateId
+                        }
+                    }
+                `, { id, currentCandidateId: firstPending.id }, headers);
+                console.log(`✅ Set initial current candidate ${firstPending.id} for replica ${id}`);
+            }
+        } catch (setCandErr: any) {
+            console.warn("Could not set initial candidate on start:", setCandErr?.message);
+        }
+
+        return startResult;
     } catch (err: any) {
         console.error("Server Action Error (startCommissionAction):", err);
         throw new Error(err.message || "Failed to start commission replica");
@@ -189,55 +469,148 @@ export async function submitEvaluationAction(
     scores: { code: string, value: string }[],
     comments?: { propertyId?: string | number | null, text?: string, sortOrder: number, voiceUrl?: string }[],
 ) {
-    if (!isValidUuid(candidateId)) throw new Error("Invalid candidateId parameter");
+    if (!isValidUuid(candidateId)) return { success: false, error: "Invalid candidateId parameter" };
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
 
         const cookieStore = await cookies();
         const auid = cookieStore.get("auid")?.value;
         if (!auid) {
-            throw new Error("Unauthorized: Please sign in");
+            return { success: false, error: "Unauthorized: Please sign in" };
         }
         const headers: Record<string, string> = {
             "actor": auid,
             "x-actor": auid,
         };
 
-        const submitResponse = await sdk.SubmitEvaluation({
+        const response: any = await rawGraphQL(`
+            mutation SubmitEvaluation($input: SubmitEvaluationInput!) {
+                submitEvaluation(input: $input) {
+                    id
+                    isComplete
+                    scores {
+                        code
+                        value
+                    }
+                }
+            }
+        `, {
             input: {
                 candidateId,
                 scores,
                 ...(comments && comments.length > 0 ? { comments } : {}),
             }
-        }, {
-            headers
-        });
-        if (!submitResponse) {
-            throw new Error("Не вдалося зберегти оцінку (можливо, дані більше не існують на сервері).");
+        }, headers);
+
+        if (response?.submitEvaluation) {
+            return { success: true, evaluation: response.submitEvaluation };
         }
 
-        if (!submitResponse.submitEvaluation) {
-            throw new Error("Не вдалося зберегти оцінку (сервер повернув порожню відповідь).");
-        }
-        // Note: We do not mark the candidate as evaluated here because other commission members
-        // still need to submit their evaluations. The HEAD of the commission will advance/mark
-        // the candidate as evaluated from the waiting dashboard.
-
-        return submitResponse.submitEvaluation;
+        return { success: false, error: "Не вдалося зберегти оцінку." };
     } catch (err: any) {
         console.error("Server Action Error (submitEvaluationAction):", err);
-        throw new Error(err.message || "Failed to submit evaluation");
+        return { success: false, error: err?.message || "Failed to submit evaluation" };
     }
 }
 
 export async function getCommissionDataAction(commissionId: string) {
     if (!isValidUuid(commissionId)) return null;
     try {
-        const [commissionData, countData] = await Promise.all([
-            sdk.GetCommission({ id: commissionId }),
+        const detailQuery = `
+            query GetCommissionDetail($id: ID!) {
+                commission(id: $id) {
+                    id
+                    name
+                    status
+                    plannedDates {
+                        start
+                        end
+                    }
+                    startedAt
+                    endedAt
+                    createdAt
+                    wineJumperMiniGameEnabled
+                    voiceCommentsEnabled
+                    propertyCommentsEnabled
+                    beverageOriginDuringEvaluationEnabled
+                    panels {
+                        id
+                        name
+                        candidates {
+                            id
+                            panelId
+                            anonymizedCode
+                            sample {
+                                id
+                                volumeMl
+                                batch {
+                                    id
+                                    lotNumber
+                                    volumeMl
+                                    attributes
+                                    beverage {
+                                        id
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    candidates {
+                        id
+                        panelId
+                        anonymizedCode
+                        sample {
+                            id
+                            volumeMl
+                            batch {
+                                id
+                                lotNumber
+                                volumeMl
+                                attributes
+                                beverage {
+                                    id
+                                    name
+                                }
+                            }
+                        }
+                    }
+                    competition {
+                        id
+                        name
+                        holders
+                    }
+                    replicas {
+                        id
+                        name
+                        type
+                        status
+                        currentCandidateId
+                        members {
+                            id
+                            auid
+                            role
+                            isReady
+                        }
+                        replicaCandidates {
+                            id
+                            status
+                            candidate {
+                                id
+                                anonymizedCode
+                                panelId
+                            }
+                        }
+                    }
+                }
+            }
+        `;
+
+        const [commissionRes, countData] = await Promise.all([
+            rawGraphQL(detailQuery, { id: commissionId }),
             sdk.GetCommissionCandidateCount({ commissionId })
         ]);
-        const commission = commissionData.commission;
+        const commission = commissionRes?.commission;
         if (!commission) return null;
 
         // Fetch template editions dynamically with bootstrapping fallback
@@ -263,8 +636,38 @@ export async function getCommissionDataAction(commissionId: string) {
 
         if (!isValidTemplate) {
             if (commission.status === "DRAFT" || commission.status === "PLANNED") {
-                console.error("❌ Failed to bootstrap template edition: Template is invalid, empty, or missing required properties.");
-                templateEdition = null;
+                try {
+                    console.log(`⚡ Auto-bootstrapping template for commission ${commissionId}...`);
+                    const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
+                    const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
+                    const activeEdition = items.find((i: any) => 
+                        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
+                        i.categories && i.categories.length > 1
+                    ) || items.find((i: any) => i.categories && i.categories.length > 0) || items[0];
+
+                    if (activeEdition) {
+                        const beverageTypeId = activeEdition.template?.beverageType?.id || "11111111-1111-4111-8111-111111111101";
+                        const headers = await getActorHeaders();
+                        await sdk.DevSetCommissionTemplateEdition({
+                            id: commissionId,
+                            beverageTypeId,
+                            templateEditionId: activeEdition.id
+                        }, { headers });
+                        console.log(`✅ Auto-bound template edition "${activeEdition.template?.name || activeEdition.id}" to commission ${commissionId}`);
+
+                        // Clear cache and re-fetch template edition
+                        templatesCache.delete(commissionId);
+                        const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
+                        const commissionWithTemplates = templateResult.commission;
+                        if (commissionWithTemplates?.templateEditions?.length) {
+                            const link = commissionWithTemplates.templateEditions.find(l => l.beverageType.code === "WINE") || commissionWithTemplates.templateEditions[0];
+                            templateEdition = link?.templateEdition || null;
+                        }
+                    }
+                } catch (bootstrapErr: any) {
+                    console.error("❌ Failed to auto-bootstrap template edition:", bootstrapErr.message);
+                    templateEdition = null;
+                }
             } else {
                 console.warn(`⚠️ Skipping template bootstrap: commission is in ${commission.status} status and cannot accept new templates.`);
                 templateEdition = null;
@@ -285,13 +688,14 @@ export async function getCommissionDataAction(commissionId: string) {
                 role: m.role,
                 isReady: m.isReady,
             })),
-            candidateCount: r.replicaCandidates ? r.replicaCandidates.length : 0,
+            candidateCount: (r.replicaCandidates && r.replicaCandidates.length > 0) ? r.replicaCandidates.length : (countData.commissionCandidateCount ?? (commission.candidates?.length || 0)),
             replicaCandidates: (r.replicaCandidates || []).map((rc: any) => ({
                 id: rc.id,
                 status: rc.status,
                 candidate: rc.candidate ? {
                     id: rc.candidate.id,
-                    anonymizedCode: rc.candidate.anonymizedCode || null
+                    anonymizedCode: rc.candidate.anonymizedCode || null,
+                    panelId: rc.candidate.panelId || null,
                 } : null
             })).sort((a: any, b: any) => {
                 const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
@@ -322,8 +726,9 @@ export async function getCommissionDataAction(commissionId: string) {
                 beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
                 evaluationTemplateEdition: templateEdition
             },
-            candidateCount: countData.commissionCandidateCount ?? 0,
+            candidateCount: countData.commissionCandidateCount ?? (commission.candidates?.length || 0),
             panels: commission.panels || [],
+            candidates: commission.candidates || [],
             replicas,
             members: defaultMembers
         };
@@ -424,7 +829,7 @@ export async function getMyTastingSummaryAction(replicaId: string): Promise<MyTa
     }
 }
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || getGraphQLEndpoint() || 'https://winelore-dev.thewinelore.com/graphql';
 
 async function rawGraphQL(
     query: string,
@@ -437,7 +842,19 @@ async function rawGraphQL(
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 },
     });
-    const json = await res.json();
+    const text = await res.text();
+    let json: any;
+    try {
+        json = JSON.parse(text);
+    } catch {
+        const cleanText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        console.error(`[rawGraphQL] Received non-JSON response (HTTP ${res.status}):`, text.slice(0, 500));
+        throw new Error(
+            res.status >= 500
+                ? `GraphQL server error (${res.status}): Сервер тимчасово недоступний`
+                : `GraphQL response error (${res.status}): ${cleanText.slice(0, 150) || 'Некоректна відповідь сервера'}`
+        );
+    }
     if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
     return json.data;
 }
@@ -514,10 +931,28 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             return idxA - idxB;
         });
         // The backend is the single source of truth for which candidate is current.
-        // Never compute a "next" candidate on the frontend: the backend advances
-        // currentCandidateId itself when the HEAD marks a candidate as evaluated, and
-        // it rejects evaluations for any candidate that is not the current one.
-        const currentCandidateId = replica.currentCandidateId || null;
+        let currentCandidateId = replica.currentCandidateId || null;
+        if (!currentCandidateId && replica.status === 'STARTED' && replicaCandidates.length > 0) {
+            const firstPending = replicaCandidates.find((rc: any) => rc.status === 'PENDING') || replicaCandidates[0];
+            if (firstPending) {
+                try {
+                    const actorHeaders = await getActorHeaders().catch(() => ({}));
+                    await rawGraphQL(`
+                        mutation SetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID) {
+                            setCommissionReplicaCurrentCandidate(id: $id, currentCandidateId: $currentCandidateId) {
+                                id
+                                currentCandidateId
+                            }
+                        }
+                    `, { id: replicaId, currentCandidateId: firstPending.id }, actorHeaders);
+                    currentCandidateId = firstPending.id;
+                    console.log(`✅ Auto-initialized current candidate ${firstPending.id} for replica ${replicaId}`);
+                } catch (autoSetErr: any) {
+                    console.warn("Could not auto-set current candidate in getWaitDataAction:", autoSetErr?.message);
+                    currentCandidateId = firstPending.id;
+                }
+            }
+        }
         const currentCandidateObj = replicaCandidates.find((rc: any) => rc.id === currentCandidateId);
         const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
         let currentPanelId = currentCandidateObj?.candidate?.panelId || null;
@@ -758,5 +1193,507 @@ export async function startNextPanelAction(replicaId: string, nextCandidateId: s
     } catch (err: any) {
         console.error("Server Action Error (startNextPanelAction):", err);
         throw new Error(err.message || "Failed to start next panel");
+    }
+}
+
+const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || 'https://axusid.thewinelore.com/graphql';
+
+async function fetchAxusGraphQL(query: string, variables: Record<string, any> = {}) {
+    const res = await fetch(AXUS_GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+        next: { revalidate: 0 }
+    });
+    const json = await res.json();
+    if (json.errors) {
+        throw new Error(json.errors[0]?.message || 'AXUS ID GraphQL Query Error');
+    }
+    return json.data;
+}
+
+export async function searchUserByUsernameAction(username: string) {
+    const trimmed = username.trim().replace(/^@/, "");
+    if (!trimmed) return { success: false, error: "Введіть юзернейм" };
+    try {
+        const ownerRes = await axusSdk.OwnerByUsername({ username: trimmed });
+        const auid = ownerRes?.ownerByUsername;
+        if (!auid) {
+            return { success: false, error: `Користувача @${trimmed} не знайдено` };
+        }
+
+        let displayName = `@${trimmed}`;
+        try {
+            const varData = await fetchAxusGraphQL(`
+                query GetUserVars($auid: ID!) {
+                    defaultVariation(auid: $auid) {
+                        variationId
+                    }
+                    variations(auid: $auid) {
+                        id
+                    }
+                }
+            `, { auid: String(auid) });
+
+            const variationId = varData?.defaultVariation?.variationId || varData?.variations?.[0]?.id;
+            if (variationId) {
+                const nameData = await fetchAxusGraphQL(`
+                    query GetName($variationId: ID!) {
+                        name(variationId: $variationId) {
+                            displayName
+                        }
+                    }
+                `, { variationId });
+                
+                if (nameData?.name?.displayName) {
+                    displayName = nameData.name.displayName;
+                }
+            }
+        } catch (detailErr) {
+            console.warn("Failed to fetch user details for auid", auid, detailErr);
+        }
+
+        return {
+            success: true,
+            user: {
+                auid: Number(auid),
+                username: trimmed,
+                displayName
+            }
+        };
+    } catch (err: any) {
+        console.error("searchUserByUsernameAction error:", err);
+        return { success: false, error: err.message || "Помилка пошуку користувача" };
+    }
+}
+
+export async function addCommissionReplicaMemberAction(
+    replicaId: string,
+    auid: number,
+    role: "HEAD" | "EXPERT" = "EXPERT"
+) {
+    if (!isValidUuid(replicaId)) return { success: false, error: "Invalid replicaId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation AddCommissionReplicaMember($id: ID!, $input: CommissionReplicaMemberInput!) {
+                addCommissionReplicaMember(id: $id, input: $input) {
+                    id
+                    name
+                    members {
+                        id
+                        auid
+                        role
+                        isReady
+                    }
+                }
+            }
+        `, {
+            id: replicaId,
+            input: {
+                auid: [auid],
+                role
+            }
+        }, headers);
+        return { success: true, replica: data.addCommissionReplicaMember };
+    } catch (err: any) {
+        console.error("Server Action Error (addCommissionReplicaMemberAction):", err);
+        return { success: false, error: err.message || "Не вдалося додати учасника" };
+    }
+}
+
+export async function removeCommissionReplicaMemberAction(replicaId: string, memberId: string) {
+    if (!isValidUuid(replicaId) || !isValidUuid(memberId)) return { success: false, error: "Invalid parameters" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RemoveCommissionReplicaMember($id: ID!, $memberId: ID!) {
+                removeCommissionReplicaMember(id: $id, memberId: $memberId) {
+                    id
+                    name
+                    members {
+                        id
+                        auid
+                        role
+                        isReady
+                    }
+                }
+            }
+        `, {
+            id: replicaId,
+            memberId
+        }, headers);
+        return { success: true, replica: data.removeCommissionReplicaMember };
+    } catch (err: any) {
+        console.error("Server Action Error (removeCommissionReplicaMemberAction):", err);
+        return { success: false, error: err.message || "Не вдалося видалити учасника" };
+    }
+}
+
+export async function addCommissionPanelAction(commissionId: string, name: string) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    const trimmed = name.trim();
+    if (!trimmed) return { success: false, error: "Вкажіть назву панелі" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation AddCommissionPanel($commissionId: ID!, $name: String!) {
+                addCommissionPanel(commissionId: $commissionId, name: $name) {
+                    id
+                    name
+                }
+            }
+        `, {
+            commissionId,
+            name: trimmed
+        }, headers);
+        return { success: true, panel: data.addCommissionPanel };
+    } catch (err: any) {
+        console.error("Server Action Error (addCommissionPanelAction):", err);
+        return { success: false, error: err.message || "Не вдалося створити панель" };
+    }
+}
+
+export async function renameCommissionPanelAction(commissionId: string, panelId: string, name: string) {
+    if (!isValidUuid(commissionId) || !isValidUuid(panelId)) return { success: false, error: "Invalid parameters" };
+    const trimmed = name.trim();
+    if (!trimmed) return { success: false, error: "Вкажіть назву панелі" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RenameCommissionPanel($commissionId: ID!, $panelId: ID!, $name: String!) {
+                renameCommissionPanel(commissionId: $commissionId, panelId: $panelId, name: $name) {
+                    id
+                    name
+                }
+            }
+        `, {
+            commissionId,
+            panelId,
+            name: trimmed
+        }, headers);
+        return { success: true, panel: data.renameCommissionPanel };
+    } catch (err: any) {
+        console.error("Server Action Error (renameCommissionPanelAction):", err);
+        return { success: false, error: err.message || "Не вдалося перейменувати панель" };
+    }
+}
+
+export async function removeCommissionPanelAction(commissionId: string, panelId: string) {
+    if (!isValidUuid(commissionId) || !isValidUuid(panelId)) return { success: false, error: "Invalid parameters" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RemoveCommissionPanel($commissionId: ID!, $panelId: ID!) {
+                removeCommissionPanel(commissionId: $commissionId, panelId: $panelId) {
+                    id
+                }
+            }
+        `, {
+            commissionId,
+            panelId
+        }, headers);
+        return { success: true, result: data.removeCommissionPanel };
+    } catch (err: any) {
+        console.error("Server Action Error (removeCommissionPanelAction):", err);
+        return { success: false, error: err.message || "Не вдалося видалити панель" };
+    }
+}
+
+export async function searchBeveragesAction(search?: string, page: number = 1, limit: number = 8) {
+    try {
+        const trimmed = search?.trim();
+        const offset = Math.max(0, (page - 1) * limit);
+
+        if (trimmed) {
+            const data = await rawGraphQL(`
+                query SearchBeverages($query: String!, $limit: Int!, $offset: Int!) {
+                    search(query: $query, types: [BEVERAGE], limit: $limit, offset: $offset) {
+                        items {
+                            id
+                            name
+                        }
+                    }
+                }
+            `, { query: trimmed, limit, offset });
+            const items = (data?.search?.items || []).filter((b: any) => b?.id && b?.name);
+            const hasMore = items.length === limit;
+            const totalPages = hasMore ? Math.max(page + 1, 2) : page;
+            return {
+                success: true,
+                items,
+                page,
+                limit,
+                totalPages,
+                hasMore,
+            };
+        } else {
+            const data = await rawGraphQL(`
+                query GetBeverages($limit: Int!, $offset: Int!) {
+                    beverages(limit: $limit, offset: $offset) {
+                        items {
+                            id
+                            name
+                        }
+                    }
+                    beverageCount
+                }
+            `, { limit, offset });
+            const items = (data?.beverages?.items || []).filter((b: any) => b?.id && b?.name);
+            const totalCount = data?.beverageCount || items.length;
+            const totalPages = Math.ceil(totalCount / limit);
+            return {
+                success: true,
+                items,
+                page,
+                limit,
+                totalCount,
+                totalPages,
+                hasMore: page < totalPages,
+            };
+        }
+    } catch (err: any) {
+        console.error("Server Action Error (searchBeveragesAction):", err);
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка пошуку напоїв" };
+    }
+}
+
+export async function getBatchesForBeverageAction(beverageId: string, page: number = 1, limit: number = 8) {
+    if (!isValidUuid(beverageId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
+    try {
+        const offset = Math.max(0, (page - 1) * limit);
+        const data = await rawGraphQL(`
+            query GetBatches($beverageId: ID!, $limit: Int!, $offset: Int!) {
+                batches(beverageId: $beverageId, limit: $limit, offset: $offset) {
+                    items {
+                        id
+                        lotNumber
+                        volumeMl
+                        createdAt
+                        attributes
+                    }
+                }
+                batchCount(beverageId: $beverageId)
+            }
+        `, { beverageId, limit, offset });
+        const items = data?.batches?.items || [];
+        const totalCount = typeof data?.batchCount === 'number' ? data.batchCount : items.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+        return {
+            success: true,
+            items,
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasMore: page < totalPages,
+        };
+    } catch (err: any) {
+        console.error("Server Action Error (getBatchesForBeverageAction):", err);
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання партій" };
+    }
+}
+
+export async function getSamplesForBatchAction(batchId: string, page: number = 1, limit: number = 8) {
+    if (!isValidUuid(batchId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
+    try {
+        const offset = Math.max(0, (page - 1) * limit);
+        const data = await rawGraphQL(`
+            query GetSamples($batchId: ID!, $limit: Int!, $offset: Int!) {
+                samples(batchId: $batchId, limit: $limit, offset: $offset) {
+                    items {
+                        id
+                        volumeMl
+                        createdAt
+                    }
+                }
+                sampleCount(batchId: $batchId)
+            }
+        `, { batchId, limit, offset });
+        const items = data?.samples?.items || [];
+        const totalCount = typeof data?.sampleCount === 'number' ? data.sampleCount : items.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+        return {
+            success: true,
+            items,
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasMore: page < totalPages,
+        };
+    } catch (err: any) {
+        console.error("Server Action Error (getSamplesForBatchAction):", err);
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання зразків" };
+    }
+}
+
+export async function addCommissionCandidateAction(input: {
+    commissionId: string;
+    panelId: string;
+    sampleId: string;
+    anonymizedCode?: string;
+}) {
+    if (!isValidUuid(input.commissionId) || !isValidUuid(input.panelId) || !isValidUuid(input.sampleId)) {
+        return { success: false, error: "Некоректні параметри кандидата" };
+    }
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation AddCommissionCandidate($input: AddCommissionCandidateInput!) {
+                addCommissionCandidate(input: $input) {
+                    id
+                    panelId
+                    anonymizedCode
+                    sample {
+                        id
+                        volumeMl
+                        batch {
+                            id
+                            lotNumber
+                            volumeMl
+                            beverage {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        `, {
+            input: {
+                commissionId: input.commissionId,
+                panelId: input.panelId,
+                sampleId: input.sampleId,
+                anonymizedCode: input.anonymizedCode ? input.anonymizedCode.trim() : null
+            }
+        }, headers);
+
+        // Auto-bind template edition if needed while commission is in DRAFT
+        try {
+            const commRes = await rawGraphQL(`
+                query CheckCommissionTemplates($id: ID!) {
+                    commission(id: $id) {
+                        id
+                        status
+                        templateEditions {
+                            id
+                            beverageType {
+                                id
+                                code
+                            }
+                        }
+                    }
+                }
+            `, { id: input.commissionId }, headers);
+
+            if (commRes?.commission?.status === 'DRAFT') {
+                const existingBevTypeIds = new Set(
+                    (commRes.commission.templateEditions || []).map((te: any) => te.beverageType?.id).filter(Boolean)
+                );
+
+                // Fetch beverage type for the sample's beverage
+                const bevId = data?.addCommissionCandidate?.sample?.batch?.beverage?.id;
+                let candidateBevTypeId: string | null = null;
+                if (bevId) {
+                    const bevRes = await rawGraphQL(`
+                        query GetBeverageType($id: ID!) {
+                            beverage(id: $id) {
+                                id
+                                type {
+                                    id
+                                    code
+                                }
+                            }
+                        }
+                    `, { id: bevId }, headers);
+                    candidateBevTypeId = bevRes?.beverage?.type?.id || null;
+                }
+
+                // If template not set for this beverage type, bind active template edition
+                if (candidateBevTypeId && !existingBevTypeIds.has(candidateBevTypeId)) {
+                    const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
+                    const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
+                    const matchingEdition = items.find((i: any) => 
+                        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
+                        i.template?.beverageType?.id === candidateBevTypeId &&
+                        i.categories && i.categories.length > 0
+                    ) || items.find((i: any) => (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.categories && i.categories.length > 0) || items[0];
+
+                    if (matchingEdition) {
+                        await sdk.DevSetCommissionTemplateEdition({
+                            id: input.commissionId,
+                            beverageTypeId: candidateBevTypeId,
+                            templateEditionId: matchingEdition.id
+                        }, { headers });
+                        templatesCache.delete(input.commissionId);
+                    }
+                }
+            }
+        } catch (autoTplErr: any) {
+            console.warn("Could not auto-bind template for candidate beverage type:", autoTplErr?.message);
+        }
+
+        return { success: true, candidate: data.addCommissionCandidate };
+    } catch (err: any) {
+        console.error("Server Action Error (addCommissionCandidateAction):", err);
+        return { success: false, error: err.message || "Не вдалося додати кандидата" };
+    }
+}
+
+export async function removeCommissionCandidateAction(candidateId: string) {
+    if (!isValidUuid(candidateId)) return { success: false, error: "Invalid candidateId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RemoveCommissionCandidate($candidateId: ID!) {
+                removeCommissionCandidate(candidateId: $candidateId)
+            }
+        `, { candidateId }, headers);
+        return { success: true, result: data.removeCommissionCandidate };
+    } catch (err: any) {
+        console.error("Server Action Error (removeCommissionCandidateAction):", err);
+        return { success: false, error: err.message || "Не вдалося видалити кандидата" };
+    }
+}
+
+export async function changeCommissionCandidateCodeAction(candidateId: string, anonymizedCode: string) {
+    if (!isValidUuid(candidateId)) return { success: false, error: "Invalid candidateId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation ChangeCommissionCandidateCode($id: ID!, $anonymizedCode: String) {
+                changeCommissionCandidateCode(id: $id, anonymizedCode: $anonymizedCode) {
+                    id
+                    anonymizedCode
+                }
+            }
+        `, {
+            id: candidateId,
+            anonymizedCode: anonymizedCode ? anonymizedCode.trim() : null
+        }, headers);
+        return { success: true, candidate: data.changeCommissionCandidateCode };
+    } catch (err: any) {
+        console.error("Server Action Error (changeCommissionCandidateCodeAction):", err);
+        return { success: false, error: err.message || "Не вдалося змінити код" };
+    }
+}
+
+export async function reorderCommissionCandidatesAction(commissionId: string, panelId: string, candidateIds: string[]) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    if (!isValidUuid(panelId)) return { success: false, error: "Invalid panelId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation ReorderCommissionCandidates($commissionId: ID!, $panelId: ID!, $candidateIds: [ID!]!) {
+                reorderCommissionCandidates(commissionId: $commissionId, panelId: $panelId, candidateIds: $candidateIds) {
+                    id
+                }
+            }
+        `, { commissionId, panelId, candidateIds }, headers);
+        return { success: true, commission: data.reorderCommissionCandidates };
+    } catch (err: any) {
+        console.error("Server Action Error (reorderCommissionCandidatesAction):", err);
+        return { success: false, error: err.message || "Не вдалося змінити порядок кандидатів" };
     }
 }

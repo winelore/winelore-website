@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { seedCompetitionScenarioAction, getCompetitionsListAction, SeederFormData, CommissionConfig } from './actions';
 import { Loader2, Plus, Terminal, Trash2, Database } from 'lucide-react';
+import { getCompetitionsListAction } from './actions';
+import type { SeederFormData, CommissionConfig, PanelConfig, ReplicaConfig } from '@/lib/seeder';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/AppHeader';
@@ -217,7 +218,7 @@ export default function DevToolsPage() {
 
   return (
     <>
-      <AppHeader />
+      <AppHeader activeTab="none" />
       <div className="min-h-screen bg-gray-50 text-gray-900 p-8 font-sans">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           

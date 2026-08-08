@@ -14,11 +14,18 @@ async function executeGraphQL(query: string, variables: any) {
         cache: 'no-store'
     });
 
+    const text = await response.text();
+    let json: any;
+    try {
+        json = JSON.parse(text);
+    } catch {
+        throw new Error(`GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+    }
+
     if (!response.ok) {
         throw new Error(`Server responded with status ${response.status}`);
     }
 
-    const json = await response.json();
     if (json.errors && json.errors.length > 0) {
         throw new Error(json.errors[0].message);
     }
@@ -53,14 +60,20 @@ export async function getCompetitionSeriesCount(auid: number) {
             }),
         });
 
-        const json = await res.json();
+        const text = await res.text();
+        let json: any;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            return null;
+        }
 
         if (json.errors) {
             console.error("GraphQL errors:", json.errors);
             return null;
         }
 
-        return json.data.competitionSeriesCount;
+        return json.data?.competitionSeriesCount;
     } catch (err) {
         console.error("Failed to fetch competition series count:", err);
         return null;
@@ -107,7 +120,7 @@ export async function createCompetitionInfrastructure(formData: any) {
 
         const competitionResult = await executeGraphQL(createCompetitionMutation, {
             input: {
-                name: formData.name || "New Competition",
+                name: (formData.name || "New Competition").trim().replace(/\s+/g, ' '),
                 seriesId: seriesId,
                 holders: formData.holders
             }
