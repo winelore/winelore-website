@@ -503,6 +503,19 @@ export async function submitEvaluationAction(
         }, headers);
 
         if (response?.submitEvaluation) {
+            const evalId = response.submitEvaluation.id;
+            try {
+                await rawGraphQL(`
+                    mutation ConfirmEvaluation($id: ID!) {
+                        confirmEvaluation(id: $id) {
+                            id
+                            status
+                        }
+                    }
+                `, { id: evalId }, headers);
+            } catch (confirmErr: any) {
+                console.warn("Auto-confirm evaluation info:", confirmErr?.message);
+            }
             return { success: true, evaluation: response.submitEvaluation };
         }
 
@@ -510,6 +523,30 @@ export async function submitEvaluationAction(
     } catch (err: any) {
         console.error("Server Action Error (submitEvaluationAction):", err);
         return { success: false, error: err?.message || "Failed to submit evaluation" };
+    }
+}
+
+export async function confirmEvaluationAction(evaluationId: string) {
+    if (!isValidUuid(evaluationId)) return { success: false, error: "Invalid evaluationId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const response: any = await rawGraphQL(`
+            mutation ConfirmEvaluation($id: ID!) {
+                confirmEvaluation(id: $id) {
+                    id
+                    status
+                }
+            }
+        `, { id: evaluationId }, headers);
+
+        if (response?.confirmEvaluation) {
+            return { success: true, evaluation: response.confirmEvaluation };
+        }
+
+        return { success: false, error: "Не вдалося підтвердити оцінку." };
+    } catch (err: any) {
+        console.error("Server Action Error (confirmEvaluationAction):", err);
+        return { success: false, error: err?.message || "Failed to confirm evaluation" };
     }
 }
 
@@ -533,6 +570,7 @@ export async function getCommissionDataAction(commissionId: string) {
                     voiceCommentsEnabled
                     propertyCommentsEnabled
                     beverageOriginDuringEvaluationEnabled
+                    partialCandidateEvaluationEnabled
                     panels {
                         id
                         name
@@ -586,6 +624,7 @@ export async function getCommissionDataAction(commissionId: string) {
                         type
                         status
                         currentCandidateId
+                        chaoticCurrentCandidateChangesEnabled
                         members {
                             id
                             auid
@@ -682,6 +721,7 @@ export async function getCommissionDataAction(commissionId: string) {
             type: r.type,
             status: r.status,
             currentCandidateId: r.currentCandidateId || null,
+            chaoticCurrentCandidateChangesEnabled: r.chaoticCurrentCandidateChangesEnabled ?? false,
             members: (r.members || []).map((m: any) => ({
                 id: m.id,
                 auid: m.auid ? m.auid.flat() : [],
@@ -716,6 +756,11 @@ export async function getCommissionDataAction(commissionId: string) {
             plannedEndAt: commission.plannedDates?.end || null,
             startedAt: commission.startedAt || null,
             endedAt: commission.endedAt || null,
+            partialCandidateEvaluationEnabled: commission.partialCandidateEvaluationEnabled ?? false,
+            wineJumperMiniGameEnabled: commission.wineJumperMiniGameEnabled ?? false,
+            voiceCommentsEnabled: commission.voiceCommentsEnabled ?? false,
+            propertyCommentsEnabled: commission.propertyCommentsEnabled ?? false,
+            beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled ?? false,
             competition: {
                 id: commission.competition.id,
                 name: commission.competition.name,
@@ -1153,7 +1198,198 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
         return { ...data.markCommissionReplicaCandidateAsEvaluated, nextCandidateId };
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
+        const msg = String(err?.message || err);
+        if (msg.includes("replica members") || msg.includes("confirmed evaluations") || msg.includes("PARTIAL_EVALUATION")) {
+            throw new Error("Не всі члени комісії надали підтверджені оцінки. Увімкніть часткову оцінку кандидатів у налаштуваннях комісії або зачекайте на оцінки всіх учасників.");
+        }
+        if (msg.includes("CandidateNotNextInSequence") || msg.includes("not next in sequence")) {
+            throw new Error("Послідовний режим оцінювання: виберіть наступного кандидата за порядком або увімкніть хаотичний режим у налаштуваннях репліки.");
+        }
         throw new Error(err.message || "Failed to mark candidate as evaluated");
+    }
+}
+
+export async function setCommissionPartialCandidateEvaluationEnabledAction(commissionId: string, enabled: boolean) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionPartialCandidateEvaluationEnabled($id: ID!, $enabled: Boolean!) {
+                setCommissionPartialCandidateEvaluationEnabled(id: $id, enabled: $enabled) {
+                    id
+                    partialCandidateEvaluationEnabled
+                }
+            }
+        `, { id: commissionId, enabled }, headers);
+        return { success: true, commission: data?.setCommissionPartialCandidateEvaluationEnabled };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionPartialCandidateEvaluationEnabledAction):", err);
+        return { success: false, error: err?.message || "Failed to update partial candidate evaluation setting" };
+    }
+}
+
+export async function setCommissionWineJumperMiniGameEnabledAction(commissionId: string, enabled: boolean) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionWineJumperMiniGameEnabled($id: ID!, $enabled: Boolean!) {
+                setCommissionWineJumperMiniGameEnabled(id: $id, enabled: $enabled) {
+                    id
+                    wineJumperMiniGameEnabled
+                }
+            }
+        `, { id: commissionId, enabled }, headers);
+        return { success: true, commission: data?.setCommissionWineJumperMiniGameEnabled };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionWineJumperMiniGameEnabledAction):", err);
+        return { success: false, error: err?.message || "Failed to update wine jumper setting" };
+    }
+}
+
+export async function setCommissionVoiceCommentsEnabledAction(commissionId: string, enabled: boolean) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionVoiceCommentsEnabled($id: ID!, $enabled: Boolean!) {
+                setCommissionVoiceCommentsEnabled(id: $id, enabled: $enabled) {
+                    id
+                    voiceCommentsEnabled
+                }
+            }
+        `, { id: commissionId, enabled }, headers);
+        return { success: true, commission: data?.setCommissionVoiceCommentsEnabled };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionVoiceCommentsEnabledAction):", err);
+        return { success: false, error: err?.message || "Failed to update voice comments setting" };
+    }
+}
+
+export async function setCommissionPropertyCommentsEnabledAction(commissionId: string, enabled: boolean) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionPropertyCommentsEnabled($id: ID!, $enabled: Boolean!) {
+                setCommissionPropertyCommentsEnabled(id: $id, enabled: $enabled) {
+                    id
+                    propertyCommentsEnabled
+                }
+            }
+        `, { id: commissionId, enabled }, headers);
+        return { success: true, commission: data?.setCommissionPropertyCommentsEnabled };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionPropertyCommentsEnabledAction):", err);
+        return { success: false, error: err?.message || "Failed to update property comments setting" };
+    }
+}
+
+export async function setCommissionBeverageOriginDuringEvaluationEnabledAction(commissionId: string, enabled: boolean) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionBeverageOriginDuringEvaluationEnabled($id: ID!, $enabled: Boolean!) {
+                setCommissionBeverageOriginDuringEvaluationEnabled(id: $id, enabled: $enabled) {
+                    id
+                    beverageOriginDuringEvaluationEnabled
+                }
+            }
+        `, { id: commissionId, enabled }, headers);
+        return { success: true, commission: data?.setCommissionBeverageOriginDuringEvaluationEnabled };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionBeverageOriginDuringEvaluationEnabledAction):", err);
+        return { success: false, error: err?.message || "Failed to update beverage origin setting" };
+    }
+}
+
+export async function setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction(replicaId: string, enabled: boolean) {
+    if (!isValidUuid(replicaId)) return { success: false, error: "Invalid replicaId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionReplicaChaoticCurrentCandidateChangesEnabled($id: ID!, $enabled: Boolean!) {
+                setCommissionReplicaChaoticCurrentCandidateChangesEnabled(id: $id, enabled: $enabled) {
+                    id
+                    chaoticCurrentCandidateChangesEnabled
+                }
+            }
+        `, { id: replicaId, enabled }, headers);
+        return { success: true, replica: data?.setCommissionReplicaChaoticCurrentCandidateChangesEnabled };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction):", err);
+        return { success: false, error: err?.message || "Failed to update chaotic candidate setting" };
+    }
+}
+
+export async function addOutcomePolicyOwnerAction(policyId: string, ownerAuid: number) {
+    if (!isValidUuid(policyId)) return { success: false, error: "Invalid policyId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation AddOutcomePolicyOwner($id: ID!, $ownerAuid: AUID!) {
+                addOutcomePolicyOwner(id: $id, ownerAuid: $ownerAuid) {
+                    id
+                    owners
+                }
+            }
+        `, { id: policyId, ownerAuid: [ownerAuid] }, headers);
+        return { success: true, policy: data?.addOutcomePolicyOwner };
+    } catch (err: any) {
+        console.error("Server Action Error (addOutcomePolicyOwnerAction):", err);
+        return { success: false, error: err?.message || "Failed to add outcome policy owner" };
+    }
+}
+
+export async function removeOutcomePolicyOwnerAction(policyId: string, ownerAuid: number) {
+    if (!isValidUuid(policyId)) return { success: false, error: "Invalid policyId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RemoveOutcomePolicyOwner($id: ID!, $ownerAuid: AUID!) {
+                removeOutcomePolicyOwner(id: $id, ownerAuid: $ownerAuid) {
+                    id
+                    owners
+                }
+            }
+        `, { id: policyId, ownerAuid: [ownerAuid] }, headers);
+        return { success: true, policy: data?.removeOutcomePolicyOwner };
+    } catch (err: any) {
+        console.error("Server Action Error (removeOutcomePolicyOwnerAction):", err);
+        return { success: false, error: err?.message || "Failed to remove outcome policy owner" };
+    }
+}
+
+export async function getOutcomePoliciesAction(filter?: { owners?: number[] }, limit: number = 50, offset: number = 0) {
+    try {
+        const headers = await getActorHeaders().catch(() => ({}));
+        const data = await rawGraphQL(`
+            query GetOutcomePolicies($filter: OutcomePolicyFilterInput, $limit: Int, $offset: Int) {
+                outcomePolicies(filter: $filter, limit: $limit, offset: $offset) {
+                    items {
+                        id
+                        name
+                        code
+                        description
+                        owners
+                    }
+                }
+                outcomePolicyCount(filter: $filter)
+            }
+        `, {
+            filter: filter?.owners?.length ? { owners: filter.owners.map(a => [a]) } : filter,
+            limit,
+            offset
+        }, headers);
+        return {
+            success: true,
+            items: data?.outcomePolicies?.items || [],
+            count: data?.outcomePolicyCount || 0
+        };
+    } catch (err: any) {
+        console.error("Server Action Error (getOutcomePoliciesAction):", err);
+        return { success: false, items: [], count: 0, error: err?.message || "Failed to fetch outcome policies" };
     }
 }
 
