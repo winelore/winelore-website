@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import {
     FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap,
     CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X, Save,
-    Loader2, Search, Filter, ChevronRight, ArrowLeft
+    Loader2, Search, Filter, ChevronRight, ArrowLeft, ExternalLink
 } from "lucide-react"
 import Link from "next/link"
 
@@ -219,20 +219,26 @@ function EvaluationTemplatesBlock({
     const [isAssigning, setIsAssigning] = useState(false)
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
 
+    // НОВИЙ СТАН: для розгортання призначеного шаблону на головній сторінці
+    const [expandedAssignedTemplateId, setExpandedAssignedTemplateId] = useState<string | null>(null)
+
+    const ITEMS_PER_PAGE = 50;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedBeverageType]);
+
     const handleOpenCatalog = async (bevType?: BeverageType) => {
         setSelectedBeverageType(bevType || null)
         setSearchQuery("")
+        setCurrentPage(1)
         setIsModalOpen(true)
         setIsCatalogLoading(true)
         try {
             const data = await getEvaluationTemplatesAction()
-            // Якщо натиснули на конкретну картку - фільтруємо по ній, якщо на загальну кнопку - показуємо ВСІ
             const filtered = bevType
-                ? data.templates.filter((t: any) =>
-                    t.beverageTypeId === bevType.id ||
-                    t.beverageType?.id === bevType.id ||
-                    t.beverageType === bevType.id
-                )
+                ? data.templates.filter((t: any) => t.beverageTypeId === bevType.id)
                 : data.templates;
             setCatalogTemplates(filtered)
         } catch (e) {
@@ -260,6 +266,8 @@ function EvaluationTemplatesBlock({
     }
 
     const filteredCatalog = catalogTemplates.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const totalPages = Math.ceil(filteredCatalog.length / ITEMS_PER_PAGE);
+    const paginatedCatalog = filteredCatalog.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     return (
         <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
@@ -278,7 +286,6 @@ function EvaluationTemplatesBlock({
                     </div>
                 </div>
 
-                {/* НОВА ЗАГАЛЬНА КНОПКА "+ ASSIGN TEMPLATE" */}
                 {isCompetitionHolder && canEdit && (
                     <button
                         onClick={() => handleOpenCatalog()}
@@ -312,7 +319,7 @@ function EvaluationTemplatesBlock({
                                     {isCompetitionHolder && canEdit && (
                                         <button
                                             onClick={() => handleOpenCatalog(bevType)}
-                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
                                         >
                                             {isAssigned ? (t("commission.changeTemplate" as any) || "Change") : (t("commission.assignTemplate" as any) || "Assign Template")}
                                         </button>
@@ -321,14 +328,53 @@ function EvaluationTemplatesBlock({
 
                                 {isAssigned && te ? (
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-sm font-extrabold text-slate-800">{te.template?.name || "Standard Template"}</span>
+                                        {/* ЗАМІНЕНО: Тепер це кнопка, яка розгортає прев'ю вниз */}
+                                        <button
+                                            onClick={() => setExpandedAssignedTemplateId(expandedAssignedTemplateId === te.id ? null : te.id)}
+                                            className="group/link flex items-center gap-1 w-fit outline-none cursor-pointer text-left transition-all"
+                                            title="View template structure"
+                                        >
+                                            <span className="text-sm font-extrabold text-slate-800 group-hover/link:text-indigo-600 transition-colors">
+                                                {te.template?.name || "Standard Template"}
+                                            </span>
+                                            <ChevronRight className={`w-4 h-4 text-slate-400 group-hover/link:text-indigo-500 transition-transform duration-200 ${expandedAssignedTemplateId === te.id ? 'rotate-90' : ''}`} />
+                                        </button>
+
                                         <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-                                            <span className="bg-white border px-1.5 rounded-sm">v{te.version}</span>
+                                            <span className="bg-white border border-slate-200 shadow-sm px-1.5 py-0.5 rounded-md">v{te.version}</span>
                                             <span className="text-slate-300">•</span>
                                             <span className="uppercase text-emerald-600">{formatEnumStatus(te.status)}</span>
                                             <span className="text-slate-300">•</span>
                                             <span>{te.categories?.length || 0} Categories</span>
                                         </div>
+
+                                        {/* ПРЕВ'Ю ПРИЗНАЧЕНОГО ШАБЛОНУ */}
+                                        {expandedAssignedTemplateId === te.id && te.categories && (
+                                            <div className="mt-2 p-4 bg-white/50 border border-slate-200/60 rounded-2xl max-h-[350px] overflow-y-auto text-xs shadow-inner animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <p className="font-bold text-slate-400 mb-3 uppercase tracking-wider text-[9px]">{t("commission.templatePreview" as any) || "Structure Preview"}</p>
+                                                <div className="flex flex-col gap-3">
+                                                    {te.categories.map((cat: any) => (
+                                                        <div key={cat.id || cat.name} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3">
+                                                            <p className="font-bold text-slate-700 mb-2.5 border-b border-slate-100 pb-1.5">{cat.name}</p>
+                                                            <div className="flex flex-col gap-1.5">
+                                                                {cat.properties?.map((prop: any) => (
+                                                                    <div key={prop.id || prop.code} className="flex justify-between items-center bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5">
+                                                                        <span className="font-bold text-slate-600 truncate mr-2 flex items-center gap-1.5">
+                                                                            {prop.name}
+                                                                            {prop.isRequired && <span className="text-rose-500 font-extrabold" title="Required">*</span>}
+                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">Result</span>}
+                                                                        </span>
+                                                                        <span className="text-[9px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded uppercase shrink-0">
+                                                                            {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
@@ -346,6 +392,7 @@ function EvaluationTemplatesBlock({
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in">
                     <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+
                         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div>
                                 <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog" as any) || "Template Catalog"}</h2>
@@ -380,14 +427,14 @@ function EvaluationTemplatesBlock({
                                     <Loader2 className="w-8 h-8 animate-spin" />
                                     <span className="text-sm font-bold">Loading catalog...</span>
                                 </div>
-                            ) : filteredCatalog.length === 0 ? (
+                            ) : paginatedCatalog.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                                     <FileText className="w-10 h-10 mb-2 opacity-50" />
                                     <span className="text-sm font-bold">{t("commission.noTemplatesFound" as any) || "No templates found"}</span>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
-                                    {filteredCatalog.map(template => {
+                                    {paginatedCatalog.map(template => {
                                         const ed = template.latestEdition;
                                         const isExpanded = expandedTemplateId === template.id;
 
@@ -415,16 +462,7 @@ function EvaluationTemplatesBlock({
                                                             Preview <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                                                         </button>
                                                         <button
-                                                            onClick={() => {
-                                                                const targetBevId = template.beverageTypeId || template.beverageType?.id || selectedBeverageType?.id;
-
-                                                                if (!targetBevId) {
-                                                                    alert("Помилка: Неможливо визначити тип напою для цього шаблону.");
-                                                                    return;
-                                                                }
-
-                                                                handleAssignTemplate(ed.id, targetBevId);
-                                                            }}
+                                                            onClick={() => handleAssignTemplate(ed.id, template.beverageTypeId)}
                                                             disabled={isAssigning}
                                                             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
                                                         >
@@ -433,19 +471,42 @@ function EvaluationTemplatesBlock({
                                                     </div>
                                                 </div>
 
-                                                {/* Preview (Expanded View) */}
                                                 {isExpanded && ed.categories && (
-                                                    <div className="p-4 bg-slate-50 border-t border-slate-100 max-h-[250px] overflow-y-auto text-xs">
+                                                    <div className="p-4 bg-slate-50 border-t border-slate-100 max-h-[300px] overflow-y-auto text-xs">
                                                         <p className="font-bold text-slate-400 mb-3 uppercase tracking-wider text-[9px]">{t("commission.templatePreview" as any) || "Structure Preview"}</p>
-                                                        <div className="flex flex-col gap-3">
+                                                        <div className="flex flex-col gap-4">
                                                             {ed.categories.map((cat: any) => (
                                                                 <div key={cat.id} className="bg-white border border-slate-200 rounded-xl p-3">
-                                                                    <p className="font-bold text-slate-700 mb-2 border-b pb-1">{cat.name}</p>
-                                                                    <div className="flex flex-col gap-1.5">
+                                                                    <p className="font-bold text-slate-700 mb-3 border-b pb-1.5">{cat.name}</p>
+                                                                    <div className="flex flex-col gap-2">
                                                                         {cat.properties?.map((prop: any) => (
-                                                                            <div key={prop.id || prop.code} className="flex justify-between items-center bg-slate-50 rounded-lg px-2.5 py-1.5">
-                                                                                <span className="font-medium text-slate-600 truncate mr-2">{prop.name}</span>
-                                                                                <span className="text-[9px] font-bold text-slate-400 bg-white border px-1.5 rounded uppercase">{prop.type}</span>
+                                                                            <div key={prop.id || prop.code} className="flex flex-col bg-slate-50 border border-slate-100 rounded-lg p-2.5">
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="font-bold text-slate-700 truncate mr-2 flex items-center gap-1.5">
+                                                                                        {prop.name}
+                                                                                        {prop.isRequired && <span className="text-rose-500 font-bold" title="Required">*</span>}
+                                                                                        {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase">Result</span>}
+                                                                                    </span>
+                                                                                    <span className="text-[9px] font-bold text-slate-400 bg-white border px-1.5 py-0.5 rounded uppercase shrink-0">{prop.type}</span>
+                                                                                </div>
+
+                                                                                <div className="flex flex-wrap gap-2 mt-2 text-[9px] text-slate-500 font-medium">
+                                                                                    {(prop.minLimit !== undefined || prop.maxLimit !== undefined) && (
+                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                                                                            Range: {prop.minLimit ?? '-∞'} ... {prop.maxLimit ?? '∞'}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {prop.allowedValues && prop.allowedValues.length > 0 && (
+                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200 truncate max-w-[200px]" title={prop.allowedValues.join(', ')}>
+                                                                                            Options: {prop.allowedValues.join(', ')}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {prop.defaultValue !== undefined && prop.defaultValue !== null && (
+                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                                                                            Default: {String(prop.defaultValue)}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
                                                                         ))}
                                                                     </div>
@@ -460,6 +521,30 @@ function EvaluationTemplatesBlock({
                                 </div>
                             )}
                         </div>
+
+                        {totalPages > 1 && (
+                            <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
+                                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    Page {currentPage} of {totalPages} <span className="text-slate-300 mx-1">|</span> {filteredCatalog.length} total
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
