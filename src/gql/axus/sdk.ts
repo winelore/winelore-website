@@ -11,18 +11,18 @@ export type NameElementInput = {
 };
 
 export type NamePartType =
-  | 'CREDENTIAL'
-  | 'FAMILY_NAME'
-  | 'GENERATION'
-  | 'GIVEN_NAME'
-  | 'TITLE'
-  | 'UNSTRUCTURED';
+    | 'CREDENTIAL'
+    | 'FAMILY_NAME'
+    | 'GENERATION'
+    | 'GIVEN_NAME'
+    | 'TITLE'
+    | 'UNSTRUCTURED';
 
 export type NameSeparatorType =
-  | 'APOSTROPHE'
-  | 'COMMA_SPACE'
-  | 'HYPHEN'
-  | 'SPACE';
+    | 'APOSTROPHE'
+    | 'COMMA_SPACE'
+    | 'HYPHEN'
+    | 'SPACE';
 
 export type LoginWithPasswordMutationVariables = Exact<{
   auid: string | number;
@@ -235,321 +235,287 @@ export type UserDetailsQuery = { usernames: { defaultUsername: string } | null, 
 
 
 export const LoginWithPasswordDocument = gql`
-    mutation LoginWithPassword($auid: ID!, $password: String!, $permissions: [String!]) {
-  loginWithPassword(auid: $auid, password: $password, permissions: $permissions) {
-    id
+  mutation LoginWithPassword($auid: ID!, $password: String!, $permissions: [String!]) {
+    loginWithPassword(auid: $auid, password: $password, permissions: $permissions) {
+      id
+    }
   }
-}
-    `;
+`;
 export const WrapTokenInCredentialsDocument = gql`
-    mutation WrapTokenInCredentials($auid: ID!, $tokenId: String) {
-  wrapTokenInCredentials(auid: $auid, tokenId: $tokenId) {
-    auid
-    accessToken
-    refreshToken
-    accessTokenExpiresAt
-  }
-}
-    `;
-export const RefreshCredentialsDocument = gql`
-    mutation RefreshCredentials($refreshToken: String!) {
-  refreshCredentials(refreshToken: $refreshToken) {
-    auid
-    accessToken
-    refreshToken
-    accessTokenExpiresAt
-  }
-}
-    `;
-export const RevokeCredentialsDocument = gql`
-    mutation RevokeCredentials($refreshToken: String!) {
-  revokeCredentials(refreshToken: $refreshToken)
-}
-    `;
-export const CreateUserDocument = gql`
-    mutation CreateUser($contextAuid: ID, $tokenId: String, $registrationKey: ID!) {
-  createUser(
-    contextAuid: $contextAuid
-    tokenId: $tokenId
-    registrationKey: $registrationKey
-  ) {
-    auid
-    token {
-      id
-    }
-  }
-}
-    `;
-export const SetPasswordDocument = gql`
-    mutation SetPassword($auid: ID!, $tokenId: String, $password: String!) {
-  setPassword(auid: $auid, tokenId: $tokenId, password: $password)
-}
-    `;
-export const OwnerByUsernameDocument = gql`
-    query OwnerByUsername($username: String!) {
-  ownerByUsername(username: $username)
-}
-    `;
-export const UserDocument = gql`
-    query User($auid: ID!) {
-  user(auid: $auid) {
-    identity {
+  mutation WrapTokenInCredentials($auid: ID!, $tokenId: String) {
+    wrapTokenInCredentials(auid: $auid, tokenId: $tokenId) {
       auid
-      id
+      accessToken
+      refreshToken
+      accessTokenExpiresAt
     }
-    usernames {
+  }
+`;
+export const RefreshCredentialsDocument = gql`
+  mutation RefreshCredentials($refreshToken: String!) {
+    refreshCredentials(refreshToken: $refreshToken) {
+      auid
+      accessToken
+      refreshToken
+      accessTokenExpiresAt
+    }
+  }
+`;
+export const RevokeCredentialsDocument = gql`
+  mutation RevokeCredentials($refreshToken: String!) {
+    revokeCredentials(refreshToken: $refreshToken)
+  }
+`;
+export const CreateUserDocument = gql`
+  mutation CreateUser($contextAuid: ID, $tokenId: String, $registrationKey: ID!) {
+    createUser(
+      contextAuid: $contextAuid
+      tokenId: $tokenId
+      registrationKey: $registrationKey
+    ) {
+      auid
+      token {
+        id
+      }
+    }
+  }
+`;
+export const SetPasswordDocument = gql`
+  mutation SetPassword($auid: ID!, $tokenId: String, $password: String!) {
+    setPassword(auid: $auid, tokenId: $tokenId, password: $password)
+  }
+`;
+export const OwnerByUsernameDocument = gql`
+  query OwnerByUsername($username: String!) {
+    ownerByUsername(username: $username)
+  }
+`;
+export const UserDocument = gql`
+  query User($auid: ID!) {
+    user(auid: $auid) {
+      identity {
+        auid
+        id
+      }
+      usernames {
+        auid
+        usernames
+        defaultUsername
+      }
+      defaultVariation {
+        auid
+        variationId
+      }
+    }
+  }
+`;
+export const UsernamesDocument = gql`
+  query Usernames($auid: ID!) {
+    usernames(auid: $auid) {
       auid
       usernames
       defaultUsername
     }
-    defaultVariation {
+  }
+`;
+export const VariationsDocument = gql`
+  query Variations($auid: ID!) {
+    variations(auid: $auid) {
+      id
+      auid
+      locationId
+      icon
+      createdAt
+    }
+  }
+`;
+export const VariationNameDocument = gql`
+  query VariationName($variationId: ID!) {
+    name(variationId: $variationId) {
+      variationId
+      displayName
+      elements {
+        partType
+        value
+        separatorType
+      }
+    }
+  }
+`;
+export const VariationDescriptionDocument = gql`
+  query VariationDescription($variationId: ID!) {
+    description(variationId: $variationId) {
+      variationId
+      text
+      updatedAt
+    }
+  }
+`;
+export const VariationStatusDocument = gql`
+  query VariationStatus($variationId: ID!) {
+    status(variationId: $variationId) {
+      variationId
+      text
+      emoji
+      expiresAt
+      updatedAt
+      isExpired
+    }
+  }
+`;
+export const DefaultVariationDocument = gql`
+  query DefaultVariation($auid: ID!) {
+    defaultVariation(auid: $auid) {
       auid
       variationId
     }
   }
-}
-    `;
-export const UsernamesDocument = gql`
-    query Usernames($auid: ID!) {
-  usernames(auid: $auid) {
-    auid
-    usernames
-    defaultUsername
-  }
-}
-    `;
-export const VariationsDocument = gql`
-    query Variations($auid: ID!) {
-  variations(auid: $auid) {
-    id
-    auid
-    locationId
-    icon
-    createdAt
-  }
-}
-    `;
-export const VariationNameDocument = gql`
-    query VariationName($variationId: ID!) {
-  name(variationId: $variationId) {
-    variationId
-    elements {
-      partType
-      value
-      separatorType
-    }
-    displayName
-  }
-}
-    `;
-export const VariationDescriptionDocument = gql`
-    query VariationDescription($variationId: ID!) {
-  description(variationId: $variationId) {
-    variationId
-    text
-    updatedAt
-  }
-}
-    `;
-export const VariationStatusDocument = gql`
-    query VariationStatus($variationId: ID!) {
-  status(variationId: $variationId) {
-    variationId
-    text
-    emoji
-    expiresAt
-    updatedAt
-    isExpired
-  }
-}
-    `;
-export const DefaultVariationDocument = gql`
-    query DefaultVariation($auid: ID!) {
-  defaultVariation(auid: $auid) {
-    auid
-    variationId
-  }
-}
-    `;
-export const VariationNameDocument = gql`
-    query VariationName($variationId: ID!) {
-  name(variationId: $variationId) {
-    variationId
-    displayName
-    elements {
-      partType
-      value
-      separatorType
-    }
-  }
-}
-    `;
-export const VariationDescriptionDocument = gql`
-    query VariationDescription($variationId: ID!) {
-  description(variationId: $variationId) {
-    variationId
-    text
-    updatedAt
-  }
-}
-    `;
-export const VariationStatusDocument = gql`
-    query VariationStatus($variationId: ID!) {
-  status(variationId: $variationId) {
-    variationId
-    text
-    emoji
-    expiresAt
-    updatedAt
-    isExpired
-  }
-}
-    `;
+`;
 export const AddUsernameDocument = gql`
-    mutation AddUsername($auid: ID!, $username: String!) {
-  addUsername(auid: $auid, username: $username) {
-    auid
-    usernames
-    defaultUsername
-  }
-}
-    `;
-export const RemoveUsernameDocument = gql`
-    mutation RemoveUsername($auid: ID!, $username: String!) {
-  removeUsername(auid: $auid, username: $username) {
-    auid
-    usernames
-    defaultUsername
-  }
-}
-    `;
-export const ChangeDefaultUsernameDocument = gql`
-    mutation ChangeDefaultUsername($auid: ID!, $username: String!) {
-  changeDefaultUsername(auid: $auid, username: $username) {
-    auid
-    usernames
-    defaultUsername
-  }
-}
-    `;
-export const CreateVariationDocument = gql`
-    mutation CreateVariation($auid: ID!, $tokenId: String, $description: String, $locationId: String, $icon: String) {
-  createVariation(
-    auid: $auid
-    tokenId: $tokenId
-    description: $description
-    locationId: $locationId
-    icon: $icon
-  ) {
-    id
-    auid
-    locationId
-    icon
-    createdAt
-  }
-}
-    `;
-export const ChangeNameDocument = gql`
-    mutation ChangeName($auid: ID!, $tokenId: String, $variationId: ID!, $elements: [NameElementInput!]!) {
-  changeName(
-    auid: $auid
-    tokenId: $tokenId
-    variationId: $variationId
-    elements: $elements
-  ) {
-    variationId
-    displayName
-    elements {
-      partType
-      value
-      separatorType
+  mutation AddUsername($auid: ID!, $username: String!) {
+    addUsername(auid: $auid, username: $username) {
+      auid
+      usernames
+      defaultUsername
     }
   }
-}
-    `;
+`;
+export const RemoveUsernameDocument = gql`
+  mutation RemoveUsername($auid: ID!, $username: String!) {
+    removeUsername(auid: $auid, username: $username) {
+      auid
+      usernames
+      defaultUsername
+    }
+  }
+`;
+export const ChangeDefaultUsernameDocument = gql`
+  mutation ChangeDefaultUsername($auid: ID!, $username: String!) {
+    changeDefaultUsername(auid: $auid, username: $username) {
+      auid
+      usernames
+      defaultUsername
+    }
+  }
+`;
+export const CreateVariationDocument = gql`
+  mutation CreateVariation($auid: ID!, $tokenId: String, $description: String, $locationId: String, $icon: String) {
+    createVariation(
+      auid: $auid
+      tokenId: $tokenId
+      description: $description
+      locationId: $locationId
+      icon: $icon
+    ) {
+      id
+      auid
+      locationId
+      icon
+      createdAt
+    }
+  }
+`;
+export const ChangeNameDocument = gql`
+  mutation ChangeName($auid: ID!, $tokenId: String, $variationId: ID!, $elements: [NameElementInput!]!) {
+    changeName(
+      auid: $auid
+      tokenId: $tokenId
+      variationId: $variationId
+      elements: $elements
+    ) {
+      variationId
+      displayName
+      elements {
+        partType
+        value
+        separatorType
+      }
+    }
+  }
+`;
 export const ChangeDescriptionDocument = gql`
-    mutation ChangeDescription($auid: ID!, $tokenId: String, $variationId: ID!, $text: String) {
-  changeDescription(
-    auid: $auid
-    tokenId: $tokenId
-    variationId: $variationId
-    text: $text
-  ) {
-    variationId
-    text
-    updatedAt
+  mutation ChangeDescription($auid: ID!, $tokenId: String, $variationId: ID!, $text: String) {
+    changeDescription(
+      auid: $auid
+      tokenId: $tokenId
+      variationId: $variationId
+      text: $text
+    ) {
+      variationId
+      text
+      updatedAt
+    }
   }
-}
-    `;
+`;
 export const ChangeStatusDocument = gql`
-    mutation ChangeStatus($auid: ID!, $tokenId: String, $variationId: ID!, $text: String, $emoji: String, $expiresAt: String, $durationMinutes: Int) {
-  changeStatus(
-    auid: $auid
-    tokenId: $tokenId
-    variationId: $variationId
-    text: $text
-    emoji: $emoji
-    expiresAt: $expiresAt
-    durationMinutes: $durationMinutes
-  ) {
-    variationId
-    text
-    emoji
-    expiresAt
-    updatedAt
-    isExpired
+  mutation ChangeStatus($auid: ID!, $tokenId: String, $variationId: ID!, $text: String, $emoji: String, $expiresAt: String, $durationMinutes: Int) {
+    changeStatus(
+      auid: $auid
+      tokenId: $tokenId
+      variationId: $variationId
+      text: $text
+      emoji: $emoji
+      expiresAt: $expiresAt
+      durationMinutes: $durationMinutes
+    ) {
+      variationId
+      text
+      emoji
+      expiresAt
+      updatedAt
+      isExpired
+    }
   }
-}
-    `;
+`;
 export const ChangeVariationLocationIdDocument = gql`
-    mutation ChangeVariationLocationId($auid: ID!, $tokenId: String, $variationId: ID!, $locationId: String) {
-  changeVariationLocationId(
-    auid: $auid
-    tokenId: $tokenId
-    variationId: $variationId
-    locationId: $locationId
-  ) {
-    id
-    locationId
+  mutation ChangeVariationLocationId($auid: ID!, $tokenId: String, $variationId: ID!, $locationId: String) {
+    changeVariationLocationId(
+      auid: $auid
+      tokenId: $tokenId
+      variationId: $variationId
+      locationId: $locationId
+    ) {
+      id
+      locationId
+    }
   }
-}
-    `;
+`;
 export const ChangeVariationIconDocument = gql`
-    mutation ChangeVariationIcon($auid: ID!, $tokenId: String, $variationId: ID!, $icon: String) {
-  changeVariationIcon(
-    auid: $auid
-    tokenId: $tokenId
-    variationId: $variationId
-    icon: $icon
-  ) {
-    id
-    icon
+  mutation ChangeVariationIcon($auid: ID!, $tokenId: String, $variationId: ID!, $icon: String) {
+    changeVariationIcon(
+      auid: $auid
+      tokenId: $tokenId
+      variationId: $variationId
+      icon: $icon
+    ) {
+      id
+      icon
+    }
   }
-}
-    `;
+`;
 export const SetDefaultVariationDocument = gql`
-    mutation SetDefaultVariation($auid: ID!, $tokenId: String, $variationId: ID!) {
-  setDefaultVariation(auid: $auid, tokenId: $tokenId, variationId: $variationId) {
-    auid
-    variationId
+  mutation SetDefaultVariation($auid: ID!, $tokenId: String, $variationId: ID!) {
+    setDefaultVariation(auid: $auid, tokenId: $tokenId, variationId: $variationId) {
+      auid
+      variationId
+    }
   }
-}
-    `;
+`;
 export const UserDetailsDocument = gql`
-    query UserDetails($auid: ID!) {
-  usernames(auid: $auid) {
-    defaultUsername
+  query UserDetails($auid: ID!) {
+    usernames(auid: $auid) {
+      defaultUsername
+    }
+    defaultVariation(auid: $auid) {
+      variationId
+    }
+    variations(auid: $auid) {
+      id
+      locationId
+      icon
+    }
   }
-  defaultVariation(auid: $auid) {
-    variationId
-  }
-  variations(auid: $auid) {
-    id
-    locationId
-    icon
-  }
-}
-    `;
+`;
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
@@ -594,15 +560,6 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     DefaultVariation(variables: DefaultVariationQueryVariables, options?: C): Promise<DefaultVariationQuery> {
       return requester<DefaultVariationQuery, DefaultVariationQueryVariables>(DefaultVariationDocument, variables, options) as Promise<DefaultVariationQuery>;
-    },
-    VariationName(variables: VariationNameQueryVariables, options?: C): Promise<VariationNameQuery> {
-      return requester<VariationNameQuery, VariationNameQueryVariables>(VariationNameDocument, variables, options) as Promise<VariationNameQuery>;
-    },
-    VariationDescription(variables: VariationDescriptionQueryVariables, options?: C): Promise<VariationDescriptionQuery> {
-      return requester<VariationDescriptionQuery, VariationDescriptionQueryVariables>(VariationDescriptionDocument, variables, options) as Promise<VariationDescriptionQuery>;
-    },
-    VariationStatus(variables: VariationStatusQueryVariables, options?: C): Promise<VariationStatusQuery> {
-      return requester<VariationStatusQuery, VariationStatusQueryVariables>(VariationStatusDocument, variables, options) as Promise<VariationStatusQuery>;
     },
     AddUsername(variables: AddUsernameMutationVariables, options?: C): Promise<AddUsernameMutation> {
       return requester<AddUsernameMutation, AddUsernameMutationVariables>(AddUsernameDocument, variables, options) as Promise<AddUsernameMutation>;
