@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import {
     FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap,
     CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X, Save,
-    Loader2, Search, Filter, ChevronRight, ArrowLeft, ExternalLink, UserPlus, Trash2
+    Loader2, Search, Filter, ChevronRight, ArrowLeft, ExternalLink, UserPlus, Trash2, Settings
 } from "lucide-react"
 import Link from "next/link"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
@@ -223,9 +223,6 @@ function EvaluationTemplatesBlock({
     const [isAssigning, setIsAssigning] = useState(false)
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
 
-    // НОВИЙ СТАН: для розгортання призначеного шаблону на головній сторінці
-    const [expandedAssignedTemplateId, setExpandedAssignedTemplateId] = useState<string | null>(null)
-
     const ITEMS_PER_PAGE = 50;
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -323,7 +320,7 @@ function EvaluationTemplatesBlock({
                                     {isCompetitionHolder && canEdit && (
                                         <button
                                             onClick={() => handleOpenCatalog(bevType)}
-                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                                         >
                                             {isAssigned ? (t("commission.changeTemplate" as any) || "Change") : (t("commission.assignTemplate" as any) || "Assign Template")}
                                         </button>
@@ -332,17 +329,17 @@ function EvaluationTemplatesBlock({
 
                                 {isAssigned && te ? (
                                     <div className="flex flex-col gap-2">
-                                        {/* ЗАМІНЕНО: Тепер це кнопка, яка розгортає прев'ю вниз */}
-                                        <button
-                                            onClick={() => setExpandedAssignedTemplateId(expandedAssignedTemplateId === te.id ? null : te.id)}
-                                            className="group/link flex items-center gap-1 w-fit outline-none cursor-pointer text-left transition-all"
-                                            title="View template structure"
+                                        <Link
+                                            href={`/templates?templateId=${te.template?.id}-${te.version}`}
+                                            target="_blank"
+                                            className="group/link flex items-center gap-1.5 w-fit outline-none"
+                                            title="Open template details in new tab"
                                         >
                                             <span className="text-sm font-extrabold text-slate-800 group-hover/link:text-indigo-600 transition-colors">
                                                 {te.template?.name || "Standard Template"}
                                             </span>
-                                            <ChevronRight className={`w-4 h-4 text-slate-400 group-hover/link:text-indigo-500 transition-transform duration-200 ${expandedAssignedTemplateId === te.id ? 'rotate-90' : ''}`} />
-                                        </button>
+                                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover/link:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-1 group-hover/link:translate-x-0" />
+                                        </Link>
 
                                         <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
                                             <span className="bg-white border border-slate-200 shadow-sm px-1.5 py-0.5 rounded-md">v{te.version}</span>
@@ -351,34 +348,6 @@ function EvaluationTemplatesBlock({
                                             <span className="text-slate-300">•</span>
                                             <span>{te.categories?.length || 0} Categories</span>
                                         </div>
-
-                                        {/* ПРЕВ'Ю ПРИЗНАЧЕНОГО ШАБЛОНУ */}
-                                        {expandedAssignedTemplateId === te.id && te.categories && (
-                                            <div className="mt-2 p-4 bg-white/50 border border-slate-200/60 rounded-2xl max-h-[350px] overflow-y-auto text-xs shadow-inner animate-in fade-in slide-in-from-top-2 duration-300">
-                                                <p className="font-bold text-slate-400 mb-3 uppercase tracking-wider text-[9px]">{t("commission.templatePreview" as any) || "Structure Preview"}</p>
-                                                <div className="flex flex-col gap-3">
-                                                    {te.categories.map((cat: any) => (
-                                                        <div key={cat.id || cat.name} className="bg-white border border-slate-200 shadow-sm rounded-xl p-3">
-                                                            <p className="font-bold text-slate-700 mb-2.5 border-b border-slate-100 pb-1.5">{cat.name}</p>
-                                                            <div className="flex flex-col gap-1.5">
-                                                                {cat.properties?.map((prop: any) => (
-                                                                    <div key={prop.id || prop.code} className="flex justify-between items-center bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5">
-                                                                        <span className="font-bold text-slate-600 truncate mr-2 flex items-center gap-1.5">
-                                                                            {prop.name}
-                                                                            {prop.isRequired && <span className="text-rose-500 font-extrabold" title="Required">*</span>}
-                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">Result</span>}
-                                                                        </span>
-                                                                        <span className="text-[9px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded uppercase shrink-0">
-                                                                            {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
-                                                                        </span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
@@ -475,23 +444,45 @@ function EvaluationTemplatesBlock({
                                                     </div>
                                                 </div>
 
+                                                {/* ДИЗАЙН ПРЕВ'Ю ЯК НА СТОРІНЦІ /TEMPLATES + ПАРАМЕТРИ */}
                                                 {isExpanded && ed.categories && (
-                                                    <div className="p-4 bg-slate-50 border-t border-slate-100 max-h-[300px] overflow-y-auto text-xs">
-                                                        <p className="font-bold text-slate-400 mb-3 uppercase tracking-wider text-[9px]">{t("commission.templatePreview" as any) || "Structure Preview"}</p>
-                                                        <div className="flex flex-col gap-4">
+                                                    <div className="px-6 pb-6 pt-4 border-t border-slate-50 bg-slate-50/15 max-h-[350px] overflow-y-auto">
+                                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                                                            <Settings className="w-4 h-4 text-indigo-500" />
+                                                            {t("commission.templatePreview" as any) || "Structure Preview"}
+                                                        </h4>
+
+                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                                             {ed.categories.map((cat: any) => (
-                                                                <div key={cat.id} className="bg-white border border-slate-200 rounded-xl p-3">
-                                                                    <p className="font-bold text-slate-700 mb-3 border-b pb-1.5">{cat.name}</p>
+                                                                <div
+                                                                    key={cat.id}
+                                                                    className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs flex flex-col gap-3.5"
+                                                                >
+                                                                    <h5 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
+                                                                        {cat.name}
+                                                                    </h5>
                                                                     <div className="flex flex-col gap-2">
                                                                         {cat.properties?.map((prop: any) => (
-                                                                            <div key={prop.id || prop.code} className="flex flex-col bg-slate-50 border border-slate-100 rounded-lg p-2.5">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="font-bold text-slate-700 truncate mr-2 flex items-center gap-1.5">
-                                                                                        {prop.name}
-                                                                                        {prop.isRequired && <span className="text-rose-500 font-bold" title="Required">*</span>}
-                                                                                        {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase">Result</span>}
-                                                                                    </span>
-                                                                                    <span className="text-[9px] font-bold text-slate-400 bg-white border px-1.5 py-0.5 rounded uppercase shrink-0">{prop.type}</span>
+                                                                            <div
+                                                                                key={prop.id || prop.code}
+                                                                                className="flex flex-col bg-slate-50/30 hover:bg-slate-50/70 border border-slate-100/80 rounded-xl px-3 py-2 text-xs transition-colors"
+                                                                            >
+                                                                                <div className="flex justify-between items-start">
+                                                                                    <div className="flex flex-col min-w-0 flex-1 pr-3">
+                                                                                        <span className="font-bold text-slate-700 truncate flex items-center gap-1.5">
+                                                                                            {prop.name}
+                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title="Required">*</span>}
+                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">Result</span>}
+                                                                                        </span>
+                                                                                        {prop.description && (
+                                                                                            <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                                                        <span className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60 uppercase">
+                                                                                            {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
+                                                                                        </span>
+                                                                                    </div>
                                                                                 </div>
 
                                                                                 <div className="flex flex-wrap gap-2 mt-2 text-[9px] text-slate-500 font-medium">
@@ -501,7 +492,7 @@ function EvaluationTemplatesBlock({
                                                                                         </span>
                                                                                     )}
                                                                                     {prop.allowedValues && prop.allowedValues.length > 0 && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200 truncate max-w-[200px]" title={prop.allowedValues.join(', ')}>
+                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200 truncate max-w-[150px]" title={prop.allowedValues.join(', ')}>
                                                                                             Options: {prop.allowedValues.join(', ')}
                                                                                         </span>
                                                                                     )}
