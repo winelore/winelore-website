@@ -1,30 +1,31 @@
 'use server';
 
-import Cookies from "js-cookie";
-
 /**
  * Helper function to execute raw GraphQL queries/mutations directly on the backend.
  * Running this on the server side completely bypasses browser CORS restrictions.
  */
-
-
-
 async function executeGraphQL(query: string, variables: any) {
-    const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+    const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query, variables }),
-        // Disable caching for mutations to guarantee fresh state execution
         cache: 'no-store'
     });
+
+    const text = await response.text();
+    let json: any;
+    try {
+        json = JSON.parse(text);
+    } catch {
+        throw new Error(`GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+    }
 
     if (!response.ok) {
         throw new Error(`Server responded with status ${response.status}`);
     }
 
-    const json = await response.json();
     if (json.errors && json.errors.length > 0) {
         throw new Error(json.errors[0].message);
     }
@@ -42,7 +43,7 @@ export async function getCompetitionSeriesListAction() {
     }
 }
 
-export async function getCompetitionSeriesCount(auid:number) {
+export async function getCompetitionSeriesCount(auid: number) {
     const query = `
     query GetCompetitionSeriesCount($owner: [Int!]) {
       competitionSeriesCount(owner: $owner)
@@ -50,7 +51,7 @@ export async function getCompetitionSeriesCount(auid:number) {
   `;
 
     try {
-        const res = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+        const res = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -59,37 +60,70 @@ export async function getCompetitionSeriesCount(auid:number) {
             }),
         });
 
-        const json = await res.json();
+        const text = await res.text();
+        let json: any;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            return null;
+        }
 
         if (json.errors) {
             console.error("GraphQL errors:", json.errors);
             return null;
         }
 
-        return json.data.competitionSeriesCount; // это просто число
+        return json.data?.competitionSeriesCount;
     } catch (err) {
         console.error("Failed to fetch competition series count:", err);
         return null;
     }
 }
 
-
 /**
  * Server Action that handles the cascade generation of the entire competition infrastructure.
  */
 export async function createCompetitionInfrastructure(formData: any) {
     try {
-        // 1. Initialize the core Competition node with the required holders array
+        // 1. Initialize the core Competition node
         const createCompetitionMutation = `
             mutation CreateCompetition($input: CreateCompetitionInput!) {
                 createCompetition(input: $input) { id }
             }
         `;
+
+        let seriesId = formData.seriesId;
+        if (!seriesId) {
+            const seriesList = await getCompetitionSeriesListAction();
+            if (seriesList && seriesList.length > 0) {
+                const userAuid = formData.holders?.[0]?.[0];
+                const mySeries = userAuid ? seriesList.find((s: any) =>
+                    s.owners && s.owners.flat().includes(Number(userAuid))
+                ) : null;
+                seriesId = mySeries ? mySeries.id : seriesList[0].id;
+            } else {
+                const createSeriesMutation = `
+                    mutation CreateSeries($input: CreateCompetitionSeriesInput!) {
+                        createCompetitionSeries(input: $input) { id }
+                    }
+                `;
+                const seriesRes = await executeGraphQL(createSeriesMutation, {
+                    input: {
+                        name: "General Series",
+                        countriesType: "GLOBAL",
+                        countriesCodes: [],
+                        owners: formData.holders && formData.holders.length > 0 ? formData.holders : [[1]]
+                    }
+                });
+                seriesId = seriesRes?.createCompetitionSeries?.id;
+            }
+        }
+
         const competitionResult = await executeGraphQL(createCompetitionMutation, {
             input: {
-                name: formData.name,
-                seriesId: formData.seriesId ? formData.seriesId : null,
-                holders: formData.holders // Added holders to satisfy the NonNull requirement
+                name: (formData.name || "New Competition").trim().replace(/\s+/g, ' '),
+                seriesId: seriesId,
+                holders: formData.holders
             }
         });
 
@@ -112,70 +146,74 @@ export async function createCompetitionInfrastructure(formData: any) {
             });
         }
 
-        // 3. Sequentially process and build each Commission node
-        for (const commission of formData.commissions) {
-            const createCommissionMutation = `
-                mutation CreateCommission($input: CreateCommissionInput!) {
-                    createCommission(input: $input) { id }
-                }
-            `;
-            const commissionResult = await executeGraphQL(createCommissionMutation, {
-                input: {
-                    competitionId: competitionId,
-                    name: commission.name
-                }
-            });
-
-            const commissionId = commissionResult?.createCommission?.id;
-            if (!commissionId) continue;
-
-            // 4. Update the schedule and timeline constraints for the commission
-            if (commission.plannedStartDate || commission.plannedEndDate) {
-                const updateCommissionDatesMutation = `
-                    mutation UpdateCommissionDates($id: ID!, $input: PlannedDatesInput!) {
-                        updateCommissionDates(id: $id, input: $input) { id }
+        // 3. Sequentially process and build each Commission node if present
+        if (formData.commissions && Array.isArray(formData.commissions)) {
+            for (const commission of formData.commissions) {
+                const createCommissionMutation = `
+                    mutation CreateCommission($input: CreateCommissionInput!) {
+                        createCommission(input: $input) { id }
                     }
                 `;
-                await executeGraphQL(updateCommissionDatesMutation, {
-                    id: commissionId,
+                const commissionResult = await executeGraphQL(createCommissionMutation, {
                     input: {
-                        start: commission.plannedStartDate ? new Date(commission.plannedStartDate).toISOString() : null,
-                        end: commission.plannedEndDate ? new Date(commission.plannedEndDate).toISOString() : null
+                        competitionId: competitionId,
+                        name: commission.name
                     }
                 });
-            }
 
-            // 5. Configure dynamic functional toggle configurations
-            const setWineJumper = `mutation SetWJ($id: ID!, $v: Boolean!) { setCommissionWineJumperMiniGameEnabled(id: $id, enabled: $v) { id } }`;
-            const setVoice = `mutation SetVoice($id: ID!, $v: Boolean!) { setCommissionVoiceCommentsEnabled(id: $id, enabled: $v) { id } }`;
-            const setProp = `mutation SetProp($id: ID!, $v: Boolean!) { setCommissionPropertyCommentsEnabled(id: $id, enabled: $v) { id } }`;
-            const setOrigin = `mutation SetOrigin($id: ID!, $v: Boolean!) { setCommissionBeverageOriginDuringEvaluationEnabled(id: $id, enabled: $v) { id } }`;
+                const commissionId = commissionResult?.createCommission?.id;
+                if (!commissionId) continue;
 
-            await Promise.all([
-                executeGraphQL(setWineJumper, { id: commissionId, v: commission.wineJumperMiniGameEnabled }),
-                executeGraphQL(setVoice, { id: commissionId, v: commission.voiceCommentsEnabled }),
-                executeGraphQL(setProp, { id: commissionId, v: commission.propertyCommentsEnabled }),
-                executeGraphQL(setOrigin, { id: commissionId, v: commission.beverageOriginDuringEvaluationEnabled })
-            ]);
+                // 4. Update the schedule and timeline constraints for the commission
+                if (commission.plannedStartDate || commission.plannedEndDate) {
+                    const updateCommissionDatesMutation = `
+                        mutation UpdateCommissionDates($id: ID!, $input: PlannedDatesInput!) {
+                            updateCommissionDates(id: $id, input: $input) { id }
+                        }
+                    `;
+                    await executeGraphQL(updateCommissionDatesMutation, {
+                        id: commissionId,
+                        input: {
+                            start: commission.plannedStartDate ? new Date(commission.plannedStartDate).toISOString() : null,
+                            end: commission.plannedEndDate ? new Date(commission.plannedEndDate).toISOString() : null
+                        }
+                    });
+                }
 
-            // 6. Map and bind multiple Replicas under the configured Commission
-            for (const replica of commission.replicas) {
-                const createReplicaMutation = `
-                    mutation CreateCommissionReplica($input: CreateCommissionReplicaInput!) {
-                        createCommissionReplica(input: $input) { id }
+                // 5. Configure dynamic functional toggle configurations
+                const setWineJumper = `mutation SetWJ($id: ID!, $v: Boolean!) { setCommissionWineJumperMiniGameEnabled(id: $id, enabled: $v) { id } }`;
+                const setVoice = `mutation SetVoice($id: ID!, $v: Boolean!) { setCommissionVoiceCommentsEnabled(id: $id, enabled: $v) { id } }`;
+                const setProp = `mutation SetProp($id: ID!, $v: Boolean!) { setCommissionPropertyCommentsEnabled(id: $id, enabled: $v) { id } }`;
+                const setOrigin = `mutation SetOrigin($id: ID!, $v: Boolean!) { setCommissionBeverageOriginDuringEvaluationEnabled(id: $id, enabled: $v) { id } }`;
+
+                await Promise.all([
+                    executeGraphQL(setWineJumper, { id: commissionId, v: commission.wineJumperMiniGameEnabled }),
+                    executeGraphQL(setVoice, { id: commissionId, v: commission.voiceCommentsEnabled }),
+                    executeGraphQL(setProp, { id: commissionId, v: commission.propertyCommentsEnabled }),
+                    executeGraphQL(setOrigin, { id: commissionId, v: commission.beverageOriginDuringEvaluationEnabled })
+                ]);
+
+                // 6. Map and bind multiple Replicas under the configured Commission
+                if (commission.replicas && Array.isArray(commission.replicas)) {
+                    for (const replica of commission.replicas) {
+                        const createReplicaMutation = `
+                            mutation CreateCommissionReplica($input: CreateCommissionReplicaInput!) {
+                                createCommissionReplica(input: $input) { id }
+                            }
+                        `;
+                        await executeGraphQL(createReplicaMutation, {
+                            input: {
+                                commissionId: commissionId,
+                                name: replica.name,
+                                type: replica.type
+                            }
+                        });
                     }
-                `;
-                await executeGraphQL(createReplicaMutation, {
-                    input: {
-                        commissionId: commissionId,
-                        name: replica.name,
-                        type: replica.type
-                    }
-                });
+                }
             }
         }
 
-        return { success: true };
+        return { success: true, competitionId };
     } catch (error: any) {
         console.error("Server Action Execution Error:", error);
         return { success: false, error: error.message || "Internal Server Error" };

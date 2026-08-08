@@ -12,7 +12,13 @@ async function rawGraphQL(query: string, variables?: Record<string, any>) {
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 },
     });
-    const json = await res.json();
+    const text = await res.text();
+    let json: any;
+    try {
+        json = JSON.parse(text);
+    } catch {
+        throw new Error(`GraphQL server error (${res.status}): Некоректна відповідь сервера`);
+    }
     if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
     return json.data;
 }
@@ -250,8 +256,8 @@ export async function updateGlobalTemplateAction(
         console.log(`🔄 Updating global template "${templateId}"...`);
         const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
 
-        if (sdk.UpdateEvaluationTemplate) {
-            await sdk.UpdateEvaluationTemplate({
+        if ((sdk as any).UpdateEvaluationTemplate) {
+            await (sdk as any).UpdateEvaluationTemplate({
                 id: templateId,
                 input: {
                     name: templateName,

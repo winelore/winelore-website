@@ -5,7 +5,7 @@ import { fetchGraphQL } from "@/lib/apiClient";
 import { getAxusGraphQLEndpoint } from "@/lib/axusEndpoint";
 import { GET_MY_COMPETITIONS_SERIES } from "../myCompetitionSeries/queries";
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://hayabusa.proxy.rlwy.net:21675/graphql";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {

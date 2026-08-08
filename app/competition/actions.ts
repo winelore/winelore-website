@@ -77,13 +77,19 @@ export async function updateCompetitionSettingsAction(
     if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
 
     const executeMutation = async (query: string, variables: any) => {
-        const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+        const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query, variables }),
             cache: 'no-store'
         });
-        const json = await response.json();
+        const text = await response.text();
+        let json: any;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            throw new Error(`GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+        }
         if (json.errors && json.errors.length > 0) {
             throw new Error(json.errors[0].message);
         }
@@ -140,9 +146,51 @@ export async function updateCompetitionSettingsAction(
     }
 }
 
+export async function updateCompetitionDatesAction(
+    competitionId: string,
+    plannedStartDate: string | null,
+    plannedEndDate: string | null
+) {
+    if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
+    try {
+        const mutation = `
+            mutation UpdateCompetitionDates($id: ID!, $input: PlannedDatesInput!) {
+                updateCompetitionDates(id: $id, input: $input) { id }
+            }
+        `;
+        await executeGraphQL(mutation, {
+            id: competitionId,
+            input: {
+                start: plannedStartDate ? new Date(plannedStartDate).toISOString() : null,
+                end: plannedEndDate ? new Date(plannedEndDate).toISOString() : null
+            }
+        });
+        return { success: true };
+    } catch (err: any) {
+        console.error("Server Action Error (updateCompetitionDatesAction):", err);
+        return { success: false, error: err.message || "Failed to update dates" };
+    }
+}
+
+export async function updateCompetitionNameAction(competitionId: string, newName: string) {
+    if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
+    try {
+        const mutation = `
+            mutation ChangeCompetitionName($id: ID!, $newName: String!) {
+                changeCompetitionName(id: $id, newName: $newName) { id name }
+            }
+        `;
+        await executeGraphQL(mutation, { id: competitionId, newName });
+        return { success: true };
+    } catch (err: any) {
+        console.error("Server Action Error (updateCompetitionNameAction):", err);
+        return { success: false, error: err.message || "Failed to update name" };
+    }
+}
+
 export async function getCompetitionSeriesListAction() {
     try {
-        const response = await fetch('http://hayabusa.proxy.rlwy.net:21675/graphql', {
+        const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -151,7 +199,13 @@ export async function getCompetitionSeriesListAction() {
             cache: 'no-store'
         });
 
-        const json = await response.json();
+        const text = await response.text();
+        let json: any;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            return [];
+        }
 
         if (json.errors && json.errors.length > 0) {
             throw new Error(json.errors[0].message);
@@ -163,4 +217,155 @@ export async function getCompetitionSeriesListAction() {
         return [];
     }
 }
+interface CreateCommissionParams {
+    competitionId: string;
+    name: string;
+    plannedStartDate?: string; // ISO string, optional
+    plannedEndDate?: string;   // ISO string, optional
+    wineJumperMiniGameEnabled?: boolean;
+    voiceCommentsEnabled?: boolean;
+    propertyCommentsEnabled?: boolean;
+    beverageOriginDuringEvaluationEnabled?: boolean;
+}
 
+async function executeGraphQL(query: string, variables: any) {
+    const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query, variables }),
+        cache: 'no-store'
+    });
+
+    const text = await response.text();
+    let json: any;
+    try {
+        json = JSON.parse(text);
+    } catch {
+        throw new Error(`GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+    }
+
+    if (!response.ok) {
+        throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    if (json.errors && json.errors.length > 0) {
+        throw new Error(json.errors[0].message);
+    }
+    return json.data;
+}
+
+export async function createCommission(params: CreateCommissionParams) {
+    try {
+        const createCommissionMutation = `
+            mutation CreateCommission($input: CreateCommissionInput!) {
+                createCommission(input: $input) {
+                    id
+                    name
+                }
+            }
+        `;
+
+        const plannedDates = (params.plannedStartDate || params.plannedEndDate)
+            ? {
+                start: params.plannedStartDate ? new Date(params.plannedStartDate).toISOString() : null,
+                end: params.plannedEndDate ? new Date(params.plannedEndDate).toISOString() : null,
+            }
+            : null;
+
+        const data = await executeGraphQL(createCommissionMutation, {
+            input: {
+                competitionId: params.competitionId,
+                name: params.name,
+                plannedDates,
+                wineJumperMiniGameEnabled: params.wineJumperMiniGameEnabled ?? false,
+                voiceCommentsEnabled: params.voiceCommentsEnabled ?? false,
+                propertyCommentsEnabled: params.propertyCommentsEnabled ?? false,
+                beverageOriginDuringEvaluationEnabled: params.beverageOriginDuringEvaluationEnabled ?? false,
+            }
+        });
+
+        const commission = data?.createCommission;
+        if (!commission?.id) throw new Error("Failed to create commission.");
+
+        return { success: true, commission };
+    } catch (error: any) {
+        console.error("Failed to create commission:", error);
+        return { success: false, error: error.message || "Internal Server Error" };
+    }
+}
+
+export async function createQuickCompetitionAction(name: string, clientAuid?: number | null, seriesId?: string | null) {
+    try {
+        let userAuid = clientAuid;
+        if (!userAuid) {
+            const { cookies } = await import("next/headers");
+            const cookieStore = await cookies();
+            const cookieAuid = cookieStore.get("auid")?.value;
+            if (cookieAuid) userAuid = parseInt(cookieAuid, 10);
+        }
+
+        if (!userAuid) {
+            return { success: false, error: "User authentication required." };
+        }
+
+        let finalSeriesId = seriesId;
+        if (!finalSeriesId) {
+            const seriesList = await getCompetitionSeriesListAction();
+            if (seriesList && seriesList.length > 0) {
+                const mySeries = seriesList.find((s: any) =>
+                    s.owners && s.owners.flat().includes(Number(userAuid))
+                );
+                finalSeriesId = mySeries ? mySeries.id : seriesList[0].id;
+            } else {
+                const createSeriesMutation = `
+                    mutation CreateSeries($input: CreateCompetitionSeriesInput!) {
+                        createCompetitionSeries(input: $input) { id }
+                    }
+                `;
+                const seriesRes = await executeGraphQL(createSeriesMutation, {
+                    input: {
+                        name: "General Series",
+                        countriesType: "GLOBAL",
+                        countriesCodes: [],
+                        owners: [[userAuid]]
+                    }
+                });
+                finalSeriesId = seriesRes?.createCompetitionSeries?.id;
+            }
+        }
+
+        if (!finalSeriesId) {
+            throw new Error("Unable to locate or create a Competition Series.");
+        }
+
+        const createCompetitionMutation = `
+            mutation CreateCompetition($input: CreateCompetitionInput!) {
+                createCompetition(input: $input) {
+                    id
+                    name
+                }
+            }
+        `;
+
+        const finalName = name.trim() || "New Competition";
+        const holders = [[userAuid]];
+
+        const data = await executeGraphQL(createCompetitionMutation, {
+            input: {
+                name: finalName,
+                seriesId: finalSeriesId,
+                holders
+            }
+        });
+
+        const competitionId = data?.createCompetition?.id;
+        if (!competitionId) throw new Error("Failed to create competition.");
+
+        return { success: true, competitionId };
+    } catch (error: any) {
+        console.error("Failed to create quick competition:", error);
+        return { success: false, error: error.message || "Failed to create competition" };
+    }
+}

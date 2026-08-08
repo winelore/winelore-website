@@ -116,7 +116,9 @@ export type CreateBeverageTypeInput = {
 export type CreateCommissionInput = {
   beverageOriginDuringEvaluationEnabled?: boolean | null | undefined;
   competitionId: string | number;
+  evaluationVisibleAttributes?: EvaluationVisibleAttributesInput | null | undefined;
   name: string;
+  partialCandidateEvaluationEnabled?: boolean | null | undefined;
   plannedDates?: PlannedDatesInput | null | undefined;
   propertyCommentsEnabled?: boolean | null | undefined;
   voiceCommentsEnabled?: boolean | null | undefined;
@@ -209,6 +211,12 @@ export type EvaluationTemplateEditionStatus =
   | 'ARCHIVED'
   | 'DRAFT';
 
+export type EvaluationVisibleAttributesInput = {
+  batch?: Array<string>;
+  beverage?: Array<string>;
+  sample?: Array<string>;
+};
+
 export type PlannedDatesInput = {
   end?: string | null | undefined;
   start?: string | null | undefined;
@@ -255,7 +263,7 @@ export type GetCommissionQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, panels: Array<{ id: string, name: string }>, candidates: Array<{ id: string, panelId: string }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string } }> }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, panels: Array<{ id: string, name: string }>, candidates: Array<{ id: string, panelId: string }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string, beverageType: { id: string, code: string, name: string } } }> }> } | null };
 
 export type GetCommissionTemplatesQueryVariables = Exact<{
   id: string | number;
@@ -851,6 +859,11 @@ export const GetCommissionDocument = gql`
           id
           anonymizedCode
           panelId
+          beverageType {
+            id
+            code
+            name
+          }
         }
       }
     }

@@ -28,6 +28,7 @@ export async function GET() {
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
+    prompt: "consent select_account",
   });
 
   const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";

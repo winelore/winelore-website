@@ -17,6 +17,7 @@ export const GET_COMMISSION = gql(`
       voiceCommentsEnabled
       propertyCommentsEnabled
       beverageOriginDuringEvaluationEnabled
+      partialCandidateEvaluationEnabled
       panels {
         id
         name
@@ -36,6 +37,7 @@ export const GET_COMMISSION = gql(`
         type
         status
         currentCandidateId
+        chaoticCurrentCandidateChangesEnabled
         members {
           id
           auid

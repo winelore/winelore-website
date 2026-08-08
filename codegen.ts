@@ -50,10 +50,9 @@ const config: CodegenConfig = {
             ]
         },
         './src/gql/axus/sdk.ts': {
-            schema: 'https://axusid.thewinelore.com/graphql',
+            schema: process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT,
             documents: ['src/gql/axus/operations.graphql'],
             plugins: [
-                'typescript',
                 'typescript-operations',
                 'typescript-generic-sdk'
             ]

@@ -27,7 +27,15 @@ const requester = async <R, V>(
         next: { revalidate: 0 }
     });
 
-    const { data, errors } = await response.json();
+    const text = await response.text();
+    let json: any;
+    try {
+        json = JSON.parse(text);
+    } catch {
+        throw new Error(`AXUS GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+    }
+
+    const { data, errors } = json;
 
     if (errors) {
         console.error('AXUS GraphQL Pipeline Error (SDK requester):', JSON.stringify(errors, null, 2));

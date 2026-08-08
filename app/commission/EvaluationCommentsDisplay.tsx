@@ -328,8 +328,11 @@ export function MemberEvaluationSection({
     forceShowAll = false,
     propertyCommentsEnabled,
     voiceCommentsEnabled,
+    onConfirmEvaluation,
 }: {
     evaluation: {
+        id?: string;
+        status?: string;
         scores?: Array<{ code: string; value: string }>;
         comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }>;
     };
@@ -338,14 +341,48 @@ export function MemberEvaluationSection({
     forceShowAll?: boolean;
     propertyCommentsEnabled: boolean;
     voiceCommentsEnabled: boolean;
+    onConfirmEvaluation?: (evaluationId: string) => Promise<void>;
 }) {
     const { t } = useTranslation();
     const [expanded, setExpanded] = useState(forceShowAll);
+    const [isConfirming, setIsConfirming] = useState(false);
     const flags = { propertyCommentsEnabled, voiceCommentsEnabled };
     const canExpand = !forceShowAll && hasFullAssessmentDetails(evaluation, propertyMap, flags);
+    const isDraft = evaluation.status === "DRAFT";
+
+    const handleConfirm = async () => {
+        if (!evaluation.id || !onConfirmEvaluation || isConfirming) return;
+        setIsConfirming(true);
+        try {
+            await onConfirmEvaluation(evaluation.id);
+        } finally {
+            setIsConfirming(false);
+        }
+    };
 
     return (
         <div className="space-y-2">
+            {evaluation.status && (
+                <div className="flex items-center justify-between text-xs mb-1">
+                    <span className={`px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px] ${
+                        isDraft
+                            ? "bg-amber-100 text-amber-700 border border-amber-200"
+                            : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                    }`}>
+                        {isDraft ? t("evaluation.draftStatus") : t("evaluation.confirmedStatus")}
+                    </span>
+                    {isDraft && evaluation.id && onConfirmEvaluation && (
+                        <button
+                            type="button"
+                            onClick={handleConfirm}
+                            disabled={isConfirming}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50"
+                        >
+                            {isConfirming ? t("evaluation.confirmingEvaluation") : t("evaluation.confirmEvaluation")}
+                        </button>
+                    )}
+                </div>
+            )}
             <MemberEvaluationDetails
                 evaluation={evaluation}
                 propertyMap={propertyMap}
@@ -358,16 +395,16 @@ export function MemberEvaluationSection({
                 <button
                     type="button"
                     onClick={() => setExpanded((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors print:hidden"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
                 >
                     {expanded ? (
                         <>
-                            <ChevronUp className="w-3.5 h-3.5 shrink-0" />
+                            <ChevronUp className="w-3.5 h-3.5" />
                             <span>{t("commission.showResultsOnly")}</span>
                         </>
                     ) : (
                         <>
-                            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                            <ChevronDown className="w-3.5 h-3.5" />
                             <span>{t("commission.showAllAssessments")}</span>
                         </>
                     )}

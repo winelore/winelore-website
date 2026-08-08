@@ -13,8 +13,14 @@ const USER_DETAILS_QUERY = `
     }
     variations(auid: $auid) {
       id
-      firstName
-      lastName
+    }
+  }
+`;
+
+const VARIATION_NAME_QUERY = `
+  query VariationName($variationId: ID!) {
+    name(variationId: $variationId) {
+      displayName
     }
   }
 `;
@@ -79,20 +85,31 @@ export async function refreshTokens(refreshToken: string): Promise<RefreshResult
       const responseData = await res.json();
       const data = responseData?.data;
       const defaultUsername = data?.usernames?.defaultUsername || username;
-      let defaultVar = null;
-      if (data?.defaultVariation?.variationId) {
-        defaultVar = data.variations?.find((v: any) => v.id === data.defaultVariation?.variationId);
-      }
-      if (!defaultVar && data?.variations && data.variations.length > 0) {
-        defaultVar = data.variations[0];
+      let varId = data?.defaultVariation?.variationId;
+      if (!varId && data?.variations && data.variations.length > 0) {
+        varId = data.variations[0].id;
       }
 
-      const fName = defaultVar?.firstName?.trim();
-      const lName = defaultVar?.lastName?.trim();
-      const isPlaceholder = fName === "Default" && lName === "Variation";
-
-      if ((fName || lName) && !isPlaceholder) {
-        displayName = [fName, lName].filter(Boolean).join(" ");
+      if (varId) {
+        const nameRes = await fetch(AXUS_GRAPHQL_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: VARIATION_NAME_QUERY,
+            variables: { variationId: varId },
+          }),
+        });
+        if (nameRes.ok) {
+          const nameData = await nameRes.json();
+          const nameText = nameData?.data?.name?.displayName?.trim();
+          if (nameText && nameText !== "Default Variation") {
+            displayName = nameText;
+          } else {
+            displayName = `@${defaultUsername}`;
+          }
+        } else {
+          displayName = `@${defaultUsername}`;
+        }
       } else {
         displayName = `@${defaultUsername}`;
       }
