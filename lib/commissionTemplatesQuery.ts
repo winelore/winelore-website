@@ -33,6 +33,7 @@ export const GET_COMMISSION_TEMPLATES_DEEP_QUERY = [
   "id beverageType { id code name }",
   "templateEdition {",
   "id version status",
+  "template { id name }",
   "categories {",
   "id name",
   "properties {",
