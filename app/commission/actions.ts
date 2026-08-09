@@ -550,167 +550,71 @@ export async function confirmEvaluationAction(evaluationId: string) {
     }
 }
 
+export async function setCommissionTemplateAction(
+    commissionId: string,
+    beverageTypeId: string,
+    templateEditionId: string
+) {
+    if (!isValidUuid(commissionId) || !isValidUuid(templateEditionId) || !isValidUuid(beverageTypeId)) {
+        throw new Error("Invalid UUID parameter");
+    }
+    try {
+        const headers = await getActorHeaders();
+        const data = await sdk.SetCommissionTemplateEdition({
+            id: commissionId,
+            beverageTypeId,
+            templateEditionId
+        }, { headers });
+
+        templatesCache.delete(commissionId);
+
+        return { success: true, id: data.setCommissionTemplateEdition?.id };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionTemplateAction):", err);
+        return { success: false, error: err.message || "Failed to assign template" };
+    }
+}
+
 export async function getCommissionDataAction(commissionId: string) {
     if (!isValidUuid(commissionId)) return null;
     try {
-        const detailQuery = `
-            query GetCommissionDetail($id: ID!) {
-                commission(id: $id) {
-                    id
-                    name
-                    status
-                    plannedDates {
-                        start
-                        end
-                    }
-                    startedAt
-                    endedAt
-                    createdAt
-                    wineJumperMiniGameEnabled
-                    voiceCommentsEnabled
-                    propertyCommentsEnabled
-                    beverageOriginDuringEvaluationEnabled
-                    partialCandidateEvaluationEnabled
-                    panels {
-                        id
-                        name
-                        candidates {
-                            id
-                            panelId
-                            anonymizedCode
-                            sample {
-                                id
-                                volumeMl
-                                batch {
-                                    id
-                                    lotNumber
-                                    volumeMl
-                                    attributes
-                                    beverage {
-                                        id
-                                        name
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    candidates {
-                        id
-                        panelId
-                        anonymizedCode
-                        sample {
-                            id
-                            volumeMl
-                            batch {
-                                id
-                                lotNumber
-                                volumeMl
-                                attributes
-                                beverage {
-                                    id
-                                    name
-                                }
-                            }
-                        }
-                    }
-                    competition {
-                        id
-                        name
-                        holders
-                    }
-                    replicas {
-                        id
-                        name
-                        type
-                        status
-                        currentCandidateId
-                        chaoticCurrentCandidateChangesEnabled
-                        members {
-                            id
-                            auid
-                            role
-                            isReady
-                        }
-                        replicaCandidates {
-                            id
-                            status
-                            candidate {
-                                id
-                                anonymizedCode
-                                panelId
-                            }
-                        }
-                    }
-                }
-            }
-        `;
-
-        const [commissionRes, countData] = await Promise.all([
-            rawGraphQL(detailQuery, { id: commissionId }),
+        const [commissionData, countData] = await Promise.all([
+            sdk.GetCommission({ id: commissionId }),
             sdk.GetCommissionCandidateCount({ commissionId })
         ]);
-        const commission = commissionRes?.commission;
+        const commission = commissionData.commission;
         if (!commission) return null;
 
-        // Fetch template editions dynamically with bootstrapping fallback
-        let templateEdition: any = null;
+        // Fetch template editions
+        let templateEditions: any[] = [];
         try {
             console.log(`🔍 Fetching templates for commission ${commissionId}...`);
             const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
             const commissionWithTemplates = templateResult.commission;
 
-            if (commissionWithTemplates && commissionWithTemplates.templateEditions && commissionWithTemplates.templateEditions.length > 0) {
-                // Find WINE template or default to the first template link
-                const link = commissionWithTemplates.templateEditions.find(l => l.beverageType.code === "WINE") || commissionWithTemplates.templateEditions[0];
-                templateEdition = link?.templateEdition || null;
-                console.log(`✅ Found template edition: ${templateEdition?.id}`);
+            if (commissionWithTemplates && commissionWithTemplates.templateEditions) {
+                templateEditions = commissionWithTemplates.templateEditions.map((link: any) => ({
+                    id: link.id,
+                    beverageType: link.beverageType,
+                    templateEdition: link.templateEdition
+                }));
             }
         } catch (err: any) {
-            console.warn("❌ Failed to fetch template editions from backend, will try to bootstrap:", err.message);
+            console.warn("❌ Failed to fetch template editions from backend:", err.message);
         }
 
-        // Check if template edition is valid (categories exist, properties are non-null and not empty)
-        const isValidTemplate = templateEdition && templateEdition.categories && templateEdition.categories.length > 0 &&
-            templateEdition.categories.every((c: any) => c.properties && c.properties.length > 0 && c.properties.every((p: any) => p.id && p.code && p.name));
+        // Для зворотної сумісності залишаємо один legacy template
+        const validEditions = templateEditions.filter((link: any) => {
+            const te = link.templateEdition;
+            return te && te.categories && te.categories.length > 0 &&
+                te.categories.every((c: any) => c.properties && c.properties.length > 0 && c.properties.every((p: any) => p.id && p.code && p.name));
+        });
 
-        if (!isValidTemplate) {
-            if (commission.status === "DRAFT" || commission.status === "PLANNED") {
-                try {
-                    console.log(`⚡ Auto-bootstrapping template for commission ${commissionId}...`);
-                    const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
-                    const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
-                    const activeEdition = items.find((i: any) => 
-                        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
-                        i.categories && i.categories.length > 1
-                    ) || items.find((i: any) => i.categories && i.categories.length > 0) || items[0];
+        const defaultLink = validEditions.find((l: any) => l.beverageType?.code === "WINE") || validEditions[0];
+        let legacyTemplateEdition = defaultLink?.templateEdition || null;
 
-                    if (activeEdition) {
-                        const beverageTypeId = activeEdition.template?.beverageType?.id || "11111111-1111-4111-8111-111111111101";
-                        const headers = await getActorHeaders();
-                        await sdk.DevSetCommissionTemplateEdition({
-                            id: commissionId,
-                            beverageTypeId,
-                            templateEditionId: activeEdition.id
-                        }, { headers });
-                        console.log(`✅ Auto-bound template edition "${activeEdition.template?.name || activeEdition.id}" to commission ${commissionId}`);
-
-                        // Clear cache and re-fetch template edition
-                        templatesCache.delete(commissionId);
-                        const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
-                        const commissionWithTemplates = templateResult.commission;
-                        if (commissionWithTemplates?.templateEditions?.length) {
-                            const link = commissionWithTemplates.templateEditions.find(l => l.beverageType.code === "WINE") || commissionWithTemplates.templateEditions[0];
-                            templateEdition = link?.templateEdition || null;
-                        }
-                    }
-                } catch (bootstrapErr: any) {
-                    console.error("❌ Failed to auto-bootstrap template edition:", bootstrapErr.message);
-                    templateEdition = null;
-                }
-            } else {
-                console.warn(`⚠️ Skipping template bootstrap: commission is in ${commission.status} status and cannot accept new templates.`);
-                templateEdition = null;
-            }
+        if (!legacyTemplateEdition && (commission.status === "DRAFT" || commission.status === "PLANNED")) {
+            legacyTemplateEdition = null;
         }
 
         const candidatesOrder = (commission.candidates || []).map((c: any) => c.id);
@@ -721,21 +625,20 @@ export async function getCommissionDataAction(commissionId: string) {
             type: r.type,
             status: r.status,
             currentCandidateId: r.currentCandidateId || null,
-            chaoticCurrentCandidateChangesEnabled: r.chaoticCurrentCandidateChangesEnabled ?? false,
             members: (r.members || []).map((m: any) => ({
                 id: m.id,
                 auid: m.auid ? m.auid.flat() : [],
                 role: m.role,
                 isReady: m.isReady,
             })),
-            candidateCount: (r.replicaCandidates && r.replicaCandidates.length > 0) ? r.replicaCandidates.length : (countData.commissionCandidateCount ?? (commission.candidates?.length || 0)),
+            candidateCount: r.replicaCandidates ? r.replicaCandidates.length : 0,
             replicaCandidates: (r.replicaCandidates || []).map((rc: any) => ({
                 id: rc.id,
                 status: rc.status,
                 candidate: rc.candidate ? {
                     id: rc.candidate.id,
                     anonymizedCode: rc.candidate.anonymizedCode || null,
-                    panelId: rc.candidate.panelId || null,
+                    beverageType: rc.candidate.beverageType || null
                 } : null
             })).sort((a: any, b: any) => {
                 const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
@@ -744,7 +647,6 @@ export async function getCommissionDataAction(commissionId: string) {
             })
         }));
 
-        // Backwards compatible members representation (from first standard replica or first replica)
         const defaultReplica = replicas.find((r: any) => r.type === "STANDARD") || replicas[0] || null;
         const defaultMembers = defaultReplica ? defaultReplica.members : [];
 
@@ -756,11 +658,6 @@ export async function getCommissionDataAction(commissionId: string) {
             plannedEndAt: commission.plannedDates?.end || null,
             startedAt: commission.startedAt || null,
             endedAt: commission.endedAt || null,
-            partialCandidateEvaluationEnabled: commission.partialCandidateEvaluationEnabled ?? false,
-            wineJumperMiniGameEnabled: commission.wineJumperMiniGameEnabled ?? false,
-            voiceCommentsEnabled: commission.voiceCommentsEnabled ?? false,
-            propertyCommentsEnabled: commission.propertyCommentsEnabled ?? false,
-            beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled ?? false,
             competition: {
                 id: commission.competition.id,
                 name: commission.competition.name,
@@ -769,11 +666,11 @@ export async function getCommissionDataAction(commissionId: string) {
                 voiceCommentsEnabled: commission.voiceCommentsEnabled,
                 propertyCommentsEnabled: commission.propertyCommentsEnabled,
                 beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
-                evaluationTemplateEdition: templateEdition
+                evaluationTemplateEdition: legacyTemplateEdition
             },
-            candidateCount: countData.commissionCandidateCount ?? (commission.candidates?.length || 0),
+            templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
+            candidateCount: countData.commissionCandidateCount ?? 0,
             panels: commission.panels || [],
-            candidates: commission.candidates || [],
             replicas,
             members: defaultMembers
         };
