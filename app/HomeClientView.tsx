@@ -349,24 +349,24 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                     {/* Bento Box Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
-                        {/* Competitions (Priority - spans 2 columns on desktop) */}
+                        {/* Active Commissions (Priority - spans 2 columns on desktop) */}
                         <div className="lg:col-span-2 flex flex-col gap-4">
                             <div className="flex items-center gap-2 px-2">
                                 <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
-                                    <Trophy className="w-5 h-5" />
+                                    <Activity className="w-5 h-5" />
                                 </div>
-                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.myCompetitions")}</h2>
+                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.activeCommissions")}</h2>
                             </div>
                             
-                            {recentCompetitions.length > 0 ? (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-sm h-full flex flex-col">
-                                    <div className="grid gap-4 sm:grid-cols-2 flex-1">
-                                        {recentCompetitions.slice(0, 8).map(comp => (
-                                            <CompetitionCard key={comp.id} competition={comp} usernames={usernames} />
+                            {myCommissions.length > 0 ? (
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-4 shadow-sm h-full flex flex-col">
+                                    <div className="grid gap-3 sm:grid-cols-2 flex-1">
+                                        {myCommissions.slice(0, 8).map(comm => (
+                                            <CommissionCard key={comm.id} commission={comm} />
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myCompetitions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                        <Link href="/myCommissions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
                                             {t("dashboard.viewAll")}
                                             <ChevronRight className="w-4 h-4" />
                                         </Link>
@@ -374,8 +374,8 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                                 </div>
                             ) : (
                                 <div className="bg-white border border-slate-100 rounded-[32px] p-8 text-center shadow-sm flex flex-col items-center justify-center h-full min-h-[200px]">
-                                    <Trophy className="w-10 h-10 text-slate-200 mb-3" />
-                                    <p className="text-sm font-medium text-slate-500">{t("dashboard.noRecentCompetitions")}</p>
+                                    <CheckCircle className="w-10 h-10 text-slate-200 mb-3" />
+                                    <p className="text-sm font-medium text-slate-500">{t("dashboard.noActiveCommissions")}</p>
                                 </div>
                             )}
                         </div>
@@ -411,24 +411,24 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                             )}
                         </div>
 
-                        {/* Active Commissions */}
+                        {/* Competitions (Spans 2 columns on desktop) */}
                         <div className="lg:col-span-2 flex flex-col gap-4">
                             <div className="flex items-center gap-2 px-2">
                                 <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
-                                    <Activity className="w-5 h-5" />
+                                    <Trophy className="w-5 h-5" />
                                 </div>
-                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.activeCommissions")}</h2>
+                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.myCompetitions")}</h2>
                             </div>
                             
-                            {myCommissions.length > 0 ? (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-4 shadow-sm h-full flex flex-col">
-                                    <div className="grid gap-3 sm:grid-cols-2 flex-1">
-                                        {myCommissions.slice(0, 8).map(comm => (
-                                            <CommissionCard key={comm.id} commission={comm} />
+                            {recentCompetitions.length > 0 ? (
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-sm h-full flex flex-col">
+                                    <div className="grid gap-4 sm:grid-cols-2 flex-1">
+                                        {recentCompetitions.slice(0, 8).map(comp => (
+                                            <CompetitionCard key={comp.id} competition={comp} usernames={usernames} />
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myCommissions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                        <Link href="/myCompetitions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
                                             {t("dashboard.viewAll")}
                                             <ChevronRight className="w-4 h-4" />
                                         </Link>
@@ -436,8 +436,8 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                                 </div>
                             ) : (
                                 <div className="bg-white border border-slate-100 rounded-[32px] p-8 text-center shadow-sm flex flex-col items-center justify-center h-full min-h-[200px]">
-                                    <CheckCircle className="w-10 h-10 text-slate-200 mb-3" />
-                                    <p className="text-sm font-medium text-slate-500">{t("dashboard.noActiveCommissions")}</p>
+                                    <Trophy className="w-10 h-10 text-slate-200 mb-3" />
+                                    <p className="text-sm font-medium text-slate-500">{t("dashboard.noRecentCompetitions")}</p>
                                 </div>
                             )}
                         </div>

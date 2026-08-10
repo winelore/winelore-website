@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
     FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
-    Save, Search, ChevronRight, Sliders, Trash2, ArrowLeft, Loader2, UserPlus, Settings, ExternalLink
+    Save, Search, ChevronRight, Sliders, Trash2, ArrowLeft, Loader2, UserPlus, Settings, ExternalLink, Send
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -14,6 +14,7 @@ import { useUsernames } from "@/hooks/useUsernames"
 import {
     markMemberReadyAction,
     markMemberNotReadyAction,
+    submitCommissionForReviewAction,
     startCommissionAction,
     getCommissionDataAction,
     renameCommissionAction,
@@ -26,7 +27,8 @@ import {
     setCommissionVoiceCommentsEnabledAction,
     setCommissionPropertyCommentsEnabledAction,
     setCommissionBeverageOriginDuringEvaluationEnabledAction,
-    setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction,
+    setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction,
+    setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
     setCommissionTemplateAction,
 } from "../actions"
 import { getEvaluationTemplatesAction } from "@/app/templates/actions"
@@ -167,7 +169,15 @@ interface Replica {
     name: string;
     type: "STANDARD" | "TRAINEE";
     status: string;
-    chaoticCurrentCandidateChangesEnabled?: boolean;
+    currentPanelId?: string | null;
+    chaoticCurrentPanelChangesEnabled?: boolean;
+    replicaPanels: {
+        id: string;
+        status: string;
+        currentCandidateId?: string | null;
+        chaoticCurrentCandidateChangesEnabled: boolean;
+        panel?: { id: string; name: string };
+    }[];
     members: Member[];
     candidateCount: number;
     replicaCandidates: {
@@ -854,17 +864,34 @@ export default function CommissionClientView({
 
     const handleToggleChaoticCandidateChanges = async () => {
         if (!selectedReplica || isMutating) return;
-        const nextState = !selectedReplica.chaoticCurrentCandidateChangesEnabled;
+        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId);
+        if (!activePanel) return;
+        const nextState = !activePanel.chaoticCurrentCandidateChangesEnabled;
         setIsMutating(true);
         try {
-            const res = await setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction(selectedReplica.id, nextState);
+            const res = await setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction(selectedReplica.id, activePanel.id, nextState);
             if (res.success) {
-                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentCandidateChangesEnabled: nextState } : r));
+                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? {
+                    ...r,
+                    replicaPanels: r.replicaPanels.map(panel => panel.id === activePanel.id ? { ...panel, chaoticCurrentCandidateChangesEnabled: nextState } : panel),
+                } : r));
             } else {
                 alert(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
             alert(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleToggleChaoticPanelChanges = async () => {
+        if (!selectedReplica || isMutating) return;
+        const nextState = !selectedReplica.chaoticCurrentPanelChangesEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionReplicaChaoticCurrentPanelChangesEnabledAction(selectedReplica.id, nextState);
+            if (res.success) setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: nextState } : r));
         } finally {
             setIsMutating(false);
         }
@@ -1084,6 +1111,21 @@ export default function CommissionClientView({
         }
     }
 
+    const handleSubmitForReview = async () => {
+        if (isMutating || !isCommissionDraft) return
+        setIsMutating(true)
+        try {
+            await submitCommissionForReviewAction(localData.id)
+            await refreshCommissionData()
+            router.refresh()
+        } catch (err: any) {
+            console.error("Failed to submit commission for review:", err)
+            alert(err.message || t("commission.submitReviewError"))
+        } finally {
+            setIsMutating(false)
+        }
+    }
+
     const sortedMembers = [...localMembers].sort((a, b) => {
         const roleOrder = { HEAD: 1, EXPERT: 2, TRAINEE_EXPERT: 3 }
         return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)
@@ -1105,16 +1147,16 @@ export default function CommissionClientView({
         r.members.some((m) => currentAuid !== null && m.auid.includes(currentAuid)),
     ) ?? null
     const allCandidatesEvaluated =
-        (selectedReplica?.replicaCandidates?.length ?? 0) > 0 &&
-        selectedReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status))
+        (selectedReplica?.replicaPanels?.length ?? 0) > 0 &&
+        selectedReplica!.replicaPanels.every((panel) => panel.status === "COMPLETED")
     const selectedReplicaReadyForSummary =
         isUserReplicaMember &&
         selectedReplica &&
         (replicaStatus === "COMPLETED" || allCandidatesEvaluated)
     const myReplicaReadyForSummary =
         myReplica?.status === "COMPLETED" ||
-        ((myReplica?.replicaCandidates?.length ?? 0) > 0 &&
-            myReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status)))
+        ((myReplica?.replicaPanels?.length ?? 0) > 0 &&
+            myReplica!.replicaPanels.every((panel) => panel.status === "COMPLETED"))
     const summaryReplica = selectedReplicaReadyForSummary
         ? selectedReplica
         : myReplicaReadyForSummary
@@ -1790,14 +1832,24 @@ export default function CommissionClientView({
                                     <button
                                         type="button"
                                         onClick={handleToggleChaoticCandidateChanges}
-                                        disabled={isMutating}
+                                        disabled={isMutating || !selectedReplica.currentPanelId}
                                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                            selectedReplica.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                         }`}
                                     >
                                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                            selectedReplica.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
                                         }`} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                    <div className="flex flex-col pr-4">
+                                        <span className="text-xs font-bold text-slate-800">{t("commission.chaoticPanelChangesTitle")}</span>
+                                        <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.chaoticPanelChangesDesc")}</span>
+                                    </div>
+                                    <button type="button" onClick={handleToggleChaoticPanelChanges} disabled={isMutating}
+                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs transition ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
                             </div>
@@ -1947,6 +1999,31 @@ export default function CommissionClientView({
                             </h3>
 
                             <div className="flex flex-col gap-6">
+                                {isCompetitionHolder && isCommissionDraft && (
+                                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 flex-wrap sm:flex-nowrap">
+                                        <div className="max-w-full sm:max-w-[65%]">
+                                            <h4 className="text-sm font-bold text-slate-800">
+                                                {t("commission.submitReviewTitle")}
+                                            </h4>
+                                            <p className="text-xs text-slate-500 mt-0.5">
+                                                {t("commission.submitReviewDescription")}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleSubmitForReview}
+                                            disabled={isMutating}
+                                            className="group flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-600/15 cursor-pointer shrink-0"
+                                        >
+                                            {isMutating ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            ) : (
+                                                <Send className="h-4 w-4" />
+                                            )}
+                                            <span>{t("commission.submitReviewButton")}</span>
+                                        </button>
+                                    </div>
+                                )}
+
                                 {isPreStart && currentUserRole && (
                                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
@@ -2080,10 +2157,12 @@ export default function CommissionClientView({
                                         </div>
                                         {selectedReplica?.currentCandidateId && (() => {
                                             const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
+                                            const candIndex = selectedReplica.replicaCandidates.findIndex(rc => rc.id === selectedReplica.currentCandidateId);
+                                            const rawCode = currentCandidateObj?.candidate?.anonymizedCode;
+                                            const code = (rawCode && rawCode.trim()) ? rawCode.trim() : (candIndex >= 0 ? `#${candIndex + 1}` : t("common.na"));
                                             return (
                                                 <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
-                                                    <span>{t("commission.currentCandidate", { code: code || t("common.na") })}</span>
+                                                    <span>{t("commission.currentCandidate", { code })}</span>
                                                     <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
                                                 </p>
                                             );

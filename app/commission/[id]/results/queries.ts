@@ -19,9 +19,11 @@ export const GET_COMMISSION_RESULTS = `
           isResult
         }
       }
-      candidates {
+      panels {
         id
-        anonymizedCode
+        candidates {
+          id
+          anonymizedCode
         beverageType {
           id
           code
@@ -49,6 +51,7 @@ export const GET_COMMISSION_RESULTS = `
             }
           }
         }
+        }
       }
       replicas {
         id
@@ -62,11 +65,13 @@ export const GET_COMMISSION_RESULTS = `
           beverageId
           scores
         }
-        replicaCandidates {
+        replicaPanels {
           id
-          status
-          candidate {
+          panel { id }
+          replicaCandidates {
             id
+            status
+            candidate { id }
           }
         }
       }

@@ -4,12 +4,13 @@ import React, { useState } from "react"
 import Link from "next/link"
 import {
     Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin, Calendar, Award, ArrowLeft, Clock,
-    Users, Percent, Droplet, Layers, HelpCircle, Barcode
+    Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
+import { submitBeverageForReviewAction } from "../actions"
 
-type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
+type BeverageStatus = "APPROVED" | "DRAFT" | "IN_REVIEW" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
 type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
 
 interface ProducerDetails {
@@ -255,7 +256,7 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
     )
 }
 
-export default function BeverageClientView({ initialData, isNotFound, isError }: Props) {
+export default function BeverageClientView({ initialData, currentAuid, isNotFound, isError }: Props) {
     const [currentTab, setCurrentTab] = useState<"batches" | "awards" | "specs">(() => {
         if (initialData?.beverage?.attributes) {
             const parsed = parseAttributes(initialData.beverage.attributes)
@@ -264,6 +265,8 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
         }
         return "batches"
     })
+    const [beverageStatus, setBeverageStatus] = useState<BeverageStatus | null>(initialData?.beverage?.status || null)
+    const [isSubmittingForReview, setIsSubmittingForReview] = useState(false)
     const { formatStatus, formatBeverageType, formatDateTime, t } = useTranslation()
 
     if (isNotFound) {
@@ -318,7 +321,26 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
         )
     }
 
-    const { beverage, awards, batches = [] } = initialData
+    const { awards, batches = [] } = initialData
+    const beverage = {
+        ...initialData.beverage,
+        status: beverageStatus || initialData.beverage.status,
+    }
+    const isProducer = beverage.producers.some((producer) => producer.auid.includes(currentAuid))
+
+    const handleSubmitForReview = async () => {
+        if (isSubmittingForReview || beverage.status !== "DRAFT" || !isProducer) return
+        setIsSubmittingForReview(true)
+        try {
+            const updated = await submitBeverageForReviewAction(beverage.id)
+            setBeverageStatus(updated?.status || "IN_REVIEW")
+        } catch (err: any) {
+            console.error("Failed to submit beverage for review:", err)
+            alert(err.message || t("beverage.submitReviewError"))
+        } finally {
+            setIsSubmittingForReview(false)
+        }
+    }
 
     const getStatusConfig = (status: string) => {
         switch (status.toUpperCase()) {
@@ -439,10 +461,27 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                                             </h1>
                                         </div>
 
-                                        <span className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest shrink-0 border shadow-sm self-center md:self-start ${statusConfig.className}`}>
-                                            {statusConfig.icon}
-                                            {formatStatus(beverage.status)}
-                                        </span>
+                                        <div className="flex items-center gap-2 self-center md:self-start flex-wrap justify-center md:justify-end">
+                                            {beverage.status === "DRAFT" && isProducer && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSubmitForReview}
+                                                    disabled={isSubmittingForReview}
+                                                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-bold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-600/15 cursor-pointer"
+                                                >
+                                                    {isSubmittingForReview ? (
+                                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                    ) : (
+                                                        <Send className="h-3.5 w-3.5" />
+                                                    )}
+                                                    {t("beverage.submitReviewButton")}
+                                                </button>
+                                            )}
+                                            <span className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest shrink-0 border shadow-sm ${statusConfig.className}`}>
+                                                {statusConfig.icon}
+                                                {formatStatus(beverage.status)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

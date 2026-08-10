@@ -181,7 +181,7 @@ export function buildExpertBeverageSummary(
 
         entries.push({
             order: index + 1,
-            code: rc.candidate?.anonymizedCode || "N/A",
+            code: (rc.candidate?.anonymizedCode && rc.candidate.anonymizedCode.trim()) ? rc.candidate.anonymizedCode.trim() : `#${index + 1}`,
             beverageName:
                 rc.candidate?.sample?.batch?.beverage?.name || unknownBeverageLabel,
             totalScores,

@@ -52,6 +52,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [isPanelFinished, setIsPanelFinished] = useState(false);
     const [currentPanelName, setCurrentPanelName] = useState<string>("");
     const [nextPanelFirstCandidateId, setNextPanelFirstCandidateId] = useState<string | null>(null);
+    const [nextPanelId, setNextPanelId] = useState<string | null>(null);
     const [currentPanelId, setCurrentPanelId] = useState<string | null>(null);
 
     // Fetch usernames for commission members
@@ -82,7 +83,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         const fetchData = async () => {
             if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, nextPanelFirstCandidateId: newNextPanelFirstCandidateId } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, nextPanelId: newNextPanelId, nextPanelFirstCandidateId: newNextPanelFirstCandidateId } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -95,6 +96,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 setCurrentPanelName(newPanelName || "");
                 setCurrentPanelId(newPanelId || null);
                 setNextPanelFirstCandidateId(newNextPanelFirstCandidateId || null);
+                setNextPanelId(newNextPanelId || null);
                 const commentFlags = {
                     propertyCommentsEnabled: newPropertyCommentsEnabled,
                     voiceCommentsEnabled: newVoiceCommentsEnabled,
@@ -178,10 +180,10 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
     // HEAD action: advance to next panel
     const handleStartNextPanel = async () => {
-        if (!nextPanelFirstCandidateId || isSwitching) return;
+        if (!nextPanelId || !nextPanelFirstCandidateId || isSwitching) return;
         setIsSwitching(true);
         try {
-            await startNextPanelAction(replicaId, nextPanelFirstCandidateId);
+            await startNextPanelAction(replicaId, nextPanelId, nextPanelFirstCandidateId);
         } catch (err) {
             console.error(err);
             setIsSwitching(false);
@@ -257,7 +259,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                             <p className="text-slate-500 text-sm mt-1 flex items-center gap-1.5 flex-wrap">
                                 <span>{t("commission.currentCandidateLabel")}</span>
                                 <span className="font-mono font-semibold text-indigo-600">
-                                    {currentCandidateCode || (currentCandidateId ? t("common.loading") : t("common.none"))}
+                                    {currentCandidateCode || (currentCandidateId ? `#${currentCandidateId.slice(0, 8)}` : t("common.none"))}
                                 </span>
                                 {currentCandidateId && (
                                     <span className="text-[11px] text-slate-400 font-mono font-normal">
@@ -271,7 +273,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 </p>
                             )}
                         </div>
-                        {isPanelFinished && !allDone ? (
+                        {(isPanelFinished || !currentPanelId) && !allDone ? (
                             <button
                                 onClick={handleStartNextPanel}
                                 disabled={isSwitching}

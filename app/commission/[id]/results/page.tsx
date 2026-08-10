@@ -42,6 +42,15 @@ export default async function CommissionResultsPage({ params }: PageProps) {
         commission = response?.commission
 
         if (commission) {
+            commission.candidates = (commission.panels || []).flatMap((panel: any) =>
+                (panel.candidates || []).map((candidate: any) => ({ ...candidate, panelId: panel.id })),
+            )
+            commission.replicas = (commission.replicas || []).map((replica: any) => ({
+                ...replica,
+                replicaCandidates: (replica.replicaPanels || []).flatMap((panel: any) =>
+                    (panel.replicaCandidates || []).map((candidate: any) => ({ ...candidate, replicaPanelId: panel.id, panelId: panel.panel?.id })),
+                ),
+            }))
             const holders = commission.competition?.holders?.flat() ?? []
             const isHolder = currentAuid !== null && holders.includes(currentAuid)
             if (!isHolder) {

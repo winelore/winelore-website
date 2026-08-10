@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft } from "lucide-react"
+import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft, Send } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -11,6 +11,7 @@ import { getDateLocale } from "@/lib/i18n"
 import Link from "next/link"
 import {
     startCompetitionAction,
+    submitCompetitionForReviewAction,
     getCompetitionDataAction,
     updateCompetitionDatesAction,
     updateCompetitionNameAction,
@@ -406,6 +407,22 @@ export default function CompetitionClientView({
         }
     }
 
+    const handleSubmitForReview = async () => {
+        if (isMutating) return
+        setIsMutating(true)
+        try {
+            await submitCompetitionForReviewAction(initialData.id)
+            const updated = await getCompetitionDataAction(initialData.id)
+            if (updated) setLocalData(updated)
+            router.refresh()
+        } catch (err: any) {
+            console.error("Failed to submit competition for review:", err)
+            alert(err.message || t("competition.submitReviewError"))
+        } finally {
+            setIsMutating(false)
+        }
+    }
+
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
 
@@ -744,6 +761,36 @@ export default function CompetitionClientView({
                                     </div>
                                 </div>
                             </div>
+
+                            {initialData.status === "DRAFT" && isHolder && (
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
+                                        {t("competition.actionsControls")}
+                                    </h3>
+                                    <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 flex-wrap sm:flex-nowrap">
+                                        <div className="max-w-full sm:max-w-[65%]">
+                                            <h4 className="text-sm font-bold text-slate-800">
+                                                {t("competition.submitReviewTitle")}
+                                            </h4>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                {t("competition.submitReviewDescription")}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleSubmitForReview}
+                                            disabled={isMutating}
+                                            className="group flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 px-6 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0"
+                                        >
+                                            {isMutating ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            ) : (
+                                                <Send className="h-4 w-4" />
+                                            )}
+                                            <span>{t("competition.submitReviewButton")}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {initialData.status === "PLANNED" && (
                                 <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">

@@ -39,6 +39,11 @@ export type CommissionReplicaMemberRole =
   | 'EXPERT'
   | 'HEAD';
 
+export type CommissionReplicaPanelStatus =
+  | 'COMPLETED'
+  | 'IN_PROGRESS'
+  | 'NOT_STARTED';
+
 export type CommissionReplicaStatus =
   | 'CANCELLED'
   | 'COMPLETED'
@@ -121,7 +126,7 @@ export type CreateCommissionInput = {
 };
 
 export type CreateCommissionReplicaInput = {
-  chaoticCurrentCandidateChangesEnabled?: boolean | null | undefined;
+  chaoticCurrentPanelChangesEnabled?: boolean | null | undefined;
   commissionId: string | number;
   members: Array<CommissionReplicaMemberInput>;
   name?: string | null | undefined;
@@ -258,7 +263,7 @@ export type GetCommissionQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, panels: Array<{ id: string, name: string }>, candidates: Array<{ id: string, panelId: string }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentCandidateId: string | null, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string, beverageType: { id: string, code: string, name: string } } }> }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, partialCandidateEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, panels: Array<{ id: string, name: string, candidates: Array<{ id: string, anonymizedCode: string | null }> }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentPanelId: string | null, chaoticCurrentPanelChangesEnabled: boolean, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string } } }> }> }> } | null };
 
 export type GetCommissionTemplatesQueryVariables = Exact<{
   id: string | number;
@@ -334,13 +339,6 @@ export type GetCommissionTemplatesQuery = { commission: { id: string, templateEd
                }
           > }> } }> } | null };
 
-export type GetCommissionCandidateCountQueryVariables = Exact<{
-  commissionId: string | number;
-}>;
-
-
-export type GetCommissionCandidateCountQuery = { commissionCandidateCount: number };
-
 export type MarkReplicaMemberReadyMutationVariables = Exact<{
   replicaId: string | number;
   memberId: string | number;
@@ -369,14 +367,14 @@ export type GetReplicaCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, commission: { id: string, panels: Array<{ id: string, name: string }>, candidates: Array<{ id: string, panelId: string }> }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, panelId: string, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, producers: Array<{ auid: Array<number> }>, origin: { latitude: number, longitude: number } | null } } } } }> } | null };
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, currentPanelId: string | null, commission: { id: string, panels: Array<{ id: string, name: string, candidates: Array<{ id: string }> }> }, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, producers: Array<{ auid: Array<number> }>, origin: { latitude: number, longitude: number } | null } } } } }> }> } | null };
 
 export type GetReplicaCandidateQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, commission: { id: string, name: string } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, origin: { latitude: number, longitude: number } | null } } } } } | null };
+export type GetReplicaCandidateQuery = { commissionReplicaCandidate: { id: string, status: Types.CommissionReplicaCandidateStatus, replicaPanel: { id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, panel: { id: string, name: string }, replica: { id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentPanelId: string | null, commission: { id: string, name: string } } }, candidate: { id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, attributes: string, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: string, origin: { latitude: number, longitude: number } | null } } } } } | null };
 
 export type CreateEvaluationTemplateMutationVariables = Exact<{
   input: Types.CreateEvaluationTemplateInput;
@@ -549,7 +547,6 @@ export type DevAddCommissionPanelMutationVariables = Exact<{
 export type DevAddCommissionPanelMutation = { addCommissionPanel: { id: string, name: string } };
 
 export type DevAddCommissionCandidatesMutationVariables = Exact<{
-  commissionId: string | number;
   panelId: string | number;
   candidates: Array<Types.AddCommissionCandidateItemInput> | Types.AddCommissionCandidateItemInput;
 }>;
@@ -657,13 +654,22 @@ export type DevMarkCommissionReplicaMemberReadyMutationVariables = Exact<{
 
 export type DevMarkCommissionReplicaMemberReadyMutation = { markCommissionReplicaMemberReady: { id: string } };
 
-export type DevSetCommissionReplicaCurrentCandidateMutationVariables = Exact<{
+export type DevSetCommissionReplicaCurrentPanelMutationVariables = Exact<{
   id: string | number;
-  currentCandidateId: string | number;
+  currentPanelId: string | number;
 }>;
 
 
-export type DevSetCommissionReplicaCurrentCandidateMutation = { setCommissionReplicaCurrentCandidate: { id: string } };
+export type DevSetCommissionReplicaCurrentPanelMutation = { setCommissionReplicaCurrentPanel: { id: string } };
+
+export type DevSetCommissionReplicaPanelCurrentCandidateMutationVariables = Exact<{
+  id: string | number;
+  panelId: string | number;
+  currentCandidateId?: string | number | null | undefined;
+}>;
+
+
+export type DevSetCommissionReplicaPanelCurrentCandidateMutation = { setCommissionReplicaPanelCurrentCandidate: { id: string } };
 
 export type DevGetCompetitionsListQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -813,13 +819,14 @@ export const GetCommissionDocument = gql`
     voiceCommentsEnabled
     propertyCommentsEnabled
     beverageOriginDuringEvaluationEnabled
+    partialCandidateEvaluationEnabled
     panels {
       id
       name
-    }
-    candidates {
-      id
-      panelId
+      candidates {
+        id
+        anonymizedCode
+      }
     }
     competition {
       id
@@ -831,24 +838,34 @@ export const GetCommissionDocument = gql`
       name
       type
       status
-      currentCandidateId
+      currentPanelId
+      chaoticCurrentPanelChangesEnabled
       members {
         id
         auid
         role
         isReady
       }
-      replicaCandidates {
+      replicaPanels {
         id
         status
-        candidate {
+        currentCandidateId
+        chaoticCurrentCandidateChangesEnabled
+        panel {
           id
-          anonymizedCode
-          panelId
-          beverageType {
+          name
+        }
+        replicaCandidates {
+          id
+          status
+          candidate {
             id
-            code
-            name
+            anonymizedCode
+            beverageType {
+              id
+              code
+              name
+            }
           }
         }
       }
@@ -1080,11 +1097,6 @@ export const GetCommissionTemplatesDocument = gql`
   }
 }
     `;
-export const GetCommissionCandidateCountDocument = gql`
-    query GetCommissionCandidateCount($commissionId: ID!) {
-  commissionCandidateCount(commissionId: $commissionId)
-}
-    `;
 export const MarkReplicaMemberReadyDocument = gql`
     mutation MarkReplicaMemberReady($replicaId: ID!, $memberId: ID!) {
   markCommissionReplicaMemberReady(id: $replicaId, memberId: $memberId) {
@@ -1125,41 +1137,50 @@ export const GetReplicaCandidatesDocument = gql`
       panels {
         id
         name
-      }
-      candidates {
-        id
-        panelId
+        candidates {
+          id
+        }
       }
     }
-    replicaCandidates {
+    currentPanelId
+    replicaPanels {
       id
       status
-      candidate {
+      currentCandidateId
+      chaoticCurrentCandidateChangesEnabled
+      panel {
         id
-        anonymizedCode
-        panelId
-        beverageType {
+        name
+      }
+      replicaCandidates {
+        id
+        status
+        candidate {
           id
-          code
-          name
-        }
-        sample {
-          id
-          volumeMl
-          batch {
+          anonymizedCode
+          beverageType {
             id
-            attributes
-            beverage {
+            code
+            name
+          }
+          sample {
+            id
+            volumeMl
+            batch {
               id
-              name
-              status
               attributes
-              producers {
-                auid
-              }
-              origin {
-                latitude
-                longitude
+              beverage {
+                id
+                name
+                status
+                attributes
+                producers {
+                  auid
+                }
+                origin {
+                  latitude
+                  longitude
+                }
               }
             }
           }
@@ -1174,14 +1195,24 @@ export const GetReplicaCandidateDocument = gql`
   commissionReplicaCandidate(id: $id) {
     id
     status
-    replica {
+    replicaPanel {
       id
-      name
-      type
       status
-      commission {
+      currentCandidateId
+      panel {
         id
         name
+      }
+      replica {
+        id
+        name
+        type
+        status
+        currentPanelId
+        commission {
+          id
+          name
+        }
       }
     }
     candidate {
@@ -1464,12 +1495,8 @@ export const DevAddCommissionPanelDocument = gql`
 }
     `;
 export const DevAddCommissionCandidatesDocument = gql`
-    mutation DevAddCommissionCandidates($commissionId: ID!, $panelId: ID!, $candidates: [AddCommissionCandidateItemInput!]!) {
-  addCommissionCandidates(
-    commissionId: $commissionId
-    panelId: $panelId
-    candidates: $candidates
-  ) {
+    mutation DevAddCommissionCandidates($panelId: ID!, $candidates: [AddCommissionCandidateItemInput!]!) {
+  addCommissionCandidates(panelId: $panelId, candidates: $candidates) {
     id
   }
 }
@@ -1592,10 +1619,18 @@ export const DevMarkCommissionReplicaMemberReadyDocument = gql`
   }
 }
     `;
-export const DevSetCommissionReplicaCurrentCandidateDocument = gql`
-    mutation DevSetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID!) {
-  setCommissionReplicaCurrentCandidate(
+export const DevSetCommissionReplicaCurrentPanelDocument = gql`
+    mutation DevSetCommissionReplicaCurrentPanel($id: ID!, $currentPanelId: ID!) {
+  setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $currentPanelId) {
+    id
+  }
+}
+    `;
+export const DevSetCommissionReplicaPanelCurrentCandidateDocument = gql`
+    mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {
+  setCommissionReplicaPanelCurrentCandidate(
     id: $id
+    panelId: $panelId
     currentCandidateId: $currentCandidateId
   ) {
     id
@@ -1763,9 +1798,6 @@ export function getSdk<C>(requester: Requester<C>) {
     GetCommissionTemplates(variables: Types.GetCommissionTemplatesQueryVariables, options?: C): Promise<Types.GetCommissionTemplatesQuery> {
       return requester<Types.GetCommissionTemplatesQuery, Types.GetCommissionTemplatesQueryVariables>(GetCommissionTemplatesDocument, variables, options) as Promise<Types.GetCommissionTemplatesQuery>;
     },
-    GetCommissionCandidateCount(variables: Types.GetCommissionCandidateCountQueryVariables, options?: C): Promise<Types.GetCommissionCandidateCountQuery> {
-      return requester<Types.GetCommissionCandidateCountQuery, Types.GetCommissionCandidateCountQueryVariables>(GetCommissionCandidateCountDocument, variables, options) as Promise<Types.GetCommissionCandidateCountQuery>;
-    },
     MarkReplicaMemberReady(variables: Types.MarkReplicaMemberReadyMutationVariables, options?: C): Promise<Types.MarkReplicaMemberReadyMutation> {
       return requester<Types.MarkReplicaMemberReadyMutation, Types.MarkReplicaMemberReadyMutationVariables>(MarkReplicaMemberReadyDocument, variables, options) as Promise<Types.MarkReplicaMemberReadyMutation>;
     },
@@ -1898,8 +1930,11 @@ export function getSdk<C>(requester: Requester<C>) {
     DevMarkCommissionReplicaMemberReady(variables: Types.DevMarkCommissionReplicaMemberReadyMutationVariables, options?: C): Promise<Types.DevMarkCommissionReplicaMemberReadyMutation> {
       return requester<Types.DevMarkCommissionReplicaMemberReadyMutation, Types.DevMarkCommissionReplicaMemberReadyMutationVariables>(DevMarkCommissionReplicaMemberReadyDocument, variables, options) as Promise<Types.DevMarkCommissionReplicaMemberReadyMutation>;
     },
-    DevSetCommissionReplicaCurrentCandidate(variables: Types.DevSetCommissionReplicaCurrentCandidateMutationVariables, options?: C): Promise<Types.DevSetCommissionReplicaCurrentCandidateMutation> {
-      return requester<Types.DevSetCommissionReplicaCurrentCandidateMutation, Types.DevSetCommissionReplicaCurrentCandidateMutationVariables>(DevSetCommissionReplicaCurrentCandidateDocument, variables, options) as Promise<Types.DevSetCommissionReplicaCurrentCandidateMutation>;
+    DevSetCommissionReplicaCurrentPanel(variables: Types.DevSetCommissionReplicaCurrentPanelMutationVariables, options?: C): Promise<Types.DevSetCommissionReplicaCurrentPanelMutation> {
+      return requester<Types.DevSetCommissionReplicaCurrentPanelMutation, Types.DevSetCommissionReplicaCurrentPanelMutationVariables>(DevSetCommissionReplicaCurrentPanelDocument, variables, options) as Promise<Types.DevSetCommissionReplicaCurrentPanelMutation>;
+    },
+    DevSetCommissionReplicaPanelCurrentCandidate(variables: Types.DevSetCommissionReplicaPanelCurrentCandidateMutationVariables, options?: C): Promise<Types.DevSetCommissionReplicaPanelCurrentCandidateMutation> {
+      return requester<Types.DevSetCommissionReplicaPanelCurrentCandidateMutation, Types.DevSetCommissionReplicaPanelCurrentCandidateMutationVariables>(DevSetCommissionReplicaPanelCurrentCandidateDocument, variables, options) as Promise<Types.DevSetCommissionReplicaPanelCurrentCandidateMutation>;
     },
     DevGetCompetitionsList(variables?: Types.DevGetCompetitionsListQueryVariables, options?: C): Promise<Types.DevGetCompetitionsListQuery> {
       return requester<Types.DevGetCompetitionsListQuery, Types.DevGetCompetitionsListQueryVariables>(DevGetCompetitionsListDocument, variables, options) as Promise<Types.DevGetCompetitionsListQuery>;

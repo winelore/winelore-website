@@ -25,6 +25,14 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const commissionId = replicaCandidate.replica.commission.id
     const currentReplicaId = replicaCandidate.replica.id
 
+    if (
+        replicaCandidate.replica.currentPanelId !== replicaCandidate.replicaPanel.id ||
+        replicaCandidate.replicaPanel.status !== "IN_PROGRESS" ||
+        replicaCandidate.replicaPanel.currentCandidateId !== candidateId
+    ) {
+        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
+    }
+
     // If this candidate round is finished, send the user to the wait page
     if (isReplicaCandidateFinished(replicaCandidate.status)) {
         redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
@@ -76,7 +84,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     return (
         <CandidateEvaluationClientView
             replicaName={replicaCandidate.replica.name}
-            candidateCode={currentCandidate?.anonymizedCode || candidateId}
+            candidateCode={(currentCandidate?.anonymizedCode && currentCandidate.anonymizedCode.trim()) ? currentCandidate.anonymizedCode.trim() : (currentIndex >= 0 ? `#${currentIndex + 1}` : candidateId)}
             commissionName={commission.name}
             panelName={panelName}
             currentIndex={currentIndex}

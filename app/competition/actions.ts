@@ -1,6 +1,7 @@
 "use server"
 
 import { sdk } from '../../lib/apiClient';
+import { cookies } from 'next/headers';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -15,6 +16,22 @@ export async function startCompetitionAction(id: string) {
     } catch (err: any) {
         console.error("Server Action Error (startCompetitionAction):", err);
         throw new Error(err.message || "Failed to start competition");
+    }
+}
+
+export async function submitCompetitionForReviewAction(id: string) {
+    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
+    try {
+        const cookieStore = await cookies();
+        const auid = cookieStore.get("auid")?.value;
+        if (!auid) throw new Error("Unauthorized: Please sign in");
+        return await sdk.DevSubmitCompetitionForReview(
+            { id },
+            { headers: { actor: auid, "x-actor": auid } },
+        );
+    } catch (err: any) {
+        console.error("Server Action Error (submitCompetitionForReviewAction):", err);
+        throw new Error(err.message || "Failed to submit competition for review");
     }
 }
 

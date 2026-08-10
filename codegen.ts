@@ -24,7 +24,7 @@ function loadEnv() {
 }
 loadEnv();
 
-const schemaUrl = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || process.env.GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+const schemaUrl = process.env.CODEGEN_GRAPHQL_SCHEMA || process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || process.env.GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
 
 const config: CodegenConfig = {
     generates: {
@@ -49,14 +49,14 @@ const config: CodegenConfig = {
                 'typescript-generic-sdk'
             ]
         },
-        './src/gql/axus/sdk.ts': {
+        ...(!process.env.CODEGEN_SKIP_AXUS ? { './src/gql/axus/sdk.ts': {
             schema: process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT,
             documents: ['src/gql/axus/operations.graphql'],
             plugins: [
                 'typescript-operations',
                 'typescript-generic-sdk'
             ]
-        }
+        }} : {})
     },
     ignoreNoDocuments: true,
 };
