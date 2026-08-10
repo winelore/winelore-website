@@ -31,8 +31,9 @@ const en = {
     standard: "Standard",
     loading: "Loading...",
     none: "None",
-    templates: "My Evaluation Templates",
+    templates: "Evaluation Templates",
     unknownUser: "Unknown User",
+    save: "Save",
   },
   dashboard: {
     holderId: "Holder: {{ids}}",
@@ -75,6 +76,7 @@ const en = {
   competition: {
     series: "Competition Series",
     timelineDetails: "Timeline Details",
+    calendarDetails: "Calendar Details",
     plannedStart: "Planned Start",
     plannedEnd: "Planned End",
     actualStart: "Actual Start",
@@ -322,6 +324,11 @@ const en = {
       repA: "Rep A",
       repB: "Rep B",
       notEnoughReplicas: "Not enough replicas available to compare.",
+      selectTwoReplicas: "Select two different replicas from the list above.",
+      loadError: "Failed to load results.",
+      loadErrorDesc: "Check your connection or contact your system administrator.",
+      accessDenied: "Access Denied",
+      accessDeniedDesc: "Full commission results can only be viewed by competition owners.",
     },
   },
   panels: {

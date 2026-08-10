@@ -32,7 +32,8 @@ const hu = {
         loading: "Betöltés...",
         none: "Nincs",
         unknownUser: "Ismeretlen felhasználó",
-        templates: "Saját értékelési sablonok",
+        templates: "Értékelési sablonok",
+        save: "Mentés",
     },
     dashboard: {
         holderId: "Szervező: {{ids}}",
@@ -75,6 +76,7 @@ const hu = {
     competition: {
         series: "Versenysorozat",
         timelineDetails: "Idővonal részletei",
+        calendarDetails: "Naptár részletei",
         plannedStart: "Tervezett kezdés",
         plannedEnd: "Tervezett befejezés",
         actualStart: "Tényleges kezdés",

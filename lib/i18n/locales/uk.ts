@@ -33,8 +33,9 @@ const uk: TranslationKey = {
     standard: "Стандартна",
     loading: "Завантаження...",
     none: "Немає",
-    templates: "Мої шаблони оцінювання",
+    templates: "Шаблони оцінювання",
     unknownUser: "Невідомий користувач",
+    save: "Зберегти",
   },
   dashboard: {
     holderId: "Організатор: {{ids}}",
@@ -77,6 +78,7 @@ const uk: TranslationKey = {
   competition: {
     series: "Серія конкурсу",
     timelineDetails: "Деталі графіка",
+    calendarDetails: "Деталі календаря",
     plannedStart: "Запланований початок",
     plannedEnd: "Заплановане завершення",
     actualStart: "Фактичний початок",
@@ -324,6 +326,11 @@ const uk: TranslationKey = {
       repA: "Реп. A",
       repB: "Реп. B",
       notEnoughReplicas: "Недостатньо реплік для порівняння.",
+      selectTwoReplicas: "Оберіть дві різні репліки зі списку вище.",
+      loadError: "Не вдалося завантажити результати.",
+      loadErrorDesc: "Перевірте з'єднання або зверніться до адміністратора.",
+      accessDenied: "Доступ обмежено",
+      accessDeniedDesc: "Повні результати комісії можуть переглядати лише власники конкурсу.",
     },
   },
   panels: {

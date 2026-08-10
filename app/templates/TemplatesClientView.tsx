@@ -1,12 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { LocaleProvider, useTranslation } from "@/lib/i18n/context"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { AppHeader } from "@/components/AppHeader"
-import { Plus, Calendar, Settings, AlertCircle, ChevronDown, ChevronUp, Layers, CheckCircle2, Pencil } from "lucide-react"
+import { Plus, Calendar, Search, Layers, CheckCircle2, Pencil, ArrowRight, UserCheck, Sparkles } from "lucide-react"
 import Cookies from "js-cookie"
 import TemplateCreatorModal, { PROPERTY_TYPE_LABELS } from "./TemplateCreatorModal"
-import { useSearchParams } from "next/navigation"
 
 interface Property {
     id: string
@@ -37,17 +37,28 @@ interface Template {
     status: string
     createdAt: string
     owners: number[][]
+    totalEditions?: number
     latestEdition?: TemplateEdition
 }
 
-export default function TemplatesClientView({ initialTemplates, totalCount }: { initialTemplates: Template[], totalCount?: number }) {
+function formatDate(dateStr?: string) {
+    if (!dateStr) return "Н/Д"
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return "Н/Д"
+    const day = String(d.getDate()).padStart(2, "0")
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const year = d.getFullYear()
+    return `${day}.${month}.${year}`
+}
+
+export default function TemplatesClientView({ initialTemplates, totalCount }: { initialTemplates: Template[]; totalCount?: number }) {
+    const router = useRouter()
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null) // WIN-65: зберігаємо ID шаблону, який редагуємо
-    const { t, tCount } = useTranslation()
-    const searchParams = useSearchParams()
-    const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
+    const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
     const [currentAuid, setCurrentAuid] = useState<number>(0)
+    const [activeTab, setActiveTab] = useState<"all" | "my">("all")
+    const [searchQuery, setSearchQuery] = useState("")
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -58,22 +69,8 @@ export default function TemplatesClientView({ initialTemplates, totalCount }: { 
     }, [])
 
     useEffect(() => {
-        const templateIdParam = searchParams.get("templateId")
-        if (templateIdParam) {
-            setExpandedTemplateId(templateIdParam)
-        } else {
-            setExpandedTemplateId(null)
-        }
-    }, [searchParams])
-
-    // Refresh template list when initialTemplates prop changes
-    useEffect(() => {
         setTemplates(initialTemplates)
     }, [initialTemplates])
-
-    const toggleExpandTemplate = (id: string) => {
-        setExpandedTemplateId(prev => prev === id ? null : id)
-    }
 
     const handleOpenCreateModal = () => {
         setEditingTemplateId(null)
@@ -81,7 +78,7 @@ export default function TemplatesClientView({ initialTemplates, totalCount }: { 
     }
 
     const handleOpenEditModal = (e: React.MouseEvent, id: string) => {
-        e.stopPropagation() // Щоб не тригерилося розгортання рядка
+        e.stopPropagation()
         setEditingTemplateId(id)
         setIsModalOpen(true)
     }
@@ -91,180 +88,203 @@ export default function TemplatesClientView({ initialTemplates, totalCount }: { 
         setEditingTemplateId(null)
     }
 
-    // Filter to only show templates owned by the current user
+    const isUserOwner = (t: Template) => {
+        if (!t.owners || currentAuid <= 0) return false
+        return t.owners.some(ownerGroup =>
+            Array.isArray(ownerGroup)
+                ? ownerGroup.includes(currentAuid)
+                : (ownerGroup as any) === currentAuid
+        )
+    }
+
     const myTemplates = currentAuid > 0
-        ? templates.filter(t => {
-              if (!t.owners) return false;
-              return t.owners.some(ownerGroup => 
-                  Array.isArray(ownerGroup) 
-                      ? ownerGroup.includes(currentAuid) 
-                      : (ownerGroup as any) === currentAuid
-              );
-          })
-        : [];
+        ? templates.filter(isUserOwner)
+        : []
+
+    const displayedTemplates = (activeTab === "my" ? myTemplates : templates).filter(t => {
+        if (!searchQuery.trim()) return true
+        const query = searchQuery.toLowerCase()
+        return t.name.toLowerCase().includes(query) || t.beverageType.toLowerCase().includes(query)
+    })
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab="none" />
+            <AppHeader activeTab="competitions" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl flex flex-col gap-8">
-                    
+
                     {/* Page Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                                <Layers className="w-8 h-8 text-indigo-600" />
-                                {t("templatesPage.title")}
-                            </h2>
-                            <p className="text-sm text-slate-500 mt-1">
-                                {t("templatesPage.subtitle")}
+                            <div className="flex items-center gap-2">
+                                <div className="p-2.5 bg-indigo-600 text-white rounded-2xl shadow-md shadow-indigo-500/20">
+                                    <Layers className="w-6 h-6" />
+                                </div>
+                                <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+                                    Темплейти оцінювання
+                                </h2>
+                            </div>
+                            <p className="text-sm text-slate-500 mt-1.5 ml-1">
+                                Каталог шаблонів оцінювання для змагань з винами та іншими напоями.
                             </p>
                         </div>
-<div className="flex flex-col md:flex-row items-center gap-4">
-                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {tCount("common.templatesCount", totalCount !== undefined && totalCount > 0 ? totalCount : myTemplates.length)}
-                            </span>
-                            <button
+                        <button
                             onClick={handleOpenCreateModal}
                             className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"
                         >
                             <Plus className="w-4 h-4" />
-                            <span>{t("templatesPage.createNew")}</span>
+                            <span>Створити новий шаблон</span>
                         </button>
+                    </div>
+
+                    {/* Controls Row: Tabs & Search */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+                        {/* Tabs */}
+                        <div className="flex items-center bg-slate-100/80 p-1 rounded-xl">
+                            <button
+                                onClick={() => setActiveTab("all")}
+                                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                    activeTab === "all"
+                                        ? "bg-white text-indigo-600 shadow-xs"
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                <span>Усі шаблони</span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                    activeTab === "all" ? "bg-indigo-50 text-indigo-600" : "bg-slate-200 text-slate-600"
+                                }`}>
+                                    {templates.length}
+                                </span>
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab("my")}
+                                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                    activeTab === "my"
+                                        ? "bg-white text-indigo-600 shadow-xs"
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                <UserCheck className="w-3.5 h-3.5" />
+                                <span>Мої шаблони</span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                    activeTab === "my" ? "bg-indigo-50 text-indigo-600" : "bg-slate-200 text-slate-600"
+                                }`}>
+                                    {myTemplates.length}
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* Search Input */}
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder="Пошук за назвою або типом напою..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                            />
                         </div>
                     </div>
 
-                    {/* Template list */}
-                    <div className="flex flex-col gap-4">
-                        {myTemplates.map((template, idx) => {
+                    {/* Template Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {displayedTemplates.map((template) => {
                             const edition = template.latestEdition
-                            const uniqueKey = `${template.id}-${edition?.version || 0}`
-                            const isExpanded = expandedTemplateId === uniqueKey
                             const propertiesCount = edition?.categories.reduce((acc, cat) => acc + cat.properties.length, 0) || 0
+                            const isOwned = isUserOwner(template)
 
                             return (
-                                <div 
-                                    key={uniqueKey} 
-                                    className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-xl shadow-slate-200/45 transition-all hover:shadow-2xl hover:shadow-slate-350/50"
+                                <div
+                                    key={template.id}
+                                    onClick={() => router.push(`/templates/${template.id}`)}
+                                    className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-200 flex flex-col justify-between cursor-pointer"
                                 >
-                                    {/* Main Row */}
-                                    <div 
-                                        onClick={() => toggleExpandTemplate(uniqueKey)}
-                                        className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
-                                    >
-                                        <div className="flex items-start gap-4">
-                                            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl shrink-0 mt-1">
-                                                <Layers className="w-6 h-6" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
-                                                        {template.name}
-                                                    </h3>
-                                                </div>
-                                                
-                                                <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar className="w-3.5 h-3.5" />
-                                                        {t("templatesPage.createdAt")}: {new Date(template.createdAt).toLocaleDateString()}
+                                    <div>
+                                        {/* Card Header Badges */}
+                                        <div className="flex items-center justify-between gap-2 mb-3">
+                                            <span className="text-[11px] font-extrabold tracking-wider uppercase bg-slate-100 text-slate-700 border border-slate-200/60 rounded-lg px-2.5 py-1">
+                                                {template.beverageType || "WINE"}
+                                            </span>
+
+                                            <div className="flex items-center gap-1.5">
+                                                {isOwned && (
+                                                    <span className="text-[10px] font-extrabold bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-md px-2 py-0.5 flex items-center gap-1">
+                                                        <UserCheck className="w-3 h-3" />
+                                                        Ваш
                                                     </span>
-                                                    <span className="text-slate-300">|</span>
-                                                    <span>{t("templatesPage.type")}: <span className="text-slate-700 uppercase font-bold">{template.beverageType}</span></span>
-                                                    <span className="text-slate-300">|</span>
-                                                    <span>{t("templatesPage.categories")}: <span className="text-indigo-600 font-bold">{edition?.categories.length || 0}</span></span>
-                                                    <span className="text-slate-300">|</span>
-                                                    <span>{t("templatesPage.totalScores")}: <span className="text-indigo-600 font-bold">{propertiesCount}</span></span>
-                                                </div>
+                                                )}
+                                                <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-md px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
+                                                    <CheckCircle2 className="w-3 h-3" />
+                                                    v{edition?.version || 1}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4 self-end md:self-auto shrink-0">
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t("templatesPage.versionStatus")}</span>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <span className="text-xs font-extrabold text-slate-700 bg-slate-100 border border-slate-200/50 rounded-md px-1.5 py-0.5">
-                                                        v{edition?.version || 1}
-                                                    </span>
-                                                    <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-md px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
-                                                        <CheckCircle2 className="w-3 h-3" />
-                                                        {t("templatesPage.active")}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* WIN-65: Кнопка швидкого редагування шаблону */}
-                                            <button
-                                                onClick={(e) => handleOpenEditModal(e, template.id)}
-                                                className="p-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-150 text-slate-500 hover:text-indigo-600 rounded-xl transition-all cursor-pointer group shadow-xs"
-                                                title="Редагувати темплейт"
-                                            >
-                                                <Pencil className="w-4 h-4 transition-transform group-hover:scale-105" />
-                                            </button>
+                                        {/* Title */}
+                                        <h3 className="text-lg font-extrabold text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors line-clamp-2">
+                                            {template.name}
+                                        </h3>
 
-                                            <div className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-colors">
-                                                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                        {/* Created At */}
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-2 font-medium">
+                                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                            <span suppressHydrationWarning>Створено: {formatDate(template.createdAt)}</span>
+                                        </div>
+
+                                        {/* Structure summary */}
+                                        <div className="grid grid-cols-2 gap-2 mt-4 p-3 bg-slate-50/70 border border-slate-100 rounded-2xl text-xs">
+                                            <div>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Категорій</span>
+                                                <span className="text-sm font-black text-slate-700">{edition?.categories.length || 0}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Показників</span>
+                                                <span className="text-sm font-black text-indigo-600">{propertiesCount}</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Expanded Structure */}
-                                    {isExpanded && edition && (
-                                        <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/15">
-                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                                                <Settings className="w-4 h-4 text-indigo-500" />
-                                                {t("templatesPage.evaluationStructure")}
-                                            </h4>
+                                    {/* Footer Actions */}
+                                    <div className="flex items-center justify-between gap-3 pt-5 mt-4 border-t border-slate-100">
+                                        {isOwned ? (
+                                            <button
+                                                onClick={(e) => handleOpenEditModal(e, template.id)}
+                                                className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer"
+                                                title="Редагувати темплейт"
+                                            >
+                                                <Pencil className="w-3.5 h-3.5" />
+                                                <span>Редагувати</span>
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-slate-400 font-medium">
+                                                {template.totalEditions ? `${template.totalEditions} версія(-ї)` : "1 версія"}
+                                            </span>
+                                        )}
 
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                {edition.categories.map((cat) => (
-                                                    <div 
-                                                        key={cat.id} 
-                                                        className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs flex flex-col gap-3.5"
-                                                    >
-                                                        <h5 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
-                                                            {cat.name}
-                                                        </h5>
-                                                        <div className="flex flex-col gap-2">
-                                                            {cat.properties.map((prop) => (
-                                                                <div 
-                                                                    key={prop.id} 
-                                                                    className="flex justify-between items-center bg-slate-50/30 hover:bg-slate-50/70 border border-slate-100/80 rounded-xl px-3 py-2 text-xs transition-colors"
-                                                                >
-                                                                    <div className="flex flex-col min-w-0 flex-1 pr-3">
-                                                                        <span className="font-bold text-slate-700 truncate">{prop.name}</span>
-                                                                        {prop.description && (
-                                                                            <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                                        <span className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60">
-                                                                            {PROPERTY_TYPE_LABELS[prop.type] || prop.type}
-                                                                        </span>
-                                                                        {prop.isRequired && (
-                                                                            <span className="text-rose-500 font-bold" title="Обов'язкове">*</span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                        <div className="flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
+                                            <span>Деталі темплейту</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             )
                         })}
-
-                        {myTemplates.length === 0 && (
-                            <div className="flex flex-col items-center justify-center p-12 border border-dashed border-slate-200 rounded-[32px] bg-white text-center text-slate-500 gap-3 shadow-sm">
-                                <AlertCircle className="w-12 h-12 text-slate-300 animate-pulse" />
-                                <span className="text-base font-bold text-slate-700">{t("templatesPage.notFound")}</span>
-                                <p className="text-sm text-slate-400 max-w-sm">{t("templatesPage.createFirst")}</p>
-                            </div>
-                        )}
                     </div>
+
+                    {displayedTemplates.length === 0 && (
+                        <div className="flex flex-col items-center justify-center p-12 border border-dashed border-slate-200 rounded-[32px] bg-white text-center text-slate-500 gap-3 shadow-sm my-4">
+                            <Sparkles className="w-12 h-12 text-slate-300 animate-pulse" />
+                            <span className="text-base font-bold text-slate-700">Темплейти не знайдені</span>
+                            <p className="text-sm text-slate-400 max-w-sm">
+                                {activeTab === "my"
+                                    ? "У вас ще немає створених шаблонів оцінювання. Натисніть кнопку вище, щоб створити свій перший шаблон."
+                                    : "За вашим запитом не знайдено жодного шаблону оцінювання."}
+                            </p>
+                        </div>
+                    )}
 
                 </div>
             </main>
@@ -274,7 +294,7 @@ export default function TemplatesClientView({ initialTemplates, totalCount }: { 
                     isOpen={isModalOpen}
                     onClose={handleCloseModal}
                     currentAuid={currentAuid}
-                    initialTemplateId={editingTemplateId} // WIN-65: Передаємо ID для редагування (або null для створення)
+                    initialTemplateId={editingTemplateId}
                 />
             )}
         </div>

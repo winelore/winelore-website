@@ -47,7 +47,7 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
 export async function getEvaluationTemplatesAction(ownerAuid?: number) {
     try {
         const query = `
-            query GetEvaluationTemplateEditions($limit: Int, $owner: [Int!]) {
+            query GetEvaluationTemplateEditions($limit: Int) {
                 evaluationTemplateEditions(limit: $limit) {
                     items {
                         id
@@ -97,52 +97,30 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                                 ... on BooleanProperty {
                                     boolDefaultValue: defaultValue
                                 }
-                                ... on SmartProperty {
-                                    expression {
-                                        __typename
-                                        type
-                                        ... on ConstantExpression { value }
-                                        ... on VariableExpression { code }
-                                        ... on BinaryExpression {
-                                            left {
-                                                __typename
-                                                type
-                                                ... on ConstantExpression { value }
-                                                ... on VariableExpression { code }
-                                            }
-                                            right {
-                                                __typename
-                                                type
-                                                ... on ConstantExpression { value }
-                                                ... on VariableExpression { code }
-                                            }
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
                 }
-                evaluationTemplateCount(owner: $owner)
             }
         `;
-        const variables: any = { limit: 100 };
-        if (ownerAuid) {
-            variables.owner = [ownerAuid];
-        }
-        const data = await rawGraphQL(query, variables);
+        const data = await rawGraphQL(query, { limit: 100 });
         const items = data?.evaluationTemplateEditions?.items || [];
+
         const latestTemplatesMap = new Map<string, any>();
+        const editionCountsMap = new Map<string, number>();
+
         for (const item of items) {
             if (!item.template) continue;
             const templateId = item.template.id;
+            editionCountsMap.set(templateId, (editionCountsMap.get(templateId) || 0) + 1);
+
             const existing = latestTemplatesMap.get(templateId);
             if (!existing || item.version > existing.version) {
                 latestTemplatesMap.set(templateId, item);
             }
         }
-        // Map editions to templates
-        const templates = Array.from(latestTemplatesMap.values()).map((item: any) => ({
+
+        let templatesList = Array.from(latestTemplatesMap.values()).map((item: any) => ({
             id: item.template.id,
             name: item.template.name,
             owners: (item.template.owners as number[][] | null) ?? [],
@@ -150,14 +128,15 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
             beverageTypeId: item.template.beverageType?.id ?? "",
             status: item.template.status,
             createdAt: item.template.createdAt,
+            totalEditions: editionCountsMap.get(item.template.id) || 1,
             latestEdition: {
                 id: item.id,
                 version: item.version,
                 status: item.status,
-                categories: item.categories.map((cat: any) => ({
+                categories: (item.categories || []).map((cat: any) => ({
                     id: cat.id,
                     name: cat.name,
-                    properties: cat.properties.map((prop: any) => {
+                    properties: (cat.properties || []).map((prop: any) => {
                         const typeName = prop.__typename ? prop.__typename.replace("Property", "") : "Boolean";
                         return {
                             id: prop.id,
@@ -171,16 +150,21 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                             maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
                             allowedValues: prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
                             defaultValue: prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
-                            expression: prop.expression ?? undefined,
                         };
                     })
                 }))
             }
         }));
 
+        if (ownerAuid !== undefined) {
+            templatesList = templatesList.filter((t) =>
+                t.owners?.some((ownerArr: number[]) => ownerArr.includes(ownerAuid))
+            );
+        }
+
         return {
-            templates,
-            totalCount: data?.evaluationTemplateCount || 0
+            templates: templatesList,
+            totalCount: templatesList.length
         };
     } catch (err: any) {
         console.error("❌ Failed to fetch templates from backend:", err.message);
@@ -196,7 +180,7 @@ export async function createGlobalTemplateAction(
 ) {
     try {
         console.log(`🚀 Creating global template "${templateName}"...`);
-        
+
         const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
         const templateRes = await sdk.CreateEvaluationTemplate({
             input: {
@@ -230,19 +214,213 @@ export async function createGlobalTemplateAction(
     }
 }
 
-export async function getTemplateByIdAction(id: string) {
+export async function getEvaluationTemplateDetailAction(templateId: string) {
     try {
-        const allTemplates = await getEvaluationTemplatesAction();
-        const template = allTemplates.templates.find((t: any) => t.id === id);
-        
-        if (!template) {
-            throw new Error(`Template with ID ${id} not found`);
+        const query = `
+            query GetEvaluationTemplateDetail($templateId: ID!) {
+                evaluationTemplate(id: $templateId) {
+                    id
+                    name
+                    status
+                    createdAt
+                    owners
+                    beverageType {
+                        id
+                        code
+                        name
+                    }
+                }
+                evaluationTemplateEditionsByTemplate(templateId: $templateId, limit: 100) {
+                    items {
+                        id
+                        version
+                        status
+                        categories {
+                            id
+                            name
+                            properties {
+                                __typename
+                                id
+                                code
+                                name
+                                description
+                                isRequired
+                                isResult
+                                ... on IntProperty {
+                                    intMinLimit: minLimit
+                                    intMaxLimit: maxLimit
+                                    intDefaultValue: defaultValue
+                                }
+                                ... on DoubleProperty {
+                                    doubleMinLimit: minLimit
+                                    doubleMaxLimit: maxLimit
+                                    doubleDefaultValue: defaultValue
+                                }
+                                ... on DiscreteNumbersProperty {
+                                    discreteAllowedValues: allowedValues
+                                    discreteDefaultValue: defaultValue
+                                }
+                                ... on EnumProperty {
+                                    enumAllowedValues: allowedValues
+                                    enumDefaultValue: defaultValue
+                                }
+                                ... on BooleanProperty {
+                                    boolDefaultValue: defaultValue
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `;
+
+        let templateData: any = null;
+        let editionsItems: any[] = [];
+
+        try {
+            const data = await rawGraphQL(query, { templateId });
+            templateData = data?.evaluationTemplate;
+            editionsItems = data?.evaluationTemplateEditionsByTemplate?.items || [];
+        } catch (err: any) {
+            console.warn("⚠️ evaluationTemplateEditionsByTemplate failed, falling back to full editions scan:", err.message);
         }
-        return template;
+
+        // Fallback: if editions empty or query failed, fetch evaluationTemplateEditions
+        if (!editionsItems || editionsItems.length === 0) {
+            const fallbackQuery = `
+                query GetAllEditionsForTemplate($limit: Int) {
+                    evaluationTemplateEditions(limit: $limit) {
+                        items {
+                            id
+                            version
+                            status
+                            template {
+                                id
+                                name
+                                owners
+                                beverageType {
+                                    id
+                                    code
+                                    name
+                                }
+                                status
+                                createdAt
+                            }
+                            categories {
+                                id
+                                name
+                                properties {
+                                    __typename
+                                    id
+                                    code
+                                    name
+                                    description
+                                    isRequired
+                                    isResult
+                                    ... on IntProperty {
+                                        intMinLimit: minLimit
+                                        intMaxLimit: maxLimit
+                                        intDefaultValue: defaultValue
+                                    }
+                                    ... on DoubleProperty {
+                                        doubleMinLimit: minLimit
+                                        doubleMaxLimit: maxLimit
+                                        doubleDefaultValue: defaultValue
+                                    }
+                                    ... on DiscreteNumbersProperty {
+                                        discreteAllowedValues: allowedValues
+                                        discreteDefaultValue: defaultValue
+                                    }
+                                    ... on EnumProperty {
+                                        enumAllowedValues: allowedValues
+                                        enumDefaultValue: defaultValue
+                                    }
+                                    ... on BooleanProperty {
+                                        boolDefaultValue: defaultValue
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `;
+            const data = await rawGraphQL(fallbackQuery, { limit: 100 });
+            const allItems = data?.evaluationTemplateEditions?.items || [];
+
+            const matchedEditions = allItems.filter((item: any) => item.template?.id === templateId);
+            editionsItems = matchedEditions;
+
+            if (!templateData && matchedEditions.length > 0) {
+                const firstTpl = matchedEditions[0].template;
+                templateData = {
+                    id: firstTpl.id,
+                    name: firstTpl.name,
+                    status: firstTpl.status,
+                    createdAt: firstTpl.createdAt,
+                    owners: firstTpl.owners,
+                    beverageType: firstTpl.beverageType,
+                };
+            }
+        }
+
+        if (!templateData) {
+            // Fallback 2: try getEvaluationTemplatesAction
+            const res = await getEvaluationTemplatesAction();
+            const found = res.templates.find((t) => t.id === templateId);
+            if (found) {
+                return found;
+            }
+            throw new Error(`Template with ID ${templateId} not found`);
+        }
+
+        // Sort editions by version descending (v3, v2, v1)
+        editionsItems.sort((a: any, b: any) => b.version - a.version);
+
+        const editionsFormatted = editionsItems.map((item: any) => ({
+            id: item.id,
+            version: item.version,
+            status: item.status,
+            categories: (item.categories || []).map((cat: any) => ({
+                id: cat.id,
+                name: cat.name,
+                properties: (cat.properties || []).map((prop: any) => {
+                    const typeName = prop.__typename ? prop.__typename.replace("Property", "") : "Boolean";
+                    return {
+                        id: prop.id,
+                        code: prop.code,
+                        name: prop.name,
+                        description: prop.description,
+                        type: typeName === "DiscreteNumbers" ? "Discrete" : typeName,
+                        isRequired: prop.isRequired,
+                        isResult: prop.isResult ?? false,
+                        minLimit: prop.intMinLimit ?? prop.doubleMinLimit ?? undefined,
+                        maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
+                        allowedValues: prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
+                        defaultValue: prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
+                    };
+                })
+            }))
+        }));
+
+        return {
+            id: templateData.id,
+            name: templateData.name,
+            owners: (templateData.owners as number[][] | null) ?? [],
+            beverageType: templateData.beverageType?.name ?? templateData.beverageType?.code ?? (typeof templateData.beverageType === 'string' ? templateData.beverageType : ""),
+            beverageTypeId: templateData.beverageType?.id ?? "",
+            status: templateData.status,
+            createdAt: templateData.createdAt,
+            editions: editionsFormatted,
+            latestEdition: editionsFormatted[0] || null,
+        };
     } catch (err: any) {
-        console.error(`❌ Failed to fetch template by id (${id}):`, err.message);
+        console.error(`❌ Failed to fetch template detail by id (${templateId}):`, err.message);
         throw err;
     }
+}
+
+export async function getTemplateByIdAction(id: string) {
+    return getEvaluationTemplateDetailAction(id);
 }
 
 export async function updateGlobalTemplateAction(
@@ -256,8 +434,8 @@ export async function updateGlobalTemplateAction(
         console.log(`🔄 Updating global template "${templateId}"...`);
         const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
 
-        if (sdk.UpdateEvaluationTemplate) {
-            await sdk.UpdateEvaluationTemplate({
+        if ((sdk as any).UpdateEvaluationTemplate) {
+            await (sdk as any).UpdateEvaluationTemplate({
                 id: templateId,
                 input: {
                     name: templateName,
@@ -276,7 +454,7 @@ export async function updateGlobalTemplateAction(
                 categories
             }
         }, { headers: actorHeaders });
-        
+
         const editionId = editionRes.createEvaluationTemplateEdition.id;
         console.log(`  Created new template edition: ${editionId} (v${nextVersion})`);
 
