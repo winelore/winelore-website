@@ -907,12 +907,27 @@ export default function CommissionClientView({
     const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
     const localMembers = selectedReplica ? selectedReplica.members : []
 
-    // Fetch usernames for panel members and competition creators/holders
+    // Fetch usernames for panel members, competition creators/holders, and beverage producers
     const allMemberAuids = useMemo(() => {
         const memberIds = localMembers.flatMap(m => m.auid);
         const holderIds = initialData.competition.holders || [];
-        return Array.from(new Set([...memberIds, ...holderIds]));
-    }, [localMembers, initialData.competition.holders])
+        const producerIds: number[] = [];
+        (localData.panels || []).forEach(p => {
+            (p.candidates || []).forEach(c => {
+                const producers = c.sample?.batch?.beverage?.producers;
+                if (producers) {
+                    producers.forEach(prod => {
+                        if (Array.isArray(prod.auid)) {
+                            prod.auid.forEach(id => producerIds.push(id));
+                        } else if (prod.auid) {
+                            producerIds.push(prod.auid);
+                        }
+                    });
+                }
+            });
+        });
+        return Array.from(new Set([...memberIds, ...holderIds, ...producerIds]));
+    }, [localMembers, initialData.competition.holders, localData.panels])
     const { usernames } = useUsernames(allMemberAuids)
 
     const prevReplicaStatusRef = useRef(selectedReplica?.status)
@@ -1566,6 +1581,8 @@ export default function CommissionClientView({
                             candidates={localData.candidates || []}
                             isCompetitionHolder={isCompetitionHolder}
                             isDraft={isCommissionDraft}
+                            isEnded={isCommissionCompleted}
+                            usernames={usernames}
                             onRefresh={refreshCommissionData}
                         />
                     </div>

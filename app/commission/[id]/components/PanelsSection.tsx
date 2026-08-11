@@ -14,7 +14,8 @@ import {
     X,
     Loader2,
     AlertCircle,
-    GripVertical
+    GripVertical,
+    User
 } from "lucide-react"
 import {
     addCommissionPanelAction,
@@ -38,6 +39,7 @@ export interface CandidateSample {
         beverage?: {
             id: string
             name: string
+            producers?: { auid: number[] | number }[] | null
         } | null
     } | null
 }
@@ -62,6 +64,8 @@ interface PanelsSectionProps {
     isCompetitionHolder: boolean
     isDraft?: boolean
     isPreStart?: boolean
+    isEnded?: boolean
+    usernames?: Record<string, string>
     onRefresh: () => void
 }
 
@@ -71,6 +75,8 @@ export function PanelsSection({
     candidates,
     isCompetitionHolder,
     isDraft = false,
+    isEnded = false,
+    usernames,
     onRefresh,
 }: PanelsSectionProps) {
     const { t } = useTranslation()
@@ -461,9 +467,6 @@ export function PanelsSection({
                                             }
                                         } else {
                                             const lastIdx = panelCandidates.length - 1
-                                            if (draggedItem.index !== lastIdx) {
-                                                handleReorder(panel.id, draggedItem.index, null, "bottom")
-                                            }
                                         }
                                     }}
                                     className="p-4 pt-12 pb-14 flex flex-col gap-2 relative transition-all"
@@ -474,7 +477,13 @@ export function PanelsSection({
                                         </p>
                                     ) : (
                                         panelCandidates.map((cand, idx) => {
-                                            const bevName = cand.sample?.batch?.beverage?.name || t("commission.results.candidate")
+                                            const canShowRealBeverage = isCompetitionHolder || isEnded
+                                            const rawBevName = cand.sample?.batch?.beverage?.name
+                                            const bevName = canShowRealBeverage && rawBevName ? rawBevName : t("commission.results.candidate")
+                                            const producers = cand.sample?.batch?.beverage?.producers
+                                            const producerName = canShowRealBeverage && producers && producers.length > 0 && usernames
+                                                ? producers.flatMap(p => Array.isArray(p.auid) ? p.auid : [p.auid]).map(id => usernames[id] || String(id)).filter(Boolean).join(", ")
+                                                : null
                                             const lotNo = cand.sample?.batch?.lotNumber
                                             const vol = cand.sample?.volumeMl
                                             
@@ -585,6 +594,12 @@ export function PanelsSection({
                                                                 )}
                                                             </div>
                                                             <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 flex-wrap">
+                                                                {producerName && (
+                                                                    <span className="flex items-center gap-1 font-medium text-slate-500">
+                                                                        <User className="w-3 h-3 text-slate-400" />
+                                                                        <span>{producerName}</span>
+                                                                    </span>
+                                                                )}
                                                                 {lotNo && (
                                                                     <span className="flex items-center gap-1">
                                                                         <Boxes className="w-3 h-3 text-slate-400" />

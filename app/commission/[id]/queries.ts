@@ -21,7 +21,28 @@ export const GET_COMMISSION = gql(`
       panels {
         id
         name
-        candidates { id anonymizedCode }
+        candidates {
+          id
+          anonymizedCode
+          sample {
+            id
+            volumeMl
+            batch {
+              id
+              lotNumber
+              attributes
+              beverage {
+                id
+                name
+                status
+                attributes
+                producers {
+                  auid
+                }
+              }
+            }
+          }
+        }
       }
       competition {
         id
