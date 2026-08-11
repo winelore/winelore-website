@@ -80,32 +80,76 @@ export default async function CandidateEvaluationPage({ params }: Props) {
 
     // Use the dynamic evaluation template from the backend
     const categories = commission.competition?.evaluationTemplateEdition?.categories || []
-
     const evalVisibleAttr = commission.evaluationVisibleAttributes || { beverage: [], batch: [], sample: [] };
     const visibleAttributes: { label: string; value: string }[] = [];
 
-    // Auxiliary function for parsing and filtering
-    const processAttributes = (rawAttr: string | any | undefined, visibleKeys: string[]) => {
-        if (!rawAttr || !visibleKeys || visibleKeys.length === 0) return;
+    // === DEBUG LOGGING ===
+    console.log("[DEBUG attributes] evalVisibleAttr:", JSON.stringify(evalVisibleAttr));
+    console.log("[DEBUG attributes] currentCandidate?.sample:", JSON.stringify(currentCandidate?.sample));
+    console.log("[DEBUG attributes] beverage.attributes (raw):", currentCandidate?.sample?.batch?.beverage?.attributes);
+    console.log("[DEBUG attributes] batch.attributes (raw):", currentCandidate?.sample?.batch?.attributes);
+    console.log("[DEBUG attributes] sample.attributes (raw):", currentCandidate?.sample?.attributes);
+    // ====================
+
+    // Функція для надійного парсингу атрибутів (підтримує як JSON, так і Kotlin Map {key=value})
+    function parseAttributesString(attrStr: string | any | undefined): Record<string, string> {
+        if (!attrStr) return {};
+        if (typeof attrStr === 'object') return attrStr;
+
+        const trimmed = String(attrStr).trim();
+        if (!trimmed) return {};
+
+        // 1. Спробуємо стандартний JSON
         try {
-            // Handle case where GraphQL client already parsed the JSON into an object
-            const parsed = typeof rawAttr === "string" ? JSON.parse(rawAttr) : rawAttr;
-            if (typeof parsed !== "object" || parsed === null) return;
+            const parsed = JSON.parse(trimmed);
+            if (parsed && typeof parsed === "object") {
+                const result: Record<string, string> = {};
+                Object.entries(parsed).forEach(([k, v]) => {
+                    if (v !== null && v !== undefined) result[k] = String(v);
+                });
+                return result;
+            }
+        } catch (e) {
+            // Це не JSON, йдемо далі
+        }
 
-            const parsedKeys = Object.keys(parsed);
-            console.log("[DEBUG attributes] parsedKeys:", parsedKeys, "visibleKeys:", visibleKeys);
+        // 2. Спробуємо Kotlin Map формат: {key1=val1, key2=val2}
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            const content = trimmed.slice(1, -1).trim();
+            if (!content) return {};
 
-            visibleKeys.forEach((key) => {
-                // Case-insensitive match for the key
-                const actualKey = parsedKeys.find(k => k.toLowerCase() === key.toLowerCase());
-                if (actualKey && parsed[actualKey] !== undefined && parsed[actualKey] !== null) {
-                    visibleAttributes.push({ label: key, value: String(parsed[actualKey]) });
+            const result: Record<string, string> = {};
+            const parts = content.split(/,\s*/);
+            parts.forEach(part => {
+                const eqIdx = part.indexOf('=');
+                if (eqIdx !== -1) {
+                    const key = part.substring(0, eqIdx).trim().replace(/^["']|["']$/g, "");
+                    const val = part.substring(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+                    if (key) result[key] = val;
                 }
             });
-        } catch (e) {
-            console.error("Failed to parse attributes JSON", e);
+            return result;
         }
+
+        return {};
+    }
+
+    // Допоміжна функція для фільтрації та відбору лише видимих атрибутів
+    const processAttributes = (rawAttr: string | any | undefined, visibleKeys: string[]) => {
+        if (!rawAttr || !visibleKeys || visibleKeys.length === 0) return;
+
+        const parsed = parseAttributesString(rawAttr);
+        const parsedKeys = Object.keys(parsed);
+
+        visibleKeys.forEach((key) => {
+            // Шукаємо ключ без урахування регістру (наприклад vintage === Vintage)
+            const actualKey = parsedKeys.find(k => k.toLowerCase() === key.toLowerCase());
+            if (actualKey && parsed[actualKey] !== undefined && parsed[actualKey] !== null && parsed[actualKey] !== "") {
+                visibleAttributes.push({ label: key, value: String(parsed[actualKey]) });
+            }
+        });
     };
+
     // Collecting attributes (beverage -> batch -> sample)
     const beverage = currentCandidate?.sample?.batch?.beverage;
     const batch = currentCandidate?.sample?.batch;
@@ -115,6 +159,11 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     processAttributes(sample?.attributes, evalVisibleAttr.sample);
     console.log("[DEBUG attributes] final visibleAttributes:", JSON.stringify(visibleAttributes));
 
+    const mockVisibleAttributes = [
+        { label: "vintage", value: "2021" },
+        { label: "color", value: "Червоне" },
+        { label: "sugar", value: "Сухе" }
+    ];
 
     return (
         <CandidateEvaluationClientView
@@ -133,6 +182,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             propertyCommentsEnabled={commission.competition.propertyCommentsEnabled}
             voiceCommentsEnabled={commission.competition.voiceCommentsEnabled}
             visibleAttributes={visibleAttributes}
+            // visibleAttributes={mockVisibleAttributes}
         />
     )
 }
