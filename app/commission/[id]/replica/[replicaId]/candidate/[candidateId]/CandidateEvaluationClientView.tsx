@@ -4,7 +4,7 @@ import Link from "next/link"
 import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import { MapPin, LayoutList, ArrowLeft } from "lucide-react"
+import {MapPin, LayoutList, ArrowLeft, Tag} from "lucide-react"
 
 interface EvaluationCategory {
   id: string
@@ -27,6 +27,7 @@ interface CandidateEvaluationClientViewProps {
   originParts: string[]
   propertyCommentsEnabled: boolean
   voiceCommentsEnabled: boolean
+  visibleAttributes?: { label: string; value: string }[]
 }
 
 export default function CandidateEvaluationClientView({
@@ -44,6 +45,7 @@ export default function CandidateEvaluationClientView({
   originParts,
   propertyCommentsEnabled,
   voiceCommentsEnabled,
+  visibleAttributes = [],
 }: CandidateEvaluationClientViewProps) {
   const { t, tCount } = useTranslation()
   const displayReplicaName = replicaName || t("common.standard")
@@ -84,6 +86,15 @@ export default function CandidateEvaluationClientView({
                                         <span>{originParts.join(", ")}</span>
                                     </div>
                                 )}
+                                {visibleAttributes.length > 0 && visibleAttributes.map((attr, idx) => (
+                                <div key={idx} className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                    <Tag className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                                    <span className="font-medium text-slate-800 capitalize">
+                                        {attr.label}:
+                                    </span>
+                                    <span className="font-normal text-slate-600">{attr.value}</span>
+                                </div>
+                                ))}
                             </div>
                         </div>
                     </div>

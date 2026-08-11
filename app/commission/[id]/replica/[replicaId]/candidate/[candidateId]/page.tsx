@@ -81,6 +81,41 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     // Use the dynamic evaluation template from the backend
     const categories = commission.competition?.evaluationTemplateEdition?.categories || []
 
+    const evalVisibleAttr = commission.evaluationVisibleAttributes || { beverage: [], batch: [], sample: [] };
+    const visibleAttributes: { label: string; value: string }[] = [];
+
+    // Auxiliary function for parsing and filtering
+    const processAttributes = (rawAttr: string | any | undefined, visibleKeys: string[]) => {
+        if (!rawAttr || !visibleKeys || visibleKeys.length === 0) return;
+        try {
+            // Handle case where GraphQL client already parsed the JSON into an object
+            const parsed = typeof rawAttr === "string" ? JSON.parse(rawAttr) : rawAttr;
+            if (typeof parsed !== "object" || parsed === null) return;
+
+            const parsedKeys = Object.keys(parsed);
+            console.log("[DEBUG attributes] parsedKeys:", parsedKeys, "visibleKeys:", visibleKeys);
+
+            visibleKeys.forEach((key) => {
+                // Case-insensitive match for the key
+                const actualKey = parsedKeys.find(k => k.toLowerCase() === key.toLowerCase());
+                if (actualKey && parsed[actualKey] !== undefined && parsed[actualKey] !== null) {
+                    visibleAttributes.push({ label: key, value: String(parsed[actualKey]) });
+                }
+            });
+        } catch (e) {
+            console.error("Failed to parse attributes JSON", e);
+        }
+    };
+    // Collecting attributes (beverage -> batch -> sample)
+    const beverage = currentCandidate?.sample?.batch?.beverage;
+    const batch = currentCandidate?.sample?.batch;
+    const sample = currentCandidate?.sample;
+    processAttributes(beverage?.attributes, evalVisibleAttr.beverage);
+    processAttributes(batch?.attributes, evalVisibleAttr.batch);
+    processAttributes(sample?.attributes, evalVisibleAttr.sample);
+    console.log("[DEBUG attributes] final visibleAttributes:", JSON.stringify(visibleAttributes));
+
+
     return (
         <CandidateEvaluationClientView
             replicaName={replicaCandidate.replica.name}
@@ -97,6 +132,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             originParts={[originInfo?.country, originInfo?.region, originInfo?.district].filter(Boolean) as string[]}
             propertyCommentsEnabled={commission.competition.propertyCommentsEnabled}
             voiceCommentsEnabled={commission.competition.voiceCommentsEnabled}
+            visibleAttributes={visibleAttributes}
         />
     )
 }

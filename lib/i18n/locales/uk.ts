@@ -2,6 +2,7 @@ import type { TranslationKey } from "./en"
 
 const uk: TranslationKey = {
   common: {
+    save: "Зберегти",
     home: "Головна",
     competitions: "Конкурси",
     wines: "Вина",
@@ -75,6 +76,7 @@ const uk: TranslationKey = {
     emptyDescription: "Вас ще не додано як організатора жодного конкурсу.",
   },
   competition: {
+    calendarDetails: "Деталі календаря",
     series: "Серія конкурсу",
     timelineDetails: "Деталі графіка",
     plannedStart: "Запланований початок",

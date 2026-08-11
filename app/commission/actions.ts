@@ -669,6 +669,11 @@ export async function getCommissionDataAction(commissionId: string) {
             plannedEndAt: commission.plannedDates?.end || null,
             startedAt: commission.startedAt || null,
             endedAt: commission.endedAt || null,
+            evaluationVisibleAttributes: commission.evaluationVisibleAttributes || {
+                beverage: [],
+                batch: [],
+                sample: []
+            },
             competition: {
                 id: commission.competition.id,
                 name: commission.competition.name,
@@ -1222,6 +1227,32 @@ export async function setCommissionBeverageOriginDuringEvaluationEnabledAction(c
     } catch (err: any) {
         console.error("Server Action Error (setCommissionBeverageOriginDuringEvaluationEnabledAction):", err);
         return { success: false, error: err?.message || "Failed to update beverage origin setting" };
+    }
+}
+
+export async function setCommissionEvaluationVisibleAttributesAction(
+    commissionId: string,
+    input: { beverage: string[]; batch: string[]; sample: string[] }
+) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionEvaluationVisibleAttributes($id: ID!, $input: EvaluationVisibleAttributesInput!) {
+                setCommissionEvaluationVisibleAttributes(id: $id, input: $input) {
+                    id
+                    evaluationVisibleAttributes {
+                        beverage
+                        batch
+                        sample
+                    }
+                }
+            }
+        `, { id: commissionId, input }, headers);
+        return { success: true, commission: data?.setCommissionEvaluationVisibleAttributes };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionEvaluationVisibleAttributesAction):", err);
+        return { success: false, error: err?.message || "Failed to update visible attributes setting" };
     }
 }
 

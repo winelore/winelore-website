@@ -10,6 +10,11 @@ export const GET_COMMISSION = gql(`
         start
         end
       }
+      evaluationVisibleAttributes {
+          beverage
+          batch
+          sample
+      }
       startedAt
       endedAt
       createdAt
@@ -358,6 +363,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
           sample {
             id
             volumeMl
+            attributes
             batch {
               id
               attributes
@@ -408,6 +414,7 @@ export const GET_REPLICA_CANDIDATE = gql(`
         sample {
           id
           volumeMl
+          attributes
           batch {
             id
             attributes
