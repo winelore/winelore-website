@@ -34,24 +34,30 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
 
         let mounted = true
         let summaryPanelId: string | null = null
+        let timeoutId: number | null = null
+        let redirected = false
 
         const loadSummary = async () => {
+            if (!mounted || redirected) return
             try {
                 const nextData = await getWaitDataAction(commissionId, replicaId)
                 if (!mounted) return
 
                 if (nextData.replicaStatus === "COMPLETED") {
+                    redirected = true
                     window.location.href = `/commission/${commissionId}/replica/${replicaId}/summary`
                     return
                 }
 
                 if (!nextData.currentPanelId) {
+                    redirected = true
                     router.replace(`/commission/${commissionId}`)
                     return
                 }
 
                 if (summaryPanelId === null) {
                     if (!nextData.isPanelFinished) {
+                        redirected = true
                         const destination = nextData.currentCandidateId
                             ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
                             : `/commission/${commissionId}/replica/${replicaId}/wait`
@@ -60,6 +66,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
                     }
                     summaryPanelId = nextData.currentPanelId
                 } else if (nextData.currentPanelId !== summaryPanelId || !nextData.isPanelFinished) {
+                    redirected = true
                     const destination = nextData.currentCandidateId
                         ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
                         : `/commission/${commissionId}/replica/${replicaId}/wait`
@@ -73,15 +80,19 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
                 console.error("Failed to load panel summary", error)
                 if (mounted) setLoadError(true)
             } finally {
-                if (mounted) setIsLoading(false)
+                if (mounted) {
+                    setIsLoading(false)
+                }
+                if (mounted && !redirected) {
+                    timeoutId = window.setTimeout(loadSummary, 1000)
+                }
             }
         }
 
         loadSummary()
-        const interval = window.setInterval(loadSummary, 3000)
         return () => {
             mounted = false
-            window.clearInterval(interval)
+            if (timeoutId !== null) window.clearTimeout(timeoutId)
         }
     }, [commissionId, replicaId, router])
 
