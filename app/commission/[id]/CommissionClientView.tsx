@@ -1146,17 +1146,11 @@ export default function CommissionClientView({
     const myReplica = localReplicas.find((r) =>
         r.members.some((m) => currentAuid !== null && m.auid.includes(currentAuid)),
     ) ?? null
-    const allCandidatesEvaluated =
-        (selectedReplica?.replicaPanels?.length ?? 0) > 0 &&
-        selectedReplica!.replicaPanels.every((panel) => panel.status === "COMPLETED")
     const selectedReplicaReadyForSummary =
         isUserReplicaMember &&
         selectedReplica &&
-        (replicaStatus === "COMPLETED" || allCandidatesEvaluated)
-    const myReplicaReadyForSummary =
-        myReplica?.status === "COMPLETED" ||
-        ((myReplica?.replicaPanels?.length ?? 0) > 0 &&
-            myReplica!.replicaPanels.every((panel) => panel.status === "COMPLETED"))
+        replicaStatus === "COMPLETED"
+    const myReplicaReadyForSummary = myReplica?.status === "COMPLETED"
     const summaryReplica = selectedReplicaReadyForSummary
         ? selectedReplica
         : myReplicaReadyForSummary

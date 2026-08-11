@@ -892,6 +892,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         myEvaluation: null as any,
         hasCompletedCurrentCandidate: false,
         myTastingSummary: null as MyTastingSummaryData | null,
+        replicaStatus: null as string | null,
         isPanelFinished: false,
         currentPanelName: "",
         currentPanelId: null as string | null,
@@ -989,7 +990,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const hasCompletedCurrentCandidate = myEvaluation?.isComplete === true;
 
         let myTastingSummary: MyTastingSummaryData | null = null;
-        if (allCandidatesEvaluated) {
+        if (replica.status === "COMPLETED") {
             try {
                 myTastingSummary = await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
                 if (myTastingSummary) {
@@ -1021,6 +1022,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             myEvaluation: myEvaluation ?? null,
             hasCompletedCurrentCandidate,
             myTastingSummary,
+            replicaStatus: replica.status || null,
             isPanelFinished,
             currentPanelName,
             currentPanelId: currentPanel?.panel?.id || null,
@@ -1373,6 +1375,25 @@ export async function startNextPanelAction(replicaId: string, nextPanelId: strin
     } catch (err: any) {
         console.error("Server Action Error (startNextPanelAction):", err);
         throw new Error(err.message || "Failed to start next panel");
+    }
+}
+
+export async function completeCommissionReplicaAction(replicaId: string) {
+    if (!isValidUuid(replicaId)) return null;
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation CompleteCommissionReplica($id: ID!) {
+                completeCommissionReplica(id: $id) {
+                    id
+                    status
+                }
+            }
+        `, { id: replicaId }, headers);
+        return data?.completeCommissionReplica ?? null;
+    } catch (err: any) {
+        console.error("Server Action Error (completeCommissionReplicaAction):", err);
+        throw new Error(err.message || "Failed to complete commission replica");
     }
 }
 

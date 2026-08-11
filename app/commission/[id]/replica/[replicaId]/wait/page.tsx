@@ -12,7 +12,6 @@ import { useUsernames } from "@/hooks/useUsernames"
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
-    startNextPanelAction,
 } from "../../../../actions"
 import { findEvaluationForMember, normalizeAuids } from "../../../../auidUtils"
 import {
@@ -24,9 +23,6 @@ import {
     MemberEvaluationSection,
 } from "../../../../EvaluationCommentsDisplay"
 import type { PropertyMeta } from "../../../../propertyMap"
-import type { MyTastingSummaryData } from "../../../../expertRanking"
-import { MyTastingSummary } from "../../../../MyTastingSummary"
-import WaitPanelResults from "./WaitPanelResults"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -42,18 +38,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [propertyMap, setPropertyMap] = useState<Record<string, PropertyMeta>>({});
     const [candidatesLeft, setCandidatesLeft] = useState<number>(0);
     const [candidatesLeftAfterCurrent, setCandidatesLeftAfterCurrent] = useState<number>(0);
-    const [allDone, setAllDone] = useState(false);
     const [myEvaluation, setMyEvaluation] = useState<any | null>(null);
     const [wineJumperMiniGameEnabled, setWineJumperMiniGameEnabled] = useState(false);
     const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
-    const [myTastingSummary, setMyTastingSummary] = useState<MyTastingSummaryData | null>(null);
-    const [isPanelFinished, setIsPanelFinished] = useState(false);
     const [currentPanelName, setCurrentPanelName] = useState<string>("");
-    const [nextPanelFirstCandidateId, setNextPanelFirstCandidateId] = useState<string | null>(null);
-    const [nextPanelId, setNextPanelId] = useState<string | null>(null);
-    const [currentPanelId, setCurrentPanelId] = useState<string | null>(null);
 
     // Fetch usernames for commission members
     const allMemberAuids = useMemo(() => {
@@ -83,7 +73,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         const fetchData = async () => {
             if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, nextPanelId: newNextPanelId, nextPanelFirstCandidateId: newNextPanelFirstCandidateId } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -92,11 +82,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 setWineJumperMiniGameEnabled(newWineJumperEnabled);
                 setVoiceCommentsEnabled(newVoiceCommentsEnabled);
                 setPropertyCommentsEnabled(newPropertyCommentsEnabled);
-                setIsPanelFinished(newIsPanelFinished || false);
                 setCurrentPanelName(newPanelName || "");
-                setCurrentPanelId(newPanelId || null);
-                setNextPanelFirstCandidateId(newNextPanelFirstCandidateId || null);
-                setNextPanelId(newNextPanelId || null);
                 const commentFlags = {
                     propertyCommentsEnabled: newPropertyCommentsEnabled,
                     voiceCommentsEnabled: newVoiceCommentsEnabled,
@@ -114,11 +100,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 const me = commMembers.find((m: any) => auid !== null && (Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid));
                 if (me) setRole(me.role);
 
-                if (allCandidatesEvaluated) {
-                    setAllDone(true);
-                    if (newMyTastingSummary != null) {
-                        setMyTastingSummary(newMyTastingSummary);
-                    }
+                if (newIsPanelFinished && newPanelId) {
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
                     return;
                 }
 
@@ -164,70 +148,24 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         Boolean(currentCandidateId) &&
         members.length > 0 &&
         members.every((member) => findEvaluationForMember(evaluations, member.auid)?.isComplete === true);
+    const isLastBeverageInPanel = Boolean(currentCandidateId) && candidatesLeft === 1;
 
     // HEAD action: advance to next beverage
     const handleNextBeverage = async () => {
         if (!canAdvanceToNextBeverage || isSwitching || !currentCandidateId) return;
         setIsSwitching(true);
         try {
-            await markCandidateEvaluatedAction(replicaId, currentCandidateId);
-            // Polling will detect the advanced current candidate and redirect automatically
+            const result = await markCandidateEvaluatedAction(replicaId, currentCandidateId);
+            if (!result?.nextCandidateId) {
+                setIsRedirecting(true);
+                window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
+            }
+            // For a regular beverage transition, polling detects the new candidate.
         } catch (err) {
             console.error(err);
             setIsSwitching(false);
         }
     };
-
-    // HEAD action: advance to next panel
-    const handleStartNextPanel = async () => {
-        if (!nextPanelId || !nextPanelFirstCandidateId || isSwitching) return;
-        setIsSwitching(true);
-        try {
-            await startNextPanelAction(replicaId, nextPanelId, nextPanelFirstCandidateId);
-        } catch (err) {
-            console.error(err);
-            setIsSwitching(false);
-        }
-    };
-
-    // ==========================================
-    // HEAD OF COMMISSION VIEW
-    // ==========================================
-    if (allDone) {
-        return (
-            <div className="flex min-h-screen flex-col bg-slate-50">
-                <AppHeader activeTab="competitions" />
-                <main className="flex-1 p-6 md:p-10">
-                    <div className="max-w-7xl mx-auto space-y-8">
-                        <div>
-                            <Link
-                                href={`/commission/${commissionId}`}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all w-fit"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                {t("commission.backToCommission")}
-                            </Link>
-                        </div>
-                        {currentPanelId && (
-                            <WaitPanelResults
-                                commissionId={commissionId}
-                                replicaId={replicaId}
-                                panelId={currentPanelId}
-                                panelName={currentPanelName || "Panel"}
-                                propertyCommentsEnabled={propertyCommentsEnabled}
-                                voiceCommentsEnabled={voiceCommentsEnabled}
-                            />
-                        )}
-                        <MyTastingSummary
-                            data={myTastingSummary}
-                            commissionId={commissionId}
-                            showBackLink
-                        />
-                    </div>
-                </main>
-            </div>
-        )
-    }
 
     if (role === "HEAD") {
         return (
@@ -273,45 +211,23 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 </p>
                             )}
                         </div>
-                        {(isPanelFinished || !currentPanelId) && !allDone ? (
-                            <button
-                                onClick={handleStartNextPanel}
-                                disabled={isSwitching}
-                                className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 disabled:bg-slate-300 disabled:shadow-none"
-                            >
-                                {isSwitching ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <>{t("commission.startNextPanel")} <ArrowRight className="w-5 h-5" /></>
-                                )}
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleNextBeverage}
-                                disabled={!canAdvanceToNextBeverage || isSwitching}
-                                className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
-                            >
-                                {isSwitching ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <>{t("commission.nextBeverage")} <ArrowRight className="w-5 h-5" /></>
-                                )}
-                            </button>
-                        )}
+                        <button
+                            onClick={handleNextBeverage}
+                            disabled={!canAdvanceToNextBeverage || isSwitching}
+                            className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+                        >
+                            {isSwitching ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    {isLastBeverageInPanel
+                                        ? t("commission.finishPanel")
+                                        : t("commission.nextBeverage")}
+                                    <ArrowRight className="w-5 h-5" />
+                                </>
+                            )}
+                        </button>
                     </header>
-
-                    {isPanelFinished && currentPanelId && (
-                        <div className="w-full">
-                            <WaitPanelResults
-                                commissionId={commissionId}
-                                replicaId={replicaId}
-                                panelId={currentPanelId}
-                                panelName={currentPanelName || "Panel"}
-                                propertyCommentsEnabled={propertyCommentsEnabled}
-                                voiceCommentsEnabled={voiceCommentsEnabled}
-                            />
-                        </div>
-                    )}
 
                     <div className={wineJumperMiniGameEnabled ? "grid grid-cols-1 xl:grid-cols-3 gap-8" : "flex flex-col gap-8"}>
                         {/* Experts list */}
@@ -452,10 +368,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 </h1>
                 <div className="max-w-md mx-auto mb-8 space-y-4">
                     <p className="text-slate-500 text-lg font-medium">
-                        {isPanelFinished
-                            ? `Panel "${currentPanelName}" is completed! Waiting for the Head to start the next panel.`
-                            : `${t("commission.waitingNextRound")} ${t("commission.autoRefreshNotice")}`
-                        }
+                        {t("commission.waitingNextRound")} {t("commission.autoRefreshNotice")}
                     </p>
                     {candidatesLeftAfterCurrent > 0 && (
                         <p className="text-indigo-600 text-sm font-semibold">
@@ -463,20 +376,6 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </p>
                     )}
                 </div>
-
-                {isPanelFinished && currentPanelId && (
-                    <div className="w-full mb-8">
-                        <WaitPanelResults
-                            commissionId={commissionId}
-                            replicaId={replicaId}
-                            panelId={currentPanelId}
-                            panelName={currentPanelName || "Panel"}
-                            propertyCommentsEnabled={propertyCommentsEnabled}
-                            voiceCommentsEnabled={voiceCommentsEnabled}
-                        />
-                    </div>
-                )}
-
 
                 {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
                 <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
