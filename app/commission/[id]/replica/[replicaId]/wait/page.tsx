@@ -66,21 +66,15 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     }, [commissionId, replicaId, router]);
 
-    // 2. Polling loop: runs 1 second after previous run completes
+    // 2. Polling loop every 3 seconds
     useEffect(() => {
         if (auid === null || isRedirecting) return;
 
-        let isCancelled = false;
-        let timeoutId: NodeJS.Timeout | null = null;
-
         const fetchData = async () => {
-            if (isRedirecting || isCancelled) return;
-            let shouldScheduleNext = true;
+            if (isRedirecting) return;
             try {
                 const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId } =
                     await getWaitDataAction(commissionId, replicaId);
-
-                if (isCancelled) return;
 
                 setMembers(commMembers);
                 setEvaluations(newEvaluations || []);
@@ -107,7 +101,6 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 if (me) setRole(me.role);
 
                 if (newIsPanelFinished && newPanelId) {
-                    shouldScheduleNext = false;
                     setIsRedirecting(true);
                     window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
                     return;
@@ -122,7 +115,6 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     cached?.candidateId === newCandidateId && cached?.isComplete !== false;
 
                 if (!hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
-                    shouldScheduleNext = false;
                     setIsRedirecting(true);
                     window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
@@ -130,7 +122,6 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 // If candidate changed (HEAD advanced) — redirect everyone to evaluation
                 if (currentCandidateId && currentCandidateId !== newCandidateId) {
-                    shouldScheduleNext = false;
                     setIsRedirecting(true);
                     window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
@@ -142,18 +133,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
             } catch (err) {
                 console.error("Polling error", err);
-            } finally {
-                if (!isCancelled && shouldScheduleNext && !isRedirecting) {
-                    timeoutId = setTimeout(fetchData, 1000);
-                }
             }
         };
 
         fetchData();
-        return () => {
-            isCancelled = true;
-            if (timeoutId) clearTimeout(timeoutId);
-        };
+        const interval = setInterval(fetchData, 3000);
+        return () => clearInterval(interval);
     }, [commissionId, replicaId, auid, currentCandidateId, router, isRedirecting]);
 
     const heads = members.filter(m => m.role === "HEAD");
