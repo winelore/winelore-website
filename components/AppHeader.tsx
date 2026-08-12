@@ -86,6 +86,7 @@ export function AppHeader({
               <button
                 key={tab.id}
                 type="button"
+                aria-label={tab.label}
                 onClick={() => {
                   if (onTabChange) {
                     onTabChange(tab.id)

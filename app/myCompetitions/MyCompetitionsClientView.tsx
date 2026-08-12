@@ -251,13 +251,13 @@ export default function MyCompetitionsClientView({ initialData, nextCursor, next
                         <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">{t("myCompetitions.title")}</h2>
                         <p className="text-xs sm:text-sm text-slate-500 mt-1">{t("myCompetitions.subtitle")}</p>
                     </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:justify-end">
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100 shrink-0">
                             {tCount("common.competitionsCount", totalCount)}
                         </span>
                         <button
                             onClick={openCreateModal}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"
+                            className="min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95"
                         >
                             <Plus className="w-4 h-4" />
                             <span>Create Competition</span>
