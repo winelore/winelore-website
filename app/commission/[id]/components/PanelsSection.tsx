@@ -255,7 +255,7 @@ export function PanelsSection({
     }
 
     return (
-        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-5">
+        <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3">
@@ -336,7 +336,7 @@ export function PanelsSection({
                     </p>
                 </div>
             ) : (
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-3">
                     {panels.map((panel) => {
                         // Gather candidates belonging to this panel
                         const panelCandidates =
@@ -349,10 +349,10 @@ export function PanelsSection({
                         return (
                             <div
                                 key={panel.id}
-                                className="border border-slate-150 rounded-2xl bg-slate-50/30 overflow-hidden transition-all"
+                                className="border border-slate-200 rounded-2xl bg-slate-50/30 overflow-hidden transition-all hover:border-indigo-200/70"
                             >
                                 {/* Panel Card Header */}
-                                <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-3">
+                                <div className="p-3.5 bg-white border-b border-slate-100 flex items-center justify-between gap-3">
                                     {isRenamingThis ? (
                                         <div className="flex items-center gap-2 flex-1">
                                             <input
@@ -469,12 +469,22 @@ export function PanelsSection({
                                             const lastIdx = panelCandidates.length - 1
                                         }
                                     }}
-                                    className="p-4 pt-12 pb-14 flex flex-col gap-2 relative transition-all"
+                                    className="p-3 flex flex-col gap-2 relative transition-all"
                                 >
                                     {panelCandidates.length === 0 ? (
-                                        <p className="text-xs text-slate-400 py-3 text-center italic">
-                                            {t("panels.noCandidatesInPanel")}
-                                        </p>
+                                        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white/60 py-5 text-center">
+                                            <p className="text-xs text-slate-400">{t("panels.noCandidatesInPanel")}</p>
+                                            {isCompetitionHolder && isDraft && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setWizardState({ isOpen: true, panelId: panel.id, panelName: panel.name })}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-600 transition-colors hover:bg-indigo-100"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                    {t("panels.addSample")}
+                                                </button>
+                                            )}
+                                        </div>
                                     ) : (
                                         panelCandidates.map((cand, idx) => {
                                             const canShowRealBeverage = isCompetitionHolder || isEnded

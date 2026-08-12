@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
     FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
-    Save, Search, ChevronRight, Sliders, Trash2, ArrowLeft, Loader2, UserPlus, Settings, ExternalLink, Send
+    Save, Search, ChevronRight, Sliders, Trash2, ArrowLeft, Loader2, UserPlus, Settings, ExternalLink, Send, ClipboardCheck, ArrowRight
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -110,8 +110,8 @@ function StatusSteps({ status }: { status: string }) {
     }
 
     return (
-        <div className="w-full bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 mb-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="w-full bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 {steps.map((step, idx) => {
                     const isCompleted = idx < currentStepIdx
                     const isActive = idx === currentStepIdx
@@ -119,7 +119,7 @@ function StatusSteps({ status }: { status: string }) {
                     return (
                         <React.Fragment key={step.id}>
                             <div className="flex items-center gap-3 flex-1">
-                                <div className={`flex items-center justify-center w-8 h-8 rounded-full border text-xs font-semibold transition-all duration-350 shrink-0 ${
+                                <div className={`flex items-center justify-center w-7 h-7 rounded-full border text-xs font-semibold transition-all duration-350 shrink-0 ${
                                     isCompleted
                                         ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                                         : isActive
@@ -134,7 +134,7 @@ function StatusSteps({ status }: { status: string }) {
                                 </div>
                                 <div>
                                     <h4 className={`text-xs font-bold ${isActive ? "text-slate-900" : "text-slate-500"}`}>{step.label}</h4>
-                                    <p className="text-[10px] text-slate-400">{step.description}</p>
+                                    <p className="text-[10px] text-slate-400 hidden xl:block">{step.description}</p>
                                 </div>
                             </div>
                         </React.Fragment>
@@ -967,8 +967,6 @@ export default function CommissionClientView({
         ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
         : t("common.unknownCreator")
 
-    const isHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
-
     useEffect(() => {
         const prevStatus = prevReplicaStatusRef.current
         const currentStatus = selectedReplica?.status
@@ -1100,9 +1098,6 @@ export default function CommissionClientView({
     const isEveryoneReady = hasMembers && localMembers.every(m => m.isReady)
     const myStatus = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
     const amIReady = myStatus?.isReady || false
-    const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
-    const nonReadyCount = localMembers.filter(m => !m.isReady).length
-
     const handleStartCommission = async () => {
         if (!selectedReplica || isMutating) return
         if (!hasCandidates) {
@@ -1150,11 +1145,9 @@ export default function CommissionClientView({
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const isReplicaDraft = replicaStatus === "DRAFT"
     const isCommissionDraft = currentCommissionStatus === "DRAFT"
-    const isCommissionPreStart = currentCommissionStatus !== "STARTED" && currentCommissionStatus !== "COMPLETED"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = currentCommissionStatus === "COMPLETED"
     const isCompetitionHolder = currentAuid !== null && (localData.competition?.holders || initialData.competition?.holders || []).includes(currentAuid)
-    const showResultsBanner = isCompetitionHolder
     const isUserReplicaMember = selectedReplica?.members.some(
         (m) => currentAuid !== null && m.auid.includes(currentAuid),
     ) ?? false
@@ -1172,13 +1165,29 @@ export default function CommissionClientView({
             ? myReplica
             : null
     const showMyTastingSummary = summaryReplica != null
+    const templatesReady = beverageTypesInCommission.length > 0 && beverageTypesInCommission.every(
+        beverageType => initialData.templateEditions?.some(link => link.beverageType?.id === beverageType.id),
+    )
+    const panelsReady = (localData.panels?.length || 0) > 0
+    const setupChecks = [
+        { id: "commission-samples", label: t("commission.setupCheckPanels"), complete: panelsReady },
+        { id: "commission-samples", label: t("commission.setupCheckSamples"), complete: hasCandidates },
+        { id: "commission-experts", label: t("commission.setupCheckExperts"), complete: hasMembers },
+        { id: "commission-templates", label: t("commission.setupCheckTemplates"), complete: templatesReady },
+    ]
+    const completedSetupChecks = setupChecks.filter(check => check.complete).length
+    const setupProgress = Math.round((completedSetupChecks / setupChecks.length) * 100)
+
+    const scrollToSection = (id: string) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex justify-start">
+            <main className="flex-1 overflow-auto px-4 pb-10 pt-4 md:px-8 md:pb-14 md:pt-6 flex flex-col items-center">
+                <div className="w-full max-w-7xl mb-3 flex justify-start">
                     <Link
                         href={initialData.competition?.id ? `/competition/${initialData.competition.id}` : "/myCommissions"}
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
@@ -1187,74 +1196,186 @@ export default function CommissionClientView({
                         {initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
                     </Link>
                 </div>
-                {showMyTastingSummary && (
-                    <div className="w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
-                        <div className="flex items-center gap-3">
-                            <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
-                            <div>
-                                <p className="text-sm font-bold text-indigo-900">
-                                    {t("commission.myRankingTitle")}
-                                </p>
-                                <p className="text-xs mt-0.5 text-indigo-600">
-                                    {t("commission.myRankingDesc")}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
-                            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
-                        >
-                            <Wine className="w-4 h-4" />
-                            {t("commission.viewMyTastingSummary")}
-                        </button>
-                    </div>
-                )}
-                {showResultsBanner && (
-                    <div className={`w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
-                        isCommissionCompleted
-                            ? "bg-emerald-50 border-emerald-200"
-                            : "bg-indigo-50 border-indigo-200"
-                    }`}>
-                        <div className="flex items-center gap-3">
-                            {isCommissionCompleted ? (
-                                <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
-                            ) : (
-                                <Trophy className="w-5 h-5 text-indigo-600 shrink-0" />
-                            )}
-                            <div>
-                                <p className={`text-sm font-bold ${isCommissionCompleted ? "text-emerald-800" : "text-indigo-900"}`}>
-                                    {isCommissionCompleted
-                                        ? t("commission.sessionCompleted")
-                                        : t("commission.resultsBannerTitle")}
-                                </p>
-                                <p className={`text-xs mt-0.5 ${isCommissionCompleted ? "text-emerald-600" : "text-indigo-600"}`}>
-                                    {isCommissionCompleted
-                                        ? t("commission.allCandidatesEvaluatedDesc")
-                                        : t("commission.resultsBannerDesc")}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => router.push(`/commission/${localData.id}/results`)}
-                            className={`shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
-                                isCommissionCompleted
-                                    ? "bg-emerald-600 hover:bg-emerald-700"
-                                    : "bg-indigo-600 hover:bg-indigo-700"
-                            }`}
-                        >
-                            <Trophy className="w-4 h-4" />
-                            {t("commission.continueToResults")}
-                        </button>
-                    </div>
-                )}
-                <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
 
-                    {/* Left Column: Replicas, Stepper and Tasting Panel */}
-                    <div className="w-full lg:w-[45%] flex flex-col gap-6">
+                <section id="commission-overview" className="w-full max-w-7xl scroll-mt-24 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+                    <div className="relative px-5 py-6 md:px-8 md:py-7">
+                        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-100/50 blur-3xl pointer-events-none" />
+                        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex min-w-0 items-start gap-4">
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
+                                    <Wine className="h-7 w-7" />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                                        <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-400">{t("commission.session")}</span>
+                                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${
+                                            replicaStatus === "STARTED"
+                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                : replicaStatus === "COMPLETED"
+                                                    ? "border-slate-200 bg-slate-100 text-slate-600"
+                                                    : "border-amber-200 bg-amber-50 text-amber-700"
+                                        }`}>
+                                            {replicaStatus === "STARTED" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                            {formatStatus(replicaStatus)}
+                                        </span>
+                                        {timeDisplay && (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                                                <Timer className="h-3.5 w-3.5 text-indigo-500" />
+                                                {timeDisplay}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {isEditingName ? (
+                                        <div className="flex w-full max-w-xl items-center gap-2">
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                className="min-w-[180px] flex-1 rounded-xl border border-indigo-300 bg-white px-3 py-1.5 text-xl font-extrabold text-slate-900 outline-none ring-indigo-500/20 focus:border-indigo-600 focus:ring-2"
+                                                value={editNameData}
+                                                onChange={event => setEditNameData(event.target.value)}
+                                                onKeyDown={event => {
+                                                    if (event.key === "Enter") handleSaveName()
+                                                    if (event.key === "Escape") setIsEditingName(false)
+                                                }}
+                                            />
+                                            <button type="button" onClick={handleSaveName} disabled={isMutating} aria-label={t("common.save")} className="rounded-xl bg-indigo-600 p-2 text-white hover:bg-indigo-700 disabled:opacity-50">
+                                                {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                                            </button>
+                                            <button type="button" onClick={() => setIsEditingName(false)} aria-label={t("competition.cancel")} className="rounded-xl bg-slate-100 p-2 text-slate-500 hover:bg-slate-200">
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <h1 className="truncate text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">{initialData.name}</h1>
+                                            {isCompetitionHolder && isCommissionDraft && (
+                                                <button type="button" onClick={openEditName} className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600" title={t("commission.editName")}>
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                    <p className="mt-1 text-sm font-medium text-slate-500">{initialData.competition.name} · {selectedReplicaName}</p>
+                                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-600">
+                                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1">{tCount("commission.replicaBeverages", candidateCount)}</span>
+                                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1">{t("commission.expertCount", { ready: localMembers.filter(member => member.isReady).length, total: localMembers.length })}</span>
+                                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1">{t("commission.panelCount", { count: localData.panels?.length || 0 })}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex w-full flex-col gap-2 lg:w-[360px] lg:shrink-0">
+                                {replicaStatus === "STARTED" && currentUserRole ? (
+                                    <button onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica!.id}/evaluation`)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-95">
+                                        <PlayCircle className="h-5 w-5" />
+                                        {t("commission.enterTastingSession")}
+                                        <ArrowRight className="h-4 w-4" />
+                                    </button>
+                                ) : replicaStatus === "COMPLETED" && isCompetitionHolder ? (
+                                    <button onClick={() => router.push(`/commission/${localData.id}/results`)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95">
+                                        <Trophy className="h-5 w-5" />
+                                        {t("commission.viewResults")}
+                                    </button>
+                                ) : replicaStatus === "COMPLETED" && summaryReplica ? (
+                                    <button onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica.id}/summary`)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95">
+                                        <Wine className="h-5 w-5" />
+                                        {t("commission.viewMyTastingSummary")}
+                                    </button>
+                                ) : replicaStatus === "COMPLETED" ? (
+                                    <div className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-700">
+                                        <CheckCircle className="h-5 w-5" />
+                                        {t("commission.sessionCompleted")}
+                                    </div>
+                                ) : currentUserRole && !amIReady ? (
+                                    <button onClick={() => handleToggleReady(true)} disabled={isMutating} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-95 disabled:opacity-50">
+                                        {isMutating ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5" />}
+                                        {t("commission.markReady")}
+                                    </button>
+                                ) : currentUserRole === "HEAD" ? (
+                                    <button onClick={handleStartCommission} disabled={!isEveryoneReady || !hasCandidates || isMutating} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">
+                                        {isMutating ? <Loader2 className="h-5 w-5 animate-spin" /> : <PlayCircle className="h-5 w-5" />}
+                                        {t("commission.startTasting")}
+                                    </button>
+                                ) : currentUserRole ? (
+                                    <button onClick={() => handleToggleReady(false)} disabled={isMutating} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-50">
+                                        <CheckCircle className="h-5 w-5" />
+                                        {t("commission.ready")}
+                                    </button>
+                                ) : isCompetitionHolder && isCommissionDraft ? (
+                                    <button onClick={handleSubmitForReview} disabled={isMutating} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-95 disabled:opacity-50">
+                                        {isMutating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                                        {t("commission.submitReviewButton")}
+                                    </button>
+                                ) : null}
+                                {showMyTastingSummary && !(replicaStatus === "COMPLETED" && !isCompetitionHolder) && (
+                                    <button onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-50">
+                                        <Wine className="h-4 w-4" />
+                                        {t("commission.viewMyTastingSummary")}
+                                    </button>
+                                )}
+                                {isCompetitionHolder && replicaStatus !== "COMPLETED" && (
+                                    <button onClick={() => router.push(`/commission/${localData.id}/results`)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
+                                        <Trophy className="h-4 w-4" />
+                                        {t("commission.resultsNav")}
+                                    </button>
+                                )}
+                                {isCompetitionHolder && isCommissionDraft && Boolean(currentUserRole) && (
+                                    <button onClick={handleSubmitForReview} disabled={isMutating} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50">
+                                        <Send className="h-4 w-4" />
+                                        {t("commission.submitReviewButton")}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 border-t border-slate-100 bg-slate-50/70 sm:grid-cols-3">
+                        <div className="flex items-center gap-3 px-5 py-3.5 md:px-8">
+                            <Trophy className="h-4 w-4 shrink-0 text-amber-500" />
+                            <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{t("commission.competition")}</p><p className="truncate text-xs font-bold text-slate-700">{initialData.competition.name}</p></div>
+                        </div>
+                        <div className="flex items-center gap-3 border-t border-slate-200 px-5 py-3.5 sm:border-l sm:border-t-0 md:px-8">
+                            <User className="h-4 w-4 shrink-0 text-indigo-500" />
+                            <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{t("commission.holders")}</p><p className="truncate text-xs font-bold text-slate-700">{creatorNames}</p></div>
+                        </div>
+                        <div className="flex items-center gap-3 border-t border-slate-200 px-5 py-3.5 sm:border-l sm:border-t-0 md:px-8">
+                            <Calendar className="h-4 w-4 shrink-0 text-indigo-500" />
+                            <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{t("commission.plannedStart")}</p><p className="truncate text-xs font-bold text-slate-700">{formatShortDateTime(initialData.plannedStartAt)}</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <nav aria-label={t("commission.pageSections")} className="sticky top-0 z-30 my-5 flex w-full max-w-7xl gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur-md">
+                    {[
+                        { id: "commission-overview", label: t("commission.navOverview") },
+                        { id: "commission-experts", label: t("commission.navExperts") },
+                        { id: "commission-samples", label: t("commission.navSamples") },
+                        { id: "commission-templates", label: t("commission.navTemplates") },
+                        ...(isCompetitionHolder ? [{ id: "commission-settings", label: t("commission.navSettings") }] : []),
+                        { id: "commission-timeline", label: t("commission.navTimeline") },
+                    ].map(item => (
+                        <button key={item.id} type="button" onClick={() => scrollToSection(item.id)} className="shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                            {item.label}
+                        </button>
+                    ))}
+                </nav>
+
+                <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 items-start gap-6">
+
+                    {/* Primary workspace: the people and samples involved in this tasting. */}
+                    <div id="commission-workspace" className="w-full scroll-mt-24 lg:col-span-7 flex flex-col gap-5">
+                        <div className="order-[-2] flex items-center gap-3 px-1">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-500/20">
+                                <Wine className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-extrabold text-slate-800">{t("commission.workspaceTitle")}</h2>
+                                <p className="text-[11px] text-slate-500">{t("commission.workspaceDesc")}</p>
+                            </div>
+                        </div>
 
                         {/* Replica Selector Tabs */}
                         {(localReplicas.length > 0 || isCompetitionHolder) && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                                         <Layers className="w-4 h-4 text-indigo-500" />
@@ -1351,7 +1472,7 @@ export default function CommissionClientView({
                                     </p>
                                 )}
 
-                                <div className="flex flex-col gap-2">
+                                <div className="flex gap-2 overflow-x-auto pb-1">
                                     {[...localReplicas].sort((a, b) => (a.members?.length || 0) - (b.members?.length || 0)).map((r) => {
                                         const isSelected = r.id === selectedReplicaId
                                         const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
@@ -1411,7 +1532,7 @@ export default function CommissionClientView({
                                                     setSelectedReplicaId(r.id)
                                                     setHasRedirected(false)
                                                 }}
-                                                className={`flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full ${
+                                                className={`flex min-w-[220px] flex-1 items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all border text-left cursor-pointer ${
                                                     isSelected
                                                         ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
                                                         : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-600 hover:text-slate-800"
@@ -1463,7 +1584,7 @@ export default function CommissionClientView({
 
                         <StatusSteps status={replicaStatus} />
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                        <div id="commission-experts" className="scroll-mt-24 bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
@@ -1494,7 +1615,7 @@ export default function CommissionClientView({
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {sortedMembers.map((p) => {
                                     const isMe = currentAuid !== null && p.auid.includes(currentAuid)
                                     return (
@@ -1575,149 +1696,65 @@ export default function CommissionClientView({
                         </div>
 
                         {/* Panels and Wine Candidates Section */}
-                        <PanelsSection
-                            commissionId={localData.id}
-                            panels={localData.panels || []}
-                            candidates={localData.candidates || []}
-                            isCompetitionHolder={isCompetitionHolder}
-                            isDraft={isCommissionDraft}
-                            isEnded={isCommissionCompleted}
-                            usernames={usernames}
-                            onRefresh={refreshCommissionData}
-                        />
+                        <div id="commission-samples" className="scroll-mt-24">
+                            <PanelsSection
+                                commissionId={localData.id}
+                                panels={localData.panels || []}
+                                candidates={localData.candidates || []}
+                                isCompetitionHolder={isCompetitionHolder}
+                                isDraft={isCommissionDraft}
+                                isEnded={isCommissionCompleted}
+                                usernames={usernames}
+                                onRefresh={refreshCommissionData}
+                            />
+                        </div>
                     </div>
 
-                    {/* Right Column: Actions & Session Details */}
-                    <div className="w-full lg:w-[55%] flex flex-col gap-6">
-                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
-                            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
-
-                            <div className="flex items-start gap-4 mb-6">
-                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm">
-                                    <Wine className="h-8 w-8" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
-                                        {t("commission.session")}
-                                    </span>
-                                    {isEditingName ? (
-                                        <div className="flex items-center gap-2 mt-1 w-full">
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                className="text-xl md:text-2xl font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-xl px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[180px] flex-1 max-w-lg"
-                                                value={editNameData}
-                                                onChange={e => setEditNameData(e.target.value)}
-                                                onKeyDown={e => {
-                                                    if (e.key === "Enter") handleSaveName()
-                                                    if (e.key === "Escape") setIsEditingName(false)
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleSaveName}
-                                                disabled={isMutating}
-                                                className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
-                                                title="Save"
-                                            >
-                                                {isMutating ? (
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                ) : (
-                                                    <Check className="w-4 h-4" />
-                                                )}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsEditingName(false)}
-                                                disabled={isMutating}
-                                                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
-                                                title="Cancel"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
-                                                {initialData.name}
-                                            </h2>
-                                            {isCompetitionHolder && isCommissionDraft && (
-                                                <button
-                                                    onClick={openEditName}
-                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                    title="Edit commission name"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                    <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                            replicaStatus === "STARTED"
-                                                ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                                                : replicaStatus === "COMPLETED"
-                                                    ? "bg-slate-100 text-slate-500 border border-slate-200"
-                                                    : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                                        }`}>
-                                            {replicaStatus === "STARTED" && (
-                                                <span className="relative flex h-2 w-2 mr-1">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                                </span>
-                                            )}
-                                            {formatStatus(replicaStatus)}
-                                        </span>
-                                        {timeDisplay && (
-                                            <>
-                                                <span className="text-slate-300">|</span>
-                                                <span className="text-slate-500 font-semibold flex items-center gap-1 text-xs">
-                                                    <Timer className="w-3.5 h-3.5 text-indigo-500" />
-                                                    {timeDisplay}
-                                                </span>
-                                            </>
-                                        )}
-                                    </p>
-                                </div>
+                    {/* Supporting details: important actions first, then reference and configuration. */}
+                    <div className="w-full lg:col-span-5 flex flex-col gap-5">
+                        <div className="order-[-2] flex items-center gap-3 px-1">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-indigo-600 border border-slate-200 shadow-sm">
+                                <Settings className="h-4 w-4" />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-6">
-                                <div className="flex items-start gap-3 bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:border-indigo-100 transition-colors">
-                                    <Trophy className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                            {t("commission.competition")}
-                                        </h4>
-                                        <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">
-                                            {initialData.competition.name}
-                                        </p>
+                            <div>
+                                <h2 className="text-sm font-extrabold text-slate-800">{t("commission.detailsTitle")}</h2>
+                                <p className="text-[11px] text-slate-500">{t("commission.detailsDesc")}</p>
+                            </div>
+                        </div>
+                        <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3">
+                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${setupProgress === 100 ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`}>
+                                        <ClipboardCheck className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-extrabold text-slate-800">{t("commission.setupReadiness")}</h3>
+                                        <p className="mt-0.5 text-[11px] text-slate-500">{t("commission.setupReadinessDesc")}</p>
                                     </div>
                                 </div>
-
-                                <div className="flex items-start gap-3 bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:border-indigo-100 transition-colors">
-                                    <User className="h-5 w-5 text-indigo-500 mt-0.5 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                            {t("commission.holders")}
-                                        </h4>
-                                        <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate" title={creatorNames}>
-                                            {creatorNames}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl p-4 mt-4">
-                                <Layers className="h-5 w-5 text-indigo-500 shrink-0" />
-                                <span className="text-sm text-slate-500 font-medium">
-                                    {tCount("commission.replicaBeverages", selectedReplica?.candidateCount || localData.candidateCount || localData.candidates?.length || 0)}
+                                <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${setupProgress === 100 ? "bg-emerald-50 text-emerald-700" : "bg-indigo-50 text-indigo-700"}`}>
+                                    {completedSetupChecks}/{setupChecks.length}
                                 </span>
+                            </div>
+                            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                <div className={`h-full rounded-full transition-all duration-500 ${setupProgress === 100 ? "bg-emerald-500" : "bg-indigo-600"}`} style={{ width: `${setupProgress}%` }} />
+                            </div>
+                            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {setupChecks.map(check => (
+                                    <button key={`${check.id}-${check.label}`} type="button" onClick={() => scrollToSection(check.id)} className="group flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5 text-left transition-colors hover:border-indigo-200 hover:bg-indigo-50/50">
+                                        <span className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                            {check.complete ? <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" /> : <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />}
+                                            {check.label}
+                                        </span>
+                                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
                         {/* Commission Settings Card */}
                         {isCompetitionHolder && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div id="commission-settings" className="scroll-mt-24 bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Sliders className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.evaluationSettings")}</span>
@@ -1734,6 +1771,9 @@ export default function CommissionClientView({
                                             type="button"
                                             onClick={handleTogglePartialEvaluation}
                                             disabled={isMutating}
+                                            role="switch"
+                                            aria-checked={Boolean(localData.partialCandidateEvaluationEnabled)}
+                                            aria-label={t("commission.partialCandidateEvaluationSetting")}
                                             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                                                 localData.partialCandidateEvaluationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                             }`}
@@ -1754,6 +1794,9 @@ export default function CommissionClientView({
                                             type="button"
                                             onClick={handleToggleWineJumper}
                                             disabled={isMutating}
+                                            role="switch"
+                                            aria-checked={Boolean(localData.wineJumperMiniGameEnabled)}
+                                            aria-label={t("commission.wineJumperSetting")}
                                             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                                                 localData.wineJumperMiniGameEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                             }`}
@@ -1774,6 +1817,9 @@ export default function CommissionClientView({
                                             type="button"
                                             onClick={handleToggleVoiceComments}
                                             disabled={isMutating}
+                                            role="switch"
+                                            aria-checked={Boolean(localData.voiceCommentsEnabled)}
+                                            aria-label={t("commission.voiceCommentsSetting")}
                                             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                                                 localData.voiceCommentsEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                             }`}
@@ -1794,6 +1840,9 @@ export default function CommissionClientView({
                                             type="button"
                                             onClick={handleTogglePropertyComments}
                                             disabled={isMutating}
+                                            role="switch"
+                                            aria-checked={Boolean(localData.propertyCommentsEnabled)}
+                                            aria-label={t("commission.propertyCommentsSetting")}
                                             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                                                 localData.propertyCommentsEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                             }`}
@@ -1814,6 +1863,9 @@ export default function CommissionClientView({
                                             type="button"
                                             onClick={handleToggleBeverageOrigin}
                                             disabled={isMutating}
+                                            role="switch"
+                                            aria-checked={Boolean(localData.beverageOriginDuringEvaluationEnabled)}
+                                            aria-label={t("commission.beverageOriginSetting")}
                                             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                                                 localData.beverageOriginDuringEvaluationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                             }`}
@@ -1844,6 +1896,9 @@ export default function CommissionClientView({
                                         type="button"
                                         onClick={handleToggleChaoticCandidateChanges}
                                         disabled={isMutating || !selectedReplica.currentPanelId}
+                                        role="switch"
+                                        aria-checked={Boolean(selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled)}
+                                        aria-label={t("commission.chaoticCandidateChangesTitle")}
                                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                                             selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                         }`}
@@ -1859,6 +1914,7 @@ export default function CommissionClientView({
                                         <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.chaoticPanelChangesDesc")}</span>
                                     </div>
                                     <button type="button" onClick={handleToggleChaoticPanelChanges} disabled={isMutating}
+                                        role="switch" aria-checked={Boolean(selectedReplica.chaoticCurrentPanelChangesEnabled)} aria-label={t("commission.chaoticPanelChangesTitle")}
                                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}>
                                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs transition ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
@@ -1867,17 +1923,19 @@ export default function CommissionClientView({
                         )}
 
                         {/* Evaluation Template Details */}
-                        <EvaluationTemplatesBlock
-                            commissionId={initialData.id}
-                            templateEditions={initialData.templateEditions || []}
-                            beverageTypesInCommission={beverageTypesInCommission}
-                            isCompetitionHolder={isCompetitionHolder}
-                            canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
-                            onRefresh={refreshData}
-                        />
+                        <div id="commission-templates" className="scroll-mt-24">
+                            <EvaluationTemplatesBlock
+                                commissionId={initialData.id}
+                                templateEditions={initialData.templateEditions || []}
+                                beverageTypesInCommission={beverageTypesInCommission}
+                                isCompetitionHolder={isCompetitionHolder}
+                                canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
+                                onRefresh={refreshData}
+                            />
+                        </div>
 
                         {/* Timeline and Dates */}
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
+                        <div id="commission-timeline" className="scroll-mt-24 bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-indigo-500" />
@@ -2004,204 +2062,6 @@ export default function CommissionClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-                                {t("commission.actionsControls")}
-                            </h3>
-
-                            <div className="flex flex-col gap-6">
-                                {isCompetitionHolder && isCommissionDraft && (
-                                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 flex-wrap sm:flex-nowrap">
-                                        <div className="max-w-full sm:max-w-[65%]">
-                                            <h4 className="text-sm font-bold text-slate-800">
-                                                {t("commission.submitReviewTitle")}
-                                            </h4>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                {t("commission.submitReviewDescription")}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={handleSubmitForReview}
-                                            disabled={isMutating}
-                                            className="group flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-600/15 cursor-pointer shrink-0"
-                                        >
-                                            {isMutating ? (
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                            ) : (
-                                                <Send className="h-4 w-4" />
-                                            )}
-                                            <span>{t("commission.submitReviewButton")}</span>
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isPreStart && currentUserRole && (
-                                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
-                                        <div className="max-w-full sm:max-w-[65%]">
-                                            <h4 className="text-sm font-bold text-slate-800">
-                                                {t("commission.yourReadiness")}
-                                            </h4>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                {t("commission.readinessDescription")}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleToggleReady(!amIReady)}
-                                            disabled={isMutating}
-                                            className={`group flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-xs cursor-pointer shrink-0 ${
-                                                amIReady
-                                                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
-                                                    : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/15"
-                                            }`}
-                                        >
-                                            {isMutating ? (
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            ) : amIReady ? (
-                                                <>
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    <span>{t("commission.ready")}</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <PlayCircle className="h-4 w-4" />
-                                                    <span>{t("commission.markReady")}</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
-
-                                {currentUserRole === "HEAD" && (
-                                    <div className="border-t border-slate-100 pt-6">
-                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                                            {t("commission.headTools", { name: selectedReplicaName })}
-                                        </h4>
-
-                                        {isPreStart && (
-                                            <div className="flex flex-col gap-3">
-                                                <div className="flex items-center gap-4 flex-wrap">
-                                                    <button
-                                                        onClick={handleStartCommission}
-                                                        disabled={!isEveryoneReady || !hasCandidates || isMutating}
-                                                        className={`group flex items-center gap-2.5 rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-45 disabled:pointer-events-none cursor-pointer ${
-                                                            isEveryoneReady && hasCandidates
-                                                                ? "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25"
-                                                                : "bg-slate-100 text-slate-400 border border-slate-200"
-                                                        }`}
-                                                    >
-                                                        {isMutating ? (
-                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                        ) : (
-                                                            <PlayCircle className="h-5 w-5" />
-                                                        )}
-                                                        <span>{t("commission.startTasting")}</span>
-                                                    </button>
-
-                                                    {!hasCandidates && (
-                                                        <span className="text-xs text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/60">
-                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                                            {t("commission.addSamplesBeforeStart")}
-                                                        </span>
-                                                    )}
-                                                    {hasCandidates && !hasMembers && (
-                                                        <span className="text-xs text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/60">
-                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                                            {t("commission.addExpertsBeforeStart")}
-                                                        </span>
-                                                    )}
-                                                    {hasCandidates && hasMembers && !isEveryoneReady && (
-                                                        <span className="text-xs text-slate-500 font-medium animate-fade-in-slide">
-                                                            {tCount("commission.waitingMembers", nonReadyCount)}
-                                                        </span>
-                                                    )}
-                                                    {hasCandidates && isEveryoneReady && (
-                                                        <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5 animate-pulse">
-                                                            <Check className="w-4 h-4 shrink-0" />
-                                                            {t("commission.everyoneReady")}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                    </div>
-                                )}
-
-                                {replicaStatus === "COMPLETED" && (
-                                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
-                                        <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-bold text-emerald-800">
-                                                {t("commission.sessionCompleted")}
-                                            </h4>
-                                            <p className="text-xs text-emerald-600/90 mt-1">
-                                                {t("commission.sessionCompletedDesc")}
-                                            </p>
-                                            {isCompetitionHolder && (
-                                                <button
-                                                    onClick={() => router.push(`/commission/${localData.id}/results`)}
-                                                    className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
-                                                >
-                                                    <Trophy className="w-3.5 h-3.5" />
-                                                    {t("commission.viewResults")}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {replicaStatus === "STARTED" && currentUserRole && (
-                                    <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                                            </div>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-indigo-800">
-                                                    {t("commission.tastingActive")}
-                                                </h4>
-                                                <p className="text-xs text-slate-600 mt-1">
-                                                    {t("commission.tastingActiveDesc")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {selectedReplica?.currentCandidateId && (() => {
-                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const candIndex = selectedReplica.replicaCandidates.findIndex(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const rawCode = currentCandidateObj?.candidate?.anonymizedCode;
-                                            const code = (rawCode && rawCode.trim()) ? rawCode.trim() : (candIndex >= 0 ? `#${candIndex + 1}` : t("common.na"));
-                                            return (
-                                                <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
-                                                    <span>{t("commission.currentCandidate", { code })}</span>
-                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
-                                                </p>
-                                            );
-                                        })()}
-                                        <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
-                                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
-                                        >
-                                            {t("commission.enterTastingSession")} →
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isPreStart && currentUserRole !== "HEAD" && (
-                                    <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex items-start gap-3">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mt-1.5 shrink-0" />
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800">
-                                                {t("commission.waitingStart")}
-                                            </h4>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                {t("commission.waitingStartDesc")}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
 
                         <style>{`
                             @keyframes fadeInSlide {
