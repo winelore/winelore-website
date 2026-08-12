@@ -1,7 +1,7 @@
 {
   "competitionTitle": "V ювілейний Всеукраїнський відбір офіційних вин амбасадорів 2026",
   "sourceFile": "5 відбір вин амбасад.xlsx",
-  "parsedAt": "2026-08-12T22:03:57.437Z",
+  "parsedAt": "2026-08-12T22:34:24.410Z",
   "defaultBeverageTypeId": "11111111-1111-4111-8111-111111111101",
   "defaultProducers": [
     {
@@ -37,6 +37,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-1"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -58,6 +64,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-2"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -79,6 +91,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-3"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -100,6 +118,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-4"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -121,6 +145,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-5"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -142,6 +172,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-6"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -168,6 +204,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-7"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -189,6 +231,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-8"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -210,6 +258,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-9"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -236,6 +290,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-10"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -257,6 +317,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-11"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -278,6 +344,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-12"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -299,6 +371,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-13"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -320,6 +398,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-14"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -341,6 +425,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-15"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -362,6 +452,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-16"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -383,6 +479,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-17"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -404,6 +506,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-18"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -425,6 +533,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-19"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -446,6 +560,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-20"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -467,6 +587,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-21"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -488,6 +614,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-22"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -509,6 +641,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-23"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -530,6 +668,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-24"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -551,6 +695,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-25"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -572,6 +722,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-26"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -598,6 +754,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-27"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -619,6 +781,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-28"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -645,6 +813,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-29"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -666,6 +840,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-30"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -687,6 +867,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-31"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -713,6 +899,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-32"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -744,6 +936,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-1"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -765,6 +963,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-2"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -786,6 +990,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-3"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -807,6 +1017,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-4"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -828,6 +1044,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-5"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -849,6 +1071,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-6"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -870,6 +1098,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-7"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -896,6 +1130,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-8"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -917,6 +1157,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-9"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -938,6 +1184,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-10"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -959,6 +1211,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-11"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -980,6 +1238,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-12"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -1006,6 +1270,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-13"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1027,6 +1297,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-14"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1048,6 +1324,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-15"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1069,6 +1351,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-16"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1090,6 +1378,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-17"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]
@@ -1116,6 +1410,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-18"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1137,6 +1437,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-19"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1158,6 +1464,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-20"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1179,6 +1491,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-21"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1200,6 +1518,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-22"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1221,6 +1545,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-23"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1242,6 +1572,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-24"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1263,6 +1599,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-25"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1284,6 +1626,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-26"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             },
             {
@@ -1305,6 +1653,12 @@
                   }
                 ],
                 "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-27"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
               }
             }
           ]

@@ -101,6 +101,16 @@ workbook.SheetNames.forEach(sheetName => {
         ...(attributesJsonString ? { attributes: attributesJsonString } : {})
       };
 
+      // Construct GraphQL CreateBatchInput payload template
+      const createBatchInput = {
+        lotNumber: col0 ? `LOT-${col0}` : null
+      };
+
+      // Construct GraphQL CreateSampleInput payload template
+      const createSampleInput = {
+        volumeMl: 750
+      };
+
       const wineObj = {
         itemNumber: col0,
         fullName: cleanedName,
@@ -108,7 +118,9 @@ workbook.SheetNames.forEach(sheetName => {
         color: color,
         vintageYear: vintageYear,
         rawCategory: catName,
-        createBeverageInput: createBeverageInput
+        createBeverageInput: createBeverageInput,
+        createBatchInput: createBatchInput,
+        createSampleInput: createSampleInput
       };
 
       if (!currentCategory) {

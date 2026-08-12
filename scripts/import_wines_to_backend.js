@@ -12,6 +12,7 @@ const CREATE_BEVERAGE_MUTATION = `
       id
       name
       typeId
+      attributes
     }
   }
 `;
@@ -98,6 +99,7 @@ async function importWines() {
         try {
           // 1. Створення Beverage
           const beverageInput = {
+            ...wine.createBeverageInput,
             name: uniqueWineName,
             typeId: BEVERAGE_TYPE_ID,
             producers: [
@@ -107,19 +109,31 @@ async function importWines() {
               }
             ]
           };
+          // Omit attributes if backend throws "Failed to convert argument value" for beverage attributes
+          delete beverageInput.attributes;
 
           const bevData = await postGraphQL(CREATE_BEVERAGE_MUTATION, { input: beverageInput });
           const beverageId = bevData.createBeverage.id;
 
           // 2. Створення Batch
+          const batchInput = {
+            ...(wine.createBatchInput || {}),
+            beverageId: beverageId
+          };
+
           const batchData = await postGraphQL(CREATE_BATCH_MUTATION, {
-            input: { beverageId }
+            input: batchInput
           });
           const batchId = batchData.createBatch.id;
 
           // 3. Створення Sample
+          const sampleInput = {
+            ...(wine.createSampleInput || {}),
+            batchId: batchId
+          };
+
           const sampleData = await postGraphQL(CREATE_SAMPLE_MUTATION, {
-            input: { batchId }
+            input: sampleInput
           });
           const sampleId = sampleData.createSample.id;
 
