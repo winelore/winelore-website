@@ -1,5 +1,6 @@
 const hu = {
     common: {
+        save: "megment",
         home: "Főoldal",
         competitions: "Versenyek",
         wines: "Borok",
@@ -73,6 +74,7 @@ const hu = {
         emptyDescription: "Ön még nem szerepel szervezőként egyetlen versenyen sem.",
     },
     competition: {
+        calendarDetails: "Naptár részletei",
         series: "Versenysorozat",
         timelineDetails: "Idővonal részletei",
         plannedStart: "Tervezett kezdés",

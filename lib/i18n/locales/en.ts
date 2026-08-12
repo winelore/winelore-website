@@ -1,5 +1,6 @@
 const en = {
   common: {
+    save: "Save",
     home: "Home",
     competitions: "Competitions",
     wines: "Wines",
@@ -73,6 +74,7 @@ const en = {
     emptyDescription: "You are not listed as a holder for any competitions yet.",
   },
   competition: {
+    calendarDetails: "Calendar details",
     series: "Competition Series",
     timelineDetails: "Timeline Details",
     plannedStart: "Planned Start",

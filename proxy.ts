@@ -3,8 +3,15 @@ import type { NextRequest } from "next/server";
 import { parseJwt } from "@/lib/pkce";
 import { refreshTokens } from "@/lib/authRefresh";
 
+import { isProd } from "@/lib/isProd";
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Disable dev-tools on production
+  if (isProd() && (pathname.startsWith("/dev-tools") || pathname.startsWith("/api/dev-tools"))) {
+    return new NextResponse(null, { status: 404 });
+  }
 
   // Do not intercept or try to refresh tokens on auth-related endpoints
   if (pathname.startsWith("/auth/") || pathname === "/callback") {
