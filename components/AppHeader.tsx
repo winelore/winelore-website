@@ -70,15 +70,15 @@ export function AppHeader({
   ]
 
   return (
-    <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-6 py-4">
-      <div className="flex flex-1 items-center justify-start">
-        <Link href="/" className="text-2xl font-bold tracking-tight text-slate-800 transition-colors hover:text-slate-600">
+    <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-3 py-3 sm:px-6 sm:py-4">
+      <div className="flex flex-1 items-center justify-start min-w-0">
+        <Link href="/" className="text-lg sm:text-2xl font-bold tracking-tight text-slate-800 transition-colors hover:text-slate-600 truncate">
           WineLore
         </Link>
       </div>
 
       <div className="flex-none">
-        <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-1">
+        <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-0.5 sm:p-1">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id || (activeTab === "wines" && tab.id === "beverages") || (activeTab === "beverages" && tab.id === "wines")
@@ -93,21 +93,21 @@ export function AppHeader({
                     router.push(tab.href)
                   }
                 }}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1 sm:gap-2 rounded-full px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
                   isActive
                      ? "border border-slate-100/50 bg-white text-slate-800 shadow-sm"
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
-                <span>{tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             )
           })}
         </nav>
       </div>
 
-      <div className="flex flex-1 items-center justify-end gap-3">
+      <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-3">
         <LanguageSwitcher />
         {!mounted ? (
           <div className="h-9 w-24 rounded-lg bg-slate-100 animate-pulse" />
@@ -116,7 +116,7 @@ export function AppHeader({
         ) : (
           <a
             href="/auth/login"
-            className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 shadow-sm"
+            className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-indigo-600 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:bg-indigo-500 shadow-sm"
           >
             <span>{t("common.signIn")}</span>
           </a>

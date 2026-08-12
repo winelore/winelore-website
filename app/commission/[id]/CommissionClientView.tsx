@@ -1188,7 +1188,7 @@ export default function CommissionClientView({
                     </Link>
                 </div>
                 {showMyTastingSummary && (
-                    <div className="w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
+                    <div className="w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
                         <div className="flex items-center gap-3">
                             <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
                             <div>
@@ -1202,7 +1202,7 @@ export default function CommissionClientView({
                         </div>
                         <button
                             onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
-                            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                            className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                             <Wine className="w-4 h-4" />
                             {t("commission.viewMyTastingSummary")}
@@ -1210,7 +1210,7 @@ export default function CommissionClientView({
                     </div>
                 )}
                 {showResultsBanner && (
-                    <div className={`w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
+                    <div className={`w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
                         isCommissionCompleted
                             ? "bg-emerald-50 border-emerald-200"
                             : "bg-indigo-50 border-indigo-200"
@@ -1236,7 +1236,7 @@ export default function CommissionClientView({
                         </div>
                         <button
                             onClick={() => router.push(`/commission/${localData.id}/results`)}
-                            className={`shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
+                            className={`w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
                                 isCommissionCompleted
                                     ? "bg-emerald-600 hover:bg-emerald-700"
                                     : "bg-indigo-600 hover:bg-indigo-700"
@@ -1411,13 +1411,13 @@ export default function CommissionClientView({
                                                     setSelectedReplicaId(r.id)
                                                     setHasRedirected(false)
                                                 }}
-                                                className={`flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full ${
+                                                className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full gap-2 ${
                                                     isSelected
                                                         ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
                                                         : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-600 hover:text-slate-800"
                                                 }`}
                                             >
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                                     <span>{r.name}</span>
                                                     <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
                                                         isSelected
@@ -1436,7 +1436,7 @@ export default function CommissionClientView({
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-1.5 sm:justify-end shrink-0">
                                                     {isUserReplica && (
                                                         <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
                                                             isSelected ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
@@ -1448,8 +1448,8 @@ export default function CommissionClientView({
                                                         r.status === "STARTED"
                                                             ? (isSelected ? "bg-emerald-400 text-indigo-950 font-extrabold" : "bg-emerald-500/10 text-emerald-600")
                                                             : r.status === "COMPLETED"
-                                                                ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
-                                                                : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
+                                                                 ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
+                                                                 : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
                                                     }`}>
                                                         {formatStatus(r.status)}
                                                     </span>
