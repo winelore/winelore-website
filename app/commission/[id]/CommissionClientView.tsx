@@ -1247,14 +1247,14 @@ export default function CommissionClientView({
                         </button>
                     </div>
                 )}
-                <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
+                <div className="w-full max-w-7xl flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
 
                     {/* Left Column: Replicas, Stepper and Tasting Panel */}
-                    <div className="w-full lg:w-[45%] flex flex-col gap-6">
+                    <div className="contents lg:flex lg:flex-col lg:w-[45%] lg:gap-6">
 
                         {/* Replica Selector Tabs */}
                         {(localReplicas.length > 0 || isCompetitionHolder) && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50 order-3 lg:order-none">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                                         <Layers className="w-4 h-4 text-indigo-500" />
@@ -1461,9 +1461,11 @@ export default function CommissionClientView({
                             </div>
                         )}
 
-                        <StatusSteps status={replicaStatus} />
+                        <div className="order-4 lg:order-none">
+                            <StatusSteps status={replicaStatus} />
+                        </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
@@ -1575,21 +1577,23 @@ export default function CommissionClientView({
                         </div>
 
                         {/* Panels and Wine Candidates Section */}
-                        <PanelsSection
-                            commissionId={localData.id}
-                            panels={localData.panels || []}
-                            candidates={localData.candidates || []}
-                            isCompetitionHolder={isCompetitionHolder}
-                            isDraft={isCommissionDraft}
-                            isEnded={isCommissionCompleted}
-                            usernames={usernames}
-                            onRefresh={refreshCommissionData}
-                        />
+                        <div className="order-6 lg:order-none">
+                            <PanelsSection
+                                commissionId={localData.id}
+                                panels={localData.panels || []}
+                                candidates={localData.candidates || []}
+                                isCompetitionHolder={isCompetitionHolder}
+                                isDraft={isCommissionDraft}
+                                isEnded={isCommissionCompleted}
+                                usernames={usernames}
+                                onRefresh={refreshCommissionData}
+                            />
+                        </div>
                     </div>
 
                     {/* Right Column: Actions & Session Details */}
-                    <div className="w-full lg:w-[55%] flex flex-col gap-6">
-                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                    <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
+                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                             <div className="flex items-start gap-4 mb-6">
@@ -1717,7 +1721,7 @@ export default function CommissionClientView({
 
                         {/* Commission Settings Card */}
                         {isCompetitionHolder && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-8 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Sliders className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.evaluationSettings")}</span>
@@ -1829,7 +1833,7 @@ export default function CommissionClientView({
 
                         {/* Replica Settings Card */}
                         {isCompetitionHolder && selectedReplica && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-9 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Layers className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.replicaSettings", { name: selectedReplica.name })}</span>
@@ -1867,17 +1871,19 @@ export default function CommissionClientView({
                         )}
 
                         {/* Evaluation Template Details */}
-                        <EvaluationTemplatesBlock
-                            commissionId={initialData.id}
-                            templateEditions={initialData.templateEditions || []}
-                            beverageTypesInCommission={beverageTypesInCommission}
-                            isCompetitionHolder={isCompetitionHolder}
-                            canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
-                            onRefresh={refreshData}
-                        />
+                        <div className="order-7 lg:order-none">
+                            <EvaluationTemplatesBlock
+                                commissionId={initialData.id}
+                                templateEditions={initialData.templateEditions || []}
+                                beverageTypesInCommission={beverageTypesInCommission}
+                                isCompetitionHolder={isCompetitionHolder}
+                                canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
+                                onRefresh={refreshData}
+                            />
+                        </div>
 
                         {/* Timeline and Dates */}
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide order-2 lg:order-none">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-indigo-500" />
@@ -2004,7 +2010,7 @@ export default function CommissionClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-10 lg:order-none">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                 {t("commission.actionsControls")}
                             </h3>

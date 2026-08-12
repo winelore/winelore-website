@@ -491,14 +491,16 @@ export default function CompetitionClientView({
                     </Link>
                 </div>
                 <div className="w-full max-w-7xl flex flex-col gap-8">
-                    <div className="w-full flex flex-col lg:flex-row items-start gap-8">
+                    <div className="w-full flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
 
                         {/* Left Column: Status, Series, timeline */}
-                        <div className="w-full lg:w-[45%] flex flex-col gap-6">
-                            <StatusSteps status={initialData.status} />
+                        <div className="contents lg:flex lg:flex-col lg:w-[45%] lg:gap-6">
+                            <div className="order-2 lg:order-none">
+                                <StatusSteps status={initialData.status} />
+                            </div>
 
                             {/* Series Details */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex items-center gap-4 order-3 lg:order-none">
                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-inner">
                                     <Layers className="h-6 w-6" />
                                 </div>
@@ -513,7 +515,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {/* Timeline and Dates */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-4 lg:order-none">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-indigo-500" />
@@ -647,9 +649,9 @@ export default function CompetitionClientView({
                         </div>
 
                         {/* Right Column: Info & Commissions List */}
-                        <div className="w-full lg:w-[55%] flex flex-col gap-6">
+                        <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
                             {/* Competition Header Card */}
-                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                                 <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                                 <div className="flex items-start justify-between gap-4 mb-6">
@@ -763,7 +765,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {initialData.status === "DRAFT" && isHolder && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                         {t("competition.actionsControls")}
                                     </h3>
@@ -793,7 +795,7 @@ export default function CompetitionClientView({
                             )}
 
                             {initialData.status === "PLANNED" && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                         {t("competition.actionsControls")}
                                     </h3>
@@ -839,7 +841,7 @@ export default function CompetitionClientView({
                             )}
 
                             {/* Commissions list */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-6 lg:order-none">
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
