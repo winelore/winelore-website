@@ -61,6 +61,8 @@ export const GET_COMMISSION_RESULTS = `
         status
         members {
           id
+          auid
+          role
         }
         outcomes {
           beverageId

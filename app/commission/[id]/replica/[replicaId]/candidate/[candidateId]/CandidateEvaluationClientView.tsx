@@ -81,10 +81,10 @@ export default function CandidateEvaluationClientView({
         const data = await getWaitDataAction(commissionId, replicaId)
         if (!isMounted || isRedirecting || isFormSubmitting) return
 
-        // 1. Replica completed -> redirect to summary
+        // 1. Replica completed -> redirect every participant to the shared results
         if (data.replicaStatus === "COMPLETED") {
           setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/replica/${replicaId}/summary`
+          window.location.href = `/commission/${commissionId}/results`
           return
         }
 
@@ -224,4 +224,3 @@ export default function CandidateEvaluationClientView({
     </div>
   )
 }
-

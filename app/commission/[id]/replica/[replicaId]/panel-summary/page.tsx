@@ -44,7 +44,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
                 if (!mounted) return
 
                 if (nextData.replicaStatus === "COMPLETED") {
-                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/summary`
+                    window.location.href = `/commission/${commissionId}/results`
                     return
                 }
 
@@ -112,7 +112,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
         setIsAdvancing(true)
         try {
             await completeCommissionReplicaAction(replicaId)
-            window.location.href = `/commission/${commissionId}/replica/${replicaId}/summary`
+            window.location.href = `/commission/${commissionId}/results`
         } catch (error) {
             console.error("Failed to complete replica", error)
             setIsAdvancing(false)

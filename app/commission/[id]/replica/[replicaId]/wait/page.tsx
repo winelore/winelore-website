@@ -90,7 +90,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 if (newReplicaStatus === "COMPLETED") {
                     setIsRedirecting(true);
-                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/summary`;
+                    window.location.href = `/commission/${commissionId}/results`;
                     return;
                 }
 

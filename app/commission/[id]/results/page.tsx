@@ -51,9 +51,21 @@ export default async function CommissionResultsPage({ params }: PageProps) {
                     (panel.replicaCandidates || []).map((candidate: any) => ({ ...candidate, replicaPanelId: panel.id, panelId: panel.panel?.id })),
                 ),
             }))
-            const holders = commission.competition?.holders?.flat() ?? []
+            const holders = (commission.competition?.holders?.flat() ?? []).map(Number)
             const isHolder = currentAuid !== null && holders.includes(currentAuid)
-            if (!isHolder) {
+            const isMemberOfCompletedReplica =
+                currentAuid !== null &&
+                (commission.replicas || []).some(
+                    (replica: any) =>
+                        replica.status === "COMPLETED" &&
+                        (replica.members || []).some((member: any) =>
+                            (member.auid?.flat?.() ?? [member.auid])
+                                .filter((auid: unknown) => auid != null)
+                                .map(Number)
+                                .includes(currentAuid),
+                        ),
+                )
+            if (!isHolder && !isMemberOfCompletedReplica) {
                 return <ResultsErrorView commissionId={commissionId} variant="forbidden" />
             }
             propertyCommentsEnabled = commission.propertyCommentsEnabled ?? false

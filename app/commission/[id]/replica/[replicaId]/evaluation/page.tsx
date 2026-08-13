@@ -29,7 +29,7 @@ export default async function EvaluationProxyPage({ params }: Props) {
     }
 
     if (replica.status === "COMPLETED") {
-        redirect(`/commission/${id}/replica/${replicaId}/summary`)
+        redirect(`/commission/${id}/results`)
     }
 
     if (replica.status !== "STARTED") {

@@ -1164,7 +1164,14 @@ export default function CommissionClientView({
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = currentCommissionStatus === "COMPLETED"
     const isCompetitionHolder = currentAuid !== null && (localData.competition?.holders || initialData.competition?.holders || []).includes(currentAuid)
-    const showResultsBanner = isCompetitionHolder
+    const completedUserReplica = localReplicas.find(
+        (replica) =>
+            replica.status === "COMPLETED" &&
+            replica.members.some(
+                (member) => currentAuid !== null && member.auid.includes(currentAuid),
+            ),
+    ) ?? null
+    const showResultsBanner = isCompetitionHolder || completedUserReplica !== null
     const isUserReplicaMember = selectedReplica?.members.some(
         (m) => currentAuid !== null && m.auid.includes(currentAuid),
     ) ?? false
@@ -2153,7 +2160,7 @@ export default function CommissionClientView({
                                             <p className="text-xs text-emerald-600/90 mt-1">
                                                 {t("commission.sessionCompletedDesc")}
                                             </p>
-                                            {isCompetitionHolder && (
+                                            {(isCompetitionHolder || isUserReplicaMember) && (
                                                 <button
                                                     onClick={() => router.push(`/commission/${localData.id}/results`)}
                                                     className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"

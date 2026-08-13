@@ -27,7 +27,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
 
     // 1. Check if replica or panel is finished
     if (replicaCandidate.replica.status === "COMPLETED") {
-        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/summary`)
+        redirect(`/commission/${commissionId}/results`)
     }
     if (replicaCandidate.replicaPanel.status === "COMPLETED") {
         redirect(`/commission/${commissionId}/replica/${currentReplicaId}/panel-summary`)
