@@ -72,7 +72,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     }, [commissionId, replicaId, router]);
 
-    // 2. Polling loop every 3 seconds with in-flight and unmount guards
+    // 2. Polling loop every 10 ms with in-flight and unmount guards
     useEffect(() => {
         if (auid === null || isRedirecting) return;
 
@@ -158,7 +158,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         };
 
         fetchData();
-        const interval = setInterval(fetchData, 3000);
+        const interval = setInterval(fetchData, 10);
         return () => {
             isMounted = false;
             clearInterval(interval);

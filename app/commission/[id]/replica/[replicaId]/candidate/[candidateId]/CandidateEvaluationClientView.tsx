@@ -133,7 +133,7 @@ export default function CandidateEvaluationClientView({
       }
     }
 
-    const interval = setInterval(checkRedirect, 3000)
+    const interval = setInterval(checkRedirect, 10)
     return () => {
       isMounted = false
       clearInterval(interval)
