@@ -123,19 +123,22 @@ function DiscreteNumbersInput({
         }
 
         const checkFit = () => {
-            const width = container.offsetWidth
+            const target = container.parentElement || container
+            const width = target.clientWidth || container.offsetWidth
             if (width === 0) return
 
             measure.style.width = `${width}px`
             const firstButton = measure.querySelector("button")
             const rowHeight = firstButton?.offsetHeight ?? 36
             const maxHeight = rowHeight * DISCRETE_BUBBLE_MAX_ROWS + 8
-            setUseBubbles(measure.scrollHeight <= maxHeight)
+            const fits = measure.scrollHeight <= maxHeight
+            setUseBubbles((prev) => (prev !== fits ? fits : prev))
         }
 
         checkFit()
+        const targetElement = container.parentElement || container
         const observer = new ResizeObserver(checkFit)
-        observer.observe(container)
+        observer.observe(targetElement)
         return () => observer.disconnect()
     }, [allowedValues])
 
@@ -335,6 +338,49 @@ export default function EvaluationForm({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    useEffect(() => {
+        const initial: Record<string, any> = {}
+        categories.forEach(category => {
+            category.properties.forEach(prop => {
+                switch (prop.__typename) {
+                    case "BooleanProperty":
+                        if (prop.boolDefaultValue !== null && prop.boolDefaultValue !== undefined) {
+                            initial[prop.code] = prop.boolDefaultValue
+                        }
+                        break
+                    case "IntProperty":
+                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
+                            initial[prop.code] = prop.intDefaultValue
+                        }
+                        break
+                    case "DoubleProperty":
+                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
+                            initial[prop.code] = prop.doubleDefaultValue
+                        }
+                        break
+                    case "EnumProperty":
+                        if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
+                            initial[prop.code] = prop.enumDefaultValue
+                        }
+                        break
+                    case "DiscreteNumbersProperty":
+                        if (prop.discreteDefaultValue !== null && prop.discreteDefaultValue !== undefined) {
+                            initial[prop.code] = prop.discreteDefaultValue
+                        }
+                        break
+                }
+            })
+        })
+        setValues(initial)
+        setCommentValues({})
+        setNumericDrafts({})
+        setNumericErrors({})
+        setGeneralComment("")
+        setError(null)
+        setSuccess(false)
+        setIsSubmitting(false)
+    }, [candidateId, categories])
 
     const startRecording = async (key: string) => {
         if (activeRecordingKey) stopRecording()
