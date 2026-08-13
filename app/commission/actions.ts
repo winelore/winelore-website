@@ -887,6 +887,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         members: [] as any[],
         currentCandidateId: null as string | null,
         currentCandidateCode: null as string | null,
+        currentCandidateBeverageName: null as string | null,
         allCandidatesEvaluated: false,
         evaluations: [] as any[],
         propertyMap: {} as Record<string, PropertyMeta>,
@@ -945,6 +946,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const currentCandidateCode = (rawCandidateCode && rawCandidateCode.trim())
             ? rawCandidateCode.trim()
             : (currentCandidateIndex >= 0 ? `#${currentCandidateIndex + 1}` : (currentCandidateId ? `#${currentCandidateId.slice(0, 8)}` : null));
+        const currentCandidateBeverageName = (currentCandidateObj?.candidate as any)?.sample?.batch?.beverage?.name || null;
 
         const candidatesLeft = totalCandidates - evaluatedCount;
         const candidatesLeftAfterCurrent = currentCandidateIndex >= 0
@@ -1017,6 +1019,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             members,
             currentCandidateId,
             currentCandidateCode,
+            currentCandidateBeverageName,
             allCandidatesEvaluated,
             evaluations,
             propertyMap: myTastingSummary?.propertyMap ?? propertyMap,

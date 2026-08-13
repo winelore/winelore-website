@@ -33,6 +33,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [members, setMembers] = useState<any[]>([]);
     const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(null);
     const [currentCandidateCode, setCurrentCandidateCode] = useState<string | null>(null);
+    const [currentCandidateBeverageName, setCurrentCandidateBeverageName] = useState<string | null>(null);
     const [isSwitching, setIsSwitching] = useState(false);
     const [evaluations, setEvaluations] = useState<any[]>([]);
     const [propertyMap, setPropertyMap] = useState<Record<string, PropertyMeta>>({});
@@ -73,7 +74,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         const fetchData = async () => {
             if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 setMembers(commMembers);
@@ -129,6 +130,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 setCurrentCandidateId(newCandidateId);
                 setCurrentCandidateCode(newCandidateCode);
+                setCurrentCandidateBeverageName(newCandidateBeverageName || null);
                 setIsSwitching(false);
 
             } catch (err) {
@@ -202,6 +204,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 {currentCandidateId && (
                                     <span className="text-[11px] text-slate-400 font-mono font-normal">
                                         ({currentCandidateId})
+                                    </span>
+                                )}
+                                {currentCandidateBeverageName && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 ml-1">
+                                        <Wine className="w-3 h-3 text-amber-700 shrink-0" />
+                                        {currentCandidateBeverageName}
                                     </span>
                                 )}
                             </p>

@@ -4,7 +4,7 @@ import Link from "next/link"
 import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import {MapPin, LayoutList, ArrowLeft, Tag} from "lucide-react"
+import {MapPin, LayoutList, ArrowLeft, Tag, Wine} from "lucide-react"
 
 interface EvaluationCategory {
   id: string
@@ -15,6 +15,7 @@ interface EvaluationCategory {
 interface CandidateEvaluationClientViewProps {
   replicaName?: string | null
   candidateCode: string
+  beverageName?: string | null
   commissionName: string
   panelName?: string
   currentIndex: number
@@ -33,6 +34,7 @@ interface CandidateEvaluationClientViewProps {
 export default function CandidateEvaluationClientView({
   replicaName,
   candidateCode,
+  beverageName,
   commissionName,
   panelName,
   currentIndex,
@@ -66,9 +68,17 @@ export default function CandidateEvaluationClientView({
                             {t("commission.backToCommission")}
                         </Link>
                         <div>
-                            <h1 className="text-xl font-extrabold text-slate-800">
-                                {t("evaluation.candidate", { code: candidateCode })}
-                            </h1>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <h1 className="text-xl font-extrabold text-slate-800">
+                                    {t("evaluation.candidate", { code: candidateCode })}
+                                </h1>
+                                {beverageName && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                                        <Wine className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                        {beverageName}
+                                    </span>
+                                )}
+                            </div>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm">
                                 <p className="text-slate-500">
                                     <span className="font-medium text-slate-700">{t("evaluation.commission")}:</span> {commissionName}

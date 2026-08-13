@@ -152,6 +152,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
 
     // Collecting attributes (beverage -> batch -> sample)
     const beverage = currentCandidate?.sample?.batch?.beverage;
+    const beverageName = beverage?.name || null;
     const batch = currentCandidate?.sample?.batch;
     const sample = currentCandidate?.sample;
     processAttributes(beverage?.attributes, evalVisibleAttr.beverage);
@@ -169,6 +170,7 @@ export default async function CandidateEvaluationPage({ params }: Props) {
         <CandidateEvaluationClientView
             replicaName={replicaCandidate.replica.name}
             candidateCode={(currentCandidate?.anonymizedCode && currentCandidate.anonymizedCode.trim()) ? currentCandidate.anonymizedCode.trim() : (currentIndex >= 0 ? `#${currentIndex + 1}` : candidateId)}
+            beverageName={beverageName}
             commissionName={commission.name}
             panelName={panelName}
             currentIndex={currentIndex}
