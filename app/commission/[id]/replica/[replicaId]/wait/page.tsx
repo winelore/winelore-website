@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, use, useMemo } from "react"
+import React, { useState, useEffect, use, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Cookies from "js-cookie"
@@ -46,6 +46,11 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [currentPanelName, setCurrentPanelName] = useState<string>("");
 
+    const currentCandidateIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        currentCandidateIdRef.current = currentCandidateId;
+    }, [currentCandidateId]);
+
     // Fetch usernames for commission members
     const allMemberAuids = useMemo(() => {
         return Array.from(new Set(members.flatMap(m => normalizeAuids(m.auid))));
@@ -67,15 +72,21 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     }, [commissionId, replicaId, router]);
 
-    // 2. Polling loop every 3 seconds
+    // 2. Polling loop every 3 seconds with in-flight and unmount guards
     useEffect(() => {
         if (auid === null || isRedirecting) return;
 
+        let isMounted = true;
+        let isFetching = false;
+
         const fetchData = async () => {
-            if (isRedirecting) return;
+            if (!isMounted || isRedirecting || isFetching) return;
+            isFetching = true;
             try {
                 const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, replicaStatus: newReplicaStatus } =
                     await getWaitDataAction(commissionId, replicaId);
+
+                if (!isMounted || isRedirecting) return;
 
                 if (newReplicaStatus === "COMPLETED") {
                     setIsRedirecting(true);
@@ -128,7 +139,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 }
 
                 // If candidate changed (HEAD advanced) — redirect everyone to evaluation
-                if (currentCandidateId && currentCandidateId !== newCandidateId) {
+                if (currentCandidateIdRef.current && currentCandidateIdRef.current !== newCandidateId) {
                     setIsRedirecting(true);
                     window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
@@ -141,13 +152,18 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
             } catch (err) {
                 console.error("Polling error", err);
+            } finally {
+                isFetching = false;
             }
         };
 
         fetchData();
         const interval = setInterval(fetchData, 3000);
-        return () => clearInterval(interval);
-    }, [commissionId, replicaId, auid, currentCandidateId, router, isRedirecting]);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [commissionId, replicaId, auid, isRedirecting]);
 
     const heads = members.filter(m => m.role === "HEAD");
     const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");

@@ -1040,10 +1040,15 @@ export default function CommissionClientView({
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
 
     useEffect(() => {
+        let isMounted = true
+        let isFetching = false
+
         const pollInterval = setInterval(async () => {
+            if (!isMounted || isFetching) return
+            isFetching = true
             try {
                 const updated = await getCommissionDataAction(localData.id)
-                if (updated) {
+                if (isMounted && updated) {
                     setLocalData(updated)
                     if (updated.replicas) {
                         setLocalReplicas(updated.replicas)
@@ -1051,10 +1056,15 @@ export default function CommissionClientView({
                 }
             } catch (err) {
                 console.error("Failed to poll commission data:", err)
+            } finally {
+                isFetching = false
             }
         }, 3000)
 
-        return () => clearInterval(pollInterval)
+        return () => {
+            isMounted = false
+            clearInterval(pollInterval)
+        }
     }, [localData.id])
 
     const handleToggleReady = async (shouldBeReady: boolean) => {

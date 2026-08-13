@@ -33,9 +33,12 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
         }
 
         let mounted = true
+        let isFetching = false
         let summaryPanelId: string | null = null
 
         const loadSummary = async () => {
+            if (!mounted || isFetching) return
+            isFetching = true
             try {
                 const nextData = await getWaitDataAction(commissionId, replicaId)
                 if (!mounted) return
@@ -73,6 +76,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
                 console.error("Failed to load panel summary", error)
                 if (mounted) setLoadError(true)
             } finally {
+                isFetching = false
                 if (mounted) setIsLoading(false)
             }
         }

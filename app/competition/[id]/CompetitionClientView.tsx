@@ -373,18 +373,28 @@ export default function CompetitionClientView({
     }, [propInitialData])
 
     useEffect(() => {
+        let isMounted = true
+        let isFetching = false
+
         const pollInterval = setInterval(async () => {
+            if (!isMounted || isFetching) return
+            isFetching = true
             try {
                 const updated = await getCompetitionDataAction(localData.id)
-                if (updated) {
+                if (isMounted && updated) {
                     setLocalData(updated)
                 }
             } catch (err) {
                 console.error("Failed to poll competition data:", err)
+            } finally {
+                isFetching = false
             }
         }, 3000)
 
-        return () => clearInterval(pollInterval)
+        return () => {
+            isMounted = false
+            clearInterval(pollInterval)
+        }
     }, [localData.id])
 
     useEffect(() => {

@@ -71,11 +71,15 @@ export default function CandidateEvaluationClientView({
 
     if (isRedirecting || isFormSubmitting) return
 
+    let isMounted = true
+    let isFetching = false
+
     const checkRedirect = async () => {
-      if (isRedirecting || isFormSubmitting) return
+      if (!isMounted || isRedirecting || isFormSubmitting || isFetching) return
+      isFetching = true
       try {
         const data = await getWaitDataAction(commissionId, replicaId)
-        if (isRedirecting || isFormSubmitting) return
+        if (!isMounted || isRedirecting || isFormSubmitting) return
 
         // 1. Replica completed -> redirect to summary
         if (data.replicaStatus === "COMPLETED") {
@@ -124,11 +128,16 @@ export default function CandidateEvaluationClientView({
         }
       } catch (err) {
         console.error("Polling redirect error:", err)
+      } finally {
+        isFetching = false
       }
     }
 
     const interval = setInterval(checkRedirect, 3000)
-    return () => clearInterval(interval)
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
   }, [commissionId, replicaId, candidateId, isRedirecting, isFormSubmitting, router])
 
   return (
