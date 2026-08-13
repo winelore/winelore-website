@@ -305,6 +305,8 @@ const en = {
       exportXlsx: "Excel (.xlsx)",
       print: "Print",
       finalOverview: "Final Overview",
+      panelCandidates: "{{count}} candidate",
+      panelCandidates_plural: "{{count}} candidates",
       traineeExcluded: "TRAINEE scores excluded from total",
       rank: "Rank",
       codeBeverage: "Beverage",

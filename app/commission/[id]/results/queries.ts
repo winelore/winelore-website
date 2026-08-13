@@ -21,6 +21,7 @@ export const GET_COMMISSION_RESULTS = `
       }
       panels {
         id
+        name
         candidates {
           id
           anonymizedCode

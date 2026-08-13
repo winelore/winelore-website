@@ -299,6 +299,8 @@ const hu = {
             exportXlsx: "Excel (.xlsx)",
             print: "Nyomtatás",
             finalOverview: "Végső áttekintés",
+            panelCandidates: "{{count}} jelölt",
+            panelCandidates_plural: "{{count}} jelölt",
             traineeExcluded: "Gyakornoki pontszámok kizárva az összesítésből",
             rank: "Helyezés",
             codeBeverage: "Ital",

@@ -85,6 +85,10 @@ interface CandidateRow {
     expertBreakdown: ExpertBreakdownEntry[]
 }
 
+type OverviewTableItem =
+    | { kind: "panel"; panelId: string; panelName: string; candidateCount: number }
+    | { kind: "candidate"; row: CandidateRow }
+
 function getBeverageProducerAuids(candidate: any): string[] {
     const producers = candidate.sample?.batch?.beverage?.producers
     if (!Array.isArray(producers)) return []
@@ -518,6 +522,53 @@ export default function CommissionResultsClientView({
         resolveProducerName,
         sortScorePropertyCode,
     ])
+
+    const overviewTableItems = useMemo((): OverviewTableItem[] => {
+        const panels = commission.panels ?? []
+        const rowsByPanelId = new Map<string, CandidateRow[]>()
+        const unassignedRows: CandidateRow[] = []
+        const knownPanelIds = new Set(
+            panels.map((panel: { id: string }) => panel.id),
+        )
+
+        filteredAndSortedRows.forEach((row) => {
+            const panelId = row.candidate.panelId
+            if (!panelId || !knownPanelIds.has(panelId)) {
+                unassignedRows.push(row)
+                return
+            }
+
+            const panelRows = rowsByPanelId.get(panelId) ?? []
+            panelRows.push(row)
+            rowsByPanelId.set(panelId, panelRows)
+        })
+
+        const items: OverviewTableItem[] = []
+        panels.forEach((panel: { id: string; name?: string | null }) => {
+            const panelRows = rowsByPanelId.get(panel.id) ?? []
+            if (panelRows.length === 0) return
+
+            items.push({
+                kind: "panel",
+                panelId: panel.id,
+                panelName: panel.name || t("commission.panel"),
+                candidateCount: panelRows.length,
+            })
+            panelRows.forEach((row) => items.push({ kind: "candidate", row }))
+        })
+
+        if (unassignedRows.length > 0) {
+            items.push({
+                kind: "panel",
+                panelId: "unassigned",
+                panelName: t("commission.panel"),
+                candidateCount: unassignedRows.length,
+            })
+            unassignedRows.forEach((row) => items.push({ kind: "candidate", row }))
+        }
+
+        return items
+    }, [commission.panels, filteredAndSortedRows, t])
 
     const { expected: expectedEvaluations, complete: completeEvaluations } = useMemo(
         () => computeEvaluationProgress(commission),
@@ -1602,16 +1653,40 @@ export default function CommissionResultsClientView({
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {filteredAndSortedRows.map((row: CandidateRow) => {
+                                        {overviewTableItems.map((item) => {
+                                            const overviewTableColSpan =
+                                                2 +
+                                                policyOutputProperties.length +
+                                                (sortMode === "order" ? 1 : 0)
+
+                                            if (item.kind === "panel") {
+                                                return (
+                                                    <tr key={`panel-${item.panelId}`}>
+                                                        <th
+                                                            colSpan={overviewTableColSpan}
+                                                            scope="rowgroup"
+                                                            className="px-6 py-3 bg-slate-100/90 text-sm font-bold text-slate-700 border-y border-slate-200"
+                                                        >
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <span>{item.panelName}</span>
+                                                                <span className="text-xs font-semibold text-slate-500 tabular-nums">
+                                                                    {tCount(
+                                                                        "commission.results.panelCandidates",
+                                                                        item.candidateCount,
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                        </th>
+                                                    </tr>
+                                                )
+                                            }
+
+                                            const row = item.row
                                             const isExpanded =
                                                 expandedCandidateId === row.candidate.id
                                             const sessionOrder = candidateOrderIndex.get(
                                                 row.candidate.id,
                                             )
-                                            const overviewTableColSpan =
-                                                2 +
-                                                policyOutputProperties.length +
-                                                (sortMode === "order" ? 1 : 0)
 
                                             return (
                                                 <React.Fragment key={row.candidate.id}>

@@ -307,6 +307,8 @@ const uk: TranslationKey = {
       exportXlsx: "Excel (.xlsx)",
       print: "Друк",
       finalOverview: "Підсумковий огляд",
+      panelCandidates: "{{count}} кандидат",
+      panelCandidates_plural: "{{count}} кандидатів",
       traineeExcluded: "Бали стажерів виключено з підсумку",
       rank: "Місце",
       codeBeverage: "Напій",
