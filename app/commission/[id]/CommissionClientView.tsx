@@ -1188,7 +1188,7 @@ export default function CommissionClientView({
                     </Link>
                 </div>
                 {showMyTastingSummary && (
-                    <div className="w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
+                    <div className="w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
                         <div className="flex items-center gap-3">
                             <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
                             <div>
@@ -1202,7 +1202,7 @@ export default function CommissionClientView({
                         </div>
                         <button
                             onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
-                            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                            className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                             <Wine className="w-4 h-4" />
                             {t("commission.viewMyTastingSummary")}
@@ -1210,7 +1210,7 @@ export default function CommissionClientView({
                     </div>
                 )}
                 {showResultsBanner && (
-                    <div className={`w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
+                    <div className={`w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
                         isCommissionCompleted
                             ? "bg-emerald-50 border-emerald-200"
                             : "bg-indigo-50 border-indigo-200"
@@ -1236,7 +1236,7 @@ export default function CommissionClientView({
                         </div>
                         <button
                             onClick={() => router.push(`/commission/${localData.id}/results`)}
-                            className={`shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
+                            className={`w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
                                 isCommissionCompleted
                                     ? "bg-emerald-600 hover:bg-emerald-700"
                                     : "bg-indigo-600 hover:bg-indigo-700"
@@ -1247,14 +1247,14 @@ export default function CommissionClientView({
                         </button>
                     </div>
                 )}
-                <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
+                <div className="w-full max-w-7xl flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
 
                     {/* Left Column: Replicas, Stepper and Tasting Panel */}
-                    <div className="w-full lg:w-[45%] flex flex-col gap-6">
+                    <div className="contents lg:flex lg:flex-col lg:w-[45%] lg:gap-6">
 
                         {/* Replica Selector Tabs */}
                         {(localReplicas.length > 0 || isCompetitionHolder) && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50 order-3 lg:order-none">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                                         <Layers className="w-4 h-4 text-indigo-500" />
@@ -1411,13 +1411,13 @@ export default function CommissionClientView({
                                                     setSelectedReplicaId(r.id)
                                                     setHasRedirected(false)
                                                 }}
-                                                className={`flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full ${
+                                                className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full gap-2 ${
                                                     isSelected
                                                         ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
                                                         : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-600 hover:text-slate-800"
                                                 }`}
                                             >
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                                     <span>{r.name}</span>
                                                     <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
                                                         isSelected
@@ -1436,7 +1436,7 @@ export default function CommissionClientView({
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-1.5 sm:justify-end shrink-0">
                                                     {isUserReplica && (
                                                         <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
                                                             isSelected ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
@@ -1448,8 +1448,8 @@ export default function CommissionClientView({
                                                         r.status === "STARTED"
                                                             ? (isSelected ? "bg-emerald-400 text-indigo-950 font-extrabold" : "bg-emerald-500/10 text-emerald-600")
                                                             : r.status === "COMPLETED"
-                                                                ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
-                                                                : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
+                                                                 ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
+                                                                 : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
                                                     }`}>
                                                         {formatStatus(r.status)}
                                                     </span>
@@ -1461,9 +1461,11 @@ export default function CommissionClientView({
                             </div>
                         )}
 
-                        <StatusSteps status={replicaStatus} />
+                        <div className="order-4 lg:order-none">
+                            <StatusSteps status={replicaStatus} />
+                        </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
@@ -1575,21 +1577,23 @@ export default function CommissionClientView({
                         </div>
 
                         {/* Panels and Wine Candidates Section */}
-                        <PanelsSection
-                            commissionId={localData.id}
-                            panels={localData.panels || []}
-                            candidates={localData.candidates || []}
-                            isCompetitionHolder={isCompetitionHolder}
-                            isDraft={isCommissionDraft}
-                            isEnded={isCommissionCompleted}
-                            usernames={usernames}
-                            onRefresh={refreshCommissionData}
-                        />
+                        <div className="order-6 lg:order-none">
+                            <PanelsSection
+                                commissionId={localData.id}
+                                panels={localData.panels || []}
+                                candidates={localData.candidates || []}
+                                isCompetitionHolder={isCompetitionHolder}
+                                isDraft={isCommissionDraft}
+                                isEnded={isCommissionCompleted}
+                                usernames={usernames}
+                                onRefresh={refreshCommissionData}
+                            />
+                        </div>
                     </div>
 
                     {/* Right Column: Actions & Session Details */}
-                    <div className="w-full lg:w-[55%] flex flex-col gap-6">
-                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                    <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
+                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                             <div className="flex items-start gap-4 mb-6">
@@ -1717,7 +1721,7 @@ export default function CommissionClientView({
 
                         {/* Commission Settings Card */}
                         {isCompetitionHolder && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-8 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Sliders className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.evaluationSettings")}</span>
@@ -1829,7 +1833,7 @@ export default function CommissionClientView({
 
                         {/* Replica Settings Card */}
                         {isCompetitionHolder && selectedReplica && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-9 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Layers className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.replicaSettings", { name: selectedReplica.name })}</span>
@@ -1867,17 +1871,19 @@ export default function CommissionClientView({
                         )}
 
                         {/* Evaluation Template Details */}
-                        <EvaluationTemplatesBlock
-                            commissionId={initialData.id}
-                            templateEditions={initialData.templateEditions || []}
-                            beverageTypesInCommission={beverageTypesInCommission}
-                            isCompetitionHolder={isCompetitionHolder}
-                            canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
-                            onRefresh={refreshData}
-                        />
+                        <div className="order-7 lg:order-none">
+                            <EvaluationTemplatesBlock
+                                commissionId={initialData.id}
+                                templateEditions={initialData.templateEditions || []}
+                                beverageTypesInCommission={beverageTypesInCommission}
+                                isCompetitionHolder={isCompetitionHolder}
+                                canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
+                                onRefresh={refreshData}
+                            />
+                        </div>
 
                         {/* Timeline and Dates */}
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide order-2 lg:order-none">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-indigo-500" />
@@ -2004,7 +2010,7 @@ export default function CommissionClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-10 lg:order-none">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                 {t("commission.actionsControls")}
                             </h3>
