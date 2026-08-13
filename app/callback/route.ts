@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
   }
 
   const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";
+  const redirectUri = new URL("/callback", request.url).toString();
 
   try {
     const tokenResponse = await fetch(`${issuer}/oauth/token`, {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: process.env.NEXT_PUBLIC_AXUS_ID_REDIRECT_URI!,
+        redirect_uri: redirectUri,
         client_id: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
         code_verifier: codeVerifier,
       }),
