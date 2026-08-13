@@ -161,8 +161,8 @@ async function run() {
   // 1. Отримання даних вин з Excel / JSON
   const dataset = parseExcelData();
   const baseTitle = dataset.competitionTitle || "V ювілейний Всеукраїнський відбір офіційних вин амбасадорів 2026";
-  const competitionTitle = CUSTOM_COMPETITION_NAME || `${baseTitle} (${RUN_TAG})`;
-  console.log(`📋 Назва конкурсу : "${competitionTitle}"`);
+  let competitionTitle = CUSTOM_COMPETITION_NAME || baseTitle;
+  console.log(`📋 Початкова назва конкурсу : "${competitionTitle}"`);
   console.log(`🍷 Всього вин у файлі: ${dataset.totalWinesCount}\n`);
 
   // 2. Створення / Отримання серії змагань (CompetitionSeries)
@@ -242,7 +242,6 @@ async function run() {
   }
 
   // 3. Створення конкурсу (Competition)
-  console.log(`\n2️⃣  Створення конкурсу: "${competitionTitle}"...`);
   const now = new Date();
   const startDate = new Date(now.getTime());
   const endDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
@@ -256,20 +255,45 @@ async function run() {
     }
   `;
 
-  const compRes = await postGraphQL(createCompetitionMutation, {
-    input: {
-      name: competitionTitle,
-      seriesId: seriesId,
-      holders: [[parseInt(ACTOR_AUID, 10)]],
-      plannedDates: {
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
+  let compRes = null;
+  let compAttempt = 1;
+  let finalCompetitionTitle = competitionTitle;
+
+  while (!compRes && compAttempt <= 20) {
+    const candidateTitle = compAttempt === 1 
+      ? competitionTitle 
+      : `${competitionTitle} №${compAttempt}`;
+
+    console.log(`2️⃣  Спроба створення конкурсу: "${candidateTitle}"...`);
+    try {
+      compRes = await postGraphQL(createCompetitionMutation, {
+        input: {
+          name: candidateTitle,
+          seriesId: seriesId,
+          holders: [[parseInt(ACTOR_AUID, 10)]],
+          plannedDates: {
+            start: startDate.toISOString(),
+            end: endDate.toISOString()
+          }
+        }
+      });
+      finalCompetitionTitle = candidateTitle;
+    } catch (e) {
+      if (e.message.includes('already exists')) {
+        console.log(`   ℹ️ Конкурс "${candidateTitle}" вже існує. Пробуємо наступний номер...`);
+        compAttempt++;
+      } else {
+        throw e;
       }
     }
-  });
+  }
+
+  if (!compRes) {
+    throw new Error("Не вдалося створити конкурс після кількох спроб.");
+  }
 
   const competitionId = compRes.createCompetition.id;
-  console.log(`   ✅ Конкурс успішно створено! ID: ${competitionId}`);
+  console.log(`   ✅ Конкурс успішно створено! Назва: "${finalCompetitionTitle}" (ID: ${competitionId})`);
 
   // Переведення конкурсу по State Machine у статус STARTED
   try {
@@ -296,6 +320,35 @@ async function run() {
       createBatch(input: $input) { id }
     }
   `;
+
+  async function createBeverageWithCleanName(baseName, itemNumber = null, sheetDate = null) {
+    const attempts = [
+      baseName,
+      itemNumber ? `${baseName} (№${itemNumber})` : null,
+      sheetDate ? `${baseName} (${sheetDate})` : null,
+      (itemNumber && sheetDate) ? `${baseName} (№${itemNumber}, ${sheetDate})` : null,
+      `${baseName} (#${Math.floor(Math.random() * 8999 + 1000)})`
+    ].filter(Boolean);
+
+    for (const candidateName of attempts) {
+      try {
+        const bevRes = await postGraphQL(CREATE_BEVERAGE_MUTATION, {
+          input: {
+            name: candidateName,
+            typeId: BEVERAGE_TYPE_ID,
+            producers: [{ auid: [parseInt(ACTOR_AUID, 10)], role: "MAKER" }]
+          }
+        });
+        return { beverageId: bevRes.createBeverage.id, finalName: candidateName };
+      } catch (err) {
+        if (err.message.includes('exists for producer set')) {
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error(`Failed to create beverage for name: ${baseName}`);
+  }
 
   const CREATE_SAMPLE_MUTATION = `
     mutation CreateSample($input: CreateSampleInput!) {
@@ -355,8 +408,80 @@ async function run() {
       commissionId,
       commissionName,
       sheetDate: sheet.date,
+      calibrationPanel: null,
       panels: []
     };
+
+    // 4.1.1 Створення першої панелі для калібрування з 2 першими винами ("Калібрування")
+    console.log(`      🎯 Створення калібрувальної панелі ("Калібрування") з 2 винами...`);
+    try {
+      const calibPanelRes = await postGraphQL(ADD_PANEL_MUTATION, {
+        commissionId: commissionId,
+        name: "Калібрування"
+      });
+      const calibPanelId = calibPanelRes.addCommissionPanel.id;
+
+      const calibCandidates = [];
+      const calibWinesReport = [];
+
+      for (let cIdx = 1; cIdx <= 2; cIdx++) {
+        const baseCalibName = `Калібрувальне вино №${cIdx}`;
+        
+        // 1) Create Beverage with clean fallback
+        const { beverageId, finalName } = await createBeverageWithCleanName(baseCalibName, `C${cIdx}`, sheet.date);
+
+        // 2) Create Batch
+        const batchRes = await postGraphQL(CREATE_BATCH_MUTATION, {
+          input: {
+            beverageId: beverageId,
+            lotNumber: `LOT-CALIB-${cIdx}`
+          }
+        });
+        const batchId = batchRes.createBatch.id;
+
+        // 3) Create Sample
+        const sampleRes = await postGraphQL(CREATE_SAMPLE_MUTATION, {
+          input: {
+            batchId: batchId,
+            volumeMl: 750
+          }
+        });
+        const sampleId = sampleRes.createSample.id;
+
+        const anonymizedCode = `CALIB-${cIdx}`;
+        calibCandidates.push({
+          sampleId: sampleId,
+          anonymizedCode: anonymizedCode
+        });
+
+        calibWinesReport.push({
+          itemNumber: `CALIB-${cIdx}`,
+          fullName: `Калібрувальне вино №${cIdx}`,
+          uniqueWineName: finalName,
+          beverageId,
+          batchId,
+          sampleId,
+          anonymizedCode,
+          status: "SUCCESS"
+        });
+
+        console.log(`        [CALIB ${cIdx}/2] ✅ "${finalName}" -> Sample: ${sampleId}`);
+      }
+
+      await postGraphQL(ADD_CANDIDATES_MUTATION, {
+        panelId: calibPanelId,
+        candidates: calibCandidates
+      });
+      console.log(`        🔗 Додано 2 калібрувальні зразки у панель "Калібрування"`);
+
+      commissionReport.calibrationPanel = {
+        panelId: calibPanelId,
+        panelName: "Калібрування",
+        wines: calibWinesReport
+      };
+    } catch (err) {
+      console.error(`        ❌ Помилка створення калібрувальної панелі: ${err.message}`);
+    }
 
     for (const category of sheet.categories) {
       if (!category.wines || category.wines.length === 0) continue;
@@ -379,18 +504,10 @@ async function run() {
 
       for (const wine of category.wines) {
         globalWineCounter++;
-        const uniqueWineName = `${wine.fullName} (${RUN_TAG}, №${wine.itemNumber}, ${sheet.date})`;
 
         try {
-          // 1) Create Beverage
-          const bevRes = await postGraphQL(CREATE_BEVERAGE_MUTATION, {
-            input: {
-              name: uniqueWineName,
-              typeId: BEVERAGE_TYPE_ID,
-              producers: [{ auid: [parseInt(ACTOR_AUID, 10)], role: "MAKER" }]
-            }
-          });
-          const beverageId = bevRes.createBeverage.id;
+          // 1) Create Beverage with clean fallback
+          const { beverageId, finalName } = await createBeverageWithCleanName(wine.fullName, wine.itemNumber, sheet.date);
 
           // 2) Create Batch
           const batchRes = await postGraphQL(CREATE_BATCH_MUTATION, {
@@ -421,7 +538,7 @@ async function run() {
           panelReport.wines.push({
             itemNumber: wine.itemNumber,
             fullName: wine.fullName,
-            uniqueWineName,
+            uniqueWineName: finalName,
             beverageId,
             batchId,
             sampleId,
