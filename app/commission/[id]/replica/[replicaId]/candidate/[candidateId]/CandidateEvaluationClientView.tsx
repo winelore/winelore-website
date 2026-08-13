@@ -133,7 +133,7 @@ export default function CandidateEvaluationClientView({
       }
     }
 
-    const interval = setInterval(checkRedirect, 10)
+    const interval = setInterval(checkRedirect, 3000)
     return () => {
       isMounted = false
       clearInterval(interval)
@@ -211,6 +211,7 @@ export default function CandidateEvaluationClientView({
                 </header>
 
         <EvaluationForm
+          key={candidateId}
           categories={categories}
           candidateId={candidateId}
           commissionId={commissionId}
