@@ -24,8 +24,21 @@ export default async function EvaluationProxyPage({ params }: Props) {
     const replicas = commission.replicas || []
     const replica = replicas.find((r: any) => r.id === replicaId)
 
-    if (!replica || replica.status !== "STARTED") {
+    if (!replica) {
+        redirect(`/commission/${id}`)
+    }
+
+    if (replica.status === "COMPLETED") {
+        redirect(`/commission/${id}/replica/${replicaId}/summary`)
+    }
+
+    if (replica.status !== "STARTED") {
         redirect(`/commission/${id}?error=not_started`)
+    }
+
+    const currentPanel = (replica.replicaPanels || []).find((p: any) => p.id === replica.currentPanelId)
+    if (currentPanel?.status === "COMPLETED") {
+        redirect(`/commission/${id}/replica/${replicaId}/panel-summary`)
     }
 
     const replicaCandidates = replica.replicaCandidates || []

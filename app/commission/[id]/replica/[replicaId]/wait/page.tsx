@@ -74,8 +74,14 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         const fetchData = async () => {
             if (isRedirecting) return;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, replicaStatus: newReplicaStatus } =
                     await getWaitDataAction(commissionId, replicaId);
+
+                if (newReplicaStatus === "COMPLETED") {
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/summary`;
+                    return;
+                }
 
                 setMembers(commMembers);
                 setEvaluations(newEvaluations || []);

@@ -1,10 +1,15 @@
 "use client"
 
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import Cookies from "js-cookie"
 import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import {MapPin, LayoutList, ArrowLeft, Tag, Wine} from "lucide-react"
+import { MapPin, LayoutList, ArrowLeft, Tag, Wine } from "lucide-react"
+import { getWaitDataAction } from "../../../../../actions"
+import { readCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 
 interface EvaluationCategory {
   id: string
@@ -49,8 +54,82 @@ export default function CandidateEvaluationClientView({
   voiceCommentsEnabled,
   visibleAttributes = [],
 }: CandidateEvaluationClientViewProps) {
+  const router = useRouter()
   const { t, tCount } = useTranslation()
   const displayReplicaName = replicaName || t("common.standard")
+
+  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false)
+
+  // Polling loop to redirect expert automatically if replica, panel, or current candidate state changes
+  useEffect(() => {
+    const cookieAuid = Cookies.get("auid")
+    if (!cookieAuid) {
+      router.push("/auth/login")
+      return
+    }
+
+    if (isRedirecting || isFormSubmitting) return
+
+    const checkRedirect = async () => {
+      if (isRedirecting || isFormSubmitting) return
+      try {
+        const data = await getWaitDataAction(commissionId, replicaId)
+        if (isRedirecting || isFormSubmitting) return
+
+        // 1. Replica completed -> redirect to summary
+        if (data.replicaStatus === "COMPLETED") {
+          setIsRedirecting(true)
+          window.location.href = `/commission/${commissionId}/replica/${replicaId}/summary`
+          return
+        }
+
+        // 2. Panel finished -> redirect to panel-summary
+        if (data.isPanelFinished) {
+          setIsRedirecting(true)
+          window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`
+          return
+        }
+
+        const cached = readCachedWaitEvaluation(commissionId, replicaId)
+        const hasFreshSubmitCache =
+          cached?.candidateId === data.currentCandidateId && cached?.isComplete !== false
+
+        // 3. Active candidate changed to a different candidate
+        if (data.currentCandidateId && data.currentCandidateId !== candidateId) {
+          setIsRedirecting(true)
+          if (!data.hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
+            window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${data.currentCandidateId}`
+          } else {
+            window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
+          }
+          return
+        }
+
+        // 4. Expert completed evaluation for current candidate (e.g. submitted in another tab)
+        if (
+          data.currentCandidateId === candidateId &&
+          (data.hasCompletedCurrentCandidate || hasFreshSubmitCache)
+        ) {
+          setIsRedirecting(true)
+          window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
+          return
+        }
+
+        // 5. No candidate currently active
+        if (!data.currentCandidateId) {
+          setIsRedirecting(true)
+          window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
+          return
+        }
+      } catch (err) {
+        console.error("Polling redirect error:", err)
+      }
+    }
+
+    const interval = setInterval(checkRedirect, 3000)
+    return () => clearInterval(interval)
+  }, [commissionId, replicaId, candidateId, isRedirecting, isFormSubmitting, router])
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -129,9 +208,11 @@ export default function CandidateEvaluationClientView({
           replicaId={replicaId}
           propertyCommentsEnabled={propertyCommentsEnabled}
           voiceCommentsEnabled={voiceCommentsEnabled}
+          onSubmittingChange={setIsFormSubmitting}
         />
         </div>
       </main>
     </div>
   )
 }
+

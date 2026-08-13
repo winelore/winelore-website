@@ -262,6 +262,7 @@ export default function EvaluationForm({
     replicaId,
     propertyCommentsEnabled,
     voiceCommentsEnabled,
+    onSubmittingChange,
 }: {
     categories: EvaluationCategory[]
     candidateId: string
@@ -269,6 +270,7 @@ export default function EvaluationForm({
     replicaId: string
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
+    onSubmittingChange?: (submitting: boolean) => void
 }) {
     const router = useRouter()
     const {t, formatEnumLabel} = useTranslation()
@@ -549,6 +551,7 @@ export default function EvaluationForm({
 
     const handleSubmit = async () => {
         setIsSubmitting(true)
+        onSubmittingChange?.(true)
         setError(null)
         setSuccess(false)
         try {
@@ -657,6 +660,7 @@ export default function EvaluationForm({
             setError(err?.message || t("evaluation.submitError"))
         } finally {
             setIsSubmitting(false)
+            onSubmittingChange?.(false)
         }
     }
 

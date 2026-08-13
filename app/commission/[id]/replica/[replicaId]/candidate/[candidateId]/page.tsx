@@ -25,16 +25,32 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const commissionId = replicaCandidate.replica.commission.id
     const currentReplicaId = replicaCandidate.replica.id
 
-    if (
-        replicaCandidate.replica.currentPanelId !== replicaCandidate.replicaPanel.id ||
-        replicaCandidate.replicaPanel.status !== "IN_PROGRESS" ||
-        replicaCandidate.replicaPanel.currentCandidateId !== candidateId
-    ) {
-        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
+    // 1. Check if replica or panel is finished
+    if (replicaCandidate.replica.status === "COMPLETED") {
+        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/summary`)
+    }
+    if (replicaCandidate.replicaPanel.status === "COMPLETED") {
+        redirect(`/commission/${commissionId}/replica/${currentReplicaId}/panel-summary`)
     }
 
-    // If this candidate round is finished, send the user to the wait page
-    if (isReplicaCandidateFinished(replicaCandidate.status)) {
+    const currentActiveCandidateId = replicaCandidate.replicaPanel.currentCandidateId
+    const isCurrentCandidatePage =
+        replicaCandidate.replica.currentPanelId === replicaCandidate.replicaPanel.id &&
+        replicaCandidate.replicaPanel.status === "IN_PROGRESS" &&
+        currentActiveCandidateId === candidateId &&
+        !isReplicaCandidateFinished(replicaCandidate.status)
+
+    if (!isCurrentCandidatePage) {
+        if (
+            currentActiveCandidateId &&
+            currentActiveCandidateId !== candidateId &&
+            replicaCandidate.replicaPanel.status === "IN_PROGRESS"
+        ) {
+            const myCurrentActiveEval = await getMyEvaluationForCandidateAction(currentActiveCandidateId)
+            if (!myCurrentActiveEval?.isComplete) {
+                redirect(`/commission/${commissionId}/replica/${currentReplicaId}/candidate/${currentActiveCandidateId}`)
+            }
+        }
         redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
     }
 
@@ -47,9 +63,13 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     const commission = await getCommissionDataAction(commissionId)
     if (!commission) notFound()
 
-    // If this candidate is not the currently active candidate for the replica, redirect to wait
+    // If this candidate is not the currently active candidate for the replica, redirect appropriately
     const currentReplica = (commission.replicas || []).find((r: any) => r.id === currentReplicaId)
     if (currentReplica?.currentCandidateId && currentReplica.currentCandidateId !== candidateId) {
+        const activeEval = await getMyEvaluationForCandidateAction(currentReplica.currentCandidateId)
+        if (!activeEval?.isComplete) {
+            redirect(`/commission/${commissionId}/replica/${currentReplicaId}/candidate/${currentReplica.currentCandidateId}`)
+        }
         redirect(`/commission/${commissionId}/replica/${currentReplicaId}/wait`)
     }
 
