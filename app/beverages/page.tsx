@@ -39,15 +39,19 @@ export default async function DashboardPage({
         allBeverages = rawBeverages.map((bev: any) => {
             let beverageType = undefined;
             if (bev.attributes) {
-                try {
-                    const parsed = JSON.parse(bev.attributes);
-                    if (parsed && parsed.color) {
-                        beverageType = parsed.color; // E.g.: "RED", "WHITE"
-                    }
-                } catch (e) {
-                    const match = bev.attributes.match(/color=([^,\}]+)/);
-                    if (match) {
-                        beverageType = match[1].trim().replace(/^["']|["']$/g, "");
+                if (typeof bev.attributes === "object" && bev.attributes !== null) {
+                    beverageType = (bev.attributes as any).color || undefined;
+                } else if (typeof bev.attributes === "string") {
+                    try {
+                        const parsed = JSON.parse(bev.attributes);
+                        if (parsed && parsed.color) {
+                            beverageType = parsed.color; // E.g.: "RED", "WHITE"
+                        }
+                    } catch (e) {
+                        const match = bev.attributes.match(/color=([^,\}]+)/);
+                        if (match) {
+                            beverageType = match[1].trim().replace(/^["']|["']$/g, "");
+                        }
                     }
                 }
             }

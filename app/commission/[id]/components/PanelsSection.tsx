@@ -35,10 +35,12 @@ export interface CandidateSample {
         id: string
         lotNumber?: string | null
         volumeMl?: number | null
-        attributes?: string | null
+        attributes?: any
         beverage?: {
             id: string
             name: string
+            status?: string
+            attributes?: any
             producers?: { auid: number[] | number }[] | null
         } | null
     } | null
@@ -490,12 +492,16 @@ export function PanelsSection({
                                             let vintageVal: string | null = null
                                             const attrs = cand.sample?.batch?.attributes
                                             if (attrs) {
-                                                try {
-                                                    const parsed = JSON.parse(attrs)
-                                                    if (parsed && parsed.vintage) {
-                                                        vintageVal = String(parsed.vintage)
-                                                    }
-                                                } catch (e) {}
+                                                if (typeof attrs === "object" && attrs !== null) {
+                                                    vintageVal = (attrs as any).vintage ? String((attrs as any).vintage) : null
+                                                } else if (typeof attrs === "string") {
+                                                    try {
+                                                        const parsed = JSON.parse(attrs)
+                                                        if (parsed && parsed.vintage) {
+                                                            vintageVal = String(parsed.vintage)
+                                                        }
+                                                    } catch (e) {}
+                                                }
                                             }
 
                                             const isDragged = draggedItem?.panelId === panel.id && draggedItem.index === idx

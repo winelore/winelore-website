@@ -156,10 +156,14 @@ export default function MapClientView() {
 
                 let colorVal = "WINE";
                 if (fullBev.attributes) {
-                    try {
-                        const parsed = JSON.parse(fullBev.attributes);
-                        if (parsed?.color) colorVal = parsed.color;
-                    } catch(e) {}
+                    if (typeof fullBev.attributes === "object" && fullBev.attributes !== null) {
+                        colorVal = (fullBev.attributes as any).color || "WINE";
+                    } else if (typeof fullBev.attributes === "string") {
+                        try {
+                            const parsed = JSON.parse(fullBev.attributes);
+                            if (parsed?.color) colorVal = parsed.color;
+                        } catch(e) {}
+                    }
                 }
                 fullBev.type = colorVal;
 

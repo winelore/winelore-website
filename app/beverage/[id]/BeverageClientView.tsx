@@ -28,7 +28,7 @@ interface Beverage {
     type: BeverageType
     typeId: string
     schemaEditionIds: string[]
-    attributes: string
+    attributes: any
     producers: ProducerDetails[]
     originParts?: string[]
     createdAt: string
@@ -77,7 +77,7 @@ interface BatchType {
     id: string
     volumeMl?: number | null
     lotNumber?: string | null
-    attributes?: string | null
+    attributes?: any
     createdAt?: string | null
 }
 
@@ -94,45 +94,58 @@ interface Props {
     isError?: boolean;
 }
 
-function parseAttributes(attrStr: string | null | undefined): Record<string, string> {
-    if (!attrStr) return {}
-    const trimmed = attrStr.trim()
-    if (!trimmed) return {}
+function parseAttributes(attrInput: unknown): Record<string, string> {
+    if (!attrInput) return {}
 
-    // First try standard JSON.parse
-    try {
-        const parsed = JSON.parse(trimmed)
-        if (parsed && typeof parsed === "object") {
+    if (typeof attrInput === "object" && attrInput !== null) {
+        const result: Record<string, string> = {}
+        Object.entries(attrInput).forEach(([k, v]) => {
+            if (v !== null && v !== undefined) {
+                result[k] = String(v)
+            }
+        })
+        return result
+    }
+
+    if (typeof attrInput === "string") {
+        const trimmed = attrInput.trim()
+        if (!trimmed) return {}
+
+        // First try standard JSON.parse
+        try {
+            const parsed = JSON.parse(trimmed)
+            if (parsed && typeof parsed === "object" && parsed !== null) {
+                const result: Record<string, string> = {}
+                Object.entries(parsed).forEach(([k, v]) => {
+                    if (v !== null && v !== undefined) {
+                        result[k] = String(v)
+                    }
+                })
+                return result
+            }
+        } catch {
+            // Fall back to Kotlin Map toString parser
+        }
+
+        // Parse Kotlin Map toString representation: {key1=val1, key2=val2}
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            const content = trimmed.slice(1, -1).trim()
+            if (!content) return {}
+            
             const result: Record<string, string> = {}
-            Object.entries(parsed).forEach(([k, v]) => {
-                if (v !== null && v !== undefined) {
-                    result[k] = String(v)
+            const parts = content.split(/,\s*/)
+            parts.forEach(part => {
+                const eqIdx = part.indexOf('=')
+                if (eqIdx !== -1) {
+                    const key = part.substring(0, eqIdx).trim().replace(/^["']|["']$/g, "")
+                    const val = part.substring(eqIdx + 1).trim().replace(/^["']|["']$/g, "")
+                    if (key) {
+                        result[key] = val
+                    }
                 }
             })
             return result
         }
-    } catch {
-        // Fall back to Kotlin Map toString parser
-    }
-
-    // Parse Kotlin Map toString representation: {key1=val1, key2=val2}
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-        const content = trimmed.slice(1, -1).trim()
-        if (!content) return {}
-        
-        const result: Record<string, string> = {}
-        const parts = content.split(/,\s*/)
-        parts.forEach(part => {
-            const eqIdx = part.indexOf('=')
-            if (eqIdx !== -1) {
-                const key = part.substring(0, eqIdx).trim().replace(/^["']|["']$/g, "")
-                const val = part.substring(eqIdx + 1).trim().replace(/^["']|["']$/g, "")
-                if (key) {
-                    result[key] = val
-                }
-            }
-        })
-        return result
     }
 
     return {}

@@ -33,7 +33,7 @@ interface BatchItem {
     lotNumber?: string | null
     volumeMl?: number | null
     createdAt?: string | null
-    attributes?: string | null
+    attributes?: any
 }
 
 interface SampleItem {
@@ -532,12 +532,16 @@ export function CandidateWizardModal({
                                             const isSelected = selectedBatch?.id === batch.id
                                             let vintageVal: string | null = null
                                             if (batch.attributes) {
-                                                try {
-                                                    const parsed = JSON.parse(batch.attributes)
-                                                    if (parsed && parsed.vintage) {
-                                                        vintageVal = String(parsed.vintage)
-                                                    }
-                                                } catch (e) {}
+                                                if (typeof batch.attributes === "object" && batch.attributes !== null) {
+                                                    vintageVal = (batch.attributes as any).vintage ? String((batch.attributes as any).vintage) : null
+                                                } else if (typeof batch.attributes === "string") {
+                                                    try {
+                                                        const parsed = JSON.parse(batch.attributes)
+                                                        if (parsed && parsed.vintage) {
+                                                            vintageVal = String(parsed.vintage)
+                                                        }
+                                                    } catch (e) {}
+                                                }
                                             }
 
                                             return (

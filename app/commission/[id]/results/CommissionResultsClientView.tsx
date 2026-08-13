@@ -639,26 +639,36 @@ export default function CommissionResultsClientView({
             
             let wineType = "-"
             if (beverage?.attributes) {
-                try {
-                    const parsed = JSON.parse(beverage.attributes)
-                    if (parsed && parsed.color) {
-                        wineType = formatBeverageType(parsed.color)
+                if (typeof beverage.attributes === "object" && beverage.attributes !== null) {
+                    const color = (beverage.attributes as any).color
+                    if (color) wineType = formatBeverageType(color)
+                } else if (typeof beverage.attributes === "string") {
+                    try {
+                        const parsed = JSON.parse(beverage.attributes)
+                        if (parsed && parsed.color) {
+                            wineType = formatBeverageType(parsed.color)
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse beverage attributes in CommissionResultsClientView", e)
                     }
-                } catch (e) {
-                    console.error("Failed to parse beverage attributes in CommissionResultsClientView", e)
                 }
             }
 
             let vintage = "-"
             const batchAttrs = candidate.sample?.batch?.attributes
             if (batchAttrs) {
-                try {
-                    const parsed = JSON.parse(batchAttrs)
-                    if (parsed && parsed.vintage) {
-                        vintage = String(parsed.vintage)
+                if (typeof batchAttrs === "object" && batchAttrs !== null) {
+                    const v = (batchAttrs as any).vintage
+                    if (v) vintage = String(v)
+                } else if (typeof batchAttrs === "string") {
+                    try {
+                        const parsed = JSON.parse(batchAttrs)
+                        if (parsed && parsed.vintage) {
+                            vintage = String(parsed.vintage)
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse batch attributes in CommissionResultsClientView", e)
                     }
-                } catch (e) {
-                    console.error("Failed to parse batch attributes in CommissionResultsClientView", e)
                 }
             }
 
@@ -713,26 +723,36 @@ export default function CommissionResultsClientView({
             
             let wineType = "-"
             if (beverage?.attributes) {
-                try {
-                    const parsed = JSON.parse(beverage.attributes)
-                    if (parsed && parsed.color) {
-                        wineType = formatBeverageType(parsed.color)
+                if (typeof beverage.attributes === "object" && beverage.attributes !== null) {
+                    const color = (beverage.attributes as any).color
+                    if (color) wineType = formatBeverageType(color)
+                } else if (typeof beverage.attributes === "string") {
+                    try {
+                        const parsed = JSON.parse(beverage.attributes)
+                        if (parsed && parsed.color) {
+                            wineType = formatBeverageType(parsed.color)
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse beverage attributes in CommissionResultsClientView", e)
                     }
-                } catch (e) {
-                    console.error("Failed to parse beverage attributes in CommissionResultsClientView", e)
                 }
             }
 
             let vintage = "-"
             const batchAttrs = candidate.sample?.batch?.attributes
             if (batchAttrs) {
-                try {
-                    const parsed = JSON.parse(batchAttrs)
-                    if (parsed && parsed.vintage) {
-                        vintage = String(parsed.vintage)
+                if (typeof batchAttrs === "object" && batchAttrs !== null) {
+                    const v = (batchAttrs as any).vintage
+                    if (v) vintage = String(v)
+                } else if (typeof batchAttrs === "string") {
+                    try {
+                        const parsed = JSON.parse(batchAttrs)
+                        if (parsed && parsed.vintage) {
+                            vintage = String(parsed.vintage)
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse batch attributes in CommissionResultsClientView", e)
                     }
-                } catch (e) {
-                    console.error("Failed to parse batch attributes in CommissionResultsClientView", e)
                 }
             }
             const volume = candidate.sample?.volumeMl ? `${candidate.sample.volumeMl} ml` : "-"

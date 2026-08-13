@@ -155,13 +155,18 @@ export function buildExpertBeverageSummary(
         let vintageVal = undefined;
         const batchAttrs = rc.candidate?.sample?.batch?.attributes;
         if (batchAttrs) {
-            try {
-                const parsed = JSON.parse(batchAttrs);
-                if (parsed && parsed.vintage) {
-                    vintageVal = String(parsed.vintage);
+            if (typeof batchAttrs === "object" && batchAttrs !== null) {
+                const v = (batchAttrs as any).vintage
+                if (v) vintageVal = String(v)
+            } else if (typeof batchAttrs === "string") {
+                try {
+                    const parsed = JSON.parse(batchAttrs);
+                    if (parsed && parsed.vintage) {
+                        vintageVal = String(parsed.vintage);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse batch attributes in expertRanking:", e);
                 }
-            } catch (e) {
-                console.error("Failed to parse batch attributes in expertRanking:", e);
             }
         }
 
@@ -169,13 +174,18 @@ export function buildExpertBeverageSummary(
         let wineTypeVal = undefined;
         const bevAttrs = rc.candidate?.sample?.batch?.beverage?.attributes;
         if (bevAttrs) {
-            try {
-                const parsed = JSON.parse(bevAttrs);
-                if (parsed && parsed.color) {
-                    wineTypeVal = parsed.color;
+            if (typeof bevAttrs === "object" && bevAttrs !== null) {
+                const color = (bevAttrs as any).color
+                if (color) wineTypeVal = color
+            } else if (typeof bevAttrs === "string") {
+                try {
+                    const parsed = JSON.parse(bevAttrs);
+                    if (parsed && parsed.color) {
+                        wineTypeVal = parsed.color;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse beverage attributes in expertRanking:", e);
                 }
-            } catch (e) {
-                console.error("Failed to parse beverage attributes in expertRanking:", e);
             }
         }
 

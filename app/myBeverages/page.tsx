@@ -56,15 +56,19 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
                 // Parse attributes for color to keep type formatting happy
                 let colorVal = "WINE";
                 if (bev.attributes) {
-                    try {
-                        const parsed = JSON.parse(bev.attributes);
-                        if (parsed && parsed.color) {
-                            colorVal = parsed.color;
-                        }
-                    } catch (e) {
-                        const match = bev.attributes.match(/color=([^,\}]+)/);
-                        if (match) {
-                            colorVal = match[1].trim().replace(/^["']|["']$/g, "");
+                    if (typeof bev.attributes === "object" && bev.attributes !== null) {
+                        colorVal = (bev.attributes as any).color || "WINE";
+                    } else if (typeof bev.attributes === "string") {
+                        try {
+                            const parsed = JSON.parse(bev.attributes);
+                            if (parsed && parsed.color) {
+                                colorVal = parsed.color;
+                            }
+                        } catch (e) {
+                            const match = bev.attributes.match(/color=([^,\}]+)/);
+                            if (match) {
+                                colorVal = match[1].trim().replace(/^["']|["']$/g, "");
+                            }
                         }
                     }
                 }

@@ -344,6 +344,11 @@ const en = {
       repA: "Rep A",
       repB: "Rep B",
       notEnoughReplicas: "Not enough replicas available to compare.",
+      selectTwoReplicas: "Select two different replicas from the list above.",
+      accessDenied: "Access Denied",
+      loadError: "Error Loading Results",
+      accessDeniedDesc: "You do not have permission to view results for this commission.",
+      loadErrorDesc: "Failed to load commission results. Please try again later.",
     },
   },
   panels: {

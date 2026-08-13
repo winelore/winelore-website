@@ -112,9 +112,15 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     // ====================
 
     // Функція для надійного парсингу атрибутів (підтримує як JSON, так і Kotlin Map {key=value})
-    function parseAttributesString(attrStr: string | any | undefined): Record<string, string> {
+    function parseAttributesString(attrStr: unknown): Record<string, string> {
         if (!attrStr) return {};
-        if (typeof attrStr === 'object') return attrStr;
+        if (typeof attrStr === 'object' && attrStr !== null) {
+            const result: Record<string, string> = {};
+            Object.entries(attrStr).forEach(([k, v]) => {
+                if (v !== null && v !== undefined) result[k] = String(v);
+            });
+            return result;
+        }
 
         const trimmed = String(attrStr).trim();
         if (!trimmed) return {};

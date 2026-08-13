@@ -78,15 +78,19 @@ export default async function BeveragePage({ params }: PageProps) {
 
         let colorVal: string | null = null
         if (beverage.attributes) {
-            try {
-                const parsed = JSON.parse(beverage.attributes)
-                if (parsed && parsed.color) {
-                    colorVal = parsed.color
-                }
-            } catch (e) {
-                const match = beverage.attributes.match(/color=([^,\}]+)/)
-                if (match) {
-                    colorVal = match[1].trim().replace(/^["']|["']$/g, "")
+            if (typeof beverage.attributes === "object" && beverage.attributes !== null) {
+                colorVal = (beverage.attributes as any).color || null
+            } else if (typeof beverage.attributes === "string") {
+                try {
+                    const parsed = JSON.parse(beverage.attributes)
+                    if (parsed && parsed.color) {
+                        colorVal = parsed.color
+                    }
+                } catch (e) {
+                    const match = beverage.attributes.match(/color=([^,\}]+)/)
+                    if (match) {
+                        colorVal = match[1].trim().replace(/^["']|["']$/g, "")
+                    }
                 }
             }
         }
