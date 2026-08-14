@@ -323,6 +323,7 @@ const en = {
       sortLabel: "Sort by",
       sortByScore: "Score",
       sortByOrder: "Order",
+      groupByPanels: "Group by panels",
       candidateOrder: "#",
       searchPlaceholder: "Search by code, beverage, or producer…",
       noSearchResults: "No candidates match your search.",

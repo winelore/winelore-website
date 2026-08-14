@@ -325,6 +325,7 @@ const uk: TranslationKey = {
       sortLabel: "Сортування",
       sortByScore: "Балом",
       sortByOrder: "Порядком",
+      groupByPanels: "Групувати за панелями",
       candidateOrder: "#",
       searchPlaceholder: "Пошук за кодом, напоєм або виробником…",
       noSearchResults: "Жоден кандидат не відповідає пошуку.",

@@ -20,6 +20,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
 import { MemberEvaluationSection } from "../../EvaluationCommentsDisplay"
 import { normalizeAuids } from "../../auidUtils"
 import type { PropertyMeta } from "../../propertyMap"
@@ -178,6 +179,7 @@ export default function CommissionResultsClientView({
     const [replicaAId, setReplicaAId] = useState("")
     const [replicaBId, setReplicaBId] = useState("")
     const [sortMode, setSortMode] = useState<"score" | "order">("score")
+    const [groupByPanels, setGroupByPanels] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date())
     const [isExportingXlsx, setIsExportingXlsx] = useState(false)
@@ -524,6 +526,10 @@ export default function CommissionResultsClientView({
     ])
 
     const overviewTableItems = useMemo((): OverviewTableItem[] => {
+        if (!groupByPanels) {
+            return filteredAndSortedRows.map((row) => ({ kind: "candidate", row }))
+        }
+
         const panels = commission.panels ?? []
         const rowsByPanelId = new Map<string, CandidateRow[]>()
         const unassignedRows: CandidateRow[] = []
@@ -568,7 +574,7 @@ export default function CommissionResultsClientView({
         }
 
         return items
-    }, [commission.panels, filteredAndSortedRows, t])
+    }, [commission.panels, filteredAndSortedRows, groupByPanels, t])
 
     const { expected: expectedEvaluations, complete: completeEvaluations } = useMemo(
         () => computeEvaluationProgress(commission),
@@ -1616,7 +1622,11 @@ export default function CommissionResultsClientView({
                                         >
                                             <button
                                                 type="button"
-                                                onClick={() => setSortMode("score")}
+                                                onClick={() => {
+                                                    if (sortMode === "score") return
+                                                    setSortMode("score")
+                                                    setGroupByPanels(false)
+                                                }}
                                                 aria-pressed={sortMode === "score"}
                                                 className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                                                     sortMode === "score"
@@ -1628,7 +1638,11 @@ export default function CommissionResultsClientView({
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => setSortMode("order")}
+                                                onClick={() => {
+                                                    if (sortMode === "order") return
+                                                    setSortMode("order")
+                                                    setGroupByPanels(true)
+                                                }}
                                                 aria-pressed={sortMode === "order"}
                                                 className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                                                     sortMode === "order"
@@ -1640,6 +1654,15 @@ export default function CommissionResultsClientView({
                                             </button>
                                         </div>
                                     </div>
+                                    <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-500">
+                                        <span>{t("commission.results.groupByPanels")}</span>
+                                        <Switch
+                                            checked={groupByPanels}
+                                            onCheckedChange={setGroupByPanels}
+                                            aria-label={t("commission.results.groupByPanels")}
+                                            className="data-[state=checked]:bg-indigo-600"
+                                        />
+                                    </label>
                                 </div>
                             </div>
 

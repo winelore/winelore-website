@@ -317,6 +317,7 @@ const hu = {
             sortLabel: "Rendezés",
             sortByScore: "Pontszám",
             sortByOrder: "Sorrend",
+            groupByPanels: "Csoportosítás panelek szerint",
             candidateOrder: "#",
             searchPlaceholder: "Keresés kód, ital vagy termelő alapján…",
             noSearchResults: "Nincs a keresésnek megfelelő jelölt.",
