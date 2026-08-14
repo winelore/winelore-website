@@ -328,6 +328,8 @@ const en = {
       searchPlaceholder: "Search by code, beverage, or producer…",
       noSearchResults: "No candidates match your search.",
       expertBreakdown: "Detailed Expert Breakdown",
+      outOfDelta: "Out of Delta",
+      outOfDeltaTooltip: "Score {{score}} differs by {{diff}} pts from average {{avg}} (delta threshold: {{threshold}} pts)",
       noEvaluationsYet: "No detailed evaluations available yet.",
       previewBadge: "Preview",
       previewTooltip: "Based on submitted scores so far; not all experts have finished evaluating",

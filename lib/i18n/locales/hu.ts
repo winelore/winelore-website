@@ -322,6 +322,8 @@ const hu = {
             searchPlaceholder: "Keresés kód, ital vagy termelő alapján…",
             noSearchResults: "Nincs a keresésnek megfelelő jelölt.",
             expertBreakdown: "Részletes szakértői bontás",
+            outOfDelta: "Deltán kívül",
+            outOfDeltaTooltip: "A {{score}} pontszám {{diff}} ponttal eltér az átlagtól ({{avg}}) (delta küszöb: {{threshold}} pont)",
             noEvaluationsYet: "Részletes értékelések még nem érhetők el.",
             previewBadge: "Előnézet",
             previewTooltip: "A beküldött pontszámok alapján; nem minden szakértő fejezte be az értékelést",

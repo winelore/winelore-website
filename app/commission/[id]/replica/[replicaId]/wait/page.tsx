@@ -4,7 +4,7 @@ import React, { useState, useEffect, use, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Cookies from "js-cookie"
-import { Users, Wine, Loader2, ArrowRight, ArrowLeft } from "lucide-react"
+import { Users, Wine, Loader2, ArrowRight, ArrowLeft, AlertTriangle } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -22,6 +22,7 @@ import {
     hasEvaluationData,
     MemberEvaluationSection,
 } from "../../../../EvaluationCommentsDisplay"
+import { annotateEvaluationsWithDelta, formatSignedDiff } from "@/lib/deltaOutliers"
 import type { PropertyMeta } from "../../../../propertyMap"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
@@ -168,6 +169,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const heads = members.filter(m => m.role === "HEAD");
     const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
     const commentFlags = { propertyCommentsEnabled, voiceCommentsEnabled };
+    const evaluationsOutlierMap = useMemo(() => {
+        return annotateEvaluationsWithDelta(evaluations, propertyMap);
+    }, [evaluations, propertyMap]);
     const canAdvanceToNextBeverage =
         Boolean(currentCandidateId) &&
         members.length > 0 &&
@@ -323,13 +327,41 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                     const evaluation = findEvaluationForMember(evaluations, expert.auid);
 
                                     const isCompleted = evaluation?.isComplete || false;
+                                    const outlierInfo = evaluation ? evaluationsOutlierMap.get(evaluation) : null;
+                                    const isOutlier = Boolean(outlierInfo?.isOutlier);
 
                                     return (
-                                        <div key={`${currentCandidateId}-expert-${expertKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                                        <div
+                                            key={`${currentCandidateId}-expert-${expertKeyAuid}`}
+                                            className={`flex flex-col p-4 rounded-2xl space-y-3 transition-all ${
+                                                isOutlier
+                                                    ? "bg-amber-50/90 border-2 border-amber-300 shadow-amber-100/50"
+                                                    : "bg-slate-50 border border-slate-100"
+                                            }`}
+                                        >
                                             <div className="flex items-center justify-between">
-                                                <span className="font-semibold text-slate-700">
-                                                    {expertAuidsStr} {expert.role === "TRAINEE_EXPERT" ? `(${t("commission.roleTrainee")})` : ""}
-                                                </span>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-semibold text-slate-700">
+                                                        {expertAuidsStr} {expert.role === "TRAINEE_EXPERT" ? `(${t("commission.roleTrainee")})` : ""}
+                                                    </span>
+                                                    {isOutlier && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                                                            title={t("commission.results.outOfDeltaTooltip", {
+                                                                score: evaluation?.scores?.find((s: any) => propertyMap[s.code]?.isResult)?.value ?? "-",
+                                                                diff: formatSignedDiff(outlierInfo?.signedDiff),
+                                                                avg: outlierInfo?.preAvg != null ? outlierInfo.preAvg.toFixed(1) : "-",
+                                                                threshold: 5,
+                                                            })}
+                                                        >
+                                                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                                            <span>{t("commission.results.outOfDelta")}</span>
+                                                            {outlierInfo?.signedDiff != null && (
+                                                                <span className="opacity-90 font-mono">({formatSignedDiff(outlierInfo.signedDiff)})</span>
+                                                            )}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 {isCompleted ? (
                                                     <span className="text-emerald-600 font-bold bg-emerald-100 px-3 py-1 rounded-full text-xs animate-fade-in">
                                                         {t("commission.completed")}

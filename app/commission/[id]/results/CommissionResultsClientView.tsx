@@ -12,6 +12,7 @@ import {
     Search,
     CheckCircle,
     Loader2,
+    AlertTriangle,
 } from "lucide-react"
 import { AppHeader } from "@/components/AppHeader"
 import {
@@ -25,6 +26,7 @@ import { MemberEvaluationSection } from "../../EvaluationCommentsDisplay"
 import { normalizeAuids } from "../../auidUtils"
 import type { PropertyMeta } from "../../propertyMap"
 import { aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore"
+import { calculateDeltaOutliers, formatSignedDiff } from "@/lib/deltaOutliers"
 import { useTranslation } from "@/lib/i18n/context"
 import { getGeographicInfo } from "@/lib/geocoding"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
@@ -75,6 +77,10 @@ interface ExpertBreakdownEntry {
         scores?: Array<{ code: string; value: string }>
         comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }>
     }
+    isOutlier?: boolean
+    outlierDiff?: number | null
+    signedDiff?: number | null
+    preAvg?: number | null
 }
 
 interface CandidateRow {
@@ -376,11 +382,12 @@ export default function CommissionResultsClientView({
             commission.replicas.forEach((r: any) => {
                 const rc = r.replicaCandidates.find((c: any) => c.candidate.id === candidateId)
                 if (rc?.evaluations) {
+                    const replicaEntries: ExpertBreakdownEntry[] = []
                     rc.evaluations.forEach((ev: any, idx: number) => {
                         if (ev.isComplete) {
                             const totalVal = parseEvaluationTotal(ev.scores, propertyMap)
                             const evaluatorAuids = normalizeAuids(ev.evaluatorAuid)
-                            breakdown.push({
+                            replicaEntries.push({
                                 key: `${r.id}-${evaluatorAuids.join("-")}-${idx}`,
                                 replicaId: r.id,
                                 replicaName: r.name || formatReplicaType(r.type),
@@ -394,6 +401,23 @@ export default function CommissionResultsClientView({
                             })
                         }
                     })
+
+                    const outlierMap = calculateDeltaOutliers(
+                        replicaEntries,
+                        (e) => (e.totalScore !== "-" ? parseFloat(e.totalScore) : null),
+                    )
+
+                    replicaEntries.forEach((entry) => {
+                        const info = outlierMap.get(entry)
+                        if (info) {
+                            entry.isOutlier = info.isOutlier
+                            entry.outlierDiff = info.diff
+                            entry.signedDiff = info.signedDiff
+                            entry.preAvg = info.preAvg
+                        }
+                    })
+
+                    breakdown.push(...replicaEntries)
                 }
             })
             return breakdown
@@ -1893,7 +1917,11 @@ export default function CommissionResultsClientView({
                                                                                         key={
                                                                                             expert.key
                                                                                         }
-                                                                                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col"
+                                                                                        className={`p-4 rounded-xl shadow-sm flex flex-col transition-all ${
+                                                                                            expert.isOutlier
+                                                                                                ? "bg-amber-50/90 border-2 border-amber-300 shadow-amber-100/50"
+                                                                                                : "bg-white border border-slate-200"
+                                                                                        }`}
                                                                                     >
                                                                                         <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
                                                                                             <div className="flex flex-col gap-1">
@@ -1908,8 +1936,25 @@ export default function CommissionResultsClientView({
                                                                                                             expert.replicaType
                                                                                                         }
                                                                                                     />
+                                                                                                    {expert.isOutlier && (
+                                                                                                        <span
+                                                                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                                                                                                            title={t("commission.results.outOfDeltaTooltip", {
+                                                                                                                score: expert.totalScore,
+                                                                                                                diff: formatSignedDiff(expert.signedDiff),
+                                                                                                                avg: expert.preAvg != null ? expert.preAvg.toFixed(1) : "-",
+                                                                                                                threshold: 5,
+                                                                                                            })}
+                                                                                                        >
+                                                                                                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                                                                                            <span>{t("commission.results.outOfDelta")}</span>
+                                                                                                            {expert.signedDiff != null && (
+                                                                                                                <span className="opacity-90 font-mono">({formatSignedDiff(expert.signedDiff)})</span>
+                                                                                                            )}
+                                                                                                        </span>
+                                                                                                    )}
                                                                                                 </div>
-                                                                                                <span className="text-xs text-slate-600">
+                                                                                                <span className="text-xs text-slate-600 font-semibold">
                                                                                                     {resolveEvaluatorName(
                                                                                                         expert.evaluatorAuids,
                                                                                                     )}
@@ -1930,7 +1975,11 @@ export default function CommissionResultsClientView({
                                                                     const results = expert.evaluation.scores?.filter((s) => propertyMap[s.code]?.isResult) || []
                                                                     if (results.length === 1) {
                                                                         return (
-                                                                            <div className="text-xl font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">
+                                                                            <div className={`text-xl font-black px-2 py-1 rounded-lg shrink-0 ${
+                                                                                expert.isOutlier
+                                                                                    ? "text-amber-800 bg-amber-100/90 border border-amber-300"
+                                                                                    : "text-indigo-600 bg-indigo-50"
+                                                                            }`}>
                                                                                 {formatScore(results[0])}
                                                                             </div>
                                                                         )
@@ -1939,7 +1988,11 @@ export default function CommissionResultsClientView({
                                                                         return results.map((s) => (
                                                                             <div
                                                                                 key={s.code}
-                                                                                className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg whitespace-nowrap"
+                                                                                className={`text-xs font-extrabold px-2 py-0.5 rounded-lg whitespace-nowrap ${
+                                                                                    expert.isOutlier
+                                                                                        ? "text-amber-800 bg-amber-100/90 border border-amber-300"
+                                                                                        : "text-indigo-600 bg-indigo-50"
+                                                                                }`}
                                                                             >
                                                                                 {propertyMap[s.code]?.name ?? s.code}: {formatScore(s)}
                                                                             </div>

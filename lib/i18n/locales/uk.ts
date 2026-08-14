@@ -330,6 +330,8 @@ const uk: TranslationKey = {
       searchPlaceholder: "Пошук за кодом, напоєм або виробником…",
       noSearchResults: "Жоден кандидат не відповідає пошуку.",
       expertBreakdown: "Детальний розбір експертів",
+      outOfDelta: "Поза дельтою",
+      outOfDeltaTooltip: "Оцінка {{score}} відхиляється на {{diff}} б. від середнього {{avg}} (поріг дельти: {{threshold}} б.)",
       noEvaluationsYet: "Детальні оцінки ще недоступні.",
       previewBadge: "Попередній",
       previewTooltip: "На основі надісланих балів; не всі експерти завершили оцінювання",
