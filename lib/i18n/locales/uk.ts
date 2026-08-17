@@ -36,7 +36,8 @@ const uk: TranslationKey = {
     templates: "Мої шаблони оцінювання",
     unknownUser: "Невідомий користувач",
     outcomePolicies: "Мої політики результатів",
-    outcomePoliciesCount: "{{count}} політик результатів"
+    outcomePoliciesCount: "{{count}} політика результатів",
+    outcomePoliciesCount_plural: "{{count}} політик результатів",
   },
   dashboard: {
     holderId: "Організатор: {{ids}}",
@@ -483,18 +484,25 @@ const uk: TranslationKey = {
     delete: "Видалити",
     deleteConfirmation: "Ви впевнені, що хочете видалити цю політику результатів?",
   },
-  newOutcomePolicy: {
-    back: "Назад до політик результатів",
-    title: "Створити нову політику результатів",
-    namePlaceholder: "Введіть назву політики результатів...",
-    scriptTitle: "Код скрипта",
-    create: "Створити політику",
-    error: "Не вдалося створити політику результатів. Спробуйте ще раз.",
-  },
-  outcomePolicyDetail: {
-    scriptTitle: "Код скрипта",
-    save: "Зберегти скрипт",
-    saved: "Збережено!",
+  outcomePolicyModal: {
+    createTitle: "Створення сценарію політики результатів",
+    editTitle: "Редагування сценарію політики результатів",
+    subtitle: "Налаштуйте скрипт для цієї політики результатів.",
+    close: "Закрити",
+    nameLabel: "Назва політики",
+    readOnlyLabel: "(лише для читання)",
+    namePlaceholder: "Наприклад: Розрахунок фінального балу...",
+    scriptLabel: "Скрипт",
+    loading: "Завантаження...",
+    cancel: "Скасувати",
+    save: "Зберегти зміни",
+    saving: "Збереження...",
+    nameRequiredError: "Будь ласка, введіть назву політики результатів.",
+    nameDuplicateError: "Політика з такою назвою вже існує. Будь ласка, оберіть іншу назву.",
+    loadError: "Не вдалося завантажити скрипт політики для редагування.",
+    editionNotFoundError: "Не знайдено редакцію скрипта для оновлення.",
+    saveError: "Не вдалося зберегти скрипт політики результатів.",
+    saveErrorWithId: "Не вдалося зберегти скрипт політики результатів. (ID помилки: {{id}})",
   },
 }
 

@@ -2,8 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { fetchGraphQL } from "@/lib/apiClient"
-import { GET_OUTCOME_POLICIES, GET_OUTCOME_POLICY_COUNT } from "./queries"
+import { getOutcomePoliciesAction } from "./actions"
 import MyOutcomePoliciesClientView from "./MyOutcomePoliciesView"
 
 export default async function MyOutcomePoliciesPage({searchParams, }: {
@@ -27,18 +26,9 @@ export default async function MyOutcomePoliciesPage({searchParams, }: {
     let totalCount = 0;
 
     try {
-        const [policiesResponse, countResponse] = await Promise.all([
-            fetchGraphQL(GET_OUTCOME_POLICIES, {
-                limit: LIMIT + 1,
-                cursor: cursor || undefined,
-                filter: { owners: [[currentAuid]] },
-            }),
-            fetchGraphQL(GET_OUTCOME_POLICY_COUNT, {
-                owner: [currentAuid],
-            }),
-        ]);
-        rawOutcomePolicies = policiesResponse.outcomePolicies?.items || [];
-        totalCount = countResponse.outcomePolicyCount ?? 0;
+        const result = await getOutcomePoliciesAction(currentAuid, LIMIT + 1, cursor || undefined);
+        rawOutcomePolicies = result.policies;
+        totalCount = result.totalCount;
     } catch (error) {
         console.error("Failed to fetch outcome policies:", error);
     }
