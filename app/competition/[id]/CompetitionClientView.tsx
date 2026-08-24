@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft, Send } from "lucide-react"
+import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft, Send, Download } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -17,12 +17,6 @@ import {
     updateCompetitionNameAction,
     createCommission
 } from "../actions"
-
-const tabs = (t: any) => [
-    { id: "feed", label: t("common.feed"), icon: FileText },
-    { id: "competitions", label: t("common.competitions"), icon: Trophy },
-    { id: "beverages", label: t("common.beverages"), icon: Wine },
-]
 
 function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -360,8 +354,6 @@ export default function CompetitionClientView({
         }
     }
 
-    const compTabs = tabs(t)
-
     // Fetch usernames for competition holders
     const allHolderAuids = useMemo(() => {
         return initialData.holders || []
@@ -373,6 +365,8 @@ export default function CompetitionClientView({
     }, [propInitialData])
 
     useEffect(() => {
+        if (localData.status === "COMPLETED") return
+
         let isMounted = true
         let isFetching = false
 
@@ -395,7 +389,7 @@ export default function CompetitionClientView({
             isMounted = false
             clearInterval(pollInterval)
         }
-    }, [localData.id])
+    }, [localData.id, localData.status])
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -491,13 +485,21 @@ export default function CompetitionClientView({
             <AppHeader activeTab="competitions" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex justify-start">
+                <div className="w-full max-w-7xl mb-4 flex items-center justify-between">
                     <Link
                         href="/myCompetitions"
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         {t("commission.backToCompetitions")}
+                    </Link>
+
+                    <Link
+                        href={`/competition/${initialData.id}/results`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 cursor-pointer"
+                    >
+                        <Trophy className="w-4 h-4" />
+                        <span>{t("competition.resultsButton")}</span>
                     </Link>
                 </div>
                 <div className="w-full max-w-7xl flex flex-col gap-8">
@@ -863,9 +865,16 @@ export default function CompetitionClientView({
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                        {t("common.total")}: {initialData.commissions.length}
-                                    </span>
+                                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                            {t("common.total")}: {initialData.commissions.length}
+                                        </span>
+                                        <Link
+                                            href={`/competition/${initialData.id}/results`}
+                                            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+                                        >
+                                            <Trophy className="w-3.5 h-3.5 text-indigo-600" />
+                                            <span>{t("competition.resultsButton")}</span>
+                                        </Link>
                                         {isHolder && (
                                             <button
                                                 onClick={openAddCommission}

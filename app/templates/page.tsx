@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { getEvaluationTemplatesAction } from "./actions";
 import TemplatesClientView from "./TemplatesClientView";
 import { cookies } from "next/headers";
@@ -8,6 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function TemplatesPage() {
     let templates: any[] = [];
     let totalCount = 0;
+    let hasError = false;
 
     const cookieStore = await cookies();
     const auidStr = cookieStore.get("auid")?.value;
@@ -19,11 +19,10 @@ export default async function TemplatesPage() {
         totalCount = result.totalCount;
     } catch (error) {
         console.error("Failed to load templates:", error);
+        hasError = true;
     }
 
     return (
-        <Suspense fallback={<div>Loading templates...</div>}>
-            <TemplatesClientView initialTemplates={templates} totalCount={totalCount} />
-        </Suspense>
+        <TemplatesClientView initialTemplates={templates} totalCount={totalCount} hasError={hasError} />
     );
 }

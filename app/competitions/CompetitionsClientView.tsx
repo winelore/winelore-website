@@ -1,15 +1,12 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
-import {Wine, User, Layers, ChevronLeft, ChevronRight, Loader2, AlertCircle} from "lucide-react"
-import { AppHeader, type AppTabId } from "@/components/AppHeader"
+import { useState, useEffect, useMemo } from "react"
+import { User, Layers } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
 import { useUsernames } from "@/hooks/useUsernames"
-
-
+import { ListPageShell, ListPageHeader, Pagination, StateCard, EntityCardLink } from "@/components/list"
 
 type CompetitionSeriesStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED" | "APPROVED" | "DRAFT" | "IN_REVIEW" | "PUBLISHED" | "SUSPENDED"
 
@@ -36,14 +33,8 @@ interface DashboardProps {
     initialCompetitions: Competition[]
     currentPage: number
     totalPages?: number
-    // Legacy props to keep local dev server working before full merge
-    nextCursor?: string | null
-    nextHistory?: string
-    prevCursor?: string | null
-    prevHistory?: string
-    hasPrev?: boolean
-    hasNext?: boolean
     totalCount?: number
+    hasError?: boolean
 }
 
 function AvatarPlaceholder({ className }: { className?: string }) {
@@ -68,27 +59,6 @@ function getStatusColor(status: string) {
             return "text-muted-foreground"
         default:
             return "text-muted-foreground"
-    }
-}
-
-function formatStatus(status: string) {
-    switch (status) {
-        case "IN_PROGRESS":
-        case "STARTED":
-            return "In Progress"
-        case "READY":
-        case "PLANNED":
-        case "APPROVED":
-            return "Ready"
-        case "FINISHED":
-        case "COMPLETED":
-            return "Finished"
-        default:
-            return status
-                .toLowerCase()
-                .split("_")
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(" ")
     }
 }
 
@@ -139,10 +109,7 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
     )
 
     return (
-        <Link
-            href={`/competition/${competition.id}`}
-            className="group bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 flex flex-col min-h-[140px]"
-        >
+        <EntityCardLink href={`/competition/${competition.id}`} padding="compact">
             <div className="flex items-start gap-3">
                 <AvatarPlaceholder className="h-10 w-10 shrink-0" />
                 <div className="min-w-0 flex-1">
@@ -173,22 +140,17 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
                     <span>{t("dashboard.holderId", { ids: competition.holder.map(id => usernames[id] || String(id)).join(", ") })}</span>
                 </div>
             </div>
-        </Link>
+        </EntityCardLink>
     )
 }
+
 export default function CompetitionsClientView({
                                               initialCompetitions,
-                                              nextCursor,
-                                              nextHistory,
-                                              prevCursor,
-                                              prevHistory,
-                                              hasPrev,
-                                              hasNext,
                                               currentPage,
-                                              totalPages = 1, // default for local
-                                              totalCount = 0
+                                              totalPages = 1,
+                                              totalCount = 0,
+                                              hasError = false
                                           }: DashboardProps) {
-    const activeTab = "competitions"
     const router = useRouter()
     const pathname = usePathname()
     const { t, tCount } = useTranslation()
@@ -200,28 +162,6 @@ export default function CompetitionsClientView({
     }, [initialCompetitions])
     const { usernames } = useUsernames(allHolderAuids)
 
-    const getPageNumbers = () => {
-        const pages = [];
-        if (totalPages <= 5) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (currentPage <= 3) {
-                pages.push(1, 2, 3, 4, '...', totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-            } else {
-                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-            }
-        }
-        return pages;
-    };
-
-    const handleNext = () => {
-        if (currentPage >= totalPages || !nextCursor) return
-        setIsLoading(true)
-        router.push(`${pathname}?cursor=${nextCursor}&page=${currentPage + 1}`)
-    }
-
     const handleJumpToPage = (pageNumber: number) => {
         setIsLoading(true)
         router.push(`${pathname}?page=${pageNumber}`)
@@ -232,75 +172,31 @@ export default function CompetitionsClientView({
     }, [initialCompetitions])
 
     return (
-        <div className="flex h-screen flex-col bg-background">
-            <AppHeader activeTab={activeTab} />
+        <ListPageShell activeTab="competitions" isLoading={isLoading}>
+            <ListPageHeader
+                title={t("common.competitions")}
+                countLabel={tCount("common.competitionsCount", totalCount)}
+            />
 
-            <main className="flex-1 overflow-auto p-6 flex flex-col relative">
-                <div className="flex items-center justify-between mb-4 shrink-0">
-                    <div>
-                        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("common.competitions")}</h2>
-                    </div>
-                    {totalCount !== undefined && (
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {tCount("common.competitionsCount", totalCount)}
-                            </span>
-                    )}
-                </div>
-                {isLoading && (
-                    <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-3xl">
-                        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-                    </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
+                {hasError && (
+                    <StateCard variant="error" title={t("competitions.errorTitle")} description={t("competitions.errorDescription")} />
                 )}
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
-                            {initialCompetitions.map((competition) => (
-                                <CompetitionCard
-                                    key={competition.id}
-                                    competition={competition}
-                                    usernames={usernames}
-                                />
-                            ))}
-                        </div>
+                {!hasError && initialCompetitions.length === 0 && (
+                    <StateCard variant="empty" icon={Layers} title={t("competitions.emptyTitle")} description={t("competitions.emptyDescription")} />
+                )}
 
-                        {(totalPages > 1) ? (
-                            <div className="mt-1 flex items-center justify-center gap-3">
-                                <button
-                                    onClick={() => handleJumpToPage(currentPage - 1)}
-                                    disabled={currentPage <= 1 || isLoading}
-                                    className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-                                >
-                                    <ChevronLeft className="h-5 w-5" />
-                                </button>
+                {!hasError && initialCompetitions.map((competition) => (
+                    <CompetitionCard
+                        key={competition.id}
+                        competition={competition}
+                        usernames={usernames}
+                    />
+                ))}
+            </div>
 
-                                {getPageNumbers().map((p, i) => (
-                                    p === '...' ? (
-                                        <span key={i} className="flex items-center justify-center w-8 h-10 text-slate-400">...</span>
-                                    ) : (
-                                        <button
-                                            key={i}
-                                            onClick={() => handleJumpToPage(p as number)}
-                                            disabled={isLoading || p === currentPage}
-                                            className={`flex items-center justify-center h-10 w-10 rounded-full text-sm font-semibold transition-all duration-300 shadow-xl ${
-                                                p === currentPage
-                                                    ? "bg-indigo-600 text-white shadow-indigo-200/50 pointer-events-none"
-                                                    : "bg-white border border-slate-100 text-slate-600 shadow-slate-200/50 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100"
-                                            }`}
-                                        >
-                                            {p}
-                                        </button>
-                                    )
-                                ))}
-
-                                <button
-                                    onClick={handleNext}
-                                    disabled={currentPage >= totalPages || isLoading}
-                                    className="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-100 text-slate-600 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100"
-                                >
-                                    <ChevronRight className="h-5 w-5" />
-                                </button>
-                            </div>
-                        ) : null}
-            </main>
-        </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} isLoading={isLoading} onPageChange={handleJumpToPage} />
+        </ListPageShell>
     )
 }

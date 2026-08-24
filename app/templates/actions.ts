@@ -47,7 +47,7 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
 export async function getEvaluationTemplatesAction(ownerAuid?: number) {
     try {
         const query = `
-            query GetEvaluationTemplateEditions($limit: Int, $owner: [Int!]) {
+            query GetEvaluationTemplateEditions($limit: Int) {
                 evaluationTemplateEditions(limit: $limit) {
                     items {
                         id
@@ -123,13 +123,12 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                         }
                     }
                 }
-                evaluationTemplateCount(owner: $owner)
+                evaluationTemplateCount
             }
         `;
+        // Note: neither field accepts an owner/filter argument on this backend, so
+        // ownership is applied below once the (unfiltered) result comes back.
         const variables: any = { limit: 100 };
-        if (ownerAuid) {
-            variables.owner = [ownerAuid];
-        }
         const data = await rawGraphQL(query, variables);
         const items = data?.evaluationTemplateEditions?.items || [];
         const latestTemplatesMap = new Map<string, any>();
@@ -177,6 +176,16 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                 }))
             }
         }));
+
+        if (ownerAuid) {
+            const ownedTemplates = templates.filter((tpl) =>
+                tpl.owners.some((ownerGroup: number[]) => ownerGroup.includes(ownerAuid))
+            );
+            return {
+                templates: ownedTemplates,
+                totalCount: ownedTemplates.length
+            };
+        }
 
         return {
             templates,

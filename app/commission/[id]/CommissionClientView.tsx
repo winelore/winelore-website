@@ -36,12 +36,6 @@ import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
 
-const tabs = (t: any) => [
-    { id: "feed", label: t("common.feed"), icon: FileText },
-    { id: "competitions", label: t("common.competitions"), icon: Trophy },
-    { id: "beverages", label: t("common.beverages"), icon: Wine },
-]
-
 const formatEnumStatus = (status: string | undefined): string => {
     if (!status) return ""
     return status
@@ -1157,6 +1151,7 @@ export default function CommissionClientView({
     })
 
     const currentCommissionStatus = localData.status || initialData.status
+    const competitionResultsHref = `/competition/${localData.competition.id}/results?commission=${localData.id}`
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const isReplicaDraft = replicaStatus === "DRAFT"
     const isCommissionDraft = currentCommissionStatus === "DRAFT"
@@ -1252,7 +1247,7 @@ export default function CommissionClientView({
                             </div>
                         </div>
                         <button
-                            onClick={() => router.push(`/commission/${localData.id}/results`)}
+                            onClick={() => router.push(competitionResultsHref)}
                             className={`w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
                                 isCommissionCompleted
                                     ? "bg-emerald-600 hover:bg-emerald-700"
@@ -2162,7 +2157,7 @@ export default function CommissionClientView({
                                             </p>
                                             {(isCompetitionHolder || isUserReplicaMember) && (
                                                 <button
-                                                    onClick={() => router.push(`/commission/${localData.id}/results`)}
+                                                    onClick={() => router.push(competitionResultsHref)}
                                                     className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
                                                 >
                                                     <Trophy className="w-3.5 h-3.5" />
