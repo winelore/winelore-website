@@ -104,7 +104,7 @@ export default function CompetitionResultsClientView({
     const [loadingProgress, setLoadingProgress] = useState("")
     const [exportProgress, setExportProgress] = useState("")
     const [isExporting, setIsExporting] = useState(false)
-    const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date())
+    const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null)
 
     // Expanded rows state for candidate details
     const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
@@ -475,15 +475,17 @@ export default function CompetitionResultsClientView({
                         </div>
                     </div>
 
-                    <p className="text-xs text-slate-400 print:hidden">
-                        {t("commission.results.autoRefresh")} · {t("commission.results.lastUpdated", {
-                            time: lastRefreshedAt.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                second: "2-digit",
-                            }),
-                        })}
-                    </p>
+                    {lastRefreshedAt && (
+                        <p className="text-xs text-slate-400 print:hidden">
+                            {t("commission.results.autoRefresh")} · {t("commission.results.lastUpdated", {
+                                time: lastRefreshedAt.toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                }),
+                            })}
+                        </p>
+                    )}
 
                     {(isLoadingData || isExporting) && (
                         <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex items-center gap-3 text-indigo-700 text-xs font-semibold animate-pulse print:hidden">
