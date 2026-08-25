@@ -6,38 +6,29 @@ export const dynamic = "force-dynamic"
 export default async function DashboardPage({
                                                 searchParams,
                                             }: {
-    searchParams: Promise<{ cursor?: string; page?: string }>
+    searchParams: Promise<{ page?: string }>
 }) {
     const resolvedParams = await searchParams;
-    const cursor = resolvedParams.cursor;
-    const currentPage = parseInt(resolvedParams.page || "1", 10);
+    const parsedPage = parseInt(resolvedParams.page || "1", 10);
+    const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
 
     const LIMIT = 20;
     let rawCompetitions: any[] = [];
     let totalCount = 0;
-    let nextCursor: string | null = null;
+    let hasError = false;
 
     try {
-        const args: any = { limit: LIMIT };
-        if (cursor) {
-            args.cursor = cursor;
-        } else if (currentPage > 1) {
-            args.offset = (currentPage - 1) * LIMIT;
-        }
-        const data = await sdk.GetDashboardCompetitions(args);
+        const data = await sdk.GetDashboardCompetitions({ limit: LIMIT, offset: (currentPage - 1) * LIMIT });
         rawCompetitions = data.competitions?.items || [];
         totalCount = data.competitionCount || 0;
-
-        if (rawCompetitions.length > 0) {
-            nextCursor = rawCompetitions[rawCompetitions.length - 1].id;
-        }
     } catch (error) {
         console.error("Failed to load dashboard competitions:", error);
+        hasError = true;
     }
 
-    const totalPages = Math.ceil(totalCount / LIMIT);
+    const totalPages = Math.max(1, Math.ceil(totalCount / LIMIT));
 
-    // Map backend competitions to the format expected by DashboardClientView
+    // Map backend competitions to the format expected by CompetitionsClientView
     const mappedCompetitions = rawCompetitions.map((comp: any) => ({
         id: comp.id,
         name: comp.name,
@@ -58,10 +49,10 @@ export default async function DashboardPage({
     return (
         <CompetitionsClientView
             initialCompetitions={mappedCompetitions}
-            nextCursor={nextCursor}
             currentPage={currentPage}
             totalPages={totalPages}
             totalCount={totalCount}
+            hasError={hasError}
         />
     );
 }

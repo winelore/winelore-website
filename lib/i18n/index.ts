@@ -52,15 +52,34 @@ export function translate(
   )
 }
 
+// Slavic locales (uk) need 3 plural forms: one (1, 21, 31...), few (2-4, 22-24...),
+// many (0, 5-20, 25-30...). English/Hungarian only ever resolve to "" or "_plural".
+function resolvePluralSuffix(locale: Locale, count: number): "" | "_few" | "_plural" {
+  if (locale !== "uk") {
+    return count === 1 ? "" : "_plural"
+  }
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod10 === 1 && mod100 !== 11) return ""
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "_few"
+  return "_plural"
+}
+
 export function translateWithCount(
     locale: Locale,
     key: MessageKey,
     count: number,
     params?: Record<string, string | number>
 ): string {
-  const pluralKey = `${key}_plural` as MessageKey
-  const hasPlural = getNestedValue(messages[locale] as Record<string, unknown>, pluralKey) !== undefined
-  const resolvedKey = count === 1 || !hasPlural ? key : pluralKey
+  const suffix = resolvePluralSuffix(locale, count)
+  const candidateKey = `${key}${suffix}` as MessageKey
+  const hasCandidate = getNestedValue(messages[locale] as Record<string, unknown>, candidateKey) !== undefined
+  // Fall back through _plural, then the bare key, if a form isn't defined for this locale.
+  const resolvedKey = hasCandidate
+      ? candidateKey
+      : suffix === "_few" && getNestedValue(messages[locale] as Record<string, unknown>, `${key}_plural` as MessageKey) !== undefined
+          ? (`${key}_plural` as MessageKey)
+          : key
   return translate(locale, resolvedKey, { count, ...params })
 }
 

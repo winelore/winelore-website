@@ -8,33 +8,21 @@ export const dynamic = "force-dynamic"
 export default async function DashboardPage({
                                                 searchParams,
                                             }: {
-    searchParams: Promise<{ cursor?: string; page?: string }>
+    searchParams: Promise<{ page?: string }>
 }) {
     const resolvedParams = await searchParams;
-    const cursor = resolvedParams.cursor;
     const parsedPage = parseInt(resolvedParams.page || "1", 10);
     const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
     const LIMIT = 16;
-    
-    let allBeverages: any[] | undefined = [];
+
+    let allBeverages: any[] = [];
     let totalCount = 0;
-    let nextCursor: string | null = null;
+    let hasError = false;
 
     try {
-        const args: any = { limit: LIMIT };
-        if (cursor) {
-            args.cursor = cursor;
-        } else if (currentPage > 1) {
-            args.offset = (currentPage - 1) * LIMIT;
-        }
-
-        const bevData = await sdk.GetMyBeverages(args);
+        const bevData = await sdk.GetMyBeverages({ limit: LIMIT, offset: (currentPage - 1) * LIMIT });
         const rawBeverages = bevData.beverages?.items || [];
         totalCount = bevData.beverageCount || 0;
-
-        if (rawBeverages.length > 0) {
-            nextCursor = rawBeverages[rawBeverages.length - 1].id;
-        }
 
         allBeverages = rawBeverages.map((bev: any) => {
             let beverageType = undefined;
@@ -59,10 +47,10 @@ export default async function DashboardPage({
         });
     } catch (error) {
         console.error("Failed to load beverages:", error);
-        allBeverages = undefined; // undefined indicates an error state to the client
+        hasError = true;
     }
-    
-    const totalPages = Math.ceil(totalCount / LIMIT);
+
+    const totalPages = Math.max(1, Math.ceil(totalCount / LIMIT));
     let beverageTypesDict: Record<string, string> = {};
     try {
         const typesList = await getBeverageTypesAction();
@@ -78,10 +66,10 @@ export default async function DashboardPage({
         <BeveragesClientView
             initialBeverages={allBeverages}
             beverageTypesMap={beverageTypesDict}
-            nextCursor={nextCursor}
             currentPage={currentPage}
             totalPages={totalPages}
             totalCount={totalCount}
+            hasError={hasError}
         />
     );
 }

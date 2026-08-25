@@ -1,6 +1,6 @@
 "use client"
 
-import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Settings, Activity } from "lucide-react"
+import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Activity } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useTranslation } from "@/lib/i18n/context"
 import { BadgeCheck } from "lucide-react"
@@ -63,14 +63,14 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
           <div className="h-[1px] w-full bg-border" />
         </div>
 
-        {/* Group 2: Navigation Links */}
+        {/* Group 2: Navigation Links (personal scopes) */}
         <div className="px-2 py-1.5">
           <a
-            href="/myBeverages"
+            href="/myCommissions"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
-            <Wine className="h-5 w-5 stroke-[1.5] text-foreground" />
-            <span>{t("common.myBeverages")}</span>
+            <Activity className="h-5 w-5 stroke-[1.5] text-foreground" />
+            <span>{t("common.myCommissions")}</span>
           </a>
           <a
             href="/myCompetitions"
@@ -80,10 +80,17 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
             <span>{t("common.myCompetitions")}</span>
           </a>
           <a
+            href="/myBeverages"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
+          >
+            <Wine className="h-5 w-5 stroke-[1.5] text-foreground" />
+            <span>{t("common.myBeverages")}</span>
+          </a>
+          <a
             href="/templates"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
           >
-            <Settings className="h-5 w-5 stroke-[1.5] text-foreground" />
+            <ListTodo className="h-5 w-5 stroke-[1.5] text-foreground" />
             <span>{t("common.templates")}</span>
           </a>
         </div>
@@ -92,22 +99,7 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
           <div className="h-[1px] w-full bg-border" />
         </div>
 
-        {/* Group 3: My Commissions */}
-        <div className="px-2 py-1.5">
-          <a
-            href="/myCommissions"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-foreground transition-colors hover:bg-muted/50"
-          >
-            <Activity className="h-5 w-5 stroke-[1.5] text-foreground" />
-            <span>{t("common.myCommissions")}</span>
-          </a>
-        </div>
-
-        <div className="px-5">
-          <div className="h-[1px] w-full bg-border" />
-        </div>
-
-        {/* Group 4: AXUS ID Profile */}
+        {/* Group 3: AXUS ID Profile */}
         <div className="px-2 pb-3 pt-1.5">
           <a
             href={AXUS_ACCOUNT_URL}

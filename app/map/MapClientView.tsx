@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
 import { Wine, MapPin, Shield, X, Globe, Loader2, Info, Calendar, Users } from "lucide-react"
-import { AppHeader, type AppTabId } from "@/components/AppHeader"
+import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { SEARCH_MAP_BEVERAGES, GET_BEVERAGE_DETAILS_MAP } from "./queries"
@@ -61,7 +61,6 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
 }
 
 export default function MapClientView() {
-    const [activeTab, setActiveTab] = useState<AppTabId>("none")
     const { t, formatDateTime, formatStatus, formatBeverageType } = useTranslation()
 
     const [beverages, setBeverages] = useState<any[]>([])
@@ -78,7 +77,7 @@ export default function MapClientView() {
 
     const producersLabel = t("beverage.producers" as any) === "beverage.producers" ? "Producers" : t("beverage.producers" as any);
     const createdLabel = t("beverage.created" as any) === "beverage.created" ? "Created" : t("beverage.created" as any);
-    const geoLabel = t("map.geography" as any) === "map.geography" ? "Geography" : t("map.geography" as any);
+    const geoLabel = t("map.geography");
 
     const fetchPolygonsForBounds = useCallback(async (bounds: {
         south: number
@@ -220,7 +219,7 @@ export default function MapClientView() {
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            <AppHeader activeTab="map" />
 
             <main className="flex-1 relative flex overflow-hidden">
                 <div className="flex-1 relative z-0">

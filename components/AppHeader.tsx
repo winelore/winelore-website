@@ -1,7 +1,7 @@
 "use client"
 
 import type { LucideIcon } from "lucide-react"
-import { FileText, Trophy, Wine, Home } from "lucide-react"
+import { Trophy, Wine, Home, Map } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ProfileMenu } from "@/components/wine-lore-main"
@@ -12,20 +12,16 @@ import { useEffect, useState } from "react"
 import Cookies from "js-cookie"
 import { getUsernamesAction } from "@/app/userActions"
 
-export type AppTabId = "home" | "competitions" | "wines" | "beverages" | "none"
+export type AppTabId = "home" | "competitions" | "beverages" | "map" | "none"
 
 interface AppHeaderProps {
   activeTab: AppTabId
   onTabChange?: (tab: AppTabId) => void
-  username?: string
-  wineTab?: boolean
 }
 
 export function AppHeader({
   activeTab,
   onTabChange,
-  username = "likespro",
-  wineTab = false,
 }: AppHeaderProps) {
   const { t } = useTranslation()
   const router = useRouter()
@@ -61,12 +57,8 @@ export function AppHeader({
   const tabs: { id: AppTabId; label: string; icon: LucideIcon; href: string }[] = [
     { id: "home", label: t("common.home"), icon: Home, href: "/" },
     { id: "competitions", label: t("common.competitions"), icon: Trophy, href: "/competitions" },
-    {
-      id: wineTab ? "wines" : "beverages",
-      label: wineTab ? t("common.wines") : t("common.beverages"),
-      icon: Wine,
-      href: "/beverages"
-    },
+    { id: "beverages", label: t("common.beverages"), icon: Wine, href: "/beverages" },
+    { id: "map", label: t("common.map"), icon: Map, href: "/map" },
   ]
 
   return (
@@ -81,7 +73,7 @@ export function AppHeader({
         <nav className="flex items-center rounded-full border border-slate-100 bg-slate-50/50 p-0.5 sm:p-1">
           {tabs.map((tab) => {
             const Icon = tab.icon
-            const isActive = activeTab === tab.id || (activeTab === "wines" && tab.id === "beverages") || (activeTab === "beverages" && tab.id === "wines")
+            const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
