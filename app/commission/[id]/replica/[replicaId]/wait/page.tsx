@@ -4,6 +4,7 @@ import React, { useState, useEffect, use, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Cookies from "js-cookie"
+import { toast } from "sonner"
 import { Users, Wine, Loader2, ArrowRight, ArrowLeft, AlertTriangle } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
@@ -189,8 +190,16 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
             }
             // For a regular beverage transition, polling detects the new candidate.
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            const msg = err?.message || "";
+            if (msg === "PARTIAL_EVALUATION_REQUIRED") {
+                toast.error(t("commission.partialEvaluationRequiredError"));
+            } else if (msg === "SEQUENTIAL_ORDER_VIOLATION") {
+                toast.error(t("commission.sequentialOrderError"));
+            } else {
+                toast.error(t("commission.markEvaluatedErrorGeneric"));
+            }
             setIsSwitching(false);
         }
     };

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Cookies from "js-cookie"
+import { toast } from "sonner"
 import { Trophy, Timer, Calendar, CheckCircle, PlayCircle, AlertCircle, Plus, X } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
@@ -172,10 +173,10 @@ export default function MyCompetitionsClientView({ initialData, currentPage, tot
                 setIsCreatingCompetition(false)
                 router.push(`/competition/${res.competitionId}`)
             } else {
-                alert(res.error || t("myCompetitions.createError"))
+                toast.error(res.error || t("myCompetitions.createError"))
             }
         } catch (err: any) {
-            alert(err.message || t("myCompetitions.genericError"))
+            toast.error(err.message || t("myCompetitions.genericError"))
         } finally {
             setIsSubmittingComp(false)
         }

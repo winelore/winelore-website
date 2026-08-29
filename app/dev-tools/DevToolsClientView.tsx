@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -154,7 +155,7 @@ export function DevToolsClientView() {
       // Append replicaId if available
         router.push(`/commission/${commissionId}`);
     } else {
-      alert(`Ви успішно увійшли як експерт з AUID ${auid}.`);
+      toast.success(`Ви успішно увійшли як експерт з AUID ${auid}.`);
     }
   };
 
@@ -219,20 +220,20 @@ export function DevToolsClientView() {
   return (
     <>
       <AppHeader activeTab="none" />
-      <div className="min-h-screen bg-gray-50 text-gray-900 p-8 font-sans">
+      <div className="min-h-screen bg-slate-50 text-slate-900 p-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left Column: Form & Results */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Data Seeder</h1>
-                <p className="text-gray-500 mt-1">Інтерактивний генератор тестових сценаріїв</p>
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Data Seeder</h1>
+                <p className="text-slate-500 mt-1">Інтерактивний генератор тестових сценаріїв</p>
               </div>
             </div>
 
           {!isFormOpen && (
-            <div className="flex justify-center items-center h-64 border-2 border-dashed border-gray-300 rounded-xl bg-white transition-all duration-300">
+            <div className="flex justify-center items-center h-64 border-2 border-dashed border-slate-300 rounded-xl bg-white transition-all duration-300">
               <Button 
                 onClick={() => setIsFormOpen(true)}
                 size="lg"
@@ -244,8 +245,8 @@ export function DevToolsClientView() {
           )}
 
           {isFormOpen && (
-            <Card className="bg-white shadow-sm border-gray-200 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
+            <Card className="bg-white shadow-sm border-slate-200 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
+              <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
                 <CardTitle className="text-xl">Конфігурація Змагання</CardTitle>
                 <CardDescription>Заповніть параметри для генерації тестового оточення</CardDescription>
               </CardHeader>
@@ -253,7 +254,7 @@ export function DevToolsClientView() {
                 {/* Competition Meta */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Назва змагання</label>
+                    <label className="text-sm font-medium text-slate-700">Назва змагання</label>
                     <Input 
                       value={formData.competitionName}
                       onChange={e => setFormData({...formData, competitionName: e.target.value})}
@@ -261,7 +262,7 @@ export function DevToolsClientView() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Назва серії</label>
+                    <label className="text-sm font-medium text-slate-700">Назва серії</label>
                     <Input 
                       value={formData.seriesName}
                       onChange={e => setFormData({...formData, seriesName: e.target.value})}
@@ -279,10 +280,10 @@ export function DevToolsClientView() {
                   </div>
                   
                   {formData.commissions.map((comm, idx) => (
-                    <div key={idx} className={`p-4 rounded-lg border ${comm.type === 'NOT_STARTED' ? 'bg-gray-50 border-gray-200' : comm.type === 'IN_PROGRESS' ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'} transition-all`}>
+                    <div key={idx} className={`p-4 rounded-lg border ${comm.type === 'NOT_STARTED' ? 'bg-slate-50 border-slate-200' : comm.type === 'IN_PROGRESS' ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'} transition-all`}>
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center flex-1 gap-4">
-                          <span className={`w-2 h-2 rounded-full ${comm.type === 'NOT_STARTED' ? 'bg-gray-400' : comm.type === 'IN_PROGRESS' ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></span>
+                          <span className={`w-2 h-2 rounded-full ${comm.type === 'NOT_STARTED' ? 'bg-slate-400' : comm.type === 'IN_PROGRESS' ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></span>
                           <Input 
                             value={comm.name} 
                             onChange={e => updateCommission(idx, { name: e.target.value })} 
@@ -309,7 +310,7 @@ export function DevToolsClientView() {
                       
                       <div className="flex flex-col gap-4 mt-4">
                         <div className="flex gap-4 p-3 bg-white rounded-md border items-center">
-                          <span className="text-sm font-semibold text-gray-700">Всього Вин (m):</span>
+                          <span className="text-sm font-semibold text-slate-700">Всього Вин (m):</span>
                           <span className="text-lg font-bold">{comm.panels.reduce((sum, p) => sum + p.winesCount, 0)}</span>
                           {comm.type === 'IN_PROGRESS' && (
                             <div className="ml-auto flex items-center gap-2">
@@ -320,7 +321,7 @@ export function DevToolsClientView() {
                         </div>
 
                         {/* Panels */}
-                        <div className="border rounded-md p-4 bg-gray-50">
+                        <div className="border rounded-md p-4 bg-slate-50">
                           <div className="flex justify-between items-center mb-3">
                             <h4 className="text-sm font-semibold">Панелі (Розподіл вин)</h4>
                             <Button variant="outline" size="sm" onClick={() => addPanel(idx)}>
@@ -332,7 +333,7 @@ export function DevToolsClientView() {
                               <div key={pIdx} className="flex items-center gap-3 bg-white p-3 rounded border">
                                 <Input value={panel.name} onChange={e => updatePanel(idx, pIdx, { name: e.target.value })} className="max-w-[150px] h-8 text-sm font-medium" />
                                 <div className="flex items-center gap-2">
-                                  <label className="text-xs text-gray-600">Кількість вин:</label>
+                                  <label className="text-xs text-slate-600">Кількість вин:</label>
                                   <Input type="number" value={panel.winesCount} onChange={e => updatePanel(idx, pIdx, { winesCount: Number(e.target.value) })} className="w-20 h-8" />
                                 </div>
                                 <Button variant="ghost" size="sm" className="text-red-500 h-8 w-8 p-0 ml-auto" onClick={() => removePanel(idx, pIdx)}>
@@ -344,7 +345,7 @@ export function DevToolsClientView() {
                         </div>
 
                         {/* Replicas */}
-                        <div className="border rounded-md p-4 bg-gray-50">
+                        <div className="border rounded-md p-4 bg-slate-50">
                           <div className="flex justify-between items-center mb-3">
                             <h4 className="text-sm font-semibold">Репліки</h4>
                             <Button variant="outline" size="sm" onClick={() => addReplica(idx)}>
@@ -356,7 +357,7 @@ export function DevToolsClientView() {
                               <div key={rIdx} className="flex items-center gap-3 bg-white p-3 rounded border">
                                 <Input value={replica.name} onChange={e => updateReplica(idx, rIdx, { name: e.target.value })} className="max-w-[150px] h-8 text-sm font-medium" />
                                 <div className="flex items-center gap-2">
-                                  <label className="text-xs text-gray-600">Експертів (n):</label>
+                                  <label className="text-xs text-slate-600">Експертів (n):</label>
                                   <Input type="number" value={replica.expertsCount} onChange={e => updateReplica(idx, rIdx, { expertsCount: Number(e.target.value) })} className="w-20 h-8" />
                                 </div>
                                 <Button variant="ghost" size="sm" className="text-red-500 h-8 w-8 p-0 ml-auto" onClick={() => removeReplica(idx, rIdx)}>
@@ -371,7 +372,7 @@ export function DevToolsClientView() {
                   ))}
                   
                   {formData.commissions.length === 0 && (
-                    <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
+                    <div className="text-center py-8 text-slate-500 border-2 border-dashed rounded-lg">
                       Немає комісій. Додайте хоча б одну.
                     </div>
                   )}
@@ -390,36 +391,36 @@ export function DevToolsClientView() {
 
           {!isFormOpen && (
             <div className="mt-8 space-y-4">
-              <div className="flex items-center text-gray-700 font-medium mb-4">
+              <div className="flex items-center text-slate-700 font-medium mb-4">
                 <Database className="w-5 h-5 mr-2" /> Існуючі змагання
               </div>
               {loadingList ? (
-                <div className="text-gray-500 text-sm">Завантаження...</div>
+                <div className="text-slate-500 text-sm">Завантаження...</div>
               ) : (
-                <Accordion type="single" collapsible className="w-full bg-white rounded-lg shadow-sm border border-gray-200">
+                <Accordion type="single" collapsible className="w-full bg-white rounded-lg shadow-sm border border-slate-200">
                   {existingCompetitions.map((comp) => (
                     <AccordionItem key={comp.id} value={comp.id} className="border-b last:border-b-0 px-4">
                       <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                        {comp.name || `Competition ${comp.id.substring(0, 8)}`} <span className="text-xs text-gray-400 font-mono ml-2">#{comp.id.split('-')[0]}</span>
+                        {comp.name || `Competition ${comp.id.substring(0, 8)}`} <span className="text-xs text-slate-400 font-mono ml-2">#{comp.id.split('-')[0]}</span>
                       </AccordionTrigger>
                       <AccordionContent className="pt-2 pb-6 space-y-6">
                         {comp.commissions?.map((comm: any) => (
-                          <div key={comm.id} className="bg-gray-50 border border-gray-100 rounded-lg p-4">
-                            <h4 className="font-medium text-gray-800 mb-4">{comm.name || 'Комісія'}</h4>
+                          <div key={comm.id} className="bg-slate-50 border border-slate-100 rounded-lg p-4">
+                            <h4 className="font-medium text-slate-800 mb-4">{comm.name || 'Комісія'}</h4>
                             <div className="space-y-4">
                               {[...(comm.replicas || [])].sort((a: any, b: any) => (a.members?.length || 0) - (b.members?.length || 0)).map((replica: any) => (
-                                <div key={replica.id} className="bg-white border border-gray-200 rounded p-3">
-                                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                                <div key={replica.id} className="bg-white border border-slate-200 rounded p-3">
+                                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
                                     {replica.name || `Репліка: ${replica.type || 'STANDARD'}`}
                                   </div>
-                                  <div className="space-y-2 divide-y divide-gray-100">
+                                  <div className="space-y-2 divide-y divide-slate-100">
                                     {[...(replica.members || [])].sort((a: any, b: any) => (a.role === 'HEAD' ? -1 : (b.role === 'HEAD' ? 1 : 0))).map((member: any) => (
                                       <div key={member.id} className="flex items-center justify-between pt-2 first:pt-0">
                                         <div>
-                                          <div className="font-medium text-sm text-gray-800">
+                                          <div className="font-medium text-sm text-slate-800">
                                             {member.role === 'HEAD' ? '👑 Голова' : 'Експерт'}
                                           </div>
-                                          <div className="text-xs text-gray-500 font-mono">AUID: {member.auid}</div>
+                                          <div className="text-xs text-slate-500 font-mono">AUID: {member.auid}</div>
                                         </div>
                                         <Button 
                                           variant="outline" 

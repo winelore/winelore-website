@@ -246,7 +246,7 @@ export async function startCommissionAction(id: string, commissionId?: string) {
 
         // Validation: Commission must have at least one candidate
         if (candidates.length === 0) {
-            throw new Error("Неможливо розпочати дегустацію: додайте щонайменше один зразок (кандидата) до комісії.");
+            throw new Error("NO_CANDIDATES_TO_START");
         }
 
         // 2. Ensure parent Competition Series is APPROVED or PUBLISHED
@@ -525,7 +525,7 @@ export async function submitEvaluationAction(
             return { success: true, evaluation: response.submitEvaluation };
         }
 
-        return { success: false, error: "Не вдалося зберегти оцінку." };
+        return { success: false, error: "" };
     } catch (err: any) {
         console.error("Server Action Error (submitEvaluationAction):", err);
         return { success: false, error: err?.message || "Failed to submit evaluation" };
@@ -549,7 +549,7 @@ export async function confirmEvaluationAction(evaluationId: string) {
             return { success: true, evaluation: response.confirmEvaluation };
         }
 
-        return { success: false, error: "Не вдалося підтвердити оцінку." };
+        return { success: false, error: "" };
     } catch (err: any) {
         console.error("Server Action Error (confirmEvaluationAction):", err);
         return { success: false, error: err?.message || "Failed to confirm evaluation" };
@@ -851,8 +851,8 @@ async function rawGraphQL(
         console.error(`[rawGraphQL] Received non-JSON response (HTTP ${res.status}):`, text.slice(0, 500));
         throw new Error(
             res.status >= 500
-                ? `GraphQL server error (${res.status}): Сервер тимчасово недоступний`
-                : `GraphQL response error (${res.status}): ${cleanText.slice(0, 150) || 'Некоректна відповідь сервера'}`
+                ? `GraphQL server error (${res.status}): Server temporarily unavailable`
+                : `GraphQL response error (${res.status}): ${cleanText.slice(0, 150) || 'Invalid server response'}`
         );
     }
     if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
@@ -1131,10 +1131,10 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
         const msg = String(err?.message || err);
         if (msg.includes("replica members") || msg.includes("confirmed evaluations") || msg.includes("PARTIAL_EVALUATION")) {
-            throw new Error("Не всі члени комісії надали підтверджені оцінки. Увімкніть часткову оцінку кандидатів у налаштуваннях комісії або зачекайте на оцінки всіх учасників.");
+            throw new Error("PARTIAL_EVALUATION_REQUIRED");
         }
         if (msg.includes("CandidateNotNextInSequence") || msg.includes("not next in sequence") || msg.includes("transition strictly to the next candidate")) {
-            throw new Error("Послідовний режим оцінювання: виберіть наступного кандидата за порядком або увімкніть хаотичний режим для активної панелі.");
+            throw new Error("SEQUENTIAL_ORDER_VIOLATION");
         }
         throw new Error(err.message || "Failed to mark candidate as evaluated");
     }
@@ -1449,12 +1449,12 @@ async function fetchAxusGraphQL(query: string, variables: Record<string, any> = 
 
 export async function searchUserByUsernameAction(username: string) {
     const trimmed = username.trim().replace(/^@/, "");
-    if (!trimmed) return { success: false, error: "Введіть юзернейм" };
+    if (!trimmed) return { success: false, error: "" };
     try {
         const ownerRes = await axusSdk.OwnerByUsername({ username: trimmed });
         const auid = ownerRes?.ownerByUsername;
         if (!auid) {
-            return { success: false, error: `Користувача @${trimmed} не знайдено` };
+            return { success: false, error: "" };
         }
 
         let displayName = `@${trimmed}`;
@@ -1498,7 +1498,7 @@ export async function searchUserByUsernameAction(username: string) {
         };
     } catch (err: any) {
         console.error("searchUserByUsernameAction error:", err);
-        return { success: false, error: err.message || "Помилка пошуку користувача" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1533,7 +1533,7 @@ export async function addCommissionReplicaMemberAction(
         return { success: true, replica: data.addCommissionReplicaMember };
     } catch (err: any) {
         console.error("Server Action Error (addCommissionReplicaMemberAction):", err);
-        return { success: false, error: err.message || "Не вдалося додати учасника" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1561,14 +1561,14 @@ export async function removeCommissionReplicaMemberAction(replicaId: string, mem
         return { success: true, replica: data.removeCommissionReplicaMember };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionReplicaMemberAction):", err);
-        return { success: false, error: err.message || "Не вдалося видалити учасника" };
+        return { success: false, error: err.message || "" };
     }
 }
 
 export async function addCommissionPanelAction(commissionId: string, name: string) {
     if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
     const trimmed = name.trim();
-    if (!trimmed) return { success: false, error: "Вкажіть назву панелі" };
+    if (!trimmed) return { success: false, error: "" };
     try {
         const headers = await getActorHeaders();
         const data = await rawGraphQL(`
@@ -1585,14 +1585,14 @@ export async function addCommissionPanelAction(commissionId: string, name: strin
         return { success: true, panel: data.addCommissionPanel };
     } catch (err: any) {
         console.error("Server Action Error (addCommissionPanelAction):", err);
-        return { success: false, error: err.message || "Не вдалося створити панель" };
+        return { success: false, error: err.message || "" };
     }
 }
 
 export async function renameCommissionPanelAction(commissionId: string, panelId: string, name: string) {
     if (!isValidUuid(commissionId) || !isValidUuid(panelId)) return { success: false, error: "Invalid parameters" };
     const trimmed = name.trim();
-    if (!trimmed) return { success: false, error: "Вкажіть назву панелі" };
+    if (!trimmed) return { success: false, error: "" };
     try {
         const headers = await getActorHeaders();
         const data = await rawGraphQL(`
@@ -1610,7 +1610,7 @@ export async function renameCommissionPanelAction(commissionId: string, panelId:
         return { success: true, panel: data.renameCommissionPanel };
     } catch (err: any) {
         console.error("Server Action Error (renameCommissionPanelAction):", err);
-        return { success: false, error: err.message || "Не вдалося перейменувати панель" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1631,7 +1631,7 @@ export async function removeCommissionPanelAction(commissionId: string, panelId:
         return { success: true, result: data.removeCommissionPanel };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionPanelAction):", err);
-        return { success: false, error: err.message || "Не вдалося видалити панель" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1689,7 +1689,7 @@ export async function searchBeveragesAction(search?: string, page: number = 1, l
         }
     } catch (err: any) {
         console.error("Server Action Error (searchBeveragesAction):", err);
-        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка пошуку напоїв" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
 
@@ -1725,7 +1725,7 @@ export async function getBatchesForBeverageAction(beverageId: string, page: numb
         };
     } catch (err: any) {
         console.error("Server Action Error (getBatchesForBeverageAction):", err);
-        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання партій" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
 
@@ -1759,7 +1759,7 @@ export async function getSamplesForBatchAction(batchId: string, page: number = 1
         };
     } catch (err: any) {
         console.error("Server Action Error (getSamplesForBatchAction):", err);
-        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання зразків" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
 
@@ -1770,7 +1770,7 @@ export async function addCommissionCandidateAction(input: {
     anonymizedCode?: string;
 }) {
     if (!isValidUuid(input.commissionId) || !isValidUuid(input.panelId) || !isValidUuid(input.sampleId)) {
-        return { success: false, error: "Некоректні параметри кандидата" };
+        return { success: false, error: "" };
     }
     try {
         const headers = await getActorHeaders();
@@ -1877,7 +1877,7 @@ export async function addCommissionCandidateAction(input: {
         };
     } catch (err: any) {
         console.error("Server Action Error (addCommissionCandidateAction):", err);
-        return { success: false, error: err.message || "Не вдалося додати кандидата" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1893,7 +1893,7 @@ export async function removeCommissionCandidateAction(candidateId: string) {
         return { success: true, result: data.removeCommissionCandidate };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionCandidateAction):", err);
-        return { success: false, error: err.message || "Не вдалося видалити кандидата" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1915,7 +1915,7 @@ export async function changeCommissionCandidateCodeAction(candidateId: string, a
         return { success: true, candidate: data.changeCommissionCandidateCode };
     } catch (err: any) {
         console.error("Server Action Error (changeCommissionCandidateCodeAction):", err);
-        return { success: false, error: err.message || "Не вдалося змінити код" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1934,6 +1934,6 @@ export async function reorderCommissionCandidatesAction(commissionId: string, pa
         return { success: true, commission: data.reorderCommissionCandidates };
     } catch (err: any) {
         console.error("Server Action Error (reorderCommissionCandidatesAction):", err);
-        return { success: false, error: err.message || "Не вдалося змінити порядок кандидатів" };
+        return { success: false, error: err.message || "" };
     }
 }

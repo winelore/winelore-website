@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
+import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft, Send, Download } from "lucide-react"
@@ -281,7 +282,7 @@ export default function CompetitionClientView({
 
     const handleSaveName = async () => {
         if (!editNameData.trim()) {
-            alert("Name cannot be empty")
+            toast.error("Name cannot be empty")
             return
         }
         setIsMutating(true)
@@ -291,10 +292,10 @@ export default function CompetitionClientView({
                 setIsEditingName(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save name")
+                toast.error(res.error || "Failed to save name")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -312,10 +313,10 @@ export default function CompetitionClientView({
                 setIsEditingDates(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save dates")
+                toast.error(res.error || "Failed to save dates")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -345,10 +346,10 @@ export default function CompetitionClientView({
                 setIsAddingCommission(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to add commission")
+                toast.error(res.error || "Failed to add commission")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -421,7 +422,7 @@ export default function CompetitionClientView({
             router.refresh()
         } catch (err: any) {
             console.error("Failed to submit competition for review:", err)
-            alert(err.message || t("competition.submitReviewError"))
+            toast.error(err.message || t("competition.submitReviewError"))
         } finally {
             setIsMutating(false)
         }

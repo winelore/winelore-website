@@ -126,13 +126,13 @@ export default function CreateCompetitionPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans antialiased">
+        <div className="min-h-screen bg-slate-50 text-slate-800">
             <AppHeader activeTab="competitions" />
 
             <main className="max-w-2xl mx-auto px-6 py-12">
                 <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-[#0F172A]">New Competition</h1>
-                    <p className="text-sm text-[#94A3B8] mt-1">Set a name, series, and schedule to get started.</p>
+                    <h1 className="text-2xl font-bold text-slate-900">New Competition</h1>
+                    <p className="text-sm text-slate-400 mt-1">Set a name, series, and schedule to get started.</p>
                 </div>
 
                 {submitError && (
@@ -141,33 +141,33 @@ export default function CreateCompetitionPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-[#F1F5F9] shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
+                <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
 
                     {/* Name — the headline field */}
                     <div className="p-8 pb-6">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                             Competition Name
                         </label>
                         <input
                             type="text"
                             required
                             placeholder="e.g., Wines of the Silver Land 2026"
-                            className="text-2xl font-bold text-[#0F172A] bg-transparent border-b-2 border-[#E2E8F0] focus:border-[#5046E5] focus:outline-none w-full pb-2 transition-colors placeholder:text-[#CBD5E1] placeholder:font-normal"
+                            className="text-2xl font-bold text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-600 focus:outline-none w-full pb-2 transition-colors placeholder:text-slate-300 placeholder:font-normal"
                             value={formData.name}
                             onChange={e => handleCompetitionChange('name', e.target.value)}
                             disabled={isSubmitting}
                         />
                     </div>
 
-                    <div className="h-px bg-[#F1F5F9]" />
+                    <div className="h-px bg-slate-100" />
 
                     {/* Series */}
                     <div className="p-8 py-6">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                             Competition Series
                         </label>
                         <select
-                            className="text-base font-semibold text-[#0F172A] bg-[#F8FAFC] rounded-xl px-4 py-3 w-full outline-none border border-transparent focus:border-[#5046E5] cursor-pointer transition-colors"
+                            className="text-base font-semibold text-slate-900 bg-slate-50 rounded-xl px-4 py-3 w-full outline-none border border-transparent focus:border-indigo-600 cursor-pointer transition-colors"
                             value={formData.seriesId}
                             onChange={e => handleCompetitionChange('seriesId', e.target.value)}
                             disabled={isSubmitting}
@@ -179,33 +179,33 @@ export default function CreateCompetitionPage() {
                         </select>
                     </div>
 
-                    <div className="h-px bg-[#F1F5F9]" />
+                    <div className="h-px bg-slate-100" />
 
                     {/* Schedule */}
                     <div className="p-8 pt-6">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-3">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
                             Schedule
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="bg-[#F8FAFC] rounded-xl px-4 py-3">
-                                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] mb-1">
+                            <div className="bg-slate-50 rounded-xl px-4 py-3">
+                                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                                     Planned Start
                                 </span>
                                 <input
                                     type="datetime-local"
-                                    className="w-full text-sm font-medium text-[#334155] bg-transparent border-none outline-none"
+                                    className="w-full text-sm font-medium text-slate-700 bg-transparent border-none outline-none"
                                     value={formData.plannedStartDate}
                                     onChange={e => handleCompetitionChange('plannedStartDate', e.target.value)}
                                     disabled={isSubmitting}
                                 />
                             </div>
-                            <div className="bg-[#F8FAFC] rounded-xl px-4 py-3">
-                                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] mb-1">
+                            <div className="bg-slate-50 rounded-xl px-4 py-3">
+                                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                                     Planned Completion
                                 </span>
                                 <input
                                     type="datetime-local"
-                                    className="w-full text-sm font-medium text-[#334155] bg-transparent border-none outline-none"
+                                    className="w-full text-sm font-medium text-slate-700 bg-transparent border-none outline-none"
                                     value={formData.plannedEndDate}
                                     onChange={e => handleCompetitionChange('plannedEndDate', e.target.value)}
                                     disabled={isSubmitting}
@@ -215,19 +215,19 @@ export default function CreateCompetitionPage() {
                     </div>
 
                     {/* Action bar */}
-                    <div className="flex justify-end gap-3 px-8 py-5 bg-[#F8FAFC] border-t border-[#F1F5F9]">
+                    <div className="flex justify-end gap-3 px-8 py-5 bg-slate-50 border-t border-slate-100">
                         <button
                             type="button"
                             onClick={() => router.push('/')}
                             disabled={isSubmitting}
-                            className="px-6 py-2.5 bg-white border border-[#E2E8F0] text-[#475569] text-sm font-semibold rounded-xl hover:bg-[#F1F5F9] disabled:opacity-50 transition-colors"
+                            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-100 disabled:opacity-50 transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-6 py-2.5 bg-[#5046E5] text-white text-sm font-semibold rounded-xl hover:bg-[#4338CA] transition-all shadow-[0_4px_12px_rgba(80,70,229,0.2)] disabled:opacity-75 flex items-center gap-2"
+                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20 disabled:opacity-75 flex items-center gap-2"
                         >
                             {isSubmitting ? (
                                 <>

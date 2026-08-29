@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import {
     Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin, Calendar, Award, ArrowLeft, Clock,
     Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send
@@ -349,7 +350,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
             setBeverageStatus(updated?.status || "IN_REVIEW")
         } catch (err: any) {
             console.error("Failed to submit beverage for review:", err)
-            alert(err.message || t("beverage.submitReviewError"))
+            toast.error(err.message || t("beverage.submitReviewError"))
         } finally {
             setIsSubmittingForReview(false)
         }

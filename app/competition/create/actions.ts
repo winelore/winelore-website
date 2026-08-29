@@ -19,7 +19,7 @@ async function executeGraphQL(query: string, variables: any) {
     try {
         json = JSON.parse(text);
     } catch {
-        throw new Error(`GraphQL server error (${response.status}): Некоректна відповідь сервера`);
+        throw new Error(`GraphQL server error (${response.status}): Invalid server response`);
     }
 
     if (!response.ok) {

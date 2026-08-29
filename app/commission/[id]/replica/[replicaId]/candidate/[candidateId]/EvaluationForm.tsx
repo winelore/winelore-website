@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
@@ -413,7 +414,7 @@ export default function EvaluationForm({
                 setRecordingTime(Math.round((Date.now() - start) / 1000))
             }, 1000)
         } catch {
-            alert(t("evaluation.voiceMicError"))
+            toast.error(t("evaluation.voiceMicError"))
         }
     }
 

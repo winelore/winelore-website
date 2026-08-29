@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Trash2, AlertCircle, X, Star, GripVertical } from "lucide-react"
 import { createGlobalTemplateAction, updateGlobalTemplateAction, getBeverageTypesAction, getTemplateByIdAction } from "./actions"
+import { useTranslation } from "@/lib/i18n/context"
+import type { MessageKey } from "@/lib/i18n"
 
 interface TemplateCreatorModalProps {
     isOpen: boolean
@@ -33,13 +35,18 @@ interface CategoryState {
     properties: PropertyState[]
 }
 
-export const PROPERTY_TYPE_LABELS: Record<string, string> = {
-    Int: "Ціле число",
-    Double: "Дробове число",
-    Discrete: "Вибір із чисел",
-    Enum: "Вибір із варіантів",
-    Boolean: "Так / Ні",
-    Smart: "Розрахункове (Формула)",
+const PROPERTY_TYPE_KEYS: Record<string, MessageKey> = {
+    Int: "templateCreator.typeInt",
+    Double: "templateCreator.typeDouble",
+    Discrete: "templateCreator.typeDiscrete",
+    Enum: "templateCreator.typeEnum",
+    Boolean: "templateCreator.typeBoolean",
+    Smart: "templateCreator.typeSmart",
+}
+
+export function getPropertyTypeLabel(type: string, t: (key: MessageKey) => string): string {
+    const key = PROPERTY_TYPE_KEYS[type]
+    return key ? t(key) : type
 }
 
 function transliterate(str: string): string {
@@ -179,6 +186,7 @@ export default function TemplateCreatorModal({
     initialTemplateId = null
 }: TemplateCreatorModalProps) {
     const router = useRouter()
+    const { t } = useTranslation()
 
     const [templateName, setTemplateName] = useState("")
     const [categories, setCategories] = useState<CategoryState[]>([])
@@ -247,7 +255,7 @@ export default function TemplateCreatorModal({
                             }
                         }
                     }).catch(err => {
-                        setErrorMsg("Не вдалося завантажити дані темплейту для редагування.")
+                        setErrorMsg(t("templateCreator.loadEditError"))
                     })
                 } else {
                     setTemplateName("")
@@ -387,11 +395,11 @@ export default function TemplateCreatorModal({
         setErrorCatIds(new Set())
 
         if (!templateName.trim()) {
-            setErrorMsg("Будь ласка, введіть назву темплейту оцінювання.")
+            setErrorMsg(t("templateCreator.nameRequiredError"))
             return
         }
         if (categories.length === 0) {
-            setErrorMsg("Темплейт повинен мати хоча б одну категорію.")
+            setErrorMsg(t("templateCreator.categoryCountError"))
             return
         }
 
@@ -404,11 +412,11 @@ export default function TemplateCreatorModal({
             for (const cat of categories) {
                 if (!cat.name.trim()) {
                     newErrorCatIds.add(cat.id)
-                    throw new Error("Введіть назву категорії.")
+                    throw new Error(t("templateCreator.categoryNameRequiredError"))
                 }
                 if (cat.properties.length === 0) {
                     newErrorCatIds.add(cat.id)
-                    throw new Error(`Категорія "${cat.name}" не містить жодної оцінки.`)
+                    throw new Error(t("templateCreator.categoryNoPropertiesError", { name: cat.name }))
                 }
 
                 const propertiesInput: any[] = []
@@ -416,11 +424,11 @@ export default function TemplateCreatorModal({
                 for (const p of cat.properties) {
                     if (!p.name.trim()) {
                         newErrorPropIds.add(p.id)
-                        throw new Error(`Введіть назву оцінки в категорії "${cat.name}".`)
+                        throw new Error(t("templateCreator.propertyNameRequiredError", { category: cat.name }))
                     }
                     if (!p.code.trim()) {
                         newErrorPropIds.add(p.id)
-                        throw new Error(`Введіть унікальний код для оцінки "${p.name}".`)
+                        throw new Error(t("templateCreator.propertyCodeRequiredError", { name: p.name }))
                     }
                     if (codesSet.has(p.code)) {
                         newErrorPropIds.add(p.id)
@@ -429,9 +437,7 @@ export default function TemplateCreatorModal({
                                 if (p2.code === p.code && p2.id !== p.id) newErrorPropIds.add(p2.id)
                             }
                         }
-                        throw new Error(
-                            `Дубльований код оцінки: "${p.code}". Коди мають бути унікальними в межах всього темплейту.`
-                        )
+                        throw new Error(t("templateCreator.duplicateCodeError", { code: p.code }))
                     }
                     codesSet.add(p.code)
 
@@ -448,11 +454,11 @@ export default function TemplateCreatorModal({
                     if (p.type === "Int" || p.type === "Double") {
                         if (p.minLimit === undefined || p.maxLimit === undefined) {
                             newErrorPropIds.add(p.id)
-                            throw new Error(`Вкажіть мінімальний та максимальний ліміт для оцінки "${p.name}".`)
+                            throw new Error(t("templateCreator.limitsRequiredError", { name: p.name }))
                         }
                         if (Number(p.minLimit) >= Number(p.maxLimit)) {
                             newErrorPropIds.add(p.id)
-                            throw new Error(`Мінімальний ліміт має бути меншим за максимальний для оцінки "${p.name}".`)
+                            throw new Error(t("templateCreator.minMaxInvalidError", { name: p.name }))
                         }
                         propInput.minLimit = Number(p.minLimit)
                         propInput.maxLimit = Number(p.maxLimit)
@@ -461,7 +467,7 @@ export default function TemplateCreatorModal({
                     if (p.type === "Discrete") {
                         if (!p.allowedValuesStr.trim()) {
                             newErrorPropIds.add(p.id)
-                            throw new Error(`Вкажіть дозволені числові значення через кому для оцінки "${p.name}".`)
+                            throw new Error(t("templateCreator.discreteValuesRequiredError", { name: p.name }))
                         }
                         const allowedList = p.allowedValuesStr
                             .split(",")
@@ -470,7 +476,7 @@ export default function TemplateCreatorModal({
                             .map(Number)
                         if (allowedList.some(isNaN)) {
                             newErrorPropIds.add(p.id)
-                            throw new Error(`Всі дозволені значення для оцінки "${p.name}" мають бути цілими числами.`)
+                            throw new Error(t("templateCreator.discreteValuesInvalidError", { name: p.name }))
                         }
                         propInput.allowedValues = allowedList.map(String)
                     }
@@ -478,7 +484,7 @@ export default function TemplateCreatorModal({
                     if (p.type === "Enum") {
                         if (!p.allowedValuesStr.trim()) {
                             newErrorPropIds.add(p.id)
-                            throw new Error(`Вкажіть дозволені текстові значення (enum) через кому для оцінки "${p.name}".`)
+                            throw new Error(t("templateCreator.enumValuesRequiredError", { name: p.name }))
                         }
                         propInput.allowedValues = p.allowedValuesStr
                             .split(",")
@@ -489,7 +495,7 @@ export default function TemplateCreatorModal({
                     if (p.type === "Smart") {
                         if (!p.expressionStr.trim()) {
                             newErrorPropIds.add(p.id)
-                            throw new Error(`Формула для розумної оцінки "${p.name}" не може бути порожньою.`)
+                            throw new Error(t("templateCreator.formulaEmptyError", { name: p.name }))
                         }
                         try {
                             const ast = parseExpression(p.expressionStr)
@@ -497,10 +503,7 @@ export default function TemplateCreatorModal({
                                 if (!node) return
                                 if (node.type === "VARIABLE") {
                                     if (!codesSet.has(node.variableCode)) {
-                                        throw new Error(
-                                            `Використано невідому змінну "${node.variableCode}" у формулі. ` +
-                                            `Переконайтеся, що ця оцінка оголошена вище у формі.`
-                                        )
+                                        throw new Error(t("templateCreator.formulaUnknownVarError", { variable: node.variableCode }))
                                     }
                                 }
                                 checkVariables(node.left)
@@ -510,7 +513,7 @@ export default function TemplateCreatorModal({
                             propInput.expression = ast
                         } catch (parseErr: any) {
                             newErrorPropIds.add(p.id)
-                            throw new Error(`Помилка у формулі оцінки "${p.name}": ${parseErr.message}`)
+                            throw new Error(t("templateCreator.formulaError", { name: p.name, error: parseErr.message }))
                         }
                     }
 
@@ -524,9 +527,7 @@ export default function TemplateCreatorModal({
                 cat.properties.some((p: any) => p.isResult === true)
             )
             if (!hasResult) {
-                throw new Error(
-                    'Хоча б один показник у темплейті повинен бути позначений як "Результуючий показник" (⭐).'
-                )
+                throw new Error(t("templateCreator.resultRequiredError"))
             }
         } catch (validationErr: any) {
             setErrorPropIds(newErrorPropIds)
@@ -555,7 +556,7 @@ export default function TemplateCreatorModal({
             onClose()
             router.refresh()
         } catch (saveErr: any) {
-            setErrorMsg(saveErr.message || "Помилка при збереженні темплейту на сервері.")
+            setErrorMsg(saveErr.message || t("templateCreator.saveError"))
         } finally {
             setIsSaving(false)
         }
@@ -602,17 +603,17 @@ export default function TemplateCreatorModal({
             <div className="shrink-0 flex items-center justify-between px-8 py-5 border-b border-slate-100 bg-white shadow-sm">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
-                        {initialTemplateId ? "Редагування темплейту оцінювання" : "Створення темплейту оцінювання"}
+                        {initialTemplateId ? t("templateCreator.modalTitleEdit") : t("templateCreator.modalTitleCreate")}
                     </h1>
                     <p className="text-slate-500 text-sm mt-0.5">
-                        Налаштуйте категорії та показники для шаблону оцінювання.
+                        {t("templateCreator.modalSubtitle")}
                     </p>
                 </div>
                 <button
                     type="button"
                     onClick={onClose}
                     className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                    title="Закрити"
+                    title={t("templateCreator.close")}
                 >
                     <X className="w-5 h-5" />
                 </button>
@@ -629,10 +630,10 @@ export default function TemplateCreatorModal({
                 <div className="flex gap-3 flex-wrap">
                     <div className="flex flex-col gap-1.5 flex-1 min-w-64">
                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            Назва темплейту
+                            {t("templateCreator.templateNameLabel")}
                             {!!initialTemplateId && (
                                 <span className="text-[10px] font-medium text-slate-400 normal-case tracking-normal">
-                                    (лише для читання)
+                                    {t("templateCreator.readOnly")}
                                 </span>
                             )}
                         </label>
@@ -641,7 +642,7 @@ export default function TemplateCreatorModal({
                             disabled={!!initialTemplateId}
                             value={templateName}
                             onChange={(e) => setTemplateName(e.target.value)}
-                            placeholder="Наприклад: Червоні вина дегустація..."
+                            placeholder={t("templateCreator.templateNamePlaceholder")}
                             className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
                                 initialTemplateId
                                     ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed select-none"
@@ -651,10 +652,10 @@ export default function TemplateCreatorModal({
                     </div>
                     <div className="flex flex-col gap-1.5 min-w-[200px]">
                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            Тип напою
+                            {t("templateCreator.beverageTypeLabel")}
                             {!!initialTemplateId && (
                                 <span className="text-[10px] font-medium text-slate-400 normal-case tracking-normal">
-                                    (лише для читання)
+                                    {t("templateCreator.readOnly")}
                                 </span>
                             )}
                         </label>
@@ -668,7 +669,7 @@ export default function TemplateCreatorModal({
                                     : "border-slate-200 bg-slate-50/30 text-slate-800 cursor-pointer"
                             }`}
                         >
-                            {beverageTypes.length === 0 && <option value="">Завантаження...</option>}
+                            {beverageTypes.length === 0 && <option value="">{t("templateCreator.loadingOption")}</option>}
                             {beverageTypes.map((bt) => (
                                 <option key={bt.id} value={bt.id}>{bt.name}</option>
                             ))}
@@ -679,21 +680,21 @@ export default function TemplateCreatorModal({
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
-                            Категорії оцінювання
+                            {t("templateCreator.categoriesLabel")}
                         </h2>
                         <button
                             type="button"
                             onClick={handleAddCategory}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold transition-colors border border-indigo-100/50 cursor-pointer"
                         >
-                            <Plus className="w-3.5 h-3.5" /> Додати категорію
+                            <Plus className="w-3.5 h-3.5" /> {t("templateCreator.addCategory")}
                         </button>
                     </div>
 
                     {categories.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-12 border border-dashed border-slate-200 rounded-[28px] bg-slate-50/30 text-center gap-2">
-                            <p className="text-slate-400 text-sm font-semibold">Ще немає жодної категорії</p>
-                            <p className="text-slate-300 text-xs">Натисніть «Додати категорію», щоб розпочати</p>
+                            <p className="text-slate-400 text-sm font-semibold">{t("templateCreator.noCategoriesTitle")}</p>
+                            <p className="text-slate-300 text-xs">{t("templateCreator.noCategoriesDesc")}</p>
                         </div>
                     )}
 
@@ -718,7 +719,7 @@ export default function TemplateCreatorModal({
                                     type="button"
                                     onClick={() => handleRemoveCategory(cat.id)}
                                     className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-                                    title="Видалити категорію"
+                                    title={t("templateCreator.deleteCategory")}
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -735,13 +736,13 @@ export default function TemplateCreatorModal({
                                 </div>
                                 <div className="flex flex-col gap-1 flex-1">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                        Категорія #{catIdx + 1}
+                                        {t("templateCreator.categoryNumber", { number: catIdx + 1 })}
                                     </label>
                                     <input
                                         type="text"
                                         value={cat.name}
                                         onChange={(e) => handleCategoryNameChange(cat.id, e.target.value)}
-                                        placeholder="Назва категорії, наприклад: Зовнішній вигляд..."
+                                        placeholder={t("templateCreator.categoryNamePlaceholder")}
                                         className={`px-0 py-1 bg-transparent border-b hover:border-slate-200 focus:border-indigo-500 focus:outline-hidden text-lg font-bold text-slate-800 transition-colors ${
                                             errorCatIds.has(cat.id) ? "border-rose-400" : "border-transparent"
                                         }`}
@@ -752,14 +753,14 @@ export default function TemplateCreatorModal({
                             <div className="flex flex-col gap-3.5 mt-2">
                                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                        Показники оцінки
+                                        {t("templateCreator.propertiesLabel")}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={() => handleAddProperty(cat.id)}
                                         className="flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200/80 rounded-lg text-[10px] font-extrabold text-slate-600 transition-colors cursor-pointer"
                                     >
-                                        <Plus className="w-3 h-3" /> Додати показник
+                                        <Plus className="w-3 h-3" /> {t("templateCreator.addProperty")}
                                     </button>
                                 </div>
 
@@ -791,7 +792,7 @@ export default function TemplateCreatorModal({
                                                 type="text"
                                                 value={p.name}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { name: e.target.value })}
-                                                placeholder="Назва показника..."
+                                                placeholder={t("templateCreator.propertyNamePlaceholder")}
                                                 className={`flex-1 min-w-[160px] px-3 py-1.5 border rounded-lg text-sm font-medium ${
                                                     errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200 bg-white"
                                                 }`}
@@ -802,7 +803,7 @@ export default function TemplateCreatorModal({
                                                 onFocus={() => handleCodeFocus(p.id, p.code)}
                                                 onBlur={(e) => handleCodeCommit(p.id, e.target.value)}
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { code: e.target.value })}
-                                                placeholder="код"
+                                                placeholder={t("templateCreator.codePlaceholder")}
                                                 className={`w-40 shrink-0 px-3 py-1.5 border rounded-lg text-sm font-mono ${
                                                     isCodeDuplicate ? "border-rose-500 bg-rose-50" : "border-slate-200"
                                                 }`}
@@ -812,17 +813,17 @@ export default function TemplateCreatorModal({
                                                 onChange={(e) => handlePropertyChange(cat.id, p.id, { type: e.target.value as any })}
                                                 className="shrink-0 px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold bg-white cursor-pointer"
                                             >
-                                                <option value="Int">Ціле число</option>
-                                                <option value="Double">Дробове число</option>
-                                                <option value="Discrete">Вибір із чисел</option>
-                                                <option value="Enum">Вибір із варіантів</option>
-                                                <option value="Boolean">Так / Ні</option>
-                                                <option value="Smart">Розрахункове (Формула)</option>
+                                                <option value="Int">{getPropertyTypeLabel("Int", t)}</option>
+                                                <option value="Double">{getPropertyTypeLabel("Double", t)}</option>
+                                                <option value="Discrete">{getPropertyTypeLabel("Discrete", t)}</option>
+                                                <option value="Enum">{getPropertyTypeLabel("Enum", t)}</option>
+                                                <option value="Boolean">{getPropertyTypeLabel("Boolean", t)}</option>
+                                                <option value="Smart">{getPropertyTypeLabel("Smart", t)}</option>
                                             </select>
 
                                             {(p.type === "Int" || p.type === "Double") && (
                                                 <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 px-2 py-1 border border-slate-200 rounded-lg">
-                                                    <span className="text-xs font-medium text-slate-400">від</span>
+                                                    <span className="text-xs font-medium text-slate-400">{t("templateCreator.fromLabel")}</span>
                                                     <input
                                                         type="number"
                                                         value={p.minLimit ?? ""}
@@ -830,7 +831,7 @@ export default function TemplateCreatorModal({
                                                         placeholder="0"
                                                         className="w-14 px-1.5 py-0.5 border border-slate-200 rounded-md bg-white text-sm text-center font-medium focus:outline-hidden focus:border-indigo-500"
                                                     />
-                                                    <span className="text-xs font-medium text-slate-400">до</span>
+                                                    <span className="text-xs font-medium text-slate-400">{t("templateCreator.toLabel")}</span>
                                                     <input
                                                         type="number"
                                                         value={p.maxLimit ?? ""}
@@ -846,8 +847,8 @@ export default function TemplateCreatorModal({
                                                     type="text"
                                                     value={p.allowedValuesStr}
                                                     onChange={(e) => handlePropertyChange(cat.id, p.id, { allowedValuesStr: e.target.value })}
-                                                    placeholder="Варіанти через кому: 1, 2, 3, 5..."
-                                                    title="Дозволені числові значення через кому"
+                                                    placeholder={t("templateCreator.discretePlaceholder")}
+                                                    title={t("templateCreator.discreteTitle")}
                                                     className={`flex-1 min-w-[150px] px-3 py-1.5 border rounded-lg text-sm font-mono bg-white ${
                                                         errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
                                                     }`}
@@ -859,8 +860,8 @@ export default function TemplateCreatorModal({
                                                     type="text"
                                                     value={p.allowedValuesStr}
                                                     onChange={(e) => handlePropertyChange(cat.id, p.id, { allowedValuesStr: e.target.value })}
-                                                    placeholder="Варіанти через кому: ЧЕРВОНЕ, БІЛЕ..."
-                                                    title="Дозволені текстові значення через кому"
+                                                    placeholder={t("templateCreator.enumPlaceholder")}
+                                                    title={t("templateCreator.enumTitle")}
                                                     className={`flex-1 min-w-[150px] px-3 py-1.5 border rounded-lg text-sm font-mono bg-white ${
                                                         errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
                                                     }`}
@@ -872,8 +873,8 @@ export default function TemplateCreatorModal({
                                                     type="text"
                                                     value={p.expressionStr}
                                                     onChange={(e) => handlePropertyChange(cat.id, p.id, { expressionStr: e.target.value })}
-                                                    placeholder="Формула: code_a + code_b * 0.5"
-                                                    title="Формула розрахункового показника"
+                                                    placeholder={t("templateCreator.formulaPlaceholder")}
+                                                    title={t("templateCreator.formulaTitle")}
                                                     className={`flex-1 min-w-[180px] px-3 py-1.5 border rounded-lg text-sm font-mono bg-white ${
                                                         errorPropIds.has(p.id) ? "border-rose-300 bg-rose-50" : "border-slate-200"
                                                     }`}
@@ -887,7 +888,7 @@ export default function TemplateCreatorModal({
                                                     className={`p-2 rounded-lg transition-colors ${
                                                         p.isResult ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-400 hover:text-slate-600"
                                                     }`}
-                                                    title="Позначити як результуючий показник"
+                                                    title={t("templateCreator.markResult")}
                                                 >
                                                     <Star className="w-4 h-4" />
                                                 </button>
@@ -914,7 +915,7 @@ export default function TemplateCreatorModal({
                     onClick={onClose}
                     className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-2xl transition-colors"
                 >
-                    Скасувати
+                    {t("competition.cancel")}
                 </button>
                 <button
                     type="button"
@@ -922,7 +923,7 @@ export default function TemplateCreatorModal({
                     disabled={isSaving}
                     className="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition-colors disabled:opacity-50"
                 >
-                    {isSaving ? "Збереження..." : "Зберегти зміни"}
+                    {isSaving ? t("templateCreator.saving") : t("templateCreator.saveChanges")}
                 </button>
             </div>
         </div>

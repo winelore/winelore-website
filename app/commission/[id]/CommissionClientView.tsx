@@ -1,6 +1,7 @@
 "use client"
 
 import React, {useState, useEffect, useRef, useMemo, useCallback} from "react"
+import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -11,6 +12,16 @@ import {
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
     markMemberReadyAction,
     markMemberNotReadyAction,
@@ -272,10 +283,10 @@ function EvaluationTemplatesBlock({
                 setIsModalOpen(false)
                 onRefresh()
             } else {
-                alert(t("commission.templateAssignError" as any) || res.error)
+                toast.error(t("commission.templateAssignError" as any) || res.error)
             }
         } catch (e) {
-            alert(t("commission.templateAssignError" as any))
+            toast.error(t("commission.templateAssignError" as any))
         } finally {
             setIsAssigning(false)
         }
@@ -594,6 +605,7 @@ export default function CommissionClientView({
     const [editReplicaName, setEditReplicaName] = useState("")
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
     const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
+    const [memberPendingRemoval, setMemberPendingRemoval] = useState<string | null>(null)
     const initialData = localData
 
     const beverageTypesInCommission = useMemo(() => {
@@ -633,17 +645,17 @@ export default function CommissionClientView({
 
     const handleRemoveMember = async (memberId: string) => {
         if (!selectedReplica || isMutating) return
-        if (!confirm("Ви дійсно бажаєте видалити цього експерта з комісії?")) return
+        setMemberPendingRemoval(null)
         setRemovingMemberId(memberId)
         try {
             const res = await removeCommissionReplicaMemberAction(selectedReplica.id, memberId)
             if (res.success) {
                 await refreshCommissionData()
             } else {
-                alert(res.error || "Не вдалося видалити учасника")
+                toast.error(res.error || t("commission.removeMemberError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при видаленні учасника")
+            toast.error(err.message || t("commission.removeMemberErrorGeneric"))
         } finally {
             setRemovingMemberId(null)
         }
@@ -686,10 +698,10 @@ export default function CommissionClientView({
                 setIsEditingReplica(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to rename replica")
+                toast.error(res.error || "Failed to rename replica")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -697,7 +709,7 @@ export default function CommissionClientView({
 
     const handleSaveName = async () => {
         if (!editNameData.trim()) {
-            alert("Name cannot be empty")
+            toast.error("Name cannot be empty")
             return
         }
         setIsMutating(true)
@@ -707,10 +719,10 @@ export default function CommissionClientView({
                 setIsEditingName(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save name")
+                toast.error(res.error || "Failed to save name")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -728,10 +740,10 @@ export default function CommissionClientView({
                 setIsEditingDates(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save dates")
+                toast.error(res.error || "Failed to save dates")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -749,10 +761,10 @@ export default function CommissionClientView({
                 setIsAddingReplica(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to add replica")
+                toast.error(res.error || "Failed to add replica")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -775,10 +787,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, partialCandidateEvaluationEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -793,10 +805,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, wineJumperMiniGameEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -811,10 +823,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, voiceCommentsEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -829,10 +841,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, propertyCommentsEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -847,10 +859,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, beverageOriginDuringEvaluationEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -870,10 +882,10 @@ export default function CommissionClientView({
                     replicaPanels: r.replicaPanels.map(panel => panel.id === activePanel.id ? { ...panel, chaoticCurrentCandidateChangesEnabled: nextState } : panel),
                 } : r));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -1110,11 +1122,11 @@ export default function CommissionClientView({
     const handleStartCommission = async () => {
         if (!selectedReplica || isMutating) return
         if (!hasCandidates) {
-            alert("Неможливо розпочати дегустацію: додайте щонайменше 1 зразок (кандидата) до комісії.")
+            toast.error(t("commission.startTastingNoSamplesError"))
             return
         }
         if (!hasMembers) {
-            alert("Неможливо розпочати дегустацію: додайте щонайменше 1 експерта до комісії.")
+            toast.error(t("commission.startTastingNoExpertsError"))
             return
         }
         setIsMutating(true)
@@ -1124,7 +1136,11 @@ export default function CommissionClientView({
             router.refresh()
         } catch (err: any) {
             console.error("Failed to start replica tasting session:", err)
-            alert(err.message || "Помилка при запуску дегустації")
+            if (err.message === "NO_CANDIDATES_TO_START") {
+                toast.error(t("commission.startTastingNoSamplesError"))
+            } else {
+                toast.error(t("commission.startTastingErrorGeneric"))
+            }
         } finally {
             setIsMutating(false)
         }
@@ -1139,7 +1155,7 @@ export default function CommissionClientView({
             router.refresh()
         } catch (err: any) {
             console.error("Failed to submit commission for review:", err)
-            alert(err.message || t("commission.submitReviewError"))
+            toast.error(err.message || t("commission.submitReviewError"))
         } finally {
             setIsMutating(false)
         }
@@ -1531,7 +1547,7 @@ export default function CommissionClientView({
                                                     {isCompetitionHolder && isCommissionDraft && isReplicaDraft && (
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleRemoveMember(p.id)}
+                                                            onClick={() => setMemberPendingRemoval(p.id)}
                                                             disabled={removingMemberId === p.id}
                                                             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
                                                             title={t("commission.deleteExpert")}
@@ -2248,6 +2264,24 @@ export default function CommissionClientView({
                 replicaName={selectedReplicaName}
                 onMemberAdded={refreshCommissionData}
             />
+
+            <AlertDialog open={memberPendingRemoval !== null} onOpenChange={(open) => !open && setMemberPendingRemoval(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t("commission.deleteExpert")}</AlertDialogTitle>
+                        <AlertDialogDescription>{t("commission.confirmDeleteExpert")}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t("competition.cancel")}</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => memberPendingRemoval && handleRemoveMember(memberPendingRemoval)}
+                            className="bg-rose-600 hover:bg-rose-700 focus:ring-rose-500"
+                        >
+                            {t("commission.deleteExpert")}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

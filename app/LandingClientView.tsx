@@ -23,7 +23,7 @@ export default function LandingClientView() {
                         href="/auth/login"
                         className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 shadow-sm"
                     >
-                        <span>{t("common.signIn") || "Увійти"}</span>
+                        <span>{t("common.signIn")}</span>
                     </a>
                 </div>
             </header>

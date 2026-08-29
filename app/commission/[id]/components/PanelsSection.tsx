@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { toast } from "sonner"
 import {
     Layers,
     Plus,
@@ -190,10 +191,10 @@ export function PanelsSection({
             if (res.success) {
                 onRefresh()
             } else {
-                alert(res.error || "Не вдалося змінити порядок")
+                toast.error(res.error || t("panels.reorderError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при зміні порядку")
+            toast.error(err.message || t("panels.reorderErrorGeneric"))
         } finally {
             setIsReordering(false)
         }
@@ -209,10 +210,10 @@ export function PanelsSection({
                 setIsAddingPanel(false)
                 onRefresh()
             } else {
-                alert(res.error || "Не вдалося створити панель")
+                toast.error(res.error || t("panels.createPanelError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при створенні панелі")
+            toast.error(err.message || t("panels.createPanelErrorGeneric"))
         } finally {
             setIsCreatingPanel(false)
         }
@@ -227,10 +228,10 @@ export function PanelsSection({
                 setEditingPanelId(null)
                 onRefresh()
             } else {
-                alert(res.error || "Не вдалося перейменувати панель")
+                toast.error(res.error || t("panels.renamePanelError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при перейменуванні")
+            toast.error(err.message || t("panels.renamePanelErrorGeneric"))
         } finally {
             setIsSavingPanel(false)
         }
@@ -711,7 +712,7 @@ export function PanelsSection({
                                 onClick={() => setConfirmDeleteState((prev) => ({ ...prev, isOpen: false }))}
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                                {t("competition.cancel") || "Cancel"}
+                                {t("competition.cancel")}
                             </button>
                             <button
                                 type="button"
@@ -725,10 +726,10 @@ export function PanelsSection({
                                             if (res.success) {
                                                 onRefresh()
                                             } else {
-                                                alert(res.error || "Не вдалося видалити панель")
+                                                toast.error(res.error || t("panels.deletePanelError"))
                                             }
                                         } catch (err: any) {
-                                            alert(err.message || "Помилка при видаленні панелі")
+                                            toast.error(err.message || t("panels.deletePanelErrorGeneric"))
                                         } finally {
                                             setDeletingPanelId(null)
                                         }
@@ -739,10 +740,10 @@ export function PanelsSection({
                                             if (res.success) {
                                                 onRefresh()
                                             } else {
-                                                alert(res.error || "Не вдалося видалити кандидата")
+                                                toast.error(res.error || t("panels.deleteCandidateError"))
                                             }
                                         } catch (err: any) {
-                                            alert(err.message || "Помилка при видаленні зразка")
+                                            toast.error(err.message || t("panels.deleteCandidateErrorGeneric"))
                                         } finally {
                                             setDeletingCandidateId(null)
                                         }

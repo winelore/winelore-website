@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n/context"
 import { Plus, Calendar, Settings, Layers, CheckCircle2, Pencil, ChevronDown, ChevronUp } from "lucide-react"
 import Cookies from "js-cookie"
-import TemplateCreatorModal, { PROPERTY_TYPE_LABELS } from "./TemplateCreatorModal"
+import TemplateCreatorModal, { getPropertyTypeLabel } from "./TemplateCreatorModal"
 import { useSearchParams } from "next/navigation"
 import { ListPageShell, ListPageHeader, StateCard } from "@/components/list"
 
@@ -180,7 +180,7 @@ export default function TemplatesClientView({ initialTemplates, totalCount, hasE
                                         <button
                                             onClick={(e) => handleOpenEditModal(e, template.id)}
                                             className="p-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-150 text-slate-500 hover:text-indigo-600 rounded-xl transition-all cursor-pointer group shadow-xs"
-                                            title="Редагувати темплейт"
+                                            title={t("templatesPage.editTemplate")}
                                         >
                                             <Pencil className="w-4 h-4 transition-transform group-hover:scale-105" />
                                         </button>
@@ -222,10 +222,10 @@ export default function TemplatesClientView({ initialTemplates, totalCount, hasE
                                                                 </div>
                                                                 <div className="flex items-center gap-1.5 shrink-0">
                                                                     <span className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60">
-                                                                        {PROPERTY_TYPE_LABELS[prop.type] || prop.type}
+                                                                        {getPropertyTypeLabel(prop.type, t)}
                                                                     </span>
                                                                     {prop.isRequired && (
-                                                                        <span className="text-rose-500 font-bold" title="Обов'язкове">*</span>
+                                                                        <span className="text-rose-500 font-bold" title={t("common.required")}>*</span>
                                                                     )}
                                                                 </div>
                                                             </div>

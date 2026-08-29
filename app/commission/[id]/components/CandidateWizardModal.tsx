@@ -692,7 +692,7 @@ export function CandidateWizardModal({
                                     <div className="bg-white/80 p-2.5 rounded-xl border border-indigo-50">
                                         <span className="text-[10px] text-slate-400 block">{t("panels.wizard.sampleStep")}</span>
                                         <span className="font-bold text-slate-800 truncate block">
-                                            {selectedSample?.volumeMl ? `${selectedSample.volumeMl} мл` : t("panels.wizard.selected")}
+                                            {selectedSample?.volumeMl ? `${selectedSample.volumeMl} ml` : t("panels.wizard.selected")}
                                         </span>
                                     </div>
                                     <div className="bg-white/80 p-2.5 rounded-xl border border-indigo-50">

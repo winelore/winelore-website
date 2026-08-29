@@ -17,7 +17,7 @@ async function rawGraphQL(query: string, variables?: Record<string, any>) {
     try {
         json = JSON.parse(text);
     } catch {
-        throw new Error(`GraphQL server error (${res.status}): Некоректна відповідь сервера`);
+        throw new Error(`GraphQL server error (${res.status}): Invalid server response`);
     }
     if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
     return json.data;

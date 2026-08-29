@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { usePathname, useRouter } from "next/navigation"
 import {
     ArrowLeft,
@@ -48,6 +49,14 @@ import {
     type CompetitionExpertScoreRow,
 } from "../export/exportCompetitionResults"
 import { downloadCsv, sanitizeFilename } from "@/app/commission/[id]/results/exportResults"
+import {
+    ResultsTabBar,
+    CommissionSummaryTable,
+    ExpertScoresTable,
+    CommentsTable,
+    AwardsTable,
+    type ResultsTab,
+} from "@/components/competition-results"
 
 interface CommissionMeta {
     id: string
@@ -89,7 +98,7 @@ export default function CompetitionResultsClientView({
     initialData: CompetitionData
     initialCommissionId?: string | null
 }) {
-    const { t, locale, formatStatus, formatReplicaType } = useTranslation()
+    const { t, locale, formatReplicaType } = useTranslation()
     const router = useRouter()
     const pathname = usePathname()
 
@@ -113,7 +122,7 @@ export default function CompetitionResultsClientView({
     const [allResultsContext, setAllResultsContext] = useState<CompetitionExportContext | null>(null)
 
     // Active Tab View
-    const [activeTab, setActiveTab] = useState<"overview" | "commissions" | "expertScores" | "comments" | "awards">("overview")
+    const [activeTab, setActiveTab] = useState<ResultsTab>("overview")
 
     useEffect(() => {
         setSelectedCommissionFilter(initialCommissionId || "ALL")
@@ -203,7 +212,7 @@ export default function CompetitionResultsClientView({
         } catch (err: any) {
             console.error("[results] Failed to load competition results:", err)
             if (!isBackgroundRefresh) {
-                alert(err.message || "Failed to load competition results data")
+                toast.error(err.message || "Failed to load competition results data")
             }
         } finally {
             if (!isBackgroundRefresh) {
@@ -283,7 +292,7 @@ export default function CompetitionResultsClientView({
             await downloadCompetitionResultsXlsx(resultsContext, filename)
         } catch (err: any) {
             console.error("Excel export error:", err)
-            alert(err.message || "Failed to export Excel file")
+            toast.error(err.message || "Failed to export Excel file")
         } finally {
             setIsExporting(false)
             setExportProgress("")
@@ -299,7 +308,7 @@ export default function CompetitionResultsClientView({
             downloadCsv(csv, filename)
         } catch (err: any) {
             console.error("CSV export error:", err)
-            alert(err.message || "Failed to export CSV file")
+            toast.error(err.message || "Failed to export CSV file")
         }
     }
 
@@ -363,7 +372,7 @@ export default function CompetitionResultsClientView({
     }
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50/50 font-sans">
+        <div className="flex min-h-screen flex-col bg-slate-50/50">
             <div className="print:hidden">
                 <AppHeader activeTab="competitions" />
             </div>
@@ -558,58 +567,17 @@ export default function CompetitionResultsClientView({
                         {/* Filters & Tabs Header */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                             {/* View Switcher Tabs */}
-                            <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-                                <button
-                                    onClick={() => setActiveTab("overview")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                                        activeTab === "overview"
-                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                    }`}
-                                >
-                                    {t("commission.results.finalOverview")} ({resultsContext ? filteredOverviewRows.length : 0})
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("commissions")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                                        activeTab === "commissions"
-                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                    }`}
-                                >
-                                    {t("competition.commissionsBreakdown")} ({resultsContext ? resultsContext.commissionSummaryRows.length : 0})
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("expertScores")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                                        activeTab === "expertScores"
-                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                    }`}
-                                >
-                                    Expert Scores ({resultsContext ? resultsContext.expertScoreRows.length : 0})
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("comments")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                                        activeTab === "comments"
-                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                    }`}
-                                >
-                                    Comments ({resultsContext ? resultsContext.commentRows.length : 0})
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("awards")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                                        activeTab === "awards"
-                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                    }`}
-                                >
-                                    {t("commission.results.awards")} ({resultsContext ? resultsContext.awardRows.length : 0})
-                                </button>
-                            </div>
+                            <ResultsTabBar
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                                counts={{
+                                    overview: resultsContext ? filteredOverviewRows.length : 0,
+                                    commissions: resultsContext ? resultsContext.commissionSummaryRows.length : 0,
+                                    expertScores: resultsContext ? resultsContext.expertScoreRows.length : 0,
+                                    comments: resultsContext ? resultsContext.commentRows.length : 0,
+                                    awards: resultsContext ? resultsContext.awardRows.length : 0,
+                                }}
+                            />
 
                             {/* Search & Commission Selector */}
                             <div className="flex items-center gap-3 flex-wrap">
@@ -652,7 +620,7 @@ export default function CompetitionResultsClientView({
                             </div>
                         ) : !resultsContext ? (
                             <div className="text-center py-16 text-slate-400 text-xs font-medium">
-                                No competition results available.
+                                {t("commission.results.noResultsData")}
                             </div>
                         ) : (
                             <>
@@ -664,10 +632,10 @@ export default function CompetitionResultsClientView({
                                                 <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
                                                     <th className="p-3 w-8"></th>
                                                     <th className="p-3">{t("commission.results.rank")}</th>
-                                                    <th className="p-3">Commission</th>
+                                                    <th className="p-3">{t("commission.results.commissionColumn")}</th>
                                                     <th className="p-3">{t("commission.results.candidateCode")}</th>
                                                     <th className="p-3">{t("commission.results.codeBeverage")}</th>
-                                                    <th className="p-3">Type</th>
+                                                    <th className="p-3">{t("commission.results.typeColumn")}</th>
                                                     <th className="p-3">{t("commission.results.producer")}</th>
                                                     {resultsContext.outcomePropertyCodes.map((code) => (
                                                         <th key={code} className="p-3 text-center">
@@ -681,7 +649,7 @@ export default function CompetitionResultsClientView({
                                                 {filteredOverviewRows.length === 0 ? (
                                                     <tr>
                                                         <td colSpan={8 + resultsContext.outcomePropertyCodes.length} className="p-8 text-center text-slate-400">
-                                                            No matching candidates found.
+                                                            {t("commission.results.noMatchingCandidates")}
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -881,169 +849,20 @@ export default function CompetitionResultsClientView({
                                     </div>
                                 )}
 
-                                {/* TAB 2: COMMISSIONS BREAKDOWN */}
                                 {activeTab === "commissions" && (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs border-collapse">
-                                            <thead>
-                                                <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-                                                    <th className="p-3">Commission Name</th>
-                                                    <th className="p-3">Status</th>
-                                                    <th className="p-3 text-center">Candidates Count</th>
-                                                    <th className="p-3 text-center">Replicas Count</th>
-                                                    <th className="p-3 text-center">Awards Granted</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                                                {resultsContext.commissionSummaryRows.map((row) => (
-                                                    <tr key={row.commissionId} className="hover:bg-slate-50/60 transition-colors">
-                                                        <td className="p-3 font-bold text-slate-800">{row.commissionName}</td>
-                                                        <td className="p-3">
-                                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                                                {formatStatus(row.status)}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-3 text-center font-bold text-slate-900">{row.candidateCount}</td>
-                                                        <td className="p-3 text-center font-semibold text-slate-600">{row.replicaCount}</td>
-                                                        <td className="p-3 text-center font-bold text-amber-600">{row.awardsCount}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <CommissionSummaryTable rows={resultsContext.commissionSummaryRows} />
                                 )}
 
-                                {/* TAB 3: EXPERT SCORES */}
                                 {activeTab === "expertScores" && (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs border-collapse">
-                                            <thead>
-                                                <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-                                                    <th className="p-3">Commission</th>
-                                                    <th className="p-3">Code</th>
-                                                    <th className="p-3">Beverage</th>
-                                                    <th className="p-3">Replica</th>
-                                                    <th className="p-3">Evaluator</th>
-                                                    <th className="p-3">Scores Overview</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                                                {resultsContext.expertScoreRows.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={6} className="p-8 text-center text-slate-400">
-                                                            No individual expert scores available.
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    resultsContext.expertScoreRows.slice(0, 100).map((row, i) => (
-                                                        <tr key={`score-${i}`} className="hover:bg-slate-50/60 transition-colors">
-                                                            <td className="p-3 font-semibold text-indigo-600">{row.commissionName}</td>
-                                                            <td className="p-3 font-bold text-slate-900">{row.code}</td>
-                                                            <td className="p-3 font-semibold text-slate-800">{row.beverage}</td>
-                                                            <td className="p-3 text-slate-600">{row.replicaName}</td>
-                                                            <td className="p-3 text-slate-600">{resolvePersonName(row.evaluator)}</td>
-                                                            <td className="p-3">
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {Object.entries(row.scores).map(([k, v]) => (
-                                                                        <span key={k} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-mono">
-                                                                            {k}: {v}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                        {resultsContext.expertScoreRows.length > 100 && (
-                                            <div className="p-3 text-center text-[10px] text-slate-400 font-semibold bg-slate-50 border-t border-slate-100">
-                                                Showing first 100 entries in web preview. All {resultsContext.expertScoreRows.length} entries included in full Excel download.
-                                            </div>
-                                        )}
-                                    </div>
+                                    <ExpertScoresTable rows={resultsContext.expertScoreRows} resolvePersonName={resolvePersonName} />
                                 )}
 
-                                {/* TAB 4: COMMENTS */}
                                 {activeTab === "comments" && (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs border-collapse">
-                                            <thead>
-                                                <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-                                                    <th className="p-3">Commission</th>
-                                                    <th className="p-3">Code</th>
-                                                    <th className="p-3">Beverage</th>
-                                                    <th className="p-3">Evaluator</th>
-                                                    <th className="p-3">Property</th>
-                                                    <th className="p-3">Comment Text</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                                                {resultsContext.commentRows.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={6} className="p-8 text-center text-slate-400">
-                                                            No comments found.
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    resultsContext.commentRows.map((row, i) => (
-                                                        <tr key={`comment-${i}`} className="hover:bg-slate-50/60 transition-colors">
-                                                            <td className="p-3 font-semibold text-indigo-600">{row.commissionName}</td>
-                                                            <td className="p-3 font-bold text-slate-900">{row.code}</td>
-                                                            <td className="p-3 font-semibold text-slate-800">{row.beverage}</td>
-                                                            <td className="p-3 text-slate-600">{resolvePersonName(row.evaluator)}</td>
-                                                            <td className="p-3 font-semibold text-slate-500">{row.property}</td>
-                                                            <td className="p-3 text-slate-800">
-                                                                {row.commentText && <div>{row.commentText}</div>}
-                                                                {row.voiceUrl && (
-                                                                    <audio controls src={row.voiceUrl} className="h-8 w-full max-w-xs mt-1" />
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <CommentsTable rows={resultsContext.commentRows} resolvePersonName={resolvePersonName} />
                                 )}
 
-                                {/* TAB 5: AWARDS */}
                                 {activeTab === "awards" && (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs border-collapse">
-                                            <thead>
-                                                <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-                                                    <th className="p-3">Commission</th>
-                                                    <th className="p-3">Code</th>
-                                                    <th className="p-3">Beverage</th>
-                                                    <th className="p-3">Producer</th>
-                                                    <th className="p-3">Award Name</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                                                {resultsContext.awardRows.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={5} className="p-8 text-center text-slate-400">
-                                                            No awards registered for candidates.
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    resultsContext.awardRows.map((row, i) => (
-                                                        <tr key={`award-${i}`} className="hover:bg-slate-50/60 transition-colors">
-                                                            <td className="p-3 font-semibold text-indigo-600">{row.commissionName}</td>
-                                                            <td className="p-3 font-bold text-slate-900">{row.code}</td>
-                                                            <td className="p-3 font-semibold text-slate-800">{row.beverage}</td>
-                                                            <td className="p-3 text-slate-600">{resolvePersonName(row.producer)}</td>
-                                                            <td className="p-3 font-bold text-amber-600 flex items-center gap-1.5">
-                                                                <Award className="w-4 h-4 text-amber-500" />
-                                                                {row.awardName}
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <AwardsTable rows={resultsContext.awardRows} resolvePersonName={resolvePersonName} />
                                 )}
                             </>
                         )}

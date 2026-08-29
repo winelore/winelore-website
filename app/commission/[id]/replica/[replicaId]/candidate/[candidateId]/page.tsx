@@ -184,13 +184,6 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     processAttributes(beverage?.attributes, evalVisibleAttr.beverage);
     processAttributes(batch?.attributes, evalVisibleAttr.batch);
     processAttributes(sample?.attributes, evalVisibleAttr.sample);
-    console.log("[DEBUG attributes] final visibleAttributes:", JSON.stringify(visibleAttributes));
-
-    const mockVisibleAttributes = [
-        { label: "vintage", value: "2021" },
-        { label: "color", value: "Червоне" },
-        { label: "sugar", value: "Сухе" }
-    ];
 
     return (
         <CandidateEvaluationClientView
@@ -210,7 +203,6 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             propertyCommentsEnabled={commission.competition.propertyCommentsEnabled}
             voiceCommentsEnabled={commission.competition.voiceCommentsEnabled}
             visibleAttributes={visibleAttributes}
-            // visibleAttributes={mockVisibleAttributes}
         />
     )
 }
