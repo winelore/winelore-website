@@ -17,7 +17,11 @@ interface EntityCardLinkProps {
 }
 
 export function EntityCardLink({ href, padding = "comfortable", layout = "column", className = "", children }: EntityCardLinkProps) {
-    const layoutClass = layout === "row" ? "flex items-center gap-4" : "flex flex-col min-h-[140px]"
+    // Only the roomier list cards get a height floor; on the dashboard the
+    // bento is already tight, and a floor there just opens a gap under a card
+    // that carries nothing but a title and one meta line.
+    const columnClass = padding === "dashboard" ? "flex flex-col" : "flex flex-col min-h-[140px]"
+    const layoutClass = layout === "row" ? "flex items-center gap-4" : columnClass
 
     if (padding === "dashboard") {
         return (

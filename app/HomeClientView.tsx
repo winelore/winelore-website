@@ -1,143 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { FileText, Trophy, Wine, User, Layers, CheckCircle, ChevronRight, Activity, ClipboardList, Timer } from "lucide-react"
+import { FileText, Trophy, Wine, CheckCircle, ChevronRight, Activity, ClipboardList } from "lucide-react"
 import { AppHeader } from "@/components/AppHeader"
-import { AvatarPlaceholder } from "@/components/AvatarPlaceholder"
-import { StatusBadge, commissionStatusAppearance, EntityCardLink, BeverageCard } from "@/components/list"
-import { formatTimeRemaining, competitionStatusTextColor } from "@/lib/competitionTiming"
+import { EntityCardLink, BeverageCard, CompetitionCard, CommissionCard } from "@/components/list"
 import { useTranslation } from "@/lib/i18n/context"
-import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
-
-function CompetitionCard({ competition, usernames }: { competition: any; usernames: Record<string, string> }) {
-    const [isMounted, setIsMounted] = useState(false)
-    const { t, formatStatus } = useTranslation()
-
-    useEffect(() => {
-        setIsMounted(true)
-    }, [])
-
-    const timeRemaining = formatTimeRemaining(
-        competition.plannedStartAt,
-        competition.plannedEndAt ?? null,
-        competition.status,
-        t
-    )
-
-    return (
-        <EntityCardLink href={`/competition/${competition.id}`} padding="dashboard">
-            <div className="flex items-start gap-3">
-                <AvatarPlaceholder className="h-10 w-10 shrink-0" />
-                <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
-                        {competition.name}
-                    </h3>
-                    <p className="text-xs mt-1">
-                        <span className={`font-medium ${competitionStatusTextColor(competition.status)}`}>
-                            {formatStatus(competition.status)}
-                        </span>
-                        {isMounted && timeRemaining && <span className="text-slate-400"> | {timeRemaining}</span>}
-                    </p>
-                </div>
-            </div>
-            {competition.description && (
-                <p className="mt-3 text-xs leading-relaxed text-slate-500 line-clamp-2">
-                    <TranslatedText text={competition.description} />
-                </p>
-            )}
-            
-            <div className="mt-auto pt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
-                {competition.series?.name && (
-                    <div className="flex items-center gap-1.5">
-                        <Layers className="h-3.5 w-3.5" />
-                        <span>{competition.series.name}</span>
-                    </div>
-                )}
-                {competition.holder && competition.holder.length > 0 && (
-                    <div className="flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5" />
-                        <span>{t("dashboard.holderId", { ids: competition.holder.map((id: number) => usernames[id] || String(id)).join(", ") })}</span>
-                    </div>
-                )}
-            </div>
-        </EntityCardLink>
-    )
-}
-
-function CommissionCard({ commission }: { commission: any }) {
-    const [timeStr, setTimeStr] = useState<string>("")
-    const { t, formatStatus } = useTranslation()
-    const { colorScheme, icon } = commissionStatusAppearance(commission.status)
-
-    useEffect(() => {
-        let intervalId: NodeJS.Timeout;
-
-        const updateTime = () => {
-            if (commission.status === "STARTED" && commission.startedAt) {
-                const start = new Date(commission.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
-                setTimeStr(`${time} ${seconds}s`)
-            } else if (commission.status === "COMPLETED" && commission.startedAt && commission.endedAt) {
-                const start = new Date(commission.startedAt).getTime()
-                const end = new Date(commission.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
-                setTimeStr(t("time.lasted", { time }))
-            } else {
-                setTimeStr("")
-            }
-        }
-
-        updateTime()
-
-        if (commission.status === "STARTED") {
-            intervalId = setInterval(updateTime, 1000)
-        }
-
-        return () => clearInterval(intervalId)
-    }, [commission.status, commission.startedAt, commission.endedAt, t])
-
-    return (
-        <EntityCardLink href={`/commission/${commission.id}`} padding="dashboard">
-            <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                    <Activity className="h-6 w-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 truncate block">
-                        {commission.competition?.name}
-                    </span>
-                    <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
-                        {commission.name}
-                    </h3>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-auto pt-4">
-                <StatusBadge
-                    colorScheme={colorScheme}
-                    icon={icon}
-                    label={formatStatus(commission.status)}
-                    trailing={timeStr || undefined}
-                    trailingIcon={Timer}
-                />
-            </div>
-        </EntityCardLink>
-    )
-}
 
 function TemplateCard({ template }: { template: any }) {
     return (
@@ -187,8 +56,13 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                 c.holder.forEach((id: number) => ids.add(String(id)))
             }
         })
+        recentBeverages.forEach(bev => {
+            (bev.producers || []).forEach((producer: any) => {
+                (producer.auid || []).forEach((id: number) => ids.add(String(id)))
+            })
+        })
         return Array.from(ids)
-    }, [recentCompetitions])
+    }, [recentCompetitions, recentBeverages])
 
     const { usernames } = useUsernames(auidsToFetch)
     const { t } = useTranslation()
@@ -227,9 +101,9 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                             
                             {myCommissions.length > 0 ? (
                                 <div className="bg-white border border-slate-100 rounded-[32px] p-4 shadow-sm h-full flex flex-col">
-                                    <div className="grid gap-3 sm:grid-cols-2 flex-1">
+                                    <div className="grid gap-3 sm:grid-cols-2 content-start flex-1">
                                         {myCommissions.slice(0, 8).map(comm => (
-                                            <CommissionCard key={comm.id} commission={comm} />
+                                            <CommissionCard key={comm.id} commission={comm} density="dashboard" />
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
@@ -289,9 +163,9 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                             
                             {recentCompetitions.length > 0 ? (
                                 <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-sm h-full flex flex-col">
-                                    <div className="grid gap-4 sm:grid-cols-2 flex-1">
+                                    <div className="grid gap-4 sm:grid-cols-2 content-start flex-1">
                                         {recentCompetitions.slice(0, 8).map(comp => (
-                                            <CompetitionCard key={comp.id} competition={comp} usernames={usernames} />
+                                            <CompetitionCard key={comp.id} competition={comp} usernames={usernames} density="dashboard" />
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
@@ -322,7 +196,7 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                                 <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-sm h-full flex flex-col">
                                     <div className="flex flex-col gap-4 flex-1">
                                         {recentBeverages.slice(0, 8).map(bev => (
-                                            <BeverageCard key={bev.id} beverage={bev} typeMap={beverageTypesMap} density="dashboard" />
+                                            <BeverageCard key={bev.id} beverage={bev} typeMap={beverageTypesMap} usernames={usernames} density="dashboard" />
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">

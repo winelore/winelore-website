@@ -82,6 +82,8 @@ const hu = {
         errorDescription: "Nem sikerült betölteni az italok listáját. Kérjük, frissítse az oldalt.",
         emptyTitle: "Nincsenek italok",
         emptyDescription: "Még nincsenek itt italok.",
+        origin: "Származás:",
+        producer: "Termelő:",
     },
     myBeverages: {
         title: "Saját italok",

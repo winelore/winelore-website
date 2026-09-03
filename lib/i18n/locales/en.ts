@@ -82,6 +82,8 @@ const en = {
     errorDescription: "Failed to load the list of beverages. Please try refreshing the page.",
     emptyTitle: "No beverages",
     emptyDescription: "There are no beverages here yet.",
+    origin: "Origin:",
+    producer: "Producer:",
   },
   myBeverages: {
     title: "My Beverages",

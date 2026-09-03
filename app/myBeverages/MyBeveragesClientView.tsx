@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Wine } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
+import { useUsernames } from "@/hooks/useUsernames"
 import { ListPageShell, ListPageHeader, Pagination, StateCard, BeverageCard } from "@/components/list"
 
 // ====================================================================
@@ -46,6 +47,12 @@ export default function MyBeveragesClientView({ initialData, beverageTypesMap, c
     const pathname = usePathname()
     const [isLoading, setIsLoading] = useState(false)
 
+    const allProducerAuids = useMemo(
+        () => Array.from(new Set(initialData.beverages.flatMap((bev) => (bev.producers || []).flatMap((p) => p.auid || [])))),
+        [initialData.beverages],
+    )
+    const { usernames } = useUsernames(allProducerAuids)
+
     const handleJumpToPage = (pageNumber: number) => {
         setIsLoading(true)
         router.push(`${pathname}?page=${pageNumber}`)
@@ -69,7 +76,7 @@ export default function MyBeveragesClientView({ initialData, beverageTypesMap, c
                 )}
 
                 {!hasError && initialData.beverages.map((bev) => (
-                    <BeverageCard key={bev.id} beverage={bev} typeMap={beverageTypesMap} />
+                    <BeverageCard key={bev.id} beverage={bev} typeMap={beverageTypesMap} usernames={usernames} />
                 ))}
 
                 {!hasError && initialData.beverages.length === 0 && (

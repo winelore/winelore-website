@@ -74,7 +74,9 @@ function SectionHeader({ step, title, icon: Icon, hint, badge }: {
     badge?: string;
 }) {
     return (
-        <div className="flex items-start gap-3">
+        // A single-line header centres against the icon tile; a two-line one
+        // (title + hint) hangs from the top instead, or the tile drifts low.
+        <div className={`flex gap-3 ${hint ? 'items-start' : 'items-center'}`}>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600">
                 <Icon className="h-4.5 w-4.5" />
             </div>

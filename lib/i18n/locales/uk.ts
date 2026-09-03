@@ -84,6 +84,8 @@ const uk: TranslationKey = {
     errorDescription: "Не вдалося завантажити список напоїв. Спробуйте оновити сторінку.",
     emptyTitle: "Немає напоїв",
     emptyDescription: "Тут ще немає жодного напою.",
+    origin: "Походження:",
+    producer: "Виробник:",
   },
   myBeverages: {
     title: "Мої напої",

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Wine } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { useRouter, usePathname } from "next/navigation"
+import { useUsernames } from "@/hooks/useUsernames"
 import { ListPageShell, ListPageHeader, Pagination, StateCard, BeverageCard } from "@/components/list"
 
 interface DashboardProps {
@@ -53,6 +54,12 @@ export default function BeveragesClientView({
 
     const beveragesToDisplay = initialBeverages || []
 
+    const allProducerAuids = useMemo(
+        () => Array.from(new Set(beveragesToDisplay.flatMap((bev) => (bev.producers || []).flatMap((p: any) => p.auid || [])))),
+        [beveragesToDisplay],
+    )
+    const { usernames } = useUsernames(allProducerAuids)
+
     useEffect(() => {
         setIsLoading(false)
     }, [initialBeverages])
@@ -70,6 +77,7 @@ export default function BeveragesClientView({
                         key={bev.id}
                         beverage={bev}
                         typeMap={beverageTypesMap}
+                        usernames={usernames}
                         density="compact"
                     />
                 ))}

@@ -1,6 +1,15 @@
 import type { LucideIcon } from "lucide-react"
 import { AlertCircle, Calendar, CheckCircle, PlayCircle, Tag } from "lucide-react"
-import type { StatusColorScheme } from "./StatusBadge"
+
+export type StatusColorScheme = "emerald" | "rose" | "amber" | "slate"
+
+/** Text tone per scheme — the status reads as a line of card copy, not a chip. */
+export const STATUS_TEXT_CLASSES: Record<StatusColorScheme, string> = {
+    emerald: "text-emerald-600",
+    rose: "text-rose-600",
+    amber: "text-amber-600",
+    slate: "text-slate-500",
+}
 
 export interface StatusAppearance {
     colorScheme: StatusColorScheme
