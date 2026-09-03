@@ -77,7 +77,7 @@ export async function proxy(request: NextRequest) {
       response.cookies.set("username", String(refreshed.username), { ...cookieOptions, maxAge: refreshed.expiresIn });
       response.cookies.set("displayName", String(refreshed.displayName), { ...cookieOptions, maxAge: refreshed.expiresIn });
       response.cookies.set("axus_access_token", refreshed.accessToken, { ...cookieOptions, httpOnly: true, maxAge: refreshed.expiresIn });
-      response.cookies.set("axus_refresh_token", refreshed.refreshToken, { ...cookieOptions, httpOnly: true, maxAge: 60 * 60 * 24 * 30 });
+      response.cookies.set("axus_refresh_token", refreshed.refreshToken, { ...cookieOptions, httpOnly: true, maxAge: refreshed.refreshTokenExpiresIn });
 
       return response;
     } catch (error) {
