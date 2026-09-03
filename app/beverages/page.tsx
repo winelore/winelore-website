@@ -1,6 +1,7 @@
-import { sdk } from '@/lib/apiClient';
+import { fetchGraphQL } from '@/lib/apiClient';
 import BeveragesClientView from './BeveragesClientView';
-import { getBeverageTypesAction } from '@/app/templates/actions';
+import { getBeverageTypesAction } from '@/app/myTemplates/actions';
+import { GET_BEVERAGES } from './queries';
 
 
 export const dynamic = "force-dynamic"
@@ -20,7 +21,7 @@ export default async function DashboardPage({
     let hasError = false;
 
     try {
-        const bevData = await sdk.GetMyBeverages({ limit: LIMIT, offset: (currentPage - 1) * LIMIT });
+        const bevData = await fetchGraphQL(GET_BEVERAGES, { limit: LIMIT, offset: (currentPage - 1) * LIMIT });
         const rawBeverages = bevData.beverages?.items || [];
         totalCount = bevData.beverageCount || 0;
 

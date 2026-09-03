@@ -55,8 +55,8 @@ export function EditCandidateCodeModal({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-md overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-2xl animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up">
                 <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-2.5">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/60">

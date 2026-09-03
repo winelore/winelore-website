@@ -840,6 +840,17 @@ export default function EvaluationForm({
 
                                                             return (
                                                                 <div className="w-full flex flex-col">
+                                                                    {!hasValue && (
+                                                                        <div className="flex items-center gap-1.5 self-end mb-1">
+                                                                            <span
+                                                                                title={t("evaluation.notRatedHint")}
+                                                                                className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase tracking-wide"
+                                                                            >
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                                {t("evaluation.notRated")}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="flex items-center gap-3 w-full">
                                                                         <div
                                                                             className={`flex-1 relative flex flex-col ${showSliderTicks ? "pb-5" : "py-1"}`}>
@@ -870,7 +881,7 @@ export default function EvaluationForm({
                                                                                     setNumericErrors(prev => ({...prev, [prop.code]: null}))
                                                                                     handleValueChange(prop.code, normalizeNumericValue(val[0]))
                                                                                 }}
-                                                                                className={`cursor-pointer relative z-10 transition-opacity ${!hasValue ? "opacity-50 [&_[role=slider]]:opacity-0" : ""}`}
+                                                                                className={`cursor-pointer relative z-10 transition-opacity ${!hasValue ? "opacity-60 [&_[role=slider]]:opacity-0 [&_[data-slot=slider-track]]:bg-amber-200/70" : ""}`}
                                                                             />
                                                                         </div>
                                                                         <input
@@ -882,7 +893,7 @@ export default function EvaluationForm({
                                                                             value={inputDisplayValue}
                                                                             onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
                                                                             onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
-                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
+                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : !hasValue ? "border-dashed border-amber-400 bg-amber-50 text-amber-600 placeholder:text-amber-400" : "border-slate-200 bg-white text-slate-800"}`}
                                                                             placeholder={t("evaluation.val")}
                                                                         />
                                                                     </div>

@@ -24,7 +24,7 @@ function loadEnv() {
 }
 loadEnv();
 
-const schemaUrl = process.env.CODEGEN_GRAPHQL_SCHEMA || process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || process.env.GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+const schemaUrl = process.env.CODEGEN_GRAPHQL_SCHEMA || process.env.GRAPHQL_ENDPOINT || process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'https://winelore-dev.thewinelore.com/graphql';
 
 const config: CodegenConfig = {
     generates: {

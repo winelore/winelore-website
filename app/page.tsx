@@ -1,6 +1,6 @@
 import { sdk, fetchGraphQL } from '@/lib/apiClient';
 import HomeClientView from './HomeClientView';
-import { getBeverageTypesAction, getEvaluationTemplatesAction } from '@/app/templates/actions';
+import { getBeverageTypesAction, getEvaluationTemplatesAction } from '@/app/myTemplates/actions';
 import { cookies } from "next/headers";
 import { GET_MY_COMPETITIONS } from "@/app/myCompetitions/queries";
 import { GET_COMMISSIONS } from "@/app/queries";

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
     FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
-    Save, Search, ChevronRight, Sliders, Trash2, ArrowLeft, Loader2, UserPlus, Settings, ExternalLink, Send
+    Save, Search, ChevronRight, Sliders, Trash2, Loader2, UserPlus, Settings, ExternalLink, Send
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -42,19 +42,11 @@ import {
     setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
     setCommissionTemplateAction,
 } from "../actions"
-import { getEvaluationTemplatesAction } from "@/app/templates/actions"
+import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
-
-const formatEnumStatus = (status: string | undefined): string => {
-    if (!status) return ""
-    return status
-        .toLowerCase()
-        .split("_")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
-}
+import { BackLink } from "@/components/BackLink"
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -239,7 +231,7 @@ function EvaluationTemplatesBlock({
     canEdit: boolean,
     onRefresh: () => void
 }) {
-    const { t } = useTranslation()
+    const { t, tCount, formatStatus } = useTranslation()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedBeverageType, setSelectedBeverageType] = useState<BeverageType | null>(null)
 
@@ -283,10 +275,10 @@ function EvaluationTemplatesBlock({
                 setIsModalOpen(false)
                 onRefresh()
             } else {
-                toast.error(t("commission.templateAssignError" as any) || res.error)
+                toast.error(t("commission.templateAssignError") || res.error)
             }
         } catch (e) {
-            toast.error(t("commission.templateAssignError" as any))
+            toast.error(t("commission.templateAssignError"))
         } finally {
             setIsAssigning(false)
         }
@@ -305,10 +297,10 @@ function EvaluationTemplatesBlock({
                     </div>
                     <div>
                         <h3 className="text-sm font-bold tracking-tight text-slate-800">
-                            {t("commission.evaluationTemplates" as any) || "Evaluation Templates"}
+                            {t("commission.evaluationTemplates")}
                         </h3>
                         <p className="text-[10px] text-slate-400 font-medium">
-                            {t("commission.evaluationTemplatesSubtitle" as any) || "One template per beverage type"}
+                            {t("commission.evaluationTemplatesSubtitle")}
                         </p>
                     </div>
                 </div>
@@ -319,7 +311,7 @@ function EvaluationTemplatesBlock({
                         className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
                     >
                         <Plus className="w-4 h-4" />
-                        <span>{t("commission.assignTemplate" as any) || "Assign Template"}</span>
+                        <span>{t("commission.assignTemplate")}</span>
                     </button>
                 )}
             </div>
@@ -348,7 +340,7 @@ function EvaluationTemplatesBlock({
                                             onClick={() => handleOpenCatalog(bevType)}
                                             className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                                         >
-                                            {isAssigned ? (t("commission.changeTemplate" as any) || "Change") : (t("commission.assignTemplate" as any) || "Assign Template")}
+                                            {isAssigned ? (t("commission.changeTemplate")) : (t("commission.assignTemplate"))}
                                         </button>
                                     )}
                                 </div>
@@ -356,13 +348,13 @@ function EvaluationTemplatesBlock({
                                 {isAssigned && te ? (
                                     <div className="flex flex-col gap-2">
                                         <Link
-                                            href={`/templates?templateId=${te.template?.id}-${te.version}`}
+                                            href={`/myTemplates?templateId=${te.template?.id}-${te.version}`}
                                             target="_blank"
                                             className="group/link flex items-center gap-1.5 w-fit outline-none"
-                                            title="Open template details in new tab"
+                                            title={t("commission.openTemplateInNewTab")}
                                         >
                                             <span className="text-sm font-extrabold text-slate-800 group-hover/link:text-indigo-600 transition-colors">
-                                                {te.template?.name || "Standard Template"}
+                                                {te.template?.name || t("commission.standardTemplate")}
                                             </span>
                                             <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover/link:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-1 group-hover/link:translate-x-0" />
                                         </Link>
@@ -370,15 +362,15 @@ function EvaluationTemplatesBlock({
                                         <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
                                             <span className="bg-white border border-slate-200 shadow-sm px-1.5 py-0.5 rounded-md">v{te.version}</span>
                                             <span className="text-slate-300">•</span>
-                                            <span className="uppercase text-emerald-600">{formatEnumStatus(te.status)}</span>
+                                            <span className="uppercase text-emerald-600">{te.status ? formatStatus(te.status) : ""}</span>
                                             <span className="text-slate-300">•</span>
-                                            <span>{te.categories?.length || 0} Categories</span>
+                                            <span>{tCount("commission.categoriesCount", te.categories?.length || 0)}</span>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
                                         <AlertCircle className="w-5 h-5 mb-1 opacity-75" />
-                                        <span className="text-xs font-bold">{t("commission.noTemplateForType" as any) || "No template assigned"}</span>
+                                        <span className="text-xs font-bold">{t("commission.noTemplateForType")}</span>
                                     </div>
                                 )}
                             </div>
@@ -389,16 +381,16 @@ function EvaluationTemplatesBlock({
 
             {/* Modal Catalog */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in">
-                    <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+                    <div className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col">
 
                         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div>
-                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog" as any) || "Template Catalog"}</h2>
+                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog")}</h2>
                                 <p className="text-xs text-slate-500 mt-0.5">
                                     {selectedBeverageType
-                                        ? <>Selecting template for <strong className="text-indigo-600">{selectedBeverageType.name}</strong></>
-                                        : "Select a template from the catalog"
+                                        ? t("commission.selectingTemplateFor", { type: selectedBeverageType.name })
+                                        : t("commission.selectFromCatalog")
                                     }
                                 </p>
                             </div>
@@ -412,7 +404,7 @@ function EvaluationTemplatesBlock({
                                 <Search className="w-4 h-4 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder={t("commission.searchTemplates" as any) || "Search templates..."}
+                                    placeholder={t("commission.searchTemplates")}
                                     className="bg-transparent border-none outline-none text-sm w-full text-slate-700"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -424,12 +416,12 @@ function EvaluationTemplatesBlock({
                             {isCatalogLoading ? (
                                 <div className="flex flex-col items-center justify-center h-40 gap-3 text-indigo-500">
                                     <Loader2 className="w-8 h-8 animate-spin" />
-                                    <span className="text-sm font-bold">Loading catalog...</span>
+                                    <span className="text-sm font-bold">{t("commission.loadingCatalog")}</span>
                                 </div>
                             ) : paginatedCatalog.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                                     <FileText className="w-10 h-10 mb-2 opacity-50" />
-                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound" as any) || "No templates found"}</span>
+                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound")}</span>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
@@ -450,7 +442,7 @@ function EvaluationTemplatesBlock({
                                                         <div className="flex items-center gap-2 mt-1.5 text-[10px] font-semibold text-slate-500">
                                                             <span className="bg-slate-50 border px-1.5 py-0.5 rounded-md">v{ed.version}</span>
                                                             <span>•</span>
-                                                            <span>{ed.categories?.length || 0} Categories</span>
+                                                            <span>{tCount("commission.categoriesCount", ed.categories?.length || 0)}</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-3">
@@ -458,14 +450,14 @@ function EvaluationTemplatesBlock({
                                                             onClick={() => setExpandedTemplateId(isExpanded ? null : template.id)}
                                                             className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
                                                         >
-                                                            Preview <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                                            {t("common.preview")} <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                                                         </button>
                                                         <button
                                                             onClick={() => handleAssignTemplate(ed.id, template.beverageTypeId)}
                                                             disabled={isAssigning}
                                                             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
                                                         >
-                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate" as any) || "Apply")}
+                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate"))}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -475,7 +467,7 @@ function EvaluationTemplatesBlock({
                                                     <div className="px-6 pb-6 pt-4 border-t border-slate-50 bg-slate-50/15 max-h-[350px] overflow-y-auto">
                                                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
                                                             <Settings className="w-4 h-4 text-indigo-500" />
-                                                            {t("commission.templatePreview" as any) || "Structure Preview"}
+                                                            {t("commission.templatePreview")}
                                                         </h4>
 
                                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -497,8 +489,8 @@ function EvaluationTemplatesBlock({
                                                                                     <div className="flex flex-col min-w-0 flex-1 pr-3">
                                                                                         <span className="font-bold text-slate-700 truncate flex items-center gap-1.5">
                                                                                             {prop.name}
-                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title="Required">*</span>}
-                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">Result</span>}
+                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title={t("common.required")}>*</span>}
+                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">{t("commission.resultBadge")}</span>}
                                                                                         </span>
                                                                                         {prop.description && (
                                                                                             <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
@@ -546,7 +538,7 @@ function EvaluationTemplatesBlock({
                         {totalPages > 1 && (
                             <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
                                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                                    Page {currentPage} of {totalPages} <span className="text-slate-300 mx-1">|</span> {filteredCatalog.length} total
+                                    {t("common.pageOf", { current: currentPage, total: totalPages })} <span className="text-slate-300 mx-1">|</span> {t("common.itemsTotal", { count: filteredCatalog.length })}
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <button
@@ -554,14 +546,14 @@ function EvaluationTemplatesBlock({
                                         disabled={currentPage === 1}
                                         className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
                                     >
-                                        Previous
+                                        {t("common.previous")}
                                     </button>
                                     <button
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
                                         className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
                                     >
-                                        Next
+                                        {t("common.next")}
                                     </button>
                                 </div>
                             </div>
@@ -1207,13 +1199,10 @@ export default function CommissionClientView({
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl mb-4 flex justify-start">
-                    <Link
+                    <BackLink
                         href={initialData.competition?.id ? `/competition/${initialData.competition.id}` : "/myCommissions"}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
-                    </Link>
+                        label={initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
+                    />
                 </div>
                 {showMyTastingSummary && (
                     <div className="w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
@@ -1394,7 +1383,7 @@ export default function CommissionClientView({
                                                         <input
                                                             type="text"
                                                             autoFocus
-                                                            placeholder="Replica Name"
+                                                            placeholder={t("commission.replicaNamePlaceholder")}
                                                             className="text-xs font-semibold text-slate-900 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none flex-1 min-w-0"
                                                             value={editReplicaName}
                                                             onChange={e => setEditReplicaName(e.target.value)}
@@ -1410,7 +1399,7 @@ export default function CommissionClientView({
                                                             onClick={handleSaveReplica}
                                                             disabled={isMutating}
                                                             className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-                                                            title="Save"
+                                                            title={t("common.save")}
                                                         >
                                                             {isMutating ? (
                                                                 <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -1423,7 +1412,7 @@ export default function CommissionClientView({
                                                             onClick={() => setIsEditingReplica(false)}
                                                             disabled={isMutating}
                                                             className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors cursor-pointer"
-                                                            title="Cancel"
+                                                            title={t("competition.cancel")}
                                                         >
                                                             <X className="w-3.5 h-3.5" />
                                                         </button>
@@ -1458,7 +1447,7 @@ export default function CommissionClientView({
                                                         <div
                                                             onClick={(e) => openEditReplica(e, r)}
                                                             className="p-1 rounded cursor-pointer transition-colors ml-1 hover:bg-white/20 text-white/70 hover:text-white"
-                                                            title="Rename Replica"
+                                                            title={t("commission.renameReplica")}
                                                         >
                                                             <Pencil className="w-3.5 h-3.5" />
                                                         </div>
@@ -1650,7 +1639,7 @@ export default function CommissionClientView({
                                                 onClick={handleSaveName}
                                                 disabled={isMutating}
                                                 className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
-                                                title="Save"
+                                                title={t("common.save")}
                                             >
                                                 {isMutating ? (
                                                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -1663,7 +1652,7 @@ export default function CommissionClientView({
                                                 onClick={() => setIsEditingName(false)}
                                                 disabled={isMutating}
                                                 className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
-                                                title="Cancel"
+                                                title={t("competition.cancel")}
                                             >
                                                 <X className="w-4 h-4" />
                                             </button>
@@ -1677,7 +1666,7 @@ export default function CommissionClientView({
                                                 <button
                                                     onClick={openEditName}
                                                     className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                    title="Edit commission name"
+                                                    title={t("commission.editCommissionName")}
                                                 >
                                                     <Pencil className="w-4 h-4" />
                                                 </button>
@@ -1925,7 +1914,7 @@ export default function CommissionClientView({
                                                 onClick={handleSaveDates}
                                                 disabled={isMutating}
                                                 className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                                title="Save dates"
+                                                title={t("common.saveDates")}
                                             >
                                                 {isMutating ? (
                                                     <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -1939,7 +1928,7 @@ export default function CommissionClientView({
                                                 onClick={() => setIsEditingDates(false)}
                                                 disabled={isMutating}
                                                 className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                                                title="Cancel"
+                                                title={t("competition.cancel")}
                                             >
                                                 <X className="w-3.5 h-3.5" />
                                             </button>
@@ -1948,7 +1937,7 @@ export default function CommissionClientView({
                                         <button
                                             onClick={openEditDates}
                                             className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                            title="Edit planned dates"
+                                            title={t("common.editPlannedDates")}
                                         >
                                             <Pencil className="w-4 h-4" />
                                         </button>
@@ -2236,21 +2225,6 @@ export default function CommissionClientView({
                                 )}
                             </div>
                         </div>
-
-                        <style>{`
-                            @keyframes fadeInSlide {
-                                from {
-                                    opacity: 0;
-                                    transform: translateY(4px)                                 }
-                                to {
-                                    opacity: 1;
-                                    transform: translateY(0);
-                                }
-                            }
-                            .animate-fade-in-slide {
-                                animation: fadeInSlide 0.25s ease-out forwards;
-                            }
-                        `}</style>
                     </div>
 
                 </div>

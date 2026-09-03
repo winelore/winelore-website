@@ -1,16 +1,17 @@
 "use client"
 
+import { StatusPage } from "@/components/StatusPage"
 import { useTranslation } from "@/lib/i18n/context"
 
 export default function CommissionNotFound() {
     const { t } = useTranslation()
 
     return (
-        <div className="flex h-screen items-center justify-center bg-background text-foreground">
-            <div className="text-center">
-                <h2 className="text-3xl font-bold mb-2">{t("commission.notFoundTitle")}</h2>
-                <p className="text-muted-foreground">{t("commission.notFoundDescription")}</p>
-            </div>
-        </div>
+        <StatusPage
+            activeTab="none"
+            title={t("commission.notFoundTitle")}
+            description={t("commission.notFoundDescription")}
+            action={{ href: "/myCommissions", label: t("common.myCommissions") }}
+        />
     )
 }

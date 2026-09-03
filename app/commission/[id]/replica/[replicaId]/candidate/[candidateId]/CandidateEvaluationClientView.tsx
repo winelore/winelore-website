@@ -7,9 +7,10 @@ import Cookies from "js-cookie"
 import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
-import { MapPin, LayoutList, ArrowLeft, Tag, Wine } from "lucide-react"
+import { MapPin, LayoutList, Tag, Wine } from "lucide-react"
 import { getWaitDataAction } from "../../../../../actions"
 import { readCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
+import { BackLink } from "@/components/BackLink"
 
 interface EvaluationCategory {
   id: string
@@ -141,20 +142,18 @@ export default function CandidateEvaluationClientView({
   }, [commissionId, replicaId, candidateId, isRedirecting, isFormSubmitting, router])
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50/50">
       <AppHeader activeTab="competitions" />
 
         <main className="flex-1 overflow-auto pt-4 pb-8 px-4 flex justify-center">
             <div className="w-full max-w-[95vw] bg-white rounded-[32px] pt-4 pb-2 px-6 md:pt-5 md:pb-8 md:px-8 shadow-xl shadow-slate-200/50">
                 <header className="border-b border-slate-100 pb-3 mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <Link
+                        <BackLink
                             href={`/commission/${commissionId}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-semibold shadow-xs transition-all shrink-0 w-fit"
-                        >
-                            <ArrowLeft className="w-3.5 h-3.5" />
-                            {t("commission.backToCommission")}
-                        </Link>
+                            label={t("commission.backToCommission")}
+                            className="shrink-0"
+                        />
                         <div>
                             <div className="flex items-center gap-3 flex-wrap">
                                 <h1 className="text-xl font-extrabold text-slate-800">

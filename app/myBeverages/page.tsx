@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { getGeographicInfo } from "@/lib/geocoding"
 import { GET_MY_BEVERAGES } from "./queries"
+import { getBeverageTypesAction } from "@/app/myTemplates/actions"
 import MyBeveragesClientView from "./MyBeveragesClientView"
 
 export default async function MyBeveragesPage({ searchParams, }: { searchParams: Promise<{ page?: string }> }) {
@@ -76,9 +77,23 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
 
     const totalPages = Math.max(1, Math.ceil(totalCount / LIMIT));
 
+    // Same type dictionary the other beverage lists use, so the card kicker
+    // reads the beverage type rather than the raw colour attribute.
+    let beverageTypesDict: Record<string, string> = {};
+    try {
+        const typesList = await getBeverageTypesAction();
+        beverageTypesDict = typesList.reduce((acc, type) => {
+            acc[type.id] = type.code;
+            return acc;
+        }, {} as Record<string, string>);
+    } catch (e) {
+        console.error("Failed to load beverage types map:", e);
+    }
+
     return (
         <MyBeveragesClientView
             initialData={{ beverages: myBeverages }}
+            beverageTypesMap={beverageTypesDict}
             currentPage={currentPage}
             totalPages={totalPages}
             totalCount={totalCount}

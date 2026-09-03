@@ -5,7 +5,6 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { usePathname, useRouter } from "next/navigation"
 import {
-    ArrowLeft,
     AlertTriangle,
     CheckCircle,
     ChevronDown,
@@ -57,6 +56,7 @@ import {
     AwardsTable,
     type ResultsTab,
 } from "@/components/competition-results"
+import { BackLink } from "@/components/BackLink"
 
 interface CommissionMeta {
     id: string
@@ -380,15 +380,12 @@ export default function CompetitionResultsClientView({
             <main className="flex-1 p-4 md:p-8 lg:p-12">
                 <div className="max-w-7xl mx-auto flex flex-col gap-6">
                     <div className="flex flex-col gap-4 print:hidden">
-                        <Link
+                        <BackLink
                             href={selectedCommission ? `/commission/${selectedCommission.id}` : `/competition/${initialData.id}`}
-                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors w-fit"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            {selectedCommission
+                            label={selectedCommission
                                 ? t("commission.backToCommission")
                                 : t("commission.backToCompetition")}
-                        </Link>
+                        />
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-center gap-3 flex-wrap">

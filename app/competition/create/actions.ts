@@ -1,11 +1,13 @@
 'use server';
 
+import { getGraphQLEndpoint } from '@/lib/graphqlEndpoint';
+
 /**
  * Helper function to execute raw GraphQL queries/mutations directly on the backend.
  * Running this on the server side completely bypasses browser CORS restrictions.
  */
 async function executeGraphQL(query: string, variables: any) {
-    const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
+    const response = await fetch(getGraphQLEndpoint(), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -51,7 +53,7 @@ export async function getCompetitionSeriesCount(auid: number) {
   `;
 
     try {
-        const res = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!, {
+        const res = await fetch(getGraphQLEndpoint(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -93,14 +95,17 @@ export async function createCompetitionInfrastructure(formData: any) {
         `;
         let seriesId = formData.seriesId;
         if (!seriesId) {
+            const userAuid = formData.holders?.[0]?.[0];
             const seriesList = await getCompetitionSeriesListAction();
-            if (seriesList && seriesList.length > 0) {
-                const userAuid = formData.holders?.[0]?.[0];
-                const mySeries = userAuid ? seriesList.find((s: any) =>
-                    s.owners && s.owners.flat().includes(Number(userAuid))
-                ) : null;
-                seriesId = mySeries ? mySeries.id : seriesList[0].id;
+            const mySeries = userAuid ? seriesList?.find((s: any) =>
+                s.owners && s.owners.flat().includes(Number(userAuid))
+            ) : null;
+            if (mySeries) {
+                seriesId = mySeries.id;
             } else {
+                // No series owned by this holder (or no holder known yet) — create
+                // one rather than filing the competition under the first series
+                // found in the system, which would belong to someone else.
                 const createSeriesMutation = `
                     mutation CreateSeries($input: CreateCompetitionSeriesInput!) {
                         createCompetitionSeries(input: $input) { id }
@@ -148,6 +153,42 @@ export async function createCompetitionInfrastructure(formData: any) {
         return { success: true, competitionId };
     } catch (error: any) {
         console.error("Server Action Execution Error:", error);
+        return { success: false, error: error.message || "Internal Server Error" };
+    }
+}
+
+/**
+ * Creates a Competition Series owned by the given user. The create form offers
+ * this inline so a first-time organizer does not have to leave the page (or
+ * silently end up with an auto-generated "General Series" they never named).
+ */
+export async function createCompetitionSeriesAction(name: string, auid: number) {
+    try {
+        const trimmed = (name || "").trim().replace(/\s+/g, ' ');
+        if (!trimmed) {
+            return { success: false, error: "Series name is required." };
+        }
+
+        const createSeriesMutation = `
+            mutation CreateSeries($input: CreateCompetitionSeriesInput!) {
+                createCompetitionSeries(input: $input) { id name }
+            }
+        `;
+        const res = await executeGraphQL(createSeriesMutation, {
+            input: {
+                name: trimmed,
+                countriesType: "GLOBAL",
+                countriesCodes: [],
+                owners: [[auid]]
+            }
+        });
+
+        const id = res?.createCompetitionSeries?.id;
+        if (!id) throw new Error("Failed to create competition series.");
+
+        return { success: true, id, name: res.createCompetitionSeries.name as string };
+    } catch (error: any) {
+        console.error("Failed to create competition series:", error);
         return { success: false, error: error.message || "Internal Server Error" };
     }
 }

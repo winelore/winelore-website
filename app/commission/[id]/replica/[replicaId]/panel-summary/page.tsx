@@ -4,7 +4,7 @@ import React, { use, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react"
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import {
@@ -14,6 +14,7 @@ import {
 } from "../../../../actions"
 import { normalizeAuids } from "../../../../auidUtils"
 import WaitPanelResults from "../wait/WaitPanelResults"
+import { BackLink } from "@/components/BackLink"
 
 type PanelSummaryData = Awaited<ReturnType<typeof getWaitDataAction>>
 
@@ -121,7 +122,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50">
+            <div className="flex min-h-screen flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex flex-1 items-center justify-center p-6">
                     <div className="flex items-center gap-3 font-medium text-slate-500">
@@ -135,7 +136,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
 
     if (!data || !data.currentPanelId) {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50">
+            <div className="flex min-h-screen flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex flex-1 items-center justify-center p-6 text-center text-slate-500">
                     {loadError ? t("commission.panelSummaryLoadError") : t("common.loading")}
@@ -147,17 +148,11 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
     const hasNextPanel = Boolean(data.nextPanelId && data.nextPanelFirstCandidateId)
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
             <main className="flex-1 p-6 md:p-10">
                 <div className="mx-auto max-w-7xl space-y-8">
-                    <Link
-                        href={`/commission/${commissionId}`}
-                        className="inline-flex w-fit items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-all hover:bg-slate-50"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        {t("commission.backToCommission")}
-                    </Link>
+                    <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
 
                     <header className="flex flex-col gap-5 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-start gap-4">

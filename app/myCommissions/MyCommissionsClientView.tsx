@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Activity, PlayCircle, CheckCircle, AlertCircle, Calendar, Timer } from "lucide-react"
+import { Activity, Timer } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
-import { ListPageShell, ListPageHeader, Pagination, StateCard, StatusBadge, EntityCardLink, type StatusColorScheme } from "@/components/list"
+import { ListPageShell, ListPageHeader, Pagination, StateCard, StatusBadge, EntityCardLink, commissionStatusAppearance } from "@/components/list"
 
 // ====================================================================
 // INTERFACES
@@ -35,13 +35,6 @@ interface MyCommissionsProps {
     totalPages?: number
     totalCount?: number
     hasError?: boolean
-}
-
-function commissionStatusAppearance(status: CommissionStatus): { colorScheme: StatusColorScheme; icon: typeof Calendar } {
-    if (status === "STARTED") return { colorScheme: "emerald", icon: PlayCircle }
-    if (status === "COMPLETED") return { colorScheme: "slate", icon: CheckCircle }
-    if (status === "CANCELLED") return { colorScheme: "rose", icon: AlertCircle }
-    return { colorScheme: "amber", icon: Calendar }
 }
 
 function CommissionCard({ comm }: { comm: Commission }) {
@@ -98,7 +91,7 @@ function CommissionCard({ comm }: { comm: Commission }) {
                     <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 truncate block">
                         {comm.competition.name}
                     </span>
-                    <h3 className="text-xl font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
+                    <h3 className="text-xl font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
                         {comm.name}
                     </h3>
                 </div>
@@ -135,7 +128,7 @@ export default function MyCommissionsClientView({ initialData, currentPage, tota
     return (
         <ListPageShell activeTab="none" isLoading={isLoading}>
             <ListPageHeader
-                title={t("common.myCommissions")}
+                title={t("myCommissions.title")}
                 subtitle={t("myCommissions.subtitle")}
                 countLabel={tCount("common.commissionsCount", totalCount)}
             />

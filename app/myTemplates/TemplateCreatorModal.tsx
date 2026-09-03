@@ -629,25 +629,15 @@ export default function TemplateCreatorModal({
             <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6">
                 <div className="flex gap-3 flex-wrap">
                     <div className="flex flex-col gap-1.5 flex-1 min-w-64">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                             {t("templateCreator.templateNameLabel")}
-                            {!!initialTemplateId && (
-                                <span className="text-[10px] font-medium text-slate-400 normal-case tracking-normal">
-                                    {t("templateCreator.readOnly")}
-                                </span>
-                            )}
                         </label>
                         <input
                             type="text"
-                            disabled={!!initialTemplateId}
                             value={templateName}
                             onChange={(e) => setTemplateName(e.target.value)}
                             placeholder={t("templateCreator.templateNamePlaceholder")}
-                            className={`px-4 py-2.5 border rounded-2xl text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
-                                initialTemplateId
-                                    ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed select-none"
-                                    : "border-slate-200 bg-slate-50/30 text-slate-800"
-                            }`}
+                            className="px-4 py-2.5 border border-slate-200 bg-slate-50/30 text-slate-800 rounded-2xl text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                         />
                     </div>
                     <div className="flex flex-col gap-1.5 min-w-[200px]">

@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { sdk } from '@/lib/apiClient';
+import { getGraphQLEndpoint } from '@/lib/graphqlEndpoint';
 
 export type ReplicaConfig = {
   name: string;
@@ -191,8 +192,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
              }
            }
          `;
-         const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
-         const tplRes = await fetch(GRAPHQL_ENDPOINT, {
+         const tplRes = await fetch(getGraphQLEndpoint(), {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', ...headers },
            body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })

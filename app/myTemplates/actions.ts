@@ -1,26 +1,13 @@
 "use server"
 
-import { sdk } from '../../lib/apiClient';
+import { sdk, fetchGraphQLRaw } from '../../lib/apiClient';
 import { revalidatePath } from 'next/cache';
 
-const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT || process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
-
+// Was pointed at a stale Railway host over plain HTTP as its ultimate
+// fallback; now shares the same endpoint resolution (and transport) as
+// every other caller — see lib/graphqlEndpoint.ts.
 async function rawGraphQL(query: string, variables?: Record<string, any>) {
-    const res = await fetch(GRAPHQL_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables }),
-        next: { revalidate: 0 },
-    });
-    const text = await res.text();
-    let json: any;
-    try {
-        json = JSON.parse(text);
-    } catch {
-        throw new Error(`GraphQL server error (${res.status}): Invalid server response`);
-    }
-    if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
-    return json.data;
+    return fetchGraphQLRaw<any, Record<string, any> | undefined>(query, variables);
 }
 
 export async function getBeverageTypesAction(): Promise<{ id: string; code: string; name: string }[]> {
@@ -230,7 +217,7 @@ export async function createGlobalTemplateAction(
         await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
         console.log(`  Activated template edition: ${editionId}`);
 
-        revalidatePath('/templates');
+        revalidatePath('/myTemplates');
 
         return { success: true, templateId, editionId };
     } catch (err: any) {
@@ -265,15 +252,10 @@ export async function updateGlobalTemplateAction(
         console.log(`🔄 Updating global template "${templateId}"...`);
         const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
 
-        if ((sdk as any).UpdateEvaluationTemplate) {
-            await (sdk as any).UpdateEvaluationTemplate({
-                id: templateId,
-                input: {
-                    name: templateName,
-                    ...(beverageTypeId && { beverageTypeId })
-                }
-            }, { headers: actorHeaders });
-        }
+        // Note: beverageTypeId is intentionally not sent — there's no mutation
+        // to change it after creation, and the editor keeps that field locked
+        // for existing templates for the same reason.
+        await sdk.ChangeEvaluationTemplateName({ id: templateId, newName: templateName }, { headers: actorHeaders });
 
         const currentTemplate = await getTemplateByIdAction(templateId);
         const nextVersion = (currentTemplate?.latestEdition?.version || 1) + 1;
@@ -292,7 +274,7 @@ export async function updateGlobalTemplateAction(
         await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
         console.log(`  Activated new template edition: ${editionId}`);
 
-        revalidatePath('/templates');
+        revalidatePath('/myTemplates');
 
         return { success: true, templateId, editionId };
     } catch (err: any) {

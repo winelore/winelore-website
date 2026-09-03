@@ -1,110 +1,19 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { FileText, Trophy, Wine, User, Layers, CheckCircle, Clock, ChevronRight, Activity, CalendarDays, ClipboardList, PlayCircle, AlertCircle, Calendar, Timer } from "lucide-react"
+import { FileText, Trophy, Wine, User, Layers, CheckCircle, ChevronRight, Activity, ClipboardList, Timer } from "lucide-react"
 import { AppHeader } from "@/components/AppHeader"
+import { AvatarPlaceholder } from "@/components/AvatarPlaceholder"
+import { StatusBadge, commissionStatusAppearance, EntityCardLink, BeverageCard } from "@/components/list"
+import { formatTimeRemaining, competitionStatusTextColor } from "@/lib/competitionTiming"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
 
-function AvatarPlaceholder({ className }: { className?: string }) {
-    return (
-        <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-200 via-purple-100 to-pink-100 ${className}`}>
-            <User className="h-1/2 w-1/2 text-indigo-300" />
-        </div>
-    )
-}
-
-function getStatusColor(status: string) {
-    switch (status) {
-        case "IN_PROGRESS":
-        case "STARTED":
-            return "text-emerald-500"
-        case "READY":
-        case "PLANNED":
-        case "APPROVED":
-            return "text-blue-500"
-        case "FINISHED":
-        case "COMPLETED":
-            return "text-muted-foreground"
-        default:
-            return "text-muted-foreground"
-    }
-}
-
-function getStatusBgColor(status: string) {
-    switch (status) {
-        case "IN_PROGRESS":
-        case "STARTED":
-            return "bg-emerald-50 border-emerald-100"
-        case "READY":
-        case "PLANNED":
-        case "APPROVED":
-            return "bg-blue-50 border-blue-100"
-        case "FINISHED":
-        case "COMPLETED":
-            return "bg-slate-50 border-slate-100"
-        default:
-            return "bg-slate-50 border-slate-100"
-    }
-}
-
-function formatStatus(status: string) {
-    switch (status) {
-        case "IN_PROGRESS":
-        case "STARTED":
-            return "In Progress"
-        case "READY":
-        case "PLANNED":
-        case "APPROVED":
-            return "Ready"
-        case "FINISHED":
-        case "COMPLETED":
-            return "Finished"
-        default:
-            return status
-                .toLowerCase()
-                .split("_")
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(" ")
-    }
-}
-
-function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string | null, status: string, t: any) {
-    if (status === "FINISHED" || status === "COMPLETED") return t("time.ended")
-    if (!plannedStartAt) return ""
-
-    const now = new Date()
-    const startDate = new Date(plannedStartAt)
-    const endDate = plannedEndAt ? new Date(plannedEndAt) : null
-
-    if (status === "READY" || status === "PLANNED" || status === "APPROVED") {
-        const diff = startDate.getTime() - now.getTime()
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        if (days > 0) return t("time.startsInDays", { days })
-        if (hours > 0) return t("time.startsInHours", { hours })
-        return t("time.startingSoon")
-    }
-
-    if ((status === "IN_PROGRESS" || status === "STARTED") && endDate) {
-        const diff = endDate.getTime() - now.getTime()
-        if (diff < 0) return ""
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        if (days > 0) return t("time.duration", { days, hours })
-        if (hours > 0) return t("time.durationHoursMinutes", { hours, minutes })
-        return t("time.durationMinutes", { minutes })
-    }
-
-    return ""
-}
-
 function CompetitionCard({ competition, usernames }: { competition: any; usernames: Record<string, string> }) {
     const [isMounted, setIsMounted] = useState(false)
-    const { t } = useTranslation()
+    const { t, formatStatus } = useTranslation()
 
     useEffect(() => {
         setIsMounted(true)
@@ -118,10 +27,7 @@ function CompetitionCard({ competition, usernames }: { competition: any; usernam
     )
 
     return (
-        <Link
-            href={`/competition/${competition.id}`}
-            className="group bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col min-h-[140px]"
-        >
+        <EntityCardLink href={`/competition/${competition.id}`} padding="dashboard">
             <div className="flex items-start gap-3">
                 <AvatarPlaceholder className="h-10 w-10 shrink-0" />
                 <div className="min-w-0 flex-1">
@@ -129,7 +35,7 @@ function CompetitionCard({ competition, usernames }: { competition: any; usernam
                         {competition.name}
                     </h3>
                     <p className="text-xs mt-1">
-                        <span className={`font-medium ${getStatusColor(competition.status)}`}>
+                        <span className={`font-medium ${competitionStatusTextColor(competition.status)}`}>
                             {formatStatus(competition.status)}
                         </span>
                         {isMounted && timeRemaining && <span className="text-slate-400"> | {timeRemaining}</span>}
@@ -156,41 +62,14 @@ function CompetitionCard({ competition, usernames }: { competition: any; usernam
                     </div>
                 )}
             </div>
-        </Link>
-    )
-}
-
-function BeverageCard({ bev, typeMap }: { bev: any; typeMap?: Record<string, string> }) {
-    const { formatBeverageType } = useTranslation()
-    
-    const typeCode = (typeMap && bev.typeId && typeMap[bev.typeId]) || bev.type
-    const displayType = typeCode ? formatBeverageType(typeCode) : null
-
-    return (
-        <Link
-            href={`/beverage/${bev.id}`}
-            className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex items-center gap-4"
-        >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                <Wine className="h-6 w-6" />
-            </div>
-            <div className="flex-1 min-w-0">
-                {displayType && (
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
-                        {displayType}
-                    </span>
-                )}
-                <h3 className="text-sm font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
-                    {bev.name}
-                </h3>
-            </div>
-        </Link>
+        </EntityCardLink>
     )
 }
 
 function CommissionCard({ commission }: { commission: any }) {
     const [timeStr, setTimeStr] = useState<string>("")
-    const { t } = useTranslation()
+    const { t, formatStatus } = useTranslation()
+    const { colorScheme, icon } = commissionStatusAppearance(commission.status)
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -232,10 +111,7 @@ function CommissionCard({ commission }: { commission: any }) {
     }, [commission.status, commission.startedAt, commission.endedAt, t])
 
     return (
-        <Link
-            href={`/commission/${commission.id}`}
-            className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col min-h-[140px]"
-        >
+        <EntityCardLink href={`/commission/${commission.id}`} padding="dashboard">
             <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
                     <Activity className="h-6 w-6" />
@@ -251,30 +127,21 @@ function CommissionCard({ commission }: { commission: any }) {
             </div>
 
             <div className="flex items-center justify-between mt-auto pt-4">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(commission.status)} ${getStatusBgColor(commission.status)} border`}>
-                    {commission.status === "STARTED" ? <PlayCircle className="w-3 h-3" /> :
-                        commission.status === "COMPLETED" ? <CheckCircle className="w-3 h-3" /> :
-                            commission.status === "CANCELLED" ? <AlertCircle className="w-3 h-3" /> :
-                                <Calendar className="w-3 h-3" />}
-                    {formatStatus(commission.status)}
-                </span>
-                {timeStr && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                        <Timer className="w-3 h-3" />
-                        {timeStr}
-                    </div>
-                )}
+                <StatusBadge
+                    colorScheme={colorScheme}
+                    icon={icon}
+                    label={formatStatus(commission.status)}
+                    trailing={timeStr || undefined}
+                    trailingIcon={Timer}
+                />
             </div>
-        </Link>
+        </EntityCardLink>
     )
 }
 
 function TemplateCard({ template }: { template: any }) {
     return (
-        <Link
-            href={`/templates?templateId=${template.id}-${template.latestEdition?.version || 0}`}
-            className="group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex items-center gap-4"
-        >
+        <EntityCardLink href={`/myTemplates?templateId=${template.id}-${template.latestEdition?.version || 0}`} padding="dashboard" layout="row">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
                 <ClipboardList className="h-6 w-6" />
             </div>
@@ -296,7 +163,7 @@ function TemplateCard({ template }: { template: any }) {
                 </h3>
             </div>
             <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors" />
-        </Link>
+        </EntityCardLink>
     )
 }
 
@@ -397,7 +264,7 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/templates" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                                        <Link href="/myTemplates" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
                                             {t("dashboard.viewAll")}
                                             <ChevronRight className="w-4 h-4" />
                                         </Link>
@@ -455,7 +322,7 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                                 <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-sm h-full flex flex-col">
                                     <div className="flex flex-col gap-4 flex-1">
                                         {recentBeverages.slice(0, 8).map(bev => (
-                                            <BeverageCard key={bev.id} bev={bev} typeMap={beverageTypesMap} />
+                                            <BeverageCard key={bev.id} beverage={bev} typeMap={beverageTypesMap} density="dashboard" />
                                         ))}
                                     </div>
                                     <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">

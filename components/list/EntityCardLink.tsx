@@ -5,16 +5,32 @@ import Link from "next/link"
 
 interface EntityCardLinkProps {
     href: string
-    /** "compact" (p-6) for simpler global-list cards, "comfortable" (p-7) for richer personal-list cards. */
-    padding?: "compact" | "comfortable"
+    /**
+     * "compact" (p-6) for simpler global-list cards, "comfortable" (p-7) for
+     * richer personal-list cards, "dashboard" (p-4, smaller radius, no hover
+     * scale) for the tighter bento cards on the home dashboard.
+     */
+    padding?: "compact" | "comfortable" | "dashboard"
     layout?: "row" | "column"
     className?: string
     children: ReactNode
 }
 
 export function EntityCardLink({ href, padding = "comfortable", layout = "column", className = "", children }: EntityCardLinkProps) {
-    const paddingClass = padding === "compact" ? "p-6" : "p-7"
     const layoutClass = layout === "row" ? "flex items-center gap-4" : "flex flex-col min-h-[140px]"
+
+    if (padding === "dashboard") {
+        return (
+            <Link
+                href={href}
+                className={`group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 ${layoutClass} ${className}`}
+            >
+                {children}
+            </Link>
+        )
+    }
+
+    const paddingClass = padding === "compact" ? "p-6" : "p-7"
 
     return (
         <Link

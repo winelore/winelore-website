@@ -1,5 +1,5 @@
 import { getEvaluationTemplatesAction } from "./actions";
-import TemplatesClientView from "./TemplatesClientView";
+import MyTemplatesClientView from "./MyTemplatesClientView";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,6 @@ export default async function TemplatesPage() {
     }
 
     return (
-        <TemplatesClientView initialTemplates={templates} totalCount={totalCount} hasError={hasError} />
+        <MyTemplatesClientView initialTemplates={templates} totalCount={totalCount} hasError={hasError} />
     );
 }

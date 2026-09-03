@@ -12,7 +12,7 @@ export default async function DashboardPage({
     const parsedPage = parseInt(resolvedParams.page || "1", 10);
     const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
 
-    const LIMIT = 20;
+    const LIMIT = 16;
     let rawCompetitions: any[] = [];
     let totalCount = 0;
     let hasError = false;

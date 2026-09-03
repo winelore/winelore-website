@@ -88,3 +88,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Shared entrance animations.
+ * These used to be referenced as `animate-fade-in` / `animate-scale-up`
+ * without ever being defined (so they silently did nothing), and
+ * `animate-fade-in-slide` was declared in an inline <style> inside one
+ * page component. They live here now so every surface animates the same.
+ * ------------------------------------------------------------------ */
+@theme {
+  --animate-fade-in: fade-in 0.2s ease-out both;
+  --animate-scale-up: scale-up 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-fade-in-slide: fade-in-slide 0.25s ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-up {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fade-in-slide {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

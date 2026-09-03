@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { User, Layers } from "lucide-react"
+import { AvatarPlaceholder } from "@/components/AvatarPlaceholder"
+import { formatTimeRemaining, competitionStatusTextColor } from "@/lib/competitionTiming"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
 import { useRouter, usePathname } from "next/navigation"
@@ -37,62 +39,6 @@ interface DashboardProps {
     hasError?: boolean
 }
 
-function AvatarPlaceholder({ className }: { className?: string }) {
-    return (
-        <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-200 via-purple-100 to-pink-100 ${className}`}>
-            <User className="h-1/2 w-1/2 text-indigo-300" />
-        </div>
-    )
-}
-
-function getStatusColor(status: string) {
-    switch (status) {
-        case "IN_PROGRESS":
-        case "STARTED":
-            return "text-emerald-500"
-        case "READY":
-        case "PLANNED":
-        case "APPROVED":
-            return "text-blue-500"
-        case "FINISHED":
-        case "COMPLETED":
-            return "text-muted-foreground"
-        default:
-            return "text-muted-foreground"
-    }
-}
-
-function formatTimeRemaining(plannedStartAt: string | null, plannedEndAt: string | null, status: string, t: any) {
-    if (status === "FINISHED" || status === "COMPLETED") return t("time.ended")
-    if (!plannedStartAt) return ""
-
-    const now = new Date()
-    const startDate = new Date(plannedStartAt)
-    const endDate = plannedEndAt ? new Date(plannedEndAt) : null
-
-    if (status === "READY" || status === "PLANNED" || status === "APPROVED") {
-        const diff = startDate.getTime() - now.getTime()
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        if (days > 0) return t("time.startsInDays", { days })
-        if (hours > 0) return t("time.startsInHours", { hours })
-        return t("time.startingSoon")
-    }
-
-    if ((status === "IN_PROGRESS" || status === "STARTED") && endDate) {
-        const diff = endDate.getTime() - now.getTime()
-        if (diff < 0) return ""
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        if (days > 0) return t("time.duration", { days, hours })
-        if (hours > 0) return t("time.durationHoursMinutes", { hours, minutes })
-        return t("time.durationMinutes", { minutes })
-    }
-
-    return ""
-}
-
 function CompetitionCard({ competition, usernames }: { competition: Competition; usernames: Record<string, string> }) {
     const [isMounted, setIsMounted] = useState(false)
     const { t, formatStatus } = useTranslation()
@@ -113,24 +59,24 @@ function CompetitionCard({ competition, usernames }: { competition: Competition;
             <div className="flex items-start gap-3">
                 <AvatarPlaceholder className="h-10 w-10 shrink-0" />
                 <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-semibold text-card-foreground truncate">
+                    <h3 className="text-lg font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
                         {competition.name}
                     </h3>
                     <p className="text-sm">
-                        <span className={`font-medium ${getStatusColor(competition.status)}`}>
+                        <span className={`font-medium ${competitionStatusTextColor(competition.status)}`}>
                             {formatStatus(competition.status)}
                         </span>
                         {/* Render time remaining only after client mount */}
-                        {isMounted && timeRemaining && <span className="text-muted-foreground"> | {timeRemaining}</span>}
+                        {isMounted && timeRemaining && <span className="text-slate-400"> | {timeRemaining}</span>}
                     </p>
                 </div>
             </div>
             {competition.description && (
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+                <p className="mt-3 text-sm leading-relaxed text-slate-500 line-clamp-2">
                     <TranslatedText text={competition.description} />
                 </p>
             )}
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            <div className="mt-auto pt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-400">
                 <div className="flex items-center gap-1.5">
                     <Layers className="h-4 w-4" />
                     <span>{competition.series.name}</span>
@@ -178,7 +124,7 @@ export default function CompetitionsClientView({
                 countLabel={tCount("common.competitionsCount", totalCount)}
             />
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
                 {hasError && (
                     <StateCard variant="error" title={t("competitions.errorTitle")} description={t("competitions.errorDescription")} />
                 )}

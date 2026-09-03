@@ -258,6 +258,63 @@ export type GetCommissionForAwardQueryVariables = Exact<{
 
 export type GetCommissionForAwardQuery = { commission: { id: string, name: string, competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } } } | null };
 
+export type SubmitBeverageForReviewMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type SubmitBeverageForReviewMutation = { submitBeverageForReview: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type ChangeBeverageNameMutationVariables = Exact<{
+  id: string | number;
+  newName: string;
+}>;
+
+
+export type ChangeBeverageNameMutation = { changeBeverageName: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type ChangeBeverageOriginMutationVariables = Exact<{
+  id: string | number;
+  origin?: Types.CoordinatesInput | null | undefined;
+}>;
+
+
+export type ChangeBeverageOriginMutation = { changeBeverageOrigin: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type UpdateBeverageAttributesMutationVariables = Exact<{
+  id: string | number;
+  attributes: unknown;
+}>;
+
+
+export type UpdateBeverageAttributesMutation = { updateBeverageAttributes: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type RegisterBeverageProducerMutationVariables = Exact<{
+  id: string | number;
+  producer: Types.ProducerInput;
+}>;
+
+
+export type RegisterBeverageProducerMutation = { registerBeverageProducer: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type UnregisterBeverageProducerMutationVariables = Exact<{
+  id: string | number;
+  producerDetailsId: string | number;
+}>;
+
+
+export type UnregisterBeverageProducerMutation = { unregisterBeverageProducer: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type GetBeveragesQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  cursor?: string | number | null | undefined;
+  offset?: number | null | undefined;
+  filter?: Types.BeverageFilterInput | null | undefined;
+}>;
+
+
+export type GetBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
+
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
 }>;
@@ -730,6 +787,14 @@ export type GetMyCompetitionsQueryVariables = Exact<{
 
 export type GetMyCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } }> } };
 
+export type ChangeEvaluationTemplateNameMutationVariables = Exact<{
+  id: string | number;
+  newName: string;
+}>;
+
+
+export type ChangeEvaluationTemplateNameMutation = { changeEvaluationTemplateName: { id: string, name: string } };
+
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
   cursor?: string | number | null | undefined;
@@ -800,6 +865,149 @@ export const GetCommissionForAwardDocument = gql`
       }
     }
   }
+}
+    `;
+export const SubmitBeverageForReviewDocument = gql`
+    mutation SubmitBeverageForReview($id: ID!) {
+  submitBeverageForReview(id: $id) {
+    id
+    name
+    status
+    typeId
+    attributes
+    producers {
+      id
+      auid
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const ChangeBeverageNameDocument = gql`
+    mutation ChangeBeverageName($id: ID!, $newName: String!) {
+  changeBeverageName(id: $id, newName: $newName) {
+    id
+    name
+    status
+    typeId
+    attributes
+    producers {
+      id
+      auid
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const ChangeBeverageOriginDocument = gql`
+    mutation ChangeBeverageOrigin($id: ID!, $origin: CoordinatesInput) {
+  changeBeverageOrigin(id: $id, origin: $origin) {
+    id
+    name
+    status
+    typeId
+    attributes
+    producers {
+      id
+      auid
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const UpdateBeverageAttributesDocument = gql`
+    mutation UpdateBeverageAttributes($id: ID!, $attributes: JSON!) {
+  updateBeverageAttributes(id: $id, attributes: $attributes) {
+    id
+    name
+    status
+    typeId
+    attributes
+    producers {
+      id
+      auid
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const RegisterBeverageProducerDocument = gql`
+    mutation RegisterBeverageProducer($id: ID!, $producer: ProducerInput!) {
+  registerBeverageProducer(id: $id, producer: $producer) {
+    id
+    name
+    status
+    typeId
+    attributes
+    producers {
+      id
+      auid
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const UnregisterBeverageProducerDocument = gql`
+    mutation UnregisterBeverageProducer($id: ID!, $producerDetailsId: ID!) {
+  unregisterBeverageProducer(id: $id, producerDetailsId: $producerDetailsId) {
+    id
+    name
+    status
+    typeId
+    attributes
+    producers {
+      id
+      auid
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const GetBeveragesDocument = gql`
+    query GetBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput) {
+  beverages(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
+    items {
+      id
+      name
+      status
+      typeId
+      attributes
+      producers {
+        id
+        auid
+        role
+      }
+      origin {
+        latitude
+        longitude
+      }
+    }
+  }
+  beverageCount
 }
     `;
 export const GetCommissionDocument = gql`
@@ -1781,6 +1989,14 @@ export const GetMyCompetitionsDocument = gql`
   competitionCount(holder: $holder)
 }
     `;
+export const ChangeEvaluationTemplateNameDocument = gql`
+    mutation ChangeEvaluationTemplateName($id: ID!, $newName: String!) {
+  changeEvaluationTemplateName(id: $id, newName: $newName) {
+    id
+    name
+  }
+}
+    `;
 export const GetDashboardCompetitionsDocument = gql`
     query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {
   competitions(limit: $limit, cursor: $cursor, offset: $offset) {
@@ -1816,6 +2032,27 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetCommissionForAward(variables: Types.GetCommissionForAwardQueryVariables, options?: C): Promise<Types.GetCommissionForAwardQuery> {
       return requester<Types.GetCommissionForAwardQuery, Types.GetCommissionForAwardQueryVariables>(GetCommissionForAwardDocument, variables, options) as Promise<Types.GetCommissionForAwardQuery>;
+    },
+    SubmitBeverageForReview(variables: Types.SubmitBeverageForReviewMutationVariables, options?: C): Promise<Types.SubmitBeverageForReviewMutation> {
+      return requester<Types.SubmitBeverageForReviewMutation, Types.SubmitBeverageForReviewMutationVariables>(SubmitBeverageForReviewDocument, variables, options) as Promise<Types.SubmitBeverageForReviewMutation>;
+    },
+    ChangeBeverageName(variables: Types.ChangeBeverageNameMutationVariables, options?: C): Promise<Types.ChangeBeverageNameMutation> {
+      return requester<Types.ChangeBeverageNameMutation, Types.ChangeBeverageNameMutationVariables>(ChangeBeverageNameDocument, variables, options) as Promise<Types.ChangeBeverageNameMutation>;
+    },
+    ChangeBeverageOrigin(variables: Types.ChangeBeverageOriginMutationVariables, options?: C): Promise<Types.ChangeBeverageOriginMutation> {
+      return requester<Types.ChangeBeverageOriginMutation, Types.ChangeBeverageOriginMutationVariables>(ChangeBeverageOriginDocument, variables, options) as Promise<Types.ChangeBeverageOriginMutation>;
+    },
+    UpdateBeverageAttributes(variables: Types.UpdateBeverageAttributesMutationVariables, options?: C): Promise<Types.UpdateBeverageAttributesMutation> {
+      return requester<Types.UpdateBeverageAttributesMutation, Types.UpdateBeverageAttributesMutationVariables>(UpdateBeverageAttributesDocument, variables, options) as Promise<Types.UpdateBeverageAttributesMutation>;
+    },
+    RegisterBeverageProducer(variables: Types.RegisterBeverageProducerMutationVariables, options?: C): Promise<Types.RegisterBeverageProducerMutation> {
+      return requester<Types.RegisterBeverageProducerMutation, Types.RegisterBeverageProducerMutationVariables>(RegisterBeverageProducerDocument, variables, options) as Promise<Types.RegisterBeverageProducerMutation>;
+    },
+    UnregisterBeverageProducer(variables: Types.UnregisterBeverageProducerMutationVariables, options?: C): Promise<Types.UnregisterBeverageProducerMutation> {
+      return requester<Types.UnregisterBeverageProducerMutation, Types.UnregisterBeverageProducerMutationVariables>(UnregisterBeverageProducerDocument, variables, options) as Promise<Types.UnregisterBeverageProducerMutation>;
+    },
+    GetBeverages(variables?: Types.GetBeveragesQueryVariables, options?: C): Promise<Types.GetBeveragesQuery> {
+      return requester<Types.GetBeveragesQuery, Types.GetBeveragesQueryVariables>(GetBeveragesDocument, variables, options) as Promise<Types.GetBeveragesQuery>;
     },
     GetCommission(variables: Types.GetCommissionQueryVariables, options?: C): Promise<Types.GetCommissionQuery> {
       return requester<Types.GetCommissionQuery, Types.GetCommissionQueryVariables>(GetCommissionDocument, variables, options) as Promise<Types.GetCommissionQuery>;
@@ -1981,6 +2218,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetMyCompetitions(variables?: Types.GetMyCompetitionsQueryVariables, options?: C): Promise<Types.GetMyCompetitionsQuery> {
       return requester<Types.GetMyCompetitionsQuery, Types.GetMyCompetitionsQueryVariables>(GetMyCompetitionsDocument, variables, options) as Promise<Types.GetMyCompetitionsQuery>;
+    },
+    ChangeEvaluationTemplateName(variables: Types.ChangeEvaluationTemplateNameMutationVariables, options?: C): Promise<Types.ChangeEvaluationTemplateNameMutation> {
+      return requester<Types.ChangeEvaluationTemplateNameMutation, Types.ChangeEvaluationTemplateNameMutationVariables>(ChangeEvaluationTemplateNameDocument, variables, options) as Promise<Types.ChangeEvaluationTemplateNameMutation>;
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;

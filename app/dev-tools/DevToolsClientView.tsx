@@ -220,7 +220,7 @@ export function DevToolsClientView() {
   return (
     <>
       <AppHeader activeTab="none" />
-      <div className="min-h-screen bg-slate-50 text-slate-900 p-8">
+      <div className="min-h-screen bg-slate-50/50 text-slate-800 p-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left Column: Form & Results */}

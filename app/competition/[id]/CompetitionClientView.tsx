@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft, Send, Download } from "lucide-react"
+import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, Send, Download } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -18,6 +18,7 @@ import {
     updateCompetitionNameAction,
     createCommission
 } from "../actions"
+import { BackLink } from "@/components/BackLink"
 
 function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -487,13 +488,7 @@ export default function CompetitionClientView({
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl mb-4 flex items-center justify-between">
-                    <Link
-                        href="/myCompetitions"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {t("commission.backToCompetitions")}
-                    </Link>
+                    <BackLink href="/myCompetitions" label={t("commission.backToCompetitions")} />
 
                     <Link
                         href={`/competition/${initialData.id}/results`}
@@ -542,7 +537,7 @@ export default function CompetitionClientView({
                                                     onClick={handleSaveDates}
                                                     disabled={isMutating}
                                                     className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                                    title="Save dates"
+                                                    title={t("common.saveDates")}
                                                 >
                                                     {isMutating ? (
                                                         <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -556,7 +551,7 @@ export default function CompetitionClientView({
                                                     onClick={() => setIsEditingDates(false)}
                                                     disabled={isMutating}
                                                     className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                                                    title="Cancel"
+                                                    title={t("competition.cancel")}
                                                 >
                                                     <X className="w-3.5 h-3.5" />
                                                 </button>
@@ -565,7 +560,7 @@ export default function CompetitionClientView({
                                             <button
                                                 onClick={openEditDates}
                                                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                title="Edit planned dates"
+                                                title={t("common.editPlannedDates")}
                                             >
                                                 <Pencil className="w-4 h-4" />
                                             </button>
@@ -694,7 +689,7 @@ export default function CompetitionClientView({
                                                         onClick={handleSaveName}
                                                         disabled={isMutating}
                                                         className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
-                                                        title="Save"
+                                                        title={t("common.save")}
                                                     >
                                                         {isMutating ? (
                                                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -707,7 +702,7 @@ export default function CompetitionClientView({
                                                         onClick={() => setIsEditingName(false)}
                                                         disabled={isMutating}
                                                         className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
-                                                        title="Cancel"
+                                                        title={t("competition.cancel")}
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </button>
@@ -721,7 +716,7 @@ export default function CompetitionClientView({
                                                         <button
                                                             onClick={openEditName}
                                                             className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                            title="Edit competition name"
+                                                            title={t("competition.editCompetitionName")}
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>

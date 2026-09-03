@@ -2,7 +2,7 @@
 
 import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
 import { axusSdk } from '../../lib/axusClient';
-import { getGraphQLEndpoint } from '../../lib/graphqlEndpoint';
+import { getAxusEndpoint } from '../../lib/graphqlEndpoint';
 import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
 import {
     GET_COMMISSION_TEMPLATES_DEEP_QUERY,
@@ -829,34 +829,17 @@ export async function getMyTastingSummaryAction(replicaId: string): Promise<MyTa
     }
 }
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || getGraphQLEndpoint() || 'https://winelore-dev.thewinelore.com/graphql';
-
+// Thin wrapper kept so the ~40 call sites below don't need to change; the
+// actual HTTP transport and endpoint resolution now live in lib/apiClient.ts
+// and lib/graphqlEndpoint.ts, which is the one place either can be reasoned
+// about (see WIN consistency audit, item 1.4 — this used to have its own
+// endpoint fallback that could silently diverge from every other caller's).
 async function rawGraphQL(
     query: string,
     variables: Record<string, any>,
     headers?: Record<string, string>,
 ) {
-    const res = await fetch(GRAPHQL_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...headers },
-        body: JSON.stringify({ query, variables }),
-        next: { revalidate: 0 },
-    });
-    const text = await res.text();
-    let json: any;
-    try {
-        json = JSON.parse(text);
-    } catch {
-        const cleanText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        console.error(`[rawGraphQL] Received non-JSON response (HTTP ${res.status}):`, text.slice(0, 500));
-        throw new Error(
-            res.status >= 500
-                ? `GraphQL server error (${res.status}): Server temporarily unavailable`
-                : `GraphQL response error (${res.status}): ${cleanText.slice(0, 150) || 'Invalid server response'}`
-        );
-    }
-    if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
-    return json.data;
+    return fetchGraphQLRaw<any, Record<string, any>>(query, variables, headers);
 }
 
 async function getActorHeaders(): Promise<Record<string, string>> {
@@ -1431,10 +1414,8 @@ export async function completeCommissionReplicaAction(replicaId: string) {
     }
 }
 
-const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || 'https://axusid.thewinelore.com/graphql';
-
 async function fetchAxusGraphQL(query: string, variables: Record<string, any> = {}) {
-    const res = await fetch(AXUS_GRAPHQL_ENDPOINT, {
+    const res = await fetch(getAxusEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, variables }),

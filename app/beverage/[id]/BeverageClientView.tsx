@@ -5,11 +5,13 @@ import Link from "next/link"
 import { toast } from "sonner"
 import {
     Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin, Calendar, Award, ArrowLeft, Clock,
-    Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send
+    Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send, Pencil
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
 import { submitBeverageForReviewAction } from "../actions"
+import { BackLink } from "@/components/BackLink"
+import { EditBeverageModal } from "./EditBeverageModal"
 
 type BeverageStatus = "APPROVED" | "DRAFT" | "IN_REVIEW" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
 type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
@@ -252,7 +254,7 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
     } else if (roleUpper === "DISTRIBUTOR") {
         displayRole = (t("roles.distributor") as string) || "Distributor"
     } else if (roleUpper === "BOTTLER") {
-        displayRole = "Bottler"
+        displayRole = (t("roles.bottler") as string) || "Bottler"
     }
 
     const renderName = () => {
@@ -281,6 +283,12 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     })
     const [beverageStatus, setBeverageStatus] = useState<BeverageStatus | null>(initialData?.beverage?.status || null)
     const [isSubmittingForReview, setIsSubmittingForReview] = useState(false)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [beverageEdits, setBeverageEdits] = useState<{
+        name?: string
+        origin?: Beverage["origin"]
+        producers?: ProducerDetails[]
+    }>({})
     const { formatStatus, formatBeverageType, formatDateTime, t } = useTranslation()
 
     if (isNotFound) {
@@ -339,6 +347,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     const beverage = {
         ...initialData.beverage,
         status: beverageStatus || initialData.beverage.status,
+        ...beverageEdits,
     }
     const isProducer = beverage.producers.some((producer) => producer.auid.includes(currentAuid))
 
@@ -429,13 +438,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                 <div className="w-full max-w-6xl space-y-6">
 
                     {/* Back Button */}
-                    <Link
-                        href="/myBeverages"
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors w-fit"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {t("beverage.backToMyBeverages")}
-                    </Link>
+                    <BackLink href="/myBeverages" label={t("beverage.backToMyBeverages")} />
 
                     {/* Main Premium Card Header (Includes Overview Meta now) */}
                     <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/40 relative overflow-hidden group/header">
@@ -470,8 +473,18 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                     ID: {beverage.id.slice(-6)}
                                                 </span>
                                             </div>
-                                            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mt-3 mb-2 tracking-tight group-hover/header:text-indigo-950 transition-colors">
+                                            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mt-3 mb-2 tracking-tight group-hover/header:text-indigo-950 transition-colors flex items-center justify-center md:justify-start gap-2">
                                                 {beverage.name}
+                                                {isProducer && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsEditModalOpen(true)}
+                                                        title={t("beverage.edit.button")}
+                                                        className="shrink-0 p-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-150 text-slate-400 hover:text-indigo-600 rounded-xl transition-all cursor-pointer"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </h1>
                                         </div>
 
@@ -511,7 +524,18 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                         <MapPin className="w-3.5 h-3.5 text-indigo-500" />
                                         <span>{t("beverage.origin")}</span>
                                     </div>
-                                    {beverage.originParts && beverage.originParts.length > 0 ? (
+                                    {beverageEdits.origin !== undefined ? (
+                                        // Origin was just edited — originParts was geocoded from the old
+                                        // coordinates server-side, so show the raw numbers instead of a
+                                        // now-possibly-stale place name until the page next reloads.
+                                        beverage.origin?.latitude != null && beverage.origin?.longitude != null ? (
+                                            <span className="text-sm font-bold text-slate-700 tabular-nums">
+                                                {beverage.origin.latitude.toFixed(4)}, {beverage.origin.longitude.toFixed(4)}
+                                            </span>
+                                        ) : (
+                                            <div className="text-sm font-medium text-slate-400">{t("common.na")}</div>
+                                        )
+                                    ) : beverage.originParts && beverage.originParts.length > 0 ? (
                                         <span className="text-sm font-bold text-slate-700">
                                             {beverage.originParts.join(", ")}
                                         </span>
@@ -582,7 +606,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                     </div>
 
                     {/* Tab Panels */}
-                    <div className="pt-2 animate-fadeIn transition-all duration-300">
+                    <div className="pt-2 animate-fade-in transition-all duration-300">
                         {currentTab === "batches" && (
                             <div className="space-y-4">
                                 <div>
@@ -770,6 +794,13 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                     </div>
                 </div>
             </main>
+
+            <EditBeverageModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                beverage={beverage}
+                onUpdated={(patch) => setBeverageEdits((prev) => ({ ...prev, ...patch }))}
+            />
         </div>
     )
 }

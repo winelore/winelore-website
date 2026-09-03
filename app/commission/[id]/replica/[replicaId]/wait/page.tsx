@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
-import { Users, Wine, Loader2, ArrowRight, ArrowLeft, AlertTriangle } from "lucide-react"
+import { Users, Wine, Loader2, ArrowRight, AlertTriangle } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -25,6 +25,7 @@ import {
 } from "../../../../EvaluationCommentsDisplay"
 import { annotateEvaluationsWithDelta, formatSignedDiff } from "@/lib/deltaOutliers"
 import type { PropertyMeta } from "../../../../propertyMap"
+import { BackLink } from "@/components/BackLink"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -206,18 +207,12 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
     if (role === "HEAD") {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50">
+            <div className="flex min-h-screen flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
                     <div className="max-w-7xl mx-auto space-y-8">
                     <div>
-                        <Link
-                            href={`/commission/${commissionId}`}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all w-fit"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            {t("commission.backToCommission")}
-                        </Link>
+                        <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
                     </div>
                     <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
                         <div>
@@ -415,17 +410,11 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // EXPERT VIEW
     // ==========================================
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-full max-w-2xl flex justify-start mb-6">
-                    <Link
-                        href={`/commission/${commissionId}`}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {t("commission.backToCommission")}
-                    </Link>
+                    <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
                 </div>
 
                 <div className="relative mb-10 flex justify-center">

@@ -560,7 +560,7 @@ export function PanelsSection({
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0">
                                                         {isCompetitionHolder && isDraft ? (
-                                                            <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 p-1 flex items-center justify-center" title="Drag to reorder">
+                                                            <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 p-1 flex items-center justify-center" title={t("common.dragToReorder")}>
                                                                 <GripVertical className="w-3.5 h-3.5" />
                                                             </div>
                                                         ) : (
@@ -693,7 +693,7 @@ export function PanelsSection({
 
             {/* Custom Delete Confirmation Modal */}
             {confirmDeleteState.isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
                     <div className="relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up p-6 flex flex-col items-center text-center gap-4">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-100/60 shadow-xs">
                             <Trash2 className="w-6 h-6" />
