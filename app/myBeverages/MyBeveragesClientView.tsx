@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { Wine } from "lucide-react"
+import Link from "next/link"
+import { Wine, Plus } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
 import { ListPageShell, ListPageHeader, Pagination, StateCard, BeverageCard } from "@/components/list"
@@ -68,6 +69,15 @@ export default function MyBeveragesClientView({ initialData, beverageTypesMap, c
                 title={t("myBeverages.title")}
                 subtitle={t("myBeverages.subtitle")}
                 countLabel={tCount("common.beveragesCount", totalCount)}
+                actions={
+                    <Link
+                        href="/beverage/create"
+                        className="min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>{t("myBeverages.createButton", { defaultValue: "Створити напій" })}</span>
+                    </Link>
+                }
             />
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">

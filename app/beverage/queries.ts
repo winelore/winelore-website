@@ -128,3 +128,41 @@ export const UNREGISTER_BEVERAGE_PRODUCER = gql(`
     }
   }
 `)
+
+export const CREATE_BEVERAGE = gql(`
+  mutation CreateBeverage($input: CreateBeverageInput!) {
+    createBeverage(input: $input) {
+      id
+      name
+      status
+      typeId
+      attributes
+      producers {
+        id
+        auid
+        role
+      }
+      origin {
+        latitude
+        longitude
+      }
+    }
+  }
+`)
+
+export const CREATE_BEVERAGE_TYPE = gql(`
+  mutation CreateBeverageType($input: CreateBeverageTypeInput!) {
+    createBeverageType(input: $input) {
+      id
+    }
+  }
+`)
+
+export const PUBLISH_BEVERAGE_TYPE = gql(`
+  mutation PublishBeverageType($id: ID!) {
+    publishBeverageType(id: $id) {
+      id
+    }
+  }
+`)
+

@@ -357,6 +357,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         try {
             const updated = await submitBeverageForReviewAction(beverage.id)
             setBeverageStatus(updated?.status || "IN_REVIEW")
+            toast.success(t("beverage.submitReviewSuccess", { defaultValue: "Напій успішно відправлено на перевірку!" }))
         } catch (err: any) {
             console.error("Failed to submit beverage for review:", err)
             toast.error(err.message || t("beverage.submitReviewError"))
