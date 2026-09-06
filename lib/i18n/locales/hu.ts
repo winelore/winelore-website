@@ -790,6 +790,7 @@ const hu = {
         origin: "Származás:",
         producers: "Termelők",
         created: "Létrehozva",
+        enteredBy: "Rögzítette",
         competitionResults: "Versenyeredmények",
         awardsSubtitle: "Díjak és elismerések",
         awardSingle: "1 Díj",

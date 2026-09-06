@@ -15,8 +15,9 @@ type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPEN
 
 interface ProducerDetails {
     id: string
-    auid: number[]
-    role: "DISTRIBUTOR" | "MAKER" | "OWNER"
+    auid?: number[] | null
+    producerId?: string | null
+    role: string
 }
 
 interface Beverage {

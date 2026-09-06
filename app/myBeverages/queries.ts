@@ -1,7 +1,7 @@
 import { gql } from "@/src/gql"
 
 export const GET_MY_BEVERAGES = gql(`
-  query GetMyBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput, $producer: ID) {
+  query GetMyBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput, $producer: [Int!]) {
     beverages(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {
       items {
         id
@@ -11,6 +11,7 @@ export const GET_MY_BEVERAGES = gql(`
         attributes
         producers {
           id
+          auid
           producerId
           role
         }
@@ -20,6 +21,6 @@ export const GET_MY_BEVERAGES = gql(`
         }
       }
     }
-    beverageCount(producerId: $producer)
+    beverageCount(producer: $producer)
   }
 `)

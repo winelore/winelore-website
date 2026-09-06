@@ -87,7 +87,7 @@ export async function registerBeverageProducerAction(id: string, auid: number, r
     if (!isValidUuid(id)) throw new Error("Invalid UUID parameter")
     const headers = await getActorHeaders()
     try {
-        const data = await sdk.RegisterBeverageProducer({ id, producer: { auid: [auid], role } as any }, { headers })
+        const data = await sdk.RegisterBeverageProducer({ id, producer: { auid: [auid], role } }, { headers })
         revalidatePath(`/beverage/${id}`)
         return data.registerBeverageProducer
     } catch (err: any) {

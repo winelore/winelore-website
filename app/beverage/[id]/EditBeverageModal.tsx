@@ -14,11 +14,11 @@ import { searchUserByUsernameAction } from "@/app/commission/actions"
 
 interface ProducerDetails {
     id: string
-    producerId?: string
-    auid?: number[]
+    producerId?: string | null
+    auid?: number[] | null
     role: string
-    displayName?: string
-    username?: string
+    displayName?: string | null
+    username?: string | null
 }
 
 interface EditableBeverage {

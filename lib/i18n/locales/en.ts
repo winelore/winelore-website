@@ -790,6 +790,7 @@ const en = {
     origin: "Origin:",
     producers: "Producers",
     created: "Created",
+    enteredBy: "Entered by",
     competitionResults: "Competition Results",
     awardsSubtitle: "Awards and recognitions",
     awardSingle: "1 Award",

@@ -39,15 +39,28 @@ export default async function BeveragePage({ params }: PageProps) {
         }
 
         try {
+            const auidsToFetch: number[] = [];
+            if (beverage.createdBy) {
+                const cId = Array.isArray(beverage.createdBy) ? beverage.createdBy[0] : beverage.createdBy;
+                if (cId) auidsToFetch.push(Number(cId));
+            }
             if (beverage.producers && beverage.producers.length > 0) {
-                const producerKeysToFetch = beverage.producers
-                    .map((p: any) => p.producerId || (p.auid && p.auid[0]) || p.id)
-                    .filter(Boolean);
-                const usernamesMap = await getUsernamesAction(producerKeysToFetch) as Record<string, any>;
+                beverage.producers.forEach((p: any) => {
+                    if (p.auid) {
+                        const a = Array.isArray(p.auid) ? p.auid[0] : p.auid;
+                        if (a) auidsToFetch.push(Number(a));
+                    }
+                });
+            }
+            const uniqueAuids = Array.from(new Set(auidsToFetch));
+            const usernamesMap = uniqueAuids.length > 0
+                ? (await getUsernamesAction(uniqueAuids) as Record<string, any>)
+                : {};
 
+            if (beverage.producers && beverage.producers.length > 0) {
                 beverage.producers = beverage.producers.map((p: any) => {
-                    const key = String(p.producerId || (p.auid && p.auid[0]) || p.id);
-                    const userInfo = usernamesMap[key];
+                    const auidKey = p.auid ? String(Array.isArray(p.auid) ? p.auid[0] : p.auid) : null;
+                    const userInfo = auidKey ? usernamesMap[auidKey] : null;
 
                     let dName = null;
                     let uName = null;
@@ -66,6 +79,25 @@ export default async function BeveragePage({ params }: PageProps) {
                         username: uName
                     };
                 });
+            }
+
+            if (beverage.createdBy) {
+                const cId = String(Array.isArray(beverage.createdBy) ? beverage.createdBy[0] : beverage.createdBy);
+                const cInfo = usernamesMap[cId];
+                let createdByName = null;
+                let createdByUsername = null;
+                if (typeof cInfo === 'string') {
+                    createdByName = cInfo;
+                    createdByUsername = cInfo;
+                } else if (cInfo && typeof cInfo === 'object') {
+                    createdByName = cInfo.displayName || null;
+                    createdByUsername = cInfo.username || null;
+                }
+                beverage.createdByUser = {
+                    auid: cId,
+                    displayName: createdByName,
+                    username: createdByUsername
+                };
             }
         } catch (err) {
             console.error("Failed to fetch producer usernames:", err);

@@ -128,10 +128,9 @@ export async function createBeverageAction(params: {
     }
 
     const headers = await getActorHeaders();
-    const rawActor = headers.actor || '00d91f78-e4f8-4bfc-a61f-99edffffc4ff';
-    const producerUuid = isUuid(rawActor)
-        ? rawActor
-        : '00d91f78-e4f8-4bfc-a61f-99edffffc4ff';
+    const rawActor = headers.actor;
+    const isActorUuid = isUuid(rawActor);
+    const actorAuid = !isActorUuid ? parseInt(rawActor, 10) : null;
 
     const producerRole: 'MAKER' | 'BOTTLER' = params.role === 'BOTTLER' ? 'BOTTLER' : 'MAKER';
 
@@ -143,10 +142,14 @@ export async function createBeverageAction(params: {
         attributes.style = params.style.trim().toUpperCase();
     }
 
+    const producerInput = isActorUuid
+        ? { producerId: rawActor, role: producerRole }
+        : { auid: actorAuid !== null && !isNaN(actorAuid) ? [actorAuid] : undefined, role: producerRole };
+
     const input: any = {
         name: trimmedName,
         typeId: params.typeId,
-        producers: [{ producerId: producerUuid, role: producerRole }],
+        producers: [producerInput],
     };
 
     if (Object.keys(attributes).length > 0) {

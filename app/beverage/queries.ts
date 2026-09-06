@@ -13,6 +13,7 @@ export const SUBMIT_BEVERAGE_FOR_REVIEW = gql(`
       attributes
       producers {
         id
+        auid
         producerId
         role
       }
@@ -34,6 +35,7 @@ export const CHANGE_BEVERAGE_NAME = gql(`
       attributes
       producers {
         id
+        auid
         producerId
         role
       }
@@ -55,6 +57,7 @@ export const CHANGE_BEVERAGE_ORIGIN = gql(`
       attributes
       producers {
         id
+        auid
         producerId
         role
       }
@@ -76,6 +79,7 @@ export const UPDATE_BEVERAGE_ATTRIBUTES = gql(`
       attributes
       producers {
         id
+        auid
         producerId
         role
       }
@@ -97,6 +101,7 @@ export const REGISTER_BEVERAGE_PRODUCER = gql(`
       attributes
       producers {
         id
+        auid
         producerId
         role
       }
@@ -118,6 +123,7 @@ export const UNREGISTER_BEVERAGE_PRODUCER = gql(`
       attributes
       producers {
         id
+        auid
         producerId
         role
       }
@@ -139,6 +145,7 @@ export const CREATE_BEVERAGE = gql(`
       attributes
       producers {
         id
+        auid
         producerId
         role
       }

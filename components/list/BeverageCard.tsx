@@ -12,7 +12,7 @@ export interface BeverageCardData {
     /** Type code parsed out of `attributes` (e.g. "RED"), used when `typeId` maps to nothing. */
     type?: string | null
     typeId?: string | null
-    producers?: { auid: number[] }[] | null
+    producers?: { auid?: number[] | null; producerId?: string | null }[] | null
     /** Reverse-geocoded origin, resolved server side where the page fetches it. */
     originParts?: string[] | null
 }
@@ -33,18 +33,28 @@ export function BeverageCard({ beverage, typeMap, usernames, density = "comforta
     const status = beverage.status ?? undefined
     const { colorScheme, icon } = beverageStatusAppearance(status ?? "")
 
-    const producerAuids = Array.from(new Set((beverage.producers ?? []).flatMap((producer) => producer.auid ?? [])))
+    const producerLabels: string[] = []
+    ;(beverage.producers ?? []).forEach((producer) => {
+        if (producer.auid && producer.auid.length > 0) {
+            producer.auid.forEach((auid) => {
+                producerLabels.push(usernames?.[auid] || `@${auid}`)
+            })
+        } else if (producer.producerId) {
+            producerLabels.push(`Producer ${String(producer.producerId).slice(0, 8)}`)
+        }
+    })
+    const uniqueProducerLabels = Array.from(new Set(producerLabels))
     const origin = beverage.originParts?.filter(Boolean).join(", ")
 
     const meta: EntityCardMeta[] = []
     if (origin) {
         meta.push({ icon: MapPin, label: t("beverages.origin"), value: origin })
     }
-    if (producerAuids.length > 0) {
+    if (uniqueProducerLabels.length > 0) {
         meta.push({
             icon: User,
             label: t("beverages.producer"),
-            value: producerAuids.map((auid) => usernames?.[auid] || String(auid)).join(", "),
+            value: uniqueProducerLabels.join(", "),
         })
     }
 

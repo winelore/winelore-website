@@ -792,6 +792,7 @@ const uk: TranslationKey = {
     origin: "Походження:",
     producers: "Виробники",
     created: "Створено",
+    enteredBy: "Внесено",
     competitionResults: "Результати конкурсів",
     awardsSubtitle: "Нагороди та визнання",
     awardSingle: "1 Нагорода",
