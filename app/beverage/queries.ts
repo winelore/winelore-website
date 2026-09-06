@@ -14,6 +14,7 @@ export const SUBMIT_BEVERAGE_FOR_REVIEW = gql(`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -35,6 +36,7 @@ export const CHANGE_BEVERAGE_NAME = gql(`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -56,6 +58,7 @@ export const CHANGE_BEVERAGE_ORIGIN = gql(`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -77,6 +80,7 @@ export const UPDATE_BEVERAGE_ATTRIBUTES = gql(`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -98,6 +102,7 @@ export const REGISTER_BEVERAGE_PRODUCER = gql(`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -119,6 +124,7 @@ export const UNREGISTER_BEVERAGE_PRODUCER = gql(`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -128,3 +134,42 @@ export const UNREGISTER_BEVERAGE_PRODUCER = gql(`
     }
   }
 `)
+
+export const CREATE_BEVERAGE = gql(`
+  mutation CreateBeverage($input: CreateBeverageInput!) {
+    createBeverage(input: $input) {
+      id
+      name
+      status
+      typeId
+      attributes
+      producers {
+        id
+        auid
+        producerId
+        role
+      }
+      origin {
+        latitude
+        longitude
+      }
+    }
+  }
+`)
+
+export const CREATE_BEVERAGE_TYPE = gql(`
+  mutation CreateBeverageType($input: CreateBeverageTypeInput!) {
+    createBeverageType(input: $input) {
+      id
+    }
+  }
+`)
+
+export const PUBLISH_BEVERAGE_TYPE = gql(`
+  mutation PublishBeverageType($id: ID!) {
+    publishBeverageType(id: $id) {
+      id
+    }
+  }
+`)
+

@@ -19,12 +19,14 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
                         id
                         code
                         name
+                        status
                     }
                 }
             }
         `;
         const data = await rawGraphQL(query);
-        return data?.beverageTypes?.items || [];
+        const items = data?.beverageTypes?.items || [];
+        return items.filter((item: any) => !item.status || item.status === 'PUBLISHED');
     } catch (err: any) {
         console.error("❌ Failed to fetch beverage types:", err.message);
         return [];

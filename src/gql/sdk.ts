@@ -12,6 +12,7 @@ export type AddCommissionCandidateItemInput = {
 };
 
 export type BeverageFilterInput = {
+  producerIds?: Array<string | number> | null | undefined;
   producers?: Array<Array<number>> | null | undefined;
   status?: BeverageStatus | null | undefined;
   typeId?: string | number | null | undefined;
@@ -223,7 +224,8 @@ export type PlannedDatesInput = {
 };
 
 export type ProducerInput = {
-  auid: Array<number>;
+  auid?: Array<number> | null | undefined;
+  producerId?: string | number | null | undefined;
   role: ProducerRole;
 };
 
@@ -242,7 +244,7 @@ export type GetBeverageQueryVariables = Exact<{
 }>;
 
 
-export type GetBeverageQuery = { beverage: { id: string, name: string, status: Types.BeverageStatus, typeId: string, schemaEditionIds: string, attributes: unknown, createdAt: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } | null };
+export type GetBeverageQuery = { beverage: { id: string, name: string, status: Types.BeverageStatus, typeId: string, schemaEditionIds: string, attributes: unknown, createdBy: Array<number>, createdAt: string, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } | null };
 
 export type GetBeverageAwardsQueryVariables = Exact<{
   id: string | number;
@@ -263,7 +265,7 @@ export type SubmitBeverageForReviewMutationVariables = Exact<{
 }>;
 
 
-export type SubmitBeverageForReviewMutation = { submitBeverageForReview: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+export type SubmitBeverageForReviewMutation = { submitBeverageForReview: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
 
 export type ChangeBeverageNameMutationVariables = Exact<{
   id: string | number;
@@ -271,7 +273,7 @@ export type ChangeBeverageNameMutationVariables = Exact<{
 }>;
 
 
-export type ChangeBeverageNameMutation = { changeBeverageName: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+export type ChangeBeverageNameMutation = { changeBeverageName: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
 
 export type ChangeBeverageOriginMutationVariables = Exact<{
   id: string | number;
@@ -279,7 +281,7 @@ export type ChangeBeverageOriginMutationVariables = Exact<{
 }>;
 
 
-export type ChangeBeverageOriginMutation = { changeBeverageOrigin: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+export type ChangeBeverageOriginMutation = { changeBeverageOrigin: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
 
 export type UpdateBeverageAttributesMutationVariables = Exact<{
   id: string | number;
@@ -287,7 +289,7 @@ export type UpdateBeverageAttributesMutationVariables = Exact<{
 }>;
 
 
-export type UpdateBeverageAttributesMutation = { updateBeverageAttributes: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+export type UpdateBeverageAttributesMutation = { updateBeverageAttributes: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
 
 export type RegisterBeverageProducerMutationVariables = Exact<{
   id: string | number;
@@ -295,7 +297,7 @@ export type RegisterBeverageProducerMutationVariables = Exact<{
 }>;
 
 
-export type RegisterBeverageProducerMutation = { registerBeverageProducer: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+export type RegisterBeverageProducerMutation = { registerBeverageProducer: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
 
 export type UnregisterBeverageProducerMutationVariables = Exact<{
   id: string | number;
@@ -303,7 +305,28 @@ export type UnregisterBeverageProducerMutationVariables = Exact<{
 }>;
 
 
-export type UnregisterBeverageProducerMutation = { unregisterBeverageProducer: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+export type UnregisterBeverageProducerMutation = { unregisterBeverageProducer: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type CreateBeverageMutationVariables = Exact<{
+  input: Types.CreateBeverageInput;
+}>;
+
+
+export type CreateBeverageMutation = { createBeverage: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } };
+
+export type CreateBeverageTypeMutationVariables = Exact<{
+  input: Types.CreateBeverageTypeInput;
+}>;
+
+
+export type CreateBeverageTypeMutation = { createBeverageType: { id: string } };
+
+export type PublishBeverageTypeMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type PublishBeverageTypeMutation = { publishBeverageType: { id: string } };
 
 export type GetBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -313,14 +336,14 @@ export type GetBeveragesQueryVariables = Exact<{
 }>;
 
 
-export type GetBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
+export type GetBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
 
 export type GetCommissionQueryVariables = Exact<{
   id: string | number;
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, partialCandidateEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, evaluationVisibleAttributes: { beverage: Array<string>, batch: Array<string>, sample: Array<string> }, panels: Array<{ id: string, name: string, candidates: Array<{ id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, lotNumber: string | null, attributes: unknown, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: unknown, producers: Array<{ auid: Array<number> }> } } } }> }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentPanelId: string | null, chaoticCurrentPanelChangesEnabled: boolean, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string } } }> }> }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, partialCandidateEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, evaluationVisibleAttributes: { beverage: Array<string>, batch: Array<string>, sample: Array<string> }, panels: Array<{ id: string, name: string, candidates: Array<{ id: string, anonymizedCode: string | null, sample: { id: string, volumeMl: number | null, batch: { id: string, lotNumber: string | null, attributes: unknown, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: unknown, producers: Array<{ auid: Array<number> | null, producerId: string | null }> } } } }> }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentPanelId: string | null, chaoticCurrentPanelChangesEnabled: boolean, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string } } }> }> }> } | null };
 
 export type GetCommissionTemplatesQueryVariables = Exact<{
   id: string | number;
@@ -424,7 +447,7 @@ export type GetReplicaCandidatesQueryVariables = Exact<{
 }>;
 
 
-export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, currentPanelId: string | null, commission: { id: string, panels: Array<{ id: string, name: string, candidates: Array<{ id: string }> }> }, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, attributes: unknown, batch: { id: string, attributes: unknown, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: unknown, producers: Array<{ auid: Array<number> }>, origin: { latitude: number, longitude: number } | null } } } } }> }> } | null };
+export type GetReplicaCandidatesQuery = { commissionReplica: { id: string, status: Types.CommissionReplicaStatus, currentPanelId: string | null, commission: { id: string, panels: Array<{ id: string, name: string, candidates: Array<{ id: string }> }> }, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, attributes: unknown, batch: { id: string, attributes: unknown, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: unknown, producers: Array<{ auid: Array<number> | null, producerId: string | null }>, origin: { latitude: number, longitude: number } | null } } } } }> }> } | null };
 
 export type GetReplicaCandidateQueryVariables = Exact<{
   id: string | number;
@@ -763,7 +786,7 @@ export type GetBeverageDetailsMapQueryVariables = Exact<{
 }>;
 
 
-export type GetBeverageDetailsMapQuery = { beverage: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, createdAt: string, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } | null };
+export type GetBeverageDetailsMapQuery = { beverage: { id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, createdAt: string, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } | null };
 
 export type GetMyBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -774,7 +797,7 @@ export type GetMyBeveragesQueryVariables = Exact<{
 }>;
 
 
-export type GetMyBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number>, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
+export type GetMyBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: Types.BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
 
 export type GetMyCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -814,9 +837,11 @@ export const GetBeverageDocument = gql`
     typeId
     schemaEditionIds
     attributes
+    createdBy
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
@@ -878,6 +903,7 @@ export const SubmitBeverageForReviewDocument = gql`
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
@@ -898,6 +924,7 @@ export const ChangeBeverageNameDocument = gql`
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
@@ -918,6 +945,7 @@ export const ChangeBeverageOriginDocument = gql`
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
@@ -938,6 +966,7 @@ export const UpdateBeverageAttributesDocument = gql`
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
@@ -958,6 +987,7 @@ export const RegisterBeverageProducerDocument = gql`
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
@@ -978,12 +1008,48 @@ export const UnregisterBeverageProducerDocument = gql`
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
       latitude
       longitude
     }
+  }
+}
+    `;
+export const CreateBeverageDocument = gql`
+    mutation CreateBeverage($input: CreateBeverageInput!) {
+  createBeverage(input: $input) {
+    id
+    name
+    status
+    typeId
+    attributes
+    producers {
+      id
+      auid
+      producerId
+      role
+    }
+    origin {
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const CreateBeverageTypeDocument = gql`
+    mutation CreateBeverageType($input: CreateBeverageTypeInput!) {
+  createBeverageType(input: $input) {
+    id
+  }
+}
+    `;
+export const PublishBeverageTypeDocument = gql`
+    mutation PublishBeverageType($id: ID!) {
+  publishBeverageType(id: $id) {
+    id
   }
 }
     `;
@@ -999,6 +1065,7 @@ export const GetBeveragesDocument = gql`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -1053,6 +1120,7 @@ export const GetCommissionDocument = gql`
               attributes
               producers {
                 auid
+                producerId
               }
             }
           }
@@ -1408,6 +1476,7 @@ export const GetReplicaCandidatesDocument = gql`
                 attributes
                 producers {
                   auid
+                  producerId
                 }
                 origin {
                   latitude
@@ -1934,6 +2003,7 @@ export const GetBeverageDetailsMapDocument = gql`
     producers {
       id
       auid
+      producerId
       role
     }
     origin {
@@ -1955,6 +2025,7 @@ export const GetMyBeveragesDocument = gql`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {
@@ -2050,6 +2121,15 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     UnregisterBeverageProducer(variables: Types.UnregisterBeverageProducerMutationVariables, options?: C): Promise<Types.UnregisterBeverageProducerMutation> {
       return requester<Types.UnregisterBeverageProducerMutation, Types.UnregisterBeverageProducerMutationVariables>(UnregisterBeverageProducerDocument, variables, options) as Promise<Types.UnregisterBeverageProducerMutation>;
+    },
+    CreateBeverage(variables: Types.CreateBeverageMutationVariables, options?: C): Promise<Types.CreateBeverageMutation> {
+      return requester<Types.CreateBeverageMutation, Types.CreateBeverageMutationVariables>(CreateBeverageDocument, variables, options) as Promise<Types.CreateBeverageMutation>;
+    },
+    CreateBeverageType(variables: Types.CreateBeverageTypeMutationVariables, options?: C): Promise<Types.CreateBeverageTypeMutation> {
+      return requester<Types.CreateBeverageTypeMutation, Types.CreateBeverageTypeMutationVariables>(CreateBeverageTypeDocument, variables, options) as Promise<Types.CreateBeverageTypeMutation>;
+    },
+    PublishBeverageType(variables: Types.PublishBeverageTypeMutationVariables, options?: C): Promise<Types.PublishBeverageTypeMutation> {
+      return requester<Types.PublishBeverageTypeMutation, Types.PublishBeverageTypeMutationVariables>(PublishBeverageTypeDocument, variables, options) as Promise<Types.PublishBeverageTypeMutation>;
     },
     GetBeverages(variables?: Types.GetBeveragesQueryVariables, options?: C): Promise<Types.GetBeveragesQuery> {
       return requester<Types.GetBeveragesQuery, Types.GetBeveragesQueryVariables>(GetBeveragesDocument, variables, options) as Promise<Types.GetBeveragesQuery>;

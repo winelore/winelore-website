@@ -43,6 +43,7 @@ export const GET_COMMISSION_RESULTS = `
               producers {
                 id
                 auid
+                producerId
                 role
               }
               origin {

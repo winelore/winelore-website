@@ -18,10 +18,11 @@ type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
 
 interface ProducerDetails {
     id: string
-    auid: number[]
+    producerId?: string | null
+    auid?: number[] | null
     role: string // Can be MAKER, OWNER, DISTRIBUTOR, BOTTLER, etc.
-    displayName?: string
-    username?: string
+    displayName?: string | null
+    username?: string | null
 }
 
 interface Beverage {
@@ -34,6 +35,12 @@ interface Beverage {
     attributes: any
     producers: ProducerDetails[]
     originParts?: string[]
+    createdBy?: number[] | null
+    createdByUser?: {
+        auid: string
+        displayName?: string | null
+        username?: string | null
+    } | null
     createdAt: string
     origin?: {
         latitude?: number | null
@@ -260,6 +267,8 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
     const renderName = () => {
         if (producer.displayName) return producer.displayName
         if (producer.username) return `@${producer.username}`
+        if (producer.auid && producer.auid.length > 0) return `@user-${producer.auid[0]}`
+        if (producer.producerId) return `Winery ${String(producer.producerId).slice(0, 8)}`
         return (t("common.unknownUser") as string) || "Unknown User"
     }
 
@@ -349,7 +358,13 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         status: beverageStatus || initialData.beverage.status,
         ...beverageEdits,
     }
-    const isProducer = beverage.producers.some((producer) => producer.auid.includes(currentAuid))
+    const isProducer = beverage.producers.some((producer) => {
+        const auidMatches = producer.auid
+            ? (Array.isArray(producer.auid) ? producer.auid.includes(currentAuid) : Number(producer.auid) === currentAuid)
+            : false
+        const idMatches = Boolean(producer.producerId && producer.producerId === String(currentAuid))
+        return auidMatches || idMatches
+    })
 
     const handleSubmitForReview = async () => {
         if (isSubmittingForReview || beverage.status !== "DRAFT" || !isProducer) return
@@ -357,6 +372,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         try {
             const updated = await submitBeverageForReviewAction(beverage.id)
             setBeverageStatus(updated?.status || "IN_REVIEW")
+            toast.success(t("beverage.submitReviewSuccess", { defaultValue: "Напій успішно відправлено на перевірку!" }))
         } catch (err: any) {
             console.error("Failed to submit beverage for review:", err)
             toast.error(err.message || t("beverage.submitReviewError"))
@@ -561,7 +577,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                     )}
                                 </div>
 
-                                {/* Created date */}
+                                {/* Created date & Provenance */}
                                 <div className="space-y-1.5">
                                     <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                                         <Calendar className="w-3.5 h-3.5 text-indigo-500" />
@@ -570,6 +586,14 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                     <p suppressHydrationWarning className="text-sm font-bold text-slate-700">
                                         {formatDateTime(beverage.createdAt)}
                                     </p>
+                                    {beverage.createdByUser && (
+                                        <p className="text-[11px] font-semibold text-slate-500">
+                                            {t("beverage.enteredBy")}:{" "}
+                                            <span className="font-bold text-slate-700">
+                                                {beverage.createdByUser.displayName || (beverage.createdByUser.username ? `@${beverage.createdByUser.username}` : `AUID ${beverage.createdByUser.auid}`)}
+                                            </span>
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

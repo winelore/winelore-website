@@ -42,7 +42,7 @@ export interface CandidateSample {
             name: string
             status?: string
             attributes?: any
-            producers?: { auid: number[] | number }[] | null
+            producers?: { auid?: number[] | number | null; producerId?: string | null }[] | null
         } | null
     } | null
 }
@@ -485,7 +485,7 @@ export function PanelsSection({
                                             const bevName = canShowRealBeverage && rawBevName ? rawBevName : t("commission.results.candidate")
                                             const producers = cand.sample?.batch?.beverage?.producers
                                             const producerName = canShowRealBeverage && producers && producers.length > 0 && usernames
-                                                ? producers.flatMap(p => Array.isArray(p.auid) ? p.auid : [p.auid]).map(id => usernames[id] || String(id)).filter(Boolean).join(", ")
+                                                ? producers.flatMap((p: any) => p.auid ? (Array.isArray(p.auid) ? p.auid : [p.auid]) : []).map((id: any) => id ? (usernames[id] || String(id)) : '').filter(Boolean).join(", ")
                                                 : null
                                             const lotNo = cand.sample?.batch?.lotNumber
                                             const vol = cand.sample?.volumeMl
