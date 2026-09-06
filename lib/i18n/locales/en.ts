@@ -603,6 +603,8 @@ const en = {
     voiceDiscard: "Discard voice recording",
     voiceRecorded: "Voice ({{seconds}}s)",
     voiceMicError: "Microphone access denied. Check browser permissions.",
+    voiceMicNotFound: "No microphone detected on this device.",
+    voiceNotSupported: "Voice recording is not supported in this browser or in-app webview. Please open this page directly in Safari or Chrome.",
     voiceUploadFailed: "Voice upload failed — submitting text only.",
     myScore:"My Score",
     averageScore: "Average Score",
