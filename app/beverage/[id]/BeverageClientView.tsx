@@ -18,7 +18,8 @@ type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
 
 interface ProducerDetails {
     id: string
-    auid: number[]
+    producerId?: string
+    auid?: number[]
     role: string // Can be MAKER, OWNER, DISTRIBUTOR, BOTTLER, etc.
     displayName?: string
     username?: string
@@ -349,7 +350,10 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         status: beverageStatus || initialData.beverage.status,
         ...beverageEdits,
     }
-    const isProducer = beverage.producers.some((producer) => producer.auid.includes(currentAuid))
+    const isProducer = beverage.producers.some((producer) => {
+        const pId = producer.producerId || (producer.auid ? String(producer.auid[0]) : '');
+        return Boolean(pId && (pId === String(currentAuid) || (producer.auid && producer.auid.includes(currentAuid))));
+    })
 
     const handleSubmitForReview = async () => {
         if (isSubmittingForReview || beverage.status !== "DRAFT" || !isProducer) return

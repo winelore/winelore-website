@@ -23,6 +23,8 @@ import { useTranslation } from '@/lib/i18n/context';
 import {
     createBeverageAction,
     getBeverageTypesAction,
+    getBeverageTypeCharacteristicsAction,
+    type BeverageCharacteristic,
 } from './actions';
 import { LocationPickerMap } from './LocationPickerMap';
 
@@ -193,12 +195,14 @@ export default function CreateBeveragePage() {
     const [name, setName] = useState('');
     const [typeSelection, setTypeSelection] = useState('');
     const [role, setRole] = useState<'MAKER' | 'BOTTLER'>('MAKER');
-    const [colorStyle, setColorStyle] = useState<string>('');
-    const [wineStyle, setWineStyle] = useState<string>('');
     const [originCoords, setOriginCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
     const [typesList, setTypesList] = useState<TypeOption[]>([]);
     const [typesLoading, setTypesLoading] = useState(true);
+
+    const [characteristics, setCharacteristics] = useState<BeverageCharacteristic[]>([]);
+    const [characteristicsLoading, setCharacteristicsLoading] = useState(false);
+    const [dynamicAttributes, setDynamicAttributes] = useState<Record<string, string>>({});
 
     const [showErrors, setShowErrors] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -209,6 +213,27 @@ export default function CreateBeveragePage() {
         setCurrentAuid(cookieAuid ? parseInt(cookieAuid, 10) : null);
         setAuthChecked(true);
     }, []);
+
+    useEffect(() => {
+        if (!typeSelection) return;
+        let cancelled = false;
+        setCharacteristicsLoading(true);
+        getBeverageTypeCharacteristicsAction(typeSelection)
+            .then((items) => {
+                if (!cancelled) {
+                    setCharacteristics(items);
+                    setDynamicAttributes({});
+                }
+            })
+            .catch((err) => {
+                console.error('Error fetching type characteristics:', err);
+            })
+            .finally(() => {
+                if (!cancelled) setCharacteristicsLoading(false);
+            });
+
+        return () => { cancelled = true; };
+    }, [typeSelection]);
 
     useEffect(() => {
         if (!authChecked) return;
@@ -281,20 +306,6 @@ export default function CreateBeveragePage() {
         { value: 'BOTTLER', label: t('beverage.roleBottler', { defaultValue: 'Розливник' }) },
     ], [t]);
 
-    const colorOptions = useMemo(() => [
-        { code: 'RED', label: formatBeverageType('RED') },
-        { code: 'WHITE', label: formatBeverageType('WHITE') },
-        { code: 'ROSE', label: formatBeverageType('ROSE') },
-        { code: 'ORANGE', label: t('beverage.colorOrange', { defaultValue: 'Оранжеве / Бурштинове' }) },
-    ], [formatBeverageType, t]);
-
-    const styleOptions = useMemo(() => [
-        { code: 'DRY', label: t('beverage.styleDry', { defaultValue: 'Сухе' }) },
-        { code: 'SEMI_DRY', label: t('beverage.styleSemiDry', { defaultValue: 'Напівсухе' }) },
-        { code: 'SEMI_SWEET', label: t('beverage.styleSemiSweet', { defaultValue: 'Напівсолодке' }) },
-        { code: 'SWEET', label: t('beverage.styleSweet', { defaultValue: 'Солодке' }) },
-    ], [t]);
-
     const selectedTypeName = useMemo(() => {
         const found = typesList.find(tItem => tItem.id === typeSelection);
         if (!found) return null;
@@ -327,8 +338,7 @@ export default function CreateBeveragePage() {
                 name: trimmedName,
                 typeId: typeSelection,
                 role,
-                color: isWineType ? (colorStyle || undefined) : undefined,
-                style: isWineType ? (wineStyle || undefined) : undefined,
+                attributes: Object.keys(dynamicAttributes).length > 0 ? dynamicAttributes : undefined,
                 origin,
             });
 
@@ -473,8 +483,8 @@ export default function CreateBeveragePage() {
 
                             <div className="h-px bg-slate-100" />
 
-                            {/* 2 — Characteristics (Optional) — Only rendered for Wine */}
-                            {isWineType && (
+                            {/* 2 — Characteristics (Optional) — Dynamic backend characteristics */}
+                            {(characteristicsLoading || characteristics.length > 0) && (
                                 <>
                                     <section className="flex flex-col gap-5 p-6 sm:p-8">
                                         <SectionHeader
@@ -482,82 +492,123 @@ export default function CreateBeveragePage() {
                                             title={t('beverage.createSectionCharacteristics', { defaultValue: 'Характеристики напою' })}
                                             icon={Tag}
                                             badge={t('competition.createOptional', { defaultValue: 'Опціонально' })}
-                                            hint={t('beverage.characteristicsHint', { defaultValue: 'Ви можете вказати колір та стиль напою зараз або пізніше.' })}
+                                            hint={t('beverage.characteristicsHint', { defaultValue: 'Ви можете вказати характеристики напою зараз або пізніше.' })}
                                         />
 
-                                        {/* Color */}
-                                        <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                                                {t('beverage.colorLabel', { defaultValue: 'Колір' })}
-                                            </label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {colorOptions.map(opt => {
-                                                    const isSelected = colorStyle === opt.code;
-                                                    return (
-                                                        <button
-                                                            key={opt.code}
-                                                            type="button"
-                                                            onClick={() => setColorStyle(isSelected ? '' : opt.code)}
-                                                            disabled={isSubmitting}
-                                                            className={`cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-all ${
-                                                                isSelected
-                                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-600'
-                                                            }`}
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                                {colorStyle && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setColorStyle('')}
-                                                        disabled={isSubmitting}
-                                                        className="cursor-pointer rounded-full px-3 py-2 text-xs font-bold text-slate-400 transition-colors hover:text-slate-600"
-                                                    >
-                                                        {t('competition.createPresetClear', { defaultValue: 'Очистити' })}
-                                                    </button>
-                                                )}
+                                        {characteristicsLoading ? (
+                                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 py-2">
+                                                <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+                                                <span>{t('common.loading', { defaultValue: 'Завантаження характеристик...' })}</span>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            characteristics.map((char) => {
+                                                const val = dynamicAttributes[char.code] || '';
+                                                const hasAllowed = char.allowedValues && char.allowedValues.length > 0;
 
-                                        {/* Style (Sweetness) */}
-                                        <div className="flex flex-col gap-2 mt-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                                                {t('beverage.styleLabel', { defaultValue: 'Стиль (Солодкість)' })}
-                                            </label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {styleOptions.map(opt => {
-                                                    const isSelected = wineStyle === opt.code;
-                                                    return (
-                                                        <button
-                                                            key={opt.code}
-                                                            type="button"
-                                                            onClick={() => setWineStyle(isSelected ? '' : opt.code)}
-                                                            disabled={isSubmitting}
-                                                            className={`cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-all ${
-                                                                isSelected
-                                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-600'
-                                                            }`}
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                                {wineStyle && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setWineStyle('')}
-                                                        disabled={isSubmitting}
-                                                        className="cursor-pointer rounded-full px-3 py-2 text-xs font-bold text-slate-400 transition-colors hover:text-slate-600"
-                                                    >
-                                                        {t('competition.createPresetClear', { defaultValue: 'Очистити' })}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
+                                                return (
+                                                    <div key={char.code} className="flex flex-col gap-2">
+                                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                            {char.name || char.code}
+                                                            {char.isRequired && <span className="ml-1 text-rose-500">*</span>}
+                                                        </label>
+
+                                                        {hasAllowed ? (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {char.allowedValues!.map((allowedVal) => {
+                                                                    const isSelected = val === allowedVal;
+                                                                    const formatted = formatBeverageType(allowedVal);
+                                                                    const label = formatted && formatted !== allowedVal ? formatted : allowedVal;
+
+                                                                    return (
+                                                                        <button
+                                                                            key={allowedVal}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setDynamicAttributes((prev) => {
+                                                                                    const next = { ...prev };
+                                                                                    if (isSelected) {
+                                                                                        delete next[char.code];
+                                                                                    } else {
+                                                                                        next[char.code] = allowedVal;
+                                                                                    }
+                                                                                    return next;
+                                                                                });
+                                                                            }}
+                                                                            disabled={isSubmitting}
+                                                                            className={`cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-all ${
+                                                                                isSelected
+                                                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                                                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-600'
+                                                                            }`}
+                                                                        >
+                                                                            {label}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                                {val && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setDynamicAttributes((prev) => {
+                                                                                const next = { ...prev };
+                                                                                delete next[char.code];
+                                                                                return next;
+                                                                            });
+                                                                        }}
+                                                                        disabled={isSubmitting}
+                                                                        className="cursor-pointer rounded-full px-3 py-2 text-xs font-bold text-slate-400 transition-colors hover:text-slate-600"
+                                                                    >
+                                                                        {t('competition.createPresetClear', { defaultValue: 'Очистити' })}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ) : char.typeName === 'INT' || char.typeName === 'DOUBLE' ? (
+                                                            <input
+                                                                type="number"
+                                                                value={val}
+                                                                min={char.minLimit}
+                                                                max={char.maxLimit}
+                                                                onChange={(e) => {
+                                                                    const inputVal = e.target.value;
+                                                                    setDynamicAttributes((prev) => {
+                                                                        const next = { ...prev };
+                                                                        if (inputVal === '') {
+                                                                            delete next[char.code];
+                                                                        } else {
+                                                                            next[char.code] = inputVal;
+                                                                        }
+                                                                        return next;
+                                                                    });
+                                                                }}
+                                                                disabled={isSubmitting}
+                                                                className={inputClass(false)}
+                                                                placeholder={char.name || char.code}
+                                                            />
+                                                        ) : (
+                                                            <input
+                                                                type="text"
+                                                                value={val}
+                                                                onChange={(e) => {
+                                                                    const inputVal = e.target.value;
+                                                                    setDynamicAttributes((prev) => {
+                                                                        const next = { ...prev };
+                                                                        if (!inputVal.trim()) {
+                                                                            delete next[char.code];
+                                                                        } else {
+                                                                            next[char.code] = inputVal;
+                                                                        }
+                                                                        return next;
+                                                                    });
+                                                                }}
+                                                                disabled={isSubmitting}
+                                                                className={inputClass(false)}
+                                                                placeholder={char.name || char.code}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
                                     </section>
 
                                     <div className="h-px bg-slate-100" />
@@ -567,7 +618,7 @@ export default function CreateBeveragePage() {
                             {/* Geographic Origin (Optional) — Interactive Map */}
                             <section className="flex flex-col gap-5 p-6 sm:p-8">
                                 <SectionHeader
-                                    step={isWineType ? 3 : 2}
+                                    step={characteristics.length > 0 ? 3 : 2}
                                     title={t('beverage.createSectionOrigin', { defaultValue: 'Географічне походження' })}
                                     icon={Globe}
                                     badge={t('competition.createOptional', { defaultValue: 'Опціонально' })}
@@ -651,30 +702,22 @@ export default function CreateBeveragePage() {
                                     label={t('beverage.producerRoleLabel', { defaultValue: 'Ваша роль' })}
                                     value={role === 'BOTTLER' ? t('beverage.roleBottler', { defaultValue: 'Розливник' }) : t('beverage.roleMaker', { defaultValue: 'Виробник' })}
                                 />
-                                {isWineType && (
-                                    <>
+                                {characteristics.map((char) => {
+                                    const val = dynamicAttributes[char.code];
+                                    let displayVal = t('common.na', { defaultValue: 'Не вказано' });
+                                    if (val) {
+                                        const formatted = formatBeverageType(val);
+                                        displayVal = formatted && formatted !== val ? formatted : val;
+                                    }
+                                    return (
                                         <SummaryRow
-                                            label={t('beverage.colorLabel', { defaultValue: 'Колір' })}
-                                            value={
-                                                colorStyle === 'ORANGE'
-                                                    ? t('beverage.colorOrange', { defaultValue: 'Оранжеве / Бурштинове' })
-                                                    : colorStyle
-                                                    ? formatBeverageType(colorStyle)
-                                                    : t('common.na', { defaultValue: 'Не вказано' })
-                                            }
-                                            muted={!colorStyle}
+                                            key={char.code}
+                                            label={char.name || char.code}
+                                            value={displayVal}
+                                            muted={!val}
                                         />
-                                        <SummaryRow
-                                            label={t('beverage.styleLabel', { defaultValue: 'Стиль (Солодкість)' })}
-                                            value={
-                                                wineStyle
-                                                    ? styleOptions.find(s => s.code === wineStyle)?.label || wineStyle
-                                                    : t('common.na', { defaultValue: 'Не вказано' })
-                                            }
-                                            muted={!wineStyle}
-                                        />
-                                    </>
-                                )}
+                                    );
+                                })}
                                 <SummaryRow
                                     label={t('beverage.originLabel', { defaultValue: 'Координати' })}
                                     value={originCoords ? `${originCoords.latitude}, ${originCoords.longitude}` : t('common.na', { defaultValue: 'Не вказано' })}

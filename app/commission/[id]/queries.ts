@@ -42,7 +42,7 @@ export const GET_COMMISSION = gql(`
                 status
                 attributes
                 producers {
-                  auid
+                  producerId
                 }
               }
             }
@@ -394,7 +394,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
                 status
                 attributes
                 producers {
-                  auid
+                  producerId
                 }
                 origin {
                   latitude

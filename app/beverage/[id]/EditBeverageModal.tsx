@@ -14,7 +14,8 @@ import { searchUserByUsernameAction } from "@/app/commission/actions"
 
 interface ProducerDetails {
     id: string
-    auid: number[]
+    producerId?: string
+    auid?: number[]
     role: string
     displayName?: string
     username?: string
@@ -49,7 +50,9 @@ function getAvatarGradient(auid: number): string {
 function producerLabel(p: ProducerDetails): string {
     if (p.displayName) return p.displayName
     if (p.username) return `@${p.username}`
-    return `AUID ${p.auid[0]}`
+    if (p.producerId) return `ID ${p.producerId}`
+    if (p.auid && p.auid.length > 0) return `AUID ${p.auid[0]}`
+    return "Producer"
 }
 
 export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: EditBeverageModalProps) {
@@ -157,8 +160,8 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
             // The mutation only returns {id, auid, role} per producer — the server
             // doesn't resolve display names. Stamp the one we just searched for so
             // it doesn't render as "Unknown User" until the page next reloads.
-            const enrichedProducers = (updated.producers as ProducerDetails[]).map((p) =>
-                p.auid[0] === foundUser.auid
+            const enrichedProducers = (updated.producers as unknown as ProducerDetails[]).map((p) =>
+                (p.producerId === String(foundUser.auid) || (p.auid && p.auid[0] === foundUser.auid))
                     ? { ...p, displayName: foundUser.displayName, username: foundUser.username }
                     : p
             )
@@ -177,7 +180,7 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
         setRemovingProducerId(producerDetailsId)
         try {
             const updated = await unregisterBeverageProducerAction(beverage.id, producerDetailsId)
-            onUpdated({ producers: updated.producers as ProducerDetails[] })
+            onUpdated({ producers: updated.producers as unknown as ProducerDetails[] })
             toast.success(t("beverage.edit.saveSuccess"))
         } catch (err: any) {
             toast.error(err.message || t("beverage.edit.removeProducerError"))
@@ -300,7 +303,7 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
                                         className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
                                     >
                                         <div
-                                            className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient(p.auid[0])} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
+                                            className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient((p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
                                         >
                                             {producerLabel(p).slice(0, 2).toUpperCase()}
                                         </div>

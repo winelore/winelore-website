@@ -21,9 +21,9 @@ export default async function DashboardPage({
     let hasError = false;
 
     try {
-        const bevData = await fetchGraphQL(GET_BEVERAGES, { limit: LIMIT, offset: (currentPage - 1) * LIMIT });
-        const rawBeverages = bevData.beverages?.items || [];
-        totalCount = bevData.beverageCount || 0;
+        const bevData: any = await fetchGraphQL(GET_BEVERAGES as any, { limit: LIMIT, offset: (currentPage - 1) * LIMIT });
+        const rawBeverages = bevData?.beverages?.items || [];
+        totalCount = bevData?.beverageCount || 0;
 
         allBeverages = rawBeverages.map((bev: any) => {
             let beverageType = undefined;

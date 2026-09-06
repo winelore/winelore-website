@@ -20,7 +20,8 @@ type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPEN
 
 interface ProducerDetails {
     id: string
-    auid: number[]
+    producerId?: string
+    auid?: number[]
     role: "DISTRIBUTOR" | "MAKER" | "OWNER"
 }
 
@@ -55,7 +56,7 @@ export default function BeveragesClientView({
     const beveragesToDisplay = initialBeverages || []
 
     const allProducerAuids = useMemo(
-        () => Array.from(new Set(beveragesToDisplay.flatMap((bev) => (bev.producers || []).flatMap((p: any) => p.auid || [])))),
+        () => Array.from(new Set(beveragesToDisplay.flatMap((bev) => (bev.producers || []).flatMap((p: any) => p.producerId ? [p.producerId] : (p.auid || []))))),
         [beveragesToDisplay],
     )
     const { usernames } = useUsernames(allProducerAuids)

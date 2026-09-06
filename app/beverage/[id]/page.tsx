@@ -40,17 +40,20 @@ export default async function BeveragePage({ params }: PageProps) {
 
         try {
             if (beverage.producers && beverage.producers.length > 0) {
-                const auidsToFetch = beverage.producers.map((p: any) => String(p.auid[0]));
-                const usernamesMap = await getUsernamesAction(auidsToFetch) as Record<string, any>;
+                const producerKeysToFetch = beverage.producers
+                    .map((p: any) => p.producerId || (p.auid && p.auid[0]) || p.id)
+                    .filter(Boolean);
+                const usernamesMap = await getUsernamesAction(producerKeysToFetch) as Record<string, any>;
 
                 beverage.producers = beverage.producers.map((p: any) => {
-                    const auidStr = String(p.auid[0]);
-                    const userInfo = usernamesMap[auidStr];
+                    const key = String(p.producerId || (p.auid && p.auid[0]) || p.id);
+                    const userInfo = usernamesMap[key];
 
                     let dName = null;
                     let uName = null;
 
                     if (typeof userInfo === 'string') {
+                        dName = userInfo;
                         uName = userInfo;
                     } else if (userInfo && typeof userInfo === 'object') {
                         dName = userInfo.displayName || null;

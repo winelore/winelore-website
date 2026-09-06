@@ -30,7 +30,7 @@ const config: CodegenConfig = {
     generates: {
         './src/gql/': {
             schema: schemaUrl,
-            documents: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}', '!src/gql/axus/**/*.{ts,tsx}'],
+            documents: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}', '!src/gql/**/*.{ts,tsx}'],
             preset: 'client',
             plugins: [],
             presetConfig: {
@@ -39,7 +39,7 @@ const config: CodegenConfig = {
         },
         './src/gql/sdk.ts': {
             schema: schemaUrl,
-            documents: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}', '!src/gql/axus/**/*.{ts,tsx}'],
+            documents: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}', '!src/gql/**/*.{ts,tsx}'],
             preset: 'import-types',
             presetConfig: {
                 typesPath: './graphql',

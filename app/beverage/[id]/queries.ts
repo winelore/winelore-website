@@ -11,7 +11,7 @@ export const GET_BEVERAGE = gql(`
       attributes
       producers {
         id
-        auid
+        producerId
         role
       }
       origin {
