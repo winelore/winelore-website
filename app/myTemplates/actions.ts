@@ -154,7 +154,6 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number) {
                 t.owners?.some((ownerArr: number[]) => ownerArr.includes(ownerAuid))
             );
         }
-        }
 
         return {
             templates: templatesList,
