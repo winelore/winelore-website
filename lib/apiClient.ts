@@ -70,11 +70,12 @@ async function parseJsonResponse(response: Response, context: string): Promise<a
 
 export async function fetchGraphQLRaw<TResult, TVariables>(
     query: string,
-    variables?: TVariables
+    variables?: TVariables,
+    headers?: Record<string, string>
 ): Promise<TResult> {
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 }
     });

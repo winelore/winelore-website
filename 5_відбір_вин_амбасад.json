@@ -1,0 +1,1670 @@
+{
+  "competitionTitle": "V ювілейний Всеукраїнський відбір офіційних вин амбасадорів 2026",
+  "sourceFile": "5 відбір вин амбасад.xlsx",
+  "parsedAt": "2026-08-12T22:34:24.410Z",
+  "defaultBeverageTypeId": "11111111-1111-4111-8111-111111111101",
+  "defaultProducers": [
+    {
+      "auid": [
+        2
+      ],
+      "role": "MAKER"
+    }
+  ],
+  "sheets": [
+    {
+      "date": "13.08.2026",
+      "categories": [
+        {
+          "categoryName": "Вина ігристі",
+          "wines": [
+            {
+              "itemNumber": 1,
+              "fullName": "Ігристе брют біле",
+              "originalFullName": "Вино ігристе брют біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі",
+              "createBeverageInput": {
+                "name": "Ігристе брют біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-1"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 2,
+              "fullName": "Ігристе брют біле",
+              "originalFullName": "Вино ігристе брют біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі",
+              "createBeverageInput": {
+                "name": "Ігристе брют біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-2"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 3,
+              "fullName": "Ігристе сортове брют біле",
+              "originalFullName": "Вино ігристе сортове брют біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі",
+              "createBeverageInput": {
+                "name": "Ігристе сортове брют біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-3"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 4,
+              "fullName": "Ігристе брют рожеве",
+              "originalFullName": "Вино ігристе брют рожеве",
+              "color": "ROSE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі",
+              "createBeverageInput": {
+                "name": "Ігристе брют рожеве",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-4"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 5,
+              "fullName": "Ігристе сортове брют рожеве",
+              "originalFullName": "Вино ігристе сортове брют рожеве",
+              "color": "ROSE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі",
+              "createBeverageInput": {
+                "name": "Ігристе сортове брют рожеве",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-5"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 6,
+              "fullName": "Ігристе сортове брют рожеве",
+              "originalFullName": "Вино ігристе сортове брют рожеве",
+              "color": "ROSE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі",
+              "createBeverageInput": {
+                "name": "Ігристе сортове брют рожеве",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-6"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ігристі витримані",
+          "wines": [
+            {
+              "itemNumber": 7,
+              "fullName": "Ігристе витримане  брют біле",
+              "originalFullName": "Вино ігристе витримане  брют біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі витримані",
+              "createBeverageInput": {
+                "name": "Ігристе витримане  брют біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-7"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 8,
+              "fullName": "Ігристе витримане брют біле",
+              "originalFullName": "Вино ігристе витримане брют біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі витримані",
+              "createBeverageInput": {
+                "name": "Ігристе витримане брют біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-8"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 9,
+              "fullName": "Ігристе витримане брют біле",
+              "originalFullName": "Вино ігристе витримане брют біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ігристі витримані",
+              "createBeverageInput": {
+                "name": "Ігристе витримане брют біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-9"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ординарні столові сухі білі",
+          "wines": [
+            {
+              "itemNumber": 10,
+              "fullName": "Ординарне столове сухе біле урожай 2025",
+              "originalFullName": "Вино ординарне столове сухе біле урожай 2025",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе біле урожай 2025",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-10"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 11,
+              "fullName": "Ординарне столове сухе біле урожаю 2024 року",
+              "originalFullName": "Вино ординарне столове сухе біле урожаю 2024 року",
+              "color": "WHITE",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе біле урожаю 2024 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-11"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 12,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  біле урожаю 2024 року",
+              "color": "WHITE",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-12"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 13,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-13"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 14,
+              "fullName": "Сухе сортове біле  урожаю 2025 року",
+              "originalFullName": "Вино сухе сортове біле  урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Сухе сортове біле  урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-14"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 15,
+              "fullName": "Сухе сортове біле урожаю 2025 року",
+              "originalFullName": "Вино сухе сортове біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Сухе сортове біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-15"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 16,
+              "fullName": "Сухе сортове біле урожаю 2025 року",
+              "originalFullName": "Вино сухе сортове біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Сухе сортове біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-16"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 17,
+              "fullName": "Сухе  сортове біле урожаю 2025 року",
+              "originalFullName": "Вино сухе  сортове біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Сухе  сортове біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-17"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 18,
+              "fullName": "Ординарне столове сухе сортове біле",
+              "originalFullName": "Вино ординарне столове сухе сортове біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-18"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 19,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  біле урожаю 2024 року",
+              "color": "WHITE",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-19"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 20,
+              "fullName": "Столове сортове сухе біле урожаю 2025 року",
+              "originalFullName": "Вино столове сортове сухе біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Столове сортове сухе біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-20"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 21,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-21"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 22,
+              "fullName": "Ординарне столове сортове сухе біле урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сортове сухе біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сортове сухе біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-22"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 23,
+              "fullName": "Ординарне столове сортове сухе біле урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сортове сухе біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сортове сухе біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-23"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 24,
+              "fullName": "Ординарне столове сортове  біле сухе",
+              "originalFullName": "Вино ординарне столове сортове  біле сухе",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сортове  біле сухе",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-24"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 25,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-25"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 26,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  біле урожаю 2024 року",
+              "color": "WHITE",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні столові сухі білі",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-26"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ординарні столові сухі рожеві",
+          "wines": [
+            {
+              "itemNumber": 27,
+              "fullName": "Ординарне столове сухе рожеве урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сухе рожеве урожаю 2025 року",
+              "color": "ROSE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі рожеві",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе рожеве урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-27"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 28,
+              "fullName": "Ординарне столове сортове сухе рожеве урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сортове сухе рожеве урожаю 2025 року",
+              "color": "ROSE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі рожеві",
+              "createBeverageInput": {
+                "name": "Ординарне столове сортове сухе рожеве урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-28"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ординарні столові напівсухі",
+          "wines": [
+            {
+              "itemNumber": 29,
+              "fullName": "Ординарне столове напівсухе біле урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове напівсухе біле урожаю 2025 року",
+              "color": "WHITE",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові напівсухі",
+              "createBeverageInput": {
+                "name": "Ординарне столове напівсухе біле урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-29"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 30,
+              "fullName": "Ординарне столове напівсухе сортове біле",
+              "originalFullName": "Вино ординарне столове напівсухе сортове біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ординарні столові напівсухі",
+              "createBeverageInput": {
+                "name": "Ординарне столове напівсухе сортове біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-30"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 31,
+              "fullName": "Ординарне столове напівсухе рожеве",
+              "originalFullName": "Вино ординарне столове напівсухе рожеве",
+              "color": "ROSE",
+              "vintageYear": null,
+              "rawCategory": "Вина ординарні столові напівсухі",
+              "createBeverageInput": {
+                "name": "Ординарне столове напівсухе рожеве",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"ROSE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-31"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ординарні столові напівсолодкі",
+          "wines": [
+            {
+              "itemNumber": 32,
+              "fullName": "Ординарне столове напівсолодке червоне",
+              "originalFullName": "Вино ординарне столове напівсолодке червоне",
+              "color": "RED",
+              "vintageYear": null,
+              "rawCategory": "Вина ординарні столові напівсолодкі",
+              "createBeverageInput": {
+                "name": "Ординарне столове напівсолодке червоне",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-32"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "14.08.2026",
+      "categories": [
+        {
+          "categoryName": "Вина ординарні столові сухі червоні",
+          "wines": [
+            {
+              "itemNumber": 1,
+              "fullName": "Ординарне столове сухе червоне урожай 2024",
+              "originalFullName": "Вино ординарне столове сухе червоне урожай 2024",
+              "color": "RED",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні столові сухі червоні",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе червоне урожай 2024",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-1"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 2,
+              "fullName": "Ординарне столове сухе червоне урожай 2024",
+              "originalFullName": "Вино ординарне столове сухе червоне урожай 2024",
+              "color": "RED",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні столові сухі червоні",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе червоне урожай 2024",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-2"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 3,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні столові сухі червоні",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-3"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 4,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні столові сухі червоні",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-4"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 5,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні столові сухі червоні",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-5"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 6,
+              "fullName": "Ординарне столове сухе сортове  червоне урожай 2024",
+              "originalFullName": "Вино ординарне столове сухе сортове  червоне урожай 2024",
+              "color": "RED",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні столові сухі червоні",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  червоне урожай 2024",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-6"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 7,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2025 року",
+              "originalFullName": "Вино ординарне столове сухе сортове  червоне урожаю 2025 року",
+              "color": "RED",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові сухі червоні",
+              "createBeverageInput": {
+                "name": "Ординарне столове сухе сортове  червоне урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-7"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ординарні столові спеціального типу",
+          "wines": [
+            {
+              "itemNumber": 8,
+              "fullName": "Спеціального типу сухе біле",
+              "originalFullName": "Вино спеціального типу сухе біле",
+              "color": "WHITE",
+              "vintageYear": null,
+              "rawCategory": "Вина ординарні столові спеціального типу",
+              "createBeverageInput": {
+                "name": "Спеціального типу сухе біле",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-8"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 9,
+              "fullName": "Ординарне столове спеціального  типу сухе біле урожаю 2022 року",
+              "originalFullName": "Вино ординарне столове спеціального  типу сухе біле урожаю 2022 року",
+              "color": "WHITE",
+              "vintageYear": 2022,
+              "rawCategory": "Вина ординарні столові спеціального типу",
+              "createBeverageInput": {
+                "name": "Ординарне столове спеціального  типу сухе біле урожаю 2022 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-9"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 10,
+              "fullName": "Ординарне столове спеціального типу сухе червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне столове спеціального типу сухе червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні столові спеціального типу",
+              "createBeverageInput": {
+                "name": "Ординарне столове спеціального типу сухе червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-10"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 11,
+              "fullName": "Спеціального типу сухе сортове  червоне урожаю 2025 року",
+              "originalFullName": "Вино спеціального типу сухе сортове  червоне урожаю 2025 року",
+              "color": "RED",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні столові спеціального типу",
+              "createBeverageInput": {
+                "name": "Спеціального типу сухе сортове  червоне урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-11"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 12,
+              "fullName": "Ординарне столове спеціального типу сухе сортове червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне столове спеціального типу сухе сортове червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні столові спеціального типу",
+              "createBeverageInput": {
+                "name": "Ординарне столове спеціального типу сухе сортове червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-12"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ординарні витримані столові сухі сортові білі",
+          "wines": [
+            {
+              "itemNumber": 13,
+              "fullName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "color": "WHITE",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові білі",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-13"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 14,
+              "fullName": "Ординарне витримане столове сухе сортове  біле урожаю 2024 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове  біле урожаю 2024 року",
+              "color": "WHITE",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові білі",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове  біле урожаю 2024 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-14"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 15,
+              "fullName": "Ординарне витримане столове сухе сортове  біле  урожаю 2023 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове  біле  урожаю 2023 року",
+              "color": "WHITE",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові білі",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове  біле  урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-15"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 16,
+              "fullName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "color": "WHITE",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові білі",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-16"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 17,
+              "fullName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "color": "WHITE",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові білі",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"WHITE\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-17"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        },
+        {
+          "categoryName": "Вина ординарні витримані столові сухі сортові червоні",
+          "wines": [
+            {
+              "itemNumber": 18,
+              "fullName": "Витримане сухе червоне урожаю 2025 року",
+              "originalFullName": "Вино витримане сухе червоне урожаю 2025 року",
+              "color": "RED",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Витримане сухе червоне урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-18"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 19,
+              "fullName": "Витримане сухе червоне урожаю 2025 року",
+              "originalFullName": "Вино витримане сухе червоне урожаю 2025 року",
+              "color": "RED",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Витримане сухе червоне урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-19"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 20,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-20"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 21,
+              "fullName": "Ординарне витримане сортове столове сухе червоне  урожаю 2022 року",
+              "originalFullName": "Вино ординарне витримане сортове столове сухе червоне  урожаю 2022 року",
+              "color": "RED",
+              "vintageYear": 2022,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Ординарне витримане сортове столове сухе червоне  урожаю 2022 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-21"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 22,
+              "fullName": "Ординарне витримане столове сухе сортове червоне",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове червоне",
+              "color": "RED",
+              "vintageYear": null,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове червоне",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-22"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 23,
+              "fullName": "Витримане сухе  сортове червоне урожаю 2025 року",
+              "originalFullName": "Вино витримане сухе  сортове червоне урожаю 2025 року",
+              "color": "RED",
+              "vintageYear": 2025,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Витримане сухе  сортове червоне урожаю 2025 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-23"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 24,
+              "fullName": "Витримане сухе сортове червоне урожаю 2024 року",
+              "originalFullName": "Вино витримане сухе сортове червоне урожаю 2024 року",
+              "color": "RED",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Витримане сухе сортове червоне урожаю 2024 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-24"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 25,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2024 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове червоне урожаю 2024 року",
+              "color": "RED",
+              "vintageYear": 2024,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове червоне урожаю 2024 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-25"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 26,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-26"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            },
+            {
+              "itemNumber": 27,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "originalFullName": "Вино ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "color": "RED",
+              "vintageYear": 2023,
+              "rawCategory": "Вина ординарні витримані столові сухі сортові червоні",
+              "createBeverageInput": {
+                "name": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+                "typeId": "11111111-1111-4111-8111-111111111101",
+                "producers": [
+                  {
+                    "auid": [
+                      2
+                    ],
+                    "role": "MAKER"
+                  }
+                ],
+                "attributes": "{\"color\":\"RED\"}"
+              },
+              "createBatchInput": {
+                "lotNumber": "LOT-27"
+              },
+              "createSampleInput": {
+                "volumeMl": 750
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "totalWinesCount": 59
+}

@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { sdk } from '@/lib/apiClient';
+import { getGraphQLEndpoint } from '@/lib/graphqlEndpoint';
 
 export type ReplicaConfig = {
   name: string;
@@ -191,8 +192,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
              }
            }
          `;
-         const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
-         const tplRes = await fetch(GRAPHQL_ENDPOINT, {
+         const tplRes = await fetch(getGraphQLEndpoint(), {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', ...headers },
            body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
@@ -297,7 +297,6 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         }
         
         await sdk.DevAddCommissionCandidates({
-          commissionId,
           panelId,
           candidates
         });
@@ -337,7 +336,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
             commissionId,
             name: cleanReplicaName,
             type: 'STANDARD',
-            chaoticCurrentCandidateChangesEnabled: false,
+            chaoticCurrentPanelChangesEnabled: false,
             members: []
           }
         });
@@ -400,7 +399,9 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       for (const rep of createdReplicas) {
         const commissionData = await sdk.GetCommission({ id: commissionId });
         const activeReplica = commissionData.commission?.replicas.find(r => r.id === rep.replicaId);
-        const replicaCandidates = activeReplica?.replicaCandidates || [];
+        const replicaCandidates = (activeReplica?.replicaPanels || []).flatMap(panel =>
+          panel.replicaCandidates.map(candidate => ({ ...candidate, replicaPanelId: panel.id })),
+        );
 
         if (evalCount > 0 && replicaCandidates.length > 0) {
           log(`   Імітуємо оцінювання для ${evalCount} вин у "${rep.replicaName}"...`);
@@ -408,8 +409,13 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
           
           for (const wine of winesToEvaluate) {
             try {
-              await sdk.DevSetCommissionReplicaCurrentCandidate({
+              await sdk.DevSetCommissionReplicaCurrentPanel({
                 id: rep.replicaId,
+                currentPanelId: wine.replicaPanelId,
+              }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+              await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
+                id: rep.replicaId,
+                panelId: wine.replicaPanelId,
                 currentCandidateId: wine.id
               }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
             } catch (e: any) {
@@ -459,8 +465,13 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         if (evalCount < replicaCandidates.length) {
           const nextWine = replicaCandidates[evalCount];
           try {
-            await sdk.DevSetCommissionReplicaCurrentCandidate({
+            await sdk.DevSetCommissionReplicaCurrentPanel({
               id: rep.replicaId,
+              currentPanelId: nextWine.replicaPanelId,
+            }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+            await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
+              id: rep.replicaId,
+              panelId: nextWine.replicaPanelId,
               currentCandidateId: nextWine.id
             }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
           } catch (e: any) {

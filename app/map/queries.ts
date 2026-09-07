@@ -33,6 +33,7 @@ export const GET_BEVERAGE_DETAILS_MAP = gql(`
       producers {
         id
         auid
+        producerId
         role
       }
       origin {

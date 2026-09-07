@@ -1,0 +1,730 @@
+{
+  "competitionId": "d5fcc8ec-7fca-4ca3-bd77-8be5a87c12db",
+  "competitionTitle": "V ювілейний Всеукраїнський відбір офіційних вин амбасадорів 2026",
+  "seriesId": "9c02a474-313a-4b05-95ee-d6886aedfe5c",
+  "targetEndpoint": "https://winelore.thewinelore.com/graphql",
+  "actorAuid": "2",
+  "runTag": "comp_import_1786594920036",
+  "importedAt": "2026-08-13T04:22:01.940Z",
+  "totalWines": 59,
+  "successCount": 59,
+  "failCount": 0,
+  "commissions": [
+    {
+      "commissionId": "f76f66f5-d1c3-4632-ad6e-abb5040372e8",
+      "commissionName": "Комісія - 13.08.2026",
+      "sheetDate": "13.08.2026",
+      "calibrationPanel": {
+        "panelId": "f82110c3-a6af-410b-a764-4504ec5fd42a",
+        "panelName": "Калібрування",
+        "wines": [
+          {
+            "itemNumber": "CALIB-1",
+            "fullName": "Калібрувальне вино №1",
+            "uniqueWineName": "Калібрувальне вино №1",
+            "beverageId": "16514e4b-483d-416b-9a93-016ec0123c89",
+            "batchId": "ce5e1538-f127-4c59-8b89-38d056f9121a",
+            "sampleId": "41fa1410-3a79-42e3-8619-78aefc910d88",
+            "anonymizedCode": "CALIB-1",
+            "status": "SUCCESS"
+          },
+          {
+            "itemNumber": "CALIB-2",
+            "fullName": "Калібрувальне вино №2",
+            "uniqueWineName": "Калібрувальне вино №2",
+            "beverageId": "0033dd0f-fc72-4de4-a823-bab36bdb1c3e",
+            "batchId": "c7c37566-6dd6-4554-970d-ff586d2149e7",
+            "sampleId": "630fa86c-9c44-4c4d-9822-1cca2a6f07c5",
+            "anonymizedCode": "CALIB-2",
+            "status": "SUCCESS"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "panelId": "5966135d-314d-44a5-a9e5-2157f5226e30",
+          "categoryName": "Вина ігристі",
+          "wines": [
+            {
+              "itemNumber": 1,
+              "fullName": "Ігристе брют біле",
+              "uniqueWineName": "Ігристе брют біле",
+              "beverageId": "f7227143-ae93-46c4-83c5-a4a58ca7258d",
+              "batchId": "c259e37b-a4d3-4051-91d3-bfa9a966e318",
+              "sampleId": "579de3bf-f6bb-4a05-9145-4c87ee9d6195",
+              "anonymizedCode": "SAMPLE-1",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 2,
+              "fullName": "Ігристе брют біле",
+              "uniqueWineName": "Ігристе брют біле (№2)",
+              "beverageId": "d8172c92-0efb-49a7-8bf6-a6399c84cb7f",
+              "batchId": "931889f8-07d7-4726-b5ec-70a6b22b0616",
+              "sampleId": "ae53e322-74e4-4de7-8b1d-c470986b3794",
+              "anonymizedCode": "SAMPLE-2",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 3,
+              "fullName": "Ігристе сортове брют біле",
+              "uniqueWineName": "Ігристе сортове брют біле",
+              "beverageId": "ea67ff01-4061-4a0a-bed8-1b6741c8729d",
+              "batchId": "23b3627b-1c27-4e05-9005-f10e086bd783",
+              "sampleId": "2fb3bff3-2f62-4324-834b-fdd69aed68e7",
+              "anonymizedCode": "SAMPLE-3",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 4,
+              "fullName": "Ігристе брют рожеве",
+              "uniqueWineName": "Ігристе брют рожеве",
+              "beverageId": "ab707400-d3e7-412e-a89c-fafa58cb6231",
+              "batchId": "61209f74-e2cb-4c76-a7c1-c22cf4620b81",
+              "sampleId": "14ee9111-1aca-4f01-8af5-95344a5718b1",
+              "anonymizedCode": "SAMPLE-4",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 5,
+              "fullName": "Ігристе сортове брют рожеве",
+              "uniqueWineName": "Ігристе сортове брют рожеве",
+              "beverageId": "d8d24e9f-f793-46a5-9ea7-9f4899ad2608",
+              "batchId": "0a175bde-c992-46f2-b01b-89e1e3cac595",
+              "sampleId": "869777c6-cf93-4387-903e-ebf3534a1cac",
+              "anonymizedCode": "SAMPLE-5",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 6,
+              "fullName": "Ігристе сортове брют рожеве",
+              "uniqueWineName": "Ігристе сортове брют рожеве (№6)",
+              "beverageId": "ba1edebd-1df4-4252-b5a7-199189058b52",
+              "batchId": "6007c130-9b0b-4b2b-acc7-ab702683ee80",
+              "sampleId": "f1877557-5037-4964-8c82-0596a45beb16",
+              "anonymizedCode": "SAMPLE-6",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "c6e7e247-73a7-484e-b7fc-6d9a2a4ce66b",
+          "categoryName": "Вина ігристі витримані",
+          "wines": [
+            {
+              "itemNumber": 7,
+              "fullName": "Ігристе витримане  брют біле",
+              "uniqueWineName": "Ігристе витримане  брют біле",
+              "beverageId": "ccd24169-b1d6-4054-97fc-0e627b61528f",
+              "batchId": "ea5844ff-06e5-453e-b705-260f8e54c1b8",
+              "sampleId": "1c642b5d-8fc7-4c75-95c1-459d50b35be7",
+              "anonymizedCode": "SAMPLE-7",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 8,
+              "fullName": "Ігристе витримане брют біле",
+              "uniqueWineName": "Ігристе витримане брют біле",
+              "beverageId": "a4016aae-9e78-4ed9-afbb-6b21ac658765",
+              "batchId": "6920e850-86c9-44c5-bbe7-dbb7810df492",
+              "sampleId": "0133d64e-a686-4ccb-ab1c-2139ddcd4689",
+              "anonymizedCode": "SAMPLE-8",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 9,
+              "fullName": "Ігристе витримане брют біле",
+              "uniqueWineName": "Ігристе витримане брют біле (№9)",
+              "beverageId": "52e3a8f4-93f8-4e39-ae8f-7d814a35f51b",
+              "batchId": "712a4b62-f33a-4c53-a412-c1ae9f5e1b5e",
+              "sampleId": "5421ae7d-ac05-4a85-9109-17d162aee079",
+              "anonymizedCode": "SAMPLE-9",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "d708134a-0570-4172-ad03-647c4b4be1e6",
+          "categoryName": "Вина ординарні столові сухі білі",
+          "wines": [
+            {
+              "itemNumber": 10,
+              "fullName": "Ординарне столове сухе біле урожай 2025",
+              "uniqueWineName": "Ординарне столове сухе біле урожай 2025",
+              "beverageId": "8f52e37a-0ef2-4045-a604-438bcc630215",
+              "batchId": "f1f240d0-0fc9-43a3-ad9b-c096bb5e5b74",
+              "sampleId": "3744c166-9bf4-4e77-8f4d-6414bf78940c",
+              "anonymizedCode": "SAMPLE-10",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 11,
+              "fullName": "Ординарне столове сухе біле урожаю 2024 року",
+              "uniqueWineName": "Ординарне столове сухе біле урожаю 2024 року",
+              "beverageId": "fa307d3b-b9e2-427d-a057-3eb332b69bef",
+              "batchId": "2c25910a-4059-475f-9216-b7cce3eac219",
+              "sampleId": "4bbf7d03-5a36-4f1b-9780-20e8c78444ef",
+              "anonymizedCode": "SAMPLE-11",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 12,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+              "beverageId": "129944dc-d758-417e-8fd8-e5fb3a795580",
+              "batchId": "eaf6e83e-758e-4a35-8681-8f02451382d2",
+              "sampleId": "ff04f484-c1a3-4ef4-83fc-58c8b6fa1121",
+              "anonymizedCode": "SAMPLE-12",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 13,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+              "beverageId": "b718a02a-1df5-489b-8a33-88927645c4e5",
+              "batchId": "feebe9d9-51f5-43d8-b409-42481a493091",
+              "sampleId": "2ab47344-b130-4fdf-b518-6325446acc63",
+              "anonymizedCode": "SAMPLE-13",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 14,
+              "fullName": "Сухе сортове біле  урожаю 2025 року",
+              "uniqueWineName": "Сухе сортове біле  урожаю 2025 року",
+              "beverageId": "380f40d8-ff36-4ee1-ae14-bbafedbc1154",
+              "batchId": "5504266a-77f4-4252-b724-9d39ddb482e8",
+              "sampleId": "ba0eca64-9159-40e3-b19d-fa4f091a26b0",
+              "anonymizedCode": "SAMPLE-14",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 15,
+              "fullName": "Сухе сортове біле урожаю 2025 року",
+              "uniqueWineName": "Сухе сортове біле урожаю 2025 року",
+              "beverageId": "859f3aa8-1f7b-411f-875e-af6a5b08ee6d",
+              "batchId": "7666284f-1313-4800-af79-1d0f31b2e533",
+              "sampleId": "5c869bdd-90c2-4620-9e40-5175bcf2e990",
+              "anonymizedCode": "SAMPLE-15",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 16,
+              "fullName": "Сухе сортове біле урожаю 2025 року",
+              "uniqueWineName": "Сухе сортове біле урожаю 2025 року (№16)",
+              "beverageId": "956e9390-9a0e-49a6-89e5-ff7ee52d182d",
+              "batchId": "4a6a2ede-8478-4528-abbe-678e39fa0f2e",
+              "sampleId": "3d131314-f7da-4d5e-94fb-33d22117e0d8",
+              "anonymizedCode": "SAMPLE-16",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 17,
+              "fullName": "Сухе  сортове біле урожаю 2025 року",
+              "uniqueWineName": "Сухе  сортове біле урожаю 2025 року",
+              "beverageId": "b10360ad-633c-4181-a563-b3d26ee2228e",
+              "batchId": "9ba7beeb-0a2f-4f28-b4ae-28e4872a1c5e",
+              "sampleId": "01f51b85-a722-41cc-8ace-7a449ba45326",
+              "anonymizedCode": "SAMPLE-17",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 18,
+              "fullName": "Ординарне столове сухе сортове біле",
+              "uniqueWineName": "Ординарне столове сухе сортове біле",
+              "beverageId": "d3b3d98b-402e-4dd2-982e-6dbd53e0ee84",
+              "batchId": "d09c8867-dea8-4449-b312-1d041e886050",
+              "sampleId": "6b3a0fef-d02f-4a23-976b-a3eb12b29bd1",
+              "anonymizedCode": "SAMPLE-18",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 19,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  біле урожаю 2024 року (№19)",
+              "beverageId": "1137cd45-04df-41d7-b2e4-9d9e558d5586",
+              "batchId": "9505b1f5-e150-42fd-978a-1f880ea5e640",
+              "sampleId": "3700643b-9982-4b8b-881e-a649ac924c0a",
+              "anonymizedCode": "SAMPLE-19",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 20,
+              "fullName": "Столове сортове сухе біле урожаю 2025 року",
+              "uniqueWineName": "Столове сортове сухе біле урожаю 2025 року",
+              "beverageId": "a93e07e6-f496-4085-a26b-4d59c7493cca",
+              "batchId": "233a05dc-e1e5-445a-82c8-12498a5d81fb",
+              "sampleId": "926b8a8d-d27d-4a21-827f-2bd6edcabe83",
+              "anonymizedCode": "SAMPLE-20",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 21,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  біле урожаю 2025 року (№21)",
+              "beverageId": "85234c54-6ca6-495d-9b68-bd26caee7b45",
+              "batchId": "b026690a-6fe3-4258-b5d2-698049d4ce47",
+              "sampleId": "9ae9a405-cfd0-4813-94ac-082462e38d77",
+              "anonymizedCode": "SAMPLE-21",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 22,
+              "fullName": "Ординарне столове сортове сухе біле урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сортове сухе біле урожаю 2025 року",
+              "beverageId": "2b31cfff-49bc-4332-b828-ebc484306336",
+              "batchId": "29f0b601-e00f-4408-aea2-e98403431d01",
+              "sampleId": "e50de498-22f4-4144-b06e-887f52e13bec",
+              "anonymizedCode": "SAMPLE-22",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 23,
+              "fullName": "Ординарне столове сортове сухе біле урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сортове сухе біле урожаю 2025 року (№23)",
+              "beverageId": "255ca807-57a5-4ff7-8d91-e9badf470e6e",
+              "batchId": "aa72f661-f6b1-4e27-9ef9-a924d2827261",
+              "sampleId": "5cc2b72f-bc84-464b-9a9d-a0c85b85013d",
+              "anonymizedCode": "SAMPLE-23",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 24,
+              "fullName": "Ординарне столове сортове  біле сухе",
+              "uniqueWineName": "Ординарне столове сортове  біле сухе",
+              "beverageId": "1d62e188-283d-4f5d-9773-bbc28f9598b2",
+              "batchId": "a16b559d-6161-4fda-a2d4-3c2df080bd81",
+              "sampleId": "f266fb9c-2481-43bd-8b71-56da2dd376bf",
+              "anonymizedCode": "SAMPLE-24",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 25,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  біле урожаю 2025 року (№25)",
+              "beverageId": "f35b0182-802a-408f-9f03-44708300ef77",
+              "batchId": "8f40aaae-33dd-41bc-8c5a-939c1c0b9ee1",
+              "sampleId": "533a407d-f569-42d6-8fa2-952e525f6987",
+              "anonymizedCode": "SAMPLE-25",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 26,
+              "fullName": "Ординарне столове сухе сортове  біле урожаю 2024 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  біле урожаю 2024 року (№26)",
+              "beverageId": "5234a6ef-4cda-4936-a3dc-e16e9ebf6deb",
+              "batchId": "cc3ebb9c-039a-4af2-b558-84f8fde7876c",
+              "sampleId": "59f02d18-346f-4124-ad08-cf6ab7dba916",
+              "anonymizedCode": "SAMPLE-26",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "2763fa45-6ee8-4f19-9069-21c271c1cf67",
+          "categoryName": "Вина ординарні столові сухі рожеві",
+          "wines": [
+            {
+              "itemNumber": 27,
+              "fullName": "Ординарне столове сухе рожеве урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сухе рожеве урожаю 2025 року",
+              "beverageId": "c63afa06-fbc8-4c5a-9e3f-f9f21a0beed1",
+              "batchId": "1070e870-473c-4c8e-aa1b-7ddbafa21bf3",
+              "sampleId": "959a9d84-606c-4119-83b3-6c5401c14919",
+              "anonymizedCode": "SAMPLE-27",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 28,
+              "fullName": "Ординарне столове сортове сухе рожеве урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сортове сухе рожеве урожаю 2025 року",
+              "beverageId": "d651c935-8e51-418b-9629-3a3111be8fcc",
+              "batchId": "7a5c74d1-047c-419b-82dd-fc622cf41408",
+              "sampleId": "91d296ec-5fc6-41b0-90d0-c730ba3d84ea",
+              "anonymizedCode": "SAMPLE-28",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "b72d4caa-5f3f-4e0d-bf43-1d608160dbbc",
+          "categoryName": "Вина ординарні столові напівсухі",
+          "wines": [
+            {
+              "itemNumber": 29,
+              "fullName": "Ординарне столове напівсухе біле урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове напівсухе біле урожаю 2025 року",
+              "beverageId": "2fe390ad-ed6c-4f69-9323-cbcf51eef370",
+              "batchId": "f65e9783-e135-41cd-b1a4-3d4667f02986",
+              "sampleId": "ef8ddd3c-c871-4f03-9165-2dd85a2dafc8",
+              "anonymizedCode": "SAMPLE-29",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 30,
+              "fullName": "Ординарне столове напівсухе сортове біле",
+              "uniqueWineName": "Ординарне столове напівсухе сортове біле",
+              "beverageId": "bd7c487e-2703-4437-9fd7-c1d28328dd64",
+              "batchId": "b42744f7-1606-406c-a09a-19942dd95798",
+              "sampleId": "7aa4a1a6-73fe-442c-8ba3-2389d545764d",
+              "anonymizedCode": "SAMPLE-30",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 31,
+              "fullName": "Ординарне столове напівсухе рожеве",
+              "uniqueWineName": "Ординарне столове напівсухе рожеве",
+              "beverageId": "82e1a9fc-7de2-4fc9-887c-8844b88e52fd",
+              "batchId": "f6fb0ed2-fc6b-432f-a1f4-627f0b5c18f2",
+              "sampleId": "f24c6395-3d97-48dd-a84b-a36103e1e3c6",
+              "anonymizedCode": "SAMPLE-31",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "dbf70ec0-e33b-43bb-a201-9f44aac4252d",
+          "categoryName": "Вина ординарні столові напівсолодкі",
+          "wines": [
+            {
+              "itemNumber": 32,
+              "fullName": "Ординарне столове напівсолодке червоне",
+              "uniqueWineName": "Ординарне столове напівсолодке червоне",
+              "beverageId": "014326ff-6a1b-4fa8-8f2c-9f9929a3f938",
+              "batchId": "f38bed89-58f2-4b03-82e9-bda7d0253113",
+              "sampleId": "cba25698-1520-4b9d-98e7-a72adf955c1e",
+              "anonymizedCode": "SAMPLE-32",
+              "status": "SUCCESS"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "commissionId": "8f32529b-9cb4-4484-b4b5-4dddc662af27",
+      "commissionName": "Комісія - 14.08.2026",
+      "sheetDate": "14.08.2026",
+      "calibrationPanel": {
+        "panelId": "b51d3b1d-c53d-481a-b399-1dca370b2aad",
+        "panelName": "Калібрування",
+        "wines": [
+          {
+            "itemNumber": "CALIB-1",
+            "fullName": "Калібрувальне вино №1",
+            "uniqueWineName": "Калібрувальне вино №1 (№C1)",
+            "beverageId": "636b1891-8dd9-4e24-99b7-900275d7ae60",
+            "batchId": "d93859fb-d4d8-4841-83e2-62200caa7465",
+            "sampleId": "eeda0052-8518-4647-93ba-80052dbcca05",
+            "anonymizedCode": "CALIB-1",
+            "status": "SUCCESS"
+          },
+          {
+            "itemNumber": "CALIB-2",
+            "fullName": "Калібрувальне вино №2",
+            "uniqueWineName": "Калібрувальне вино №2 (№C2)",
+            "beverageId": "c359f634-5cf4-47d9-b730-edad01c0f7af",
+            "batchId": "b563e97c-21de-46b9-8cb5-7955bd28bf4a",
+            "sampleId": "a1eb37b9-81d8-4ea9-aaf0-1e44844ac95e",
+            "anonymizedCode": "CALIB-2",
+            "status": "SUCCESS"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "panelId": "a63f7258-98d7-48a3-b0c0-b80fe2ace7a0",
+          "categoryName": "Вина ординарні столові сухі червоні",
+          "wines": [
+            {
+              "itemNumber": 1,
+              "fullName": "Ординарне столове сухе червоне урожай 2024",
+              "uniqueWineName": "Ординарне столове сухе червоне урожай 2024",
+              "beverageId": "176e078a-9d0c-44a9-9a6b-b1820faee012",
+              "batchId": "906c023e-954c-4455-9845-5ee7e8021707",
+              "sampleId": "9d11f676-5e9e-4b9d-bd1f-d8321908982d",
+              "anonymizedCode": "SAMPLE-1",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 2,
+              "fullName": "Ординарне столове сухе червоне урожай 2024",
+              "uniqueWineName": "Ординарне столове сухе червоне урожай 2024 (№2)",
+              "beverageId": "b672e0c1-ba5a-41dd-9d79-66406420f0e6",
+              "batchId": "74835dec-08c4-48cb-a613-37fc2734108b",
+              "sampleId": "5a2dc51f-ac6d-462c-8ef2-49b8902b1a0d",
+              "anonymizedCode": "SAMPLE-2",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 3,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "beverageId": "46dcd62d-fddd-497a-b2c8-4917616058ac",
+              "batchId": "73543a96-d335-4a2d-8c0f-6c0b5070acf7",
+              "sampleId": "db15cdf2-2eae-4f5c-8d20-b31c4dac0ea9",
+              "anonymizedCode": "SAMPLE-3",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 4,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  червоне урожаю 2023 року (№4)",
+              "beverageId": "a9e0e697-8926-4f6c-a461-15e461332d8c",
+              "batchId": "7740a439-1f1d-4bc1-b8f9-a3cd01a7d4cc",
+              "sampleId": "03ea5701-3d15-45b7-9525-972056da3d8b",
+              "anonymizedCode": "SAMPLE-4",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 5,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  червоне урожаю 2023 року (№5)",
+              "beverageId": "08140ad3-512e-4667-a4c0-25831999b044",
+              "batchId": "3b5c71da-cb3f-4e0f-9ce2-c1cfe0122fd4",
+              "sampleId": "04f08990-4af3-46bb-9ec2-6c47c873c243",
+              "anonymizedCode": "SAMPLE-5",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 6,
+              "fullName": "Ординарне столове сухе сортове  червоне урожай 2024",
+              "uniqueWineName": "Ординарне столове сухе сортове  червоне урожай 2024",
+              "beverageId": "b3989a99-8973-4688-b706-dbeb68027733",
+              "batchId": "98198a7b-a84b-4dd5-a649-4b606aae845d",
+              "sampleId": "f752424f-1a1b-4a8b-8721-1872753c7273",
+              "anonymizedCode": "SAMPLE-6",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 7,
+              "fullName": "Ординарне столове сухе сортове  червоне урожаю 2025 року",
+              "uniqueWineName": "Ординарне столове сухе сортове  червоне урожаю 2025 року",
+              "beverageId": "ff873e7e-280e-4893-ab65-3d36ecb5ae42",
+              "batchId": "778e9337-a58d-465a-b589-a4335fa8b03c",
+              "sampleId": "4bfbeb2a-5267-4dcf-8aed-c56c20b90893",
+              "anonymizedCode": "SAMPLE-7",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "41226b0c-e49f-4542-9c69-26e0af513675",
+          "categoryName": "Вина ординарні столові спеціального типу",
+          "wines": [
+            {
+              "itemNumber": 8,
+              "fullName": "Спеціального типу сухе біле",
+              "uniqueWineName": "Спеціального типу сухе біле",
+              "beverageId": "aa4333ee-0248-444c-8462-14477f1e47ec",
+              "batchId": "d78cd943-c341-4704-9282-87d07aa16344",
+              "sampleId": "7d3b293f-d3e0-428a-99eb-3c10ca9bd2af",
+              "anonymizedCode": "SAMPLE-8",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 9,
+              "fullName": "Ординарне столове спеціального  типу сухе біле урожаю 2022 року",
+              "uniqueWineName": "Ординарне столове спеціального  типу сухе біле урожаю 2022 року",
+              "beverageId": "c08211f4-1733-4f69-a57f-d74694a2c8a8",
+              "batchId": "d4f465e4-030a-48f4-a60d-7e506dd32444",
+              "sampleId": "09187eeb-f8e9-437d-810e-3ba9f4b6c45d",
+              "anonymizedCode": "SAMPLE-9",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 10,
+              "fullName": "Ординарне столове спеціального типу сухе червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне столове спеціального типу сухе червоне урожаю 2023 року",
+              "beverageId": "80c9bbe4-df7b-4fa2-b021-ff251665a653",
+              "batchId": "1f72b3c7-80c6-46fb-a049-09360ed08e39",
+              "sampleId": "5acdacd9-8844-4ad4-995a-99c6d0e0a125",
+              "anonymizedCode": "SAMPLE-10",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 11,
+              "fullName": "Спеціального типу сухе сортове  червоне урожаю 2025 року",
+              "uniqueWineName": "Спеціального типу сухе сортове  червоне урожаю 2025 року",
+              "beverageId": "d86e8212-9ae8-4aab-b5f0-8ff8bd87ec95",
+              "batchId": "6eaf18df-c8f3-47a0-9f55-70577fe7b7b2",
+              "sampleId": "11d68f23-0115-4952-a92d-ee75c9d97d98",
+              "anonymizedCode": "SAMPLE-11",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 12,
+              "fullName": "Ординарне столове спеціального типу сухе сортове червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне столове спеціального типу сухе сортове червоне урожаю 2023 року",
+              "beverageId": "85891a4d-c206-4621-a421-edbe02cd9601",
+              "batchId": "59b137c0-4cb8-4cb7-a0c8-695f9b95aea7",
+              "sampleId": "f7e47b05-177b-4e10-ac43-782881ec1243",
+              "anonymizedCode": "SAMPLE-12",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "60590a5e-3574-4554-a5f8-5701ee497e9e",
+          "categoryName": "Вина ординарні витримані столові сухі сортові білі",
+          "wines": [
+            {
+              "itemNumber": 13,
+              "fullName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "beverageId": "ffdc3ece-129e-4a53-8bc8-a2ebdbd8f50a",
+              "batchId": "a0338f31-00c4-436e-9ae1-ff5e86a4ddbf",
+              "sampleId": "f5c722ca-83dc-4a22-94fe-1934837a19de",
+              "anonymizedCode": "SAMPLE-13",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 14,
+              "fullName": "Ординарне витримане столове сухе сортове  біле урожаю 2024 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове  біле урожаю 2024 року",
+              "beverageId": "dc1a430e-aafe-4736-b903-c846a8b830cb",
+              "batchId": "48c2dd68-1437-4b1c-b797-3da673ae2577",
+              "sampleId": "25893736-55ec-4e5a-b5cd-7e1aa748c31c",
+              "anonymizedCode": "SAMPLE-14",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 15,
+              "fullName": "Ординарне витримане столове сухе сортове  біле  урожаю 2023 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове  біле  урожаю 2023 року",
+              "beverageId": "bbf28df7-5b81-41ee-ab59-1ed83e503f93",
+              "batchId": "389ea463-8c3f-4b9b-9b9c-478fe9102baa",
+              "sampleId": "377116ad-5af1-4208-9e7d-1a6d7730ad81",
+              "anonymizedCode": "SAMPLE-15",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 16,
+              "fullName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року (№16)",
+              "beverageId": "4f5a8673-c31f-45c2-b69d-7ad7bedffe94",
+              "batchId": "3285c6ef-666b-41cf-81a3-fe151514dbec",
+              "sampleId": "e8f1d678-c6d5-4dfd-9ddf-fbdceb693c54",
+              "anonymizedCode": "SAMPLE-16",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 17,
+              "fullName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове біле урожаю 2023 року (№17)",
+              "beverageId": "f3a38100-5ecf-4e5a-a3e5-bb35cdd6baa5",
+              "batchId": "75d163e7-ed94-4c57-ade9-475016d872cf",
+              "sampleId": "235cf710-6389-4f03-9168-b7f31d15e29d",
+              "anonymizedCode": "SAMPLE-17",
+              "status": "SUCCESS"
+            }
+          ]
+        },
+        {
+          "panelId": "0a39aa05-ea98-41e6-8650-13c82836943f",
+          "categoryName": "Вина ординарні витримані столові сухі сортові червоні",
+          "wines": [
+            {
+              "itemNumber": 18,
+              "fullName": "Витримане сухе червоне урожаю 2025 року",
+              "uniqueWineName": "Витримане сухе червоне урожаю 2025 року",
+              "beverageId": "29d23967-aa43-4372-b34a-80123392c928",
+              "batchId": "907bfa0a-4ed8-4dd3-be74-bf9b10fe6975",
+              "sampleId": "a9d4bbb1-7c72-4a93-979b-6535f7ee640f",
+              "anonymizedCode": "SAMPLE-18",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 19,
+              "fullName": "Витримане сухе червоне урожаю 2025 року",
+              "uniqueWineName": "Витримане сухе червоне урожаю 2025 року (№19)",
+              "beverageId": "ccb602d4-7abd-4317-aeaf-e6bd2c293dd0",
+              "batchId": "9868d46a-77cf-4758-ba51-6f58c272c0a2",
+              "sampleId": "1a83648a-061a-4835-8e3a-768af0d86d7e",
+              "anonymizedCode": "SAMPLE-19",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 20,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "beverageId": "67c421bc-f4d0-44ec-aa1a-ef9dd5ea2353",
+              "batchId": "38110b51-0142-44af-a128-369454fd2cc7",
+              "sampleId": "568ce488-38bf-403e-b563-03db1a0d52ed",
+              "anonymizedCode": "SAMPLE-20",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 21,
+              "fullName": "Ординарне витримане сортове столове сухе червоне  урожаю 2022 року",
+              "uniqueWineName": "Ординарне витримане сортове столове сухе червоне  урожаю 2022 року",
+              "beverageId": "86ac0130-0508-49f4-9b96-096378cd053a",
+              "batchId": "9e9602b6-c436-4c8a-bf04-dbd8bfb5bccc",
+              "sampleId": "510f85fd-b789-4b64-82cc-a5a0624dd1de",
+              "anonymizedCode": "SAMPLE-21",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 22,
+              "fullName": "Ординарне витримане столове сухе сортове червоне",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове червоне",
+              "beverageId": "4dee544d-60ba-4d06-8514-1cb1a7c8f48a",
+              "batchId": "99723f64-7999-4242-aafc-fadd700e54dc",
+              "sampleId": "2893c903-733e-4585-b1bc-8f441611a4fb",
+              "anonymizedCode": "SAMPLE-22",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 23,
+              "fullName": "Витримане сухе  сортове червоне урожаю 2025 року",
+              "uniqueWineName": "Витримане сухе  сортове червоне урожаю 2025 року",
+              "beverageId": "31271063-d6ad-4e30-a087-90d5b55bfa1d",
+              "batchId": "632eb671-79d2-48b7-89d0-00c01a23f9ef",
+              "sampleId": "082b9e3d-2c28-45de-93b9-6a368b8f4440",
+              "anonymizedCode": "SAMPLE-23",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 24,
+              "fullName": "Витримане сухе сортове червоне урожаю 2024 року",
+              "uniqueWineName": "Витримане сухе сортове червоне урожаю 2024 року",
+              "beverageId": "b3942041-61de-445c-8f2c-487348337f8f",
+              "batchId": "d83cc9b0-9c52-4658-ad5f-8d6ab6c5eec3",
+              "sampleId": "27a61ce3-cbfe-4645-bd1a-61061b40151b",
+              "anonymizedCode": "SAMPLE-24",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 25,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2024 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове червоне урожаю 2024 року",
+              "beverageId": "6256025a-d520-4e4a-84ec-166f8c1991bf",
+              "batchId": "c1681411-a386-40ef-a55c-7ccf31aa3185",
+              "sampleId": "1afc354e-39df-47f2-acb2-5a7f752b43cd",
+              "anonymizedCode": "SAMPLE-25",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 26,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року (№26)",
+              "beverageId": "16f518b1-2ca4-4f5f-b576-78199ab39bd1",
+              "batchId": "277972f9-f6c8-45fa-8480-fd3ec5c84340",
+              "sampleId": "16dc6718-2886-4a2f-8171-3a1de6886876",
+              "anonymizedCode": "SAMPLE-26",
+              "status": "SUCCESS"
+            },
+            {
+              "itemNumber": 27,
+              "fullName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року",
+              "uniqueWineName": "Ординарне витримане столове сухе сортове червоне урожаю 2023 року (№27)",
+              "beverageId": "47b360d1-0785-4096-b468-8a0ccf55ad9f",
+              "batchId": "e8c9d9a1-d45b-4138-bb22-5e68f0b7cbf8",
+              "sampleId": "b57d24dd-9c52-4e43-9dfc-60f4bee2c194",
+              "anonymizedCode": "SAMPLE-27",
+              "status": "SUCCESS"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

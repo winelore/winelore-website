@@ -10,6 +10,11 @@ export const GET_COMMISSION = gql(`
         start
         end
       }
+      evaluationVisibleAttributes {
+          beverage
+          batch
+          sample
+      }
       startedAt
       endedAt
       createdAt
@@ -21,10 +26,29 @@ export const GET_COMMISSION = gql(`
       panels {
         id
         name
-      }
-      candidates {
-        id
-        panelId
+        candidates {
+          id
+          anonymizedCode
+          sample {
+            id
+            volumeMl
+            batch {
+              id
+              lotNumber
+              attributes
+              beverage {
+                id
+                name
+                status
+                attributes
+                producers {
+                  auid
+                  producerId
+                }
+              }
+            }
+          }
+        }
       }
       competition {
         id
@@ -36,25 +60,31 @@ export const GET_COMMISSION = gql(`
         name
         type
         status
-        currentCandidateId
-        chaoticCurrentCandidateChangesEnabled
+        currentPanelId
+        chaoticCurrentPanelChangesEnabled
         members {
           id
           auid
           role
           isReady
         }
-        replicaCandidates {
+        replicaPanels {
           id
           status
-          candidate {
+          currentCandidateId
+          chaoticCurrentCandidateChangesEnabled
+          panel { id name }
+          replicaCandidates {
             id
-            anonymizedCode
-            panelId
-            beverageType {
+            status
+            candidate {
+              id
+              anonymizedCode
+              beverageType {
                 id
                 code
                 name
+              }
             }
           }
         }
@@ -288,12 +318,6 @@ export const GET_COMMISSION_TEMPLATES = gql(`
   }
 `);
 
-export const GET_CANDIDATE_COUNT = gql(`
-  query GetCommissionCandidateCount($commissionId: ID!) {
-    commissionCandidateCount(commissionId: $commissionId)
-  }
-`);
-
 export const MARK_MEMBER_READY = gql(`
   mutation MarkReplicaMemberReady($replicaId: ID!, $memberId: ID!) {
     markCommissionReplicaMemberReady(id: $replicaId, memberId: $memberId) {
@@ -337,20 +361,23 @@ export const GET_REPLICA_CANDIDATES = gql(`
         panels {
           id
           name
-        }
-        candidates {
-          id
-          panelId
+          candidates { id }
         }
       }
-      replicaCandidates {
+      currentPanelId
+      replicaPanels {
         id
         status
-        candidate {
+        currentCandidateId
+        chaoticCurrentCandidateChangesEnabled
+        panel { id name }
+        replicaCandidates {
           id
-          anonymizedCode
-          panelId
-          beverageType {
+          status
+          candidate {
+            id
+            anonymizedCode
+            beverageType {
             id
             code
             name
@@ -358,6 +385,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
           sample {
             id
             volumeMl
+            attributes
             batch {
               id
               attributes
@@ -368,6 +396,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
                 attributes
                 producers {
                   auid
+                  producerId
                 }
                 origin {
                   latitude
@@ -376,6 +405,7 @@ export const GET_REPLICA_CANDIDATES = gql(`
               }
             }
           }
+        }
         }
       }
     }
@@ -387,14 +417,18 @@ export const GET_REPLICA_CANDIDATE = gql(`
     commissionReplicaCandidate(id: $id) {
       id
       status
-      replica {
+      replicaPanel {
         id
-        name
-        type
         status
-        commission {
+        currentCandidateId
+        panel { id name }
+        replica {
           id
           name
+          type
+          status
+          currentPanelId
+          commission { id name }
         }
       }
       candidate {
@@ -403,6 +437,7 @@ export const GET_REPLICA_CANDIDATE = gql(`
         sample {
           id
           volumeMl
+          attributes
           batch {
             id
             attributes

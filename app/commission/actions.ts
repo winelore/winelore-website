@@ -2,7 +2,7 @@
 
 import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
 import { axusSdk } from '../../lib/axusClient';
-import { getGraphQLEndpoint } from '../../lib/graphqlEndpoint';
+import { getAxusEndpoint } from '../../lib/graphqlEndpoint';
 import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
 import {
     GET_COMMISSION_TEMPLATES_DEEP_QUERY,
@@ -93,6 +93,17 @@ export async function planCommissionReplicaAction(id: string) {
     }
 }
 
+export async function submitCommissionForReviewAction(id: string) {
+    if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
+    try {
+        const headers = await getActorHeaders();
+        return await sdk.DevSubmitCommissionForReview({ id }, { headers });
+    } catch (err: any) {
+        console.error("Server Action Error (submitCommissionForReviewAction):", err);
+        throw new Error(err.message || "Failed to submit commission for review");
+    }
+}
+
 export async function startCommissionAction(id: string, commissionId?: string) {
     if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
@@ -115,13 +126,15 @@ export async function startCommissionAction(id: string, commissionId?: string) {
                         commission {
                             id
                             status
-                            candidates {
+                            panels {
                                 id
-                                beverageType {
+                                candidates {
+                                  id
+                                  beverageType {
                                     id
                                     code
                                     name
-                                }
+                                  }
                                 sample {
                                     id
                                     batch {
@@ -131,6 +144,7 @@ export async function startCommissionAction(id: string, commissionId?: string) {
                                             name
                                         }
                                     }
+                                }
                                 }
                             }
                             templateEditions {
@@ -161,7 +175,7 @@ export async function startCommissionAction(id: string, commissionId?: string) {
         }
 
         // Fallback: if commission candidates weren't fetched from replica, query commission directly
-        let candidates = replicaData?.commission?.candidates || [];
+        let candidates = (replicaData?.commission?.panels || []).flatMap((panel: any) => panel.candidates || []);
         if (candidates.length === 0 && (commissionId || replicaData?.commission?.id)) {
             const targetCommId = commissionId || replicaData?.commission?.id;
             try {
@@ -170,13 +184,15 @@ export async function startCommissionAction(id: string, commissionId?: string) {
                         commission(id: $id) {
                             id
                             status
-                            candidates {
+                            panels {
                                 id
-                                beverageType {
+                                candidates {
+                                  id
+                                  beverageType {
                                     id
                                     code
                                     name
-                                }
+                                  }
                                 sample {
                                     id
                                     batch {
@@ -186,6 +202,7 @@ export async function startCommissionAction(id: string, commissionId?: string) {
                                             name
                                         }
                                     }
+                                }
                                 }
                             }
                             templateEditions {
@@ -212,7 +229,7 @@ export async function startCommissionAction(id: string, commissionId?: string) {
                 if (commRes?.commission) {
                     if (!replicaData) replicaData = {};
                     replicaData.commission = commRes.commission;
-                    candidates = commRes.commission.candidates || [];
+                    candidates = (commRes.commission.panels || []).flatMap((panel: any) => panel.candidates || []);
                 }
             } catch (fallbackErr: any) {
                 console.error("Fallback commission query failed:", fallbackErr?.message);
@@ -229,7 +246,7 @@ export async function startCommissionAction(id: string, commissionId?: string) {
 
         // Validation: Commission must have at least one candidate
         if (candidates.length === 0) {
-            throw new Error("Неможливо розпочати дегустацію: додайте щонайменше один зразок (кандидата) до комісії.");
+            throw new Error("NO_CANDIDATES_TO_START");
         }
 
         // 2. Ensure parent Competition Series is APPROVED or PUBLISHED
@@ -335,26 +352,15 @@ export async function startCommissionAction(id: string, commissionId?: string) {
         // 7. Initialize first candidate for the tasting session
         try {
             const candRes = await sdk.GetReplicaCandidates({ replicaId: id }, { headers });
-            const replicaCandidates = candRes.commissionReplica?.replicaCandidates || [];
-            const candidatesOrder = candRes.commissionReplica?.commission?.candidates?.map((c: any) => c.id) || [];
-            let sortedCandidates = replicaCandidates;
-            if (candidatesOrder.length > 0) {
-                sortedCandidates = [...replicaCandidates].sort((a: any, b: any) => {
-                    const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
-                    const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
-                    return idxA - idxB;
-                });
-            }
-            const firstPending = sortedCandidates.find((rc: any) => rc.status === 'PENDING') || sortedCandidates[0];
-            if (firstPending) {
+            const firstPanel = candRes.commissionReplica?.replicaPanels?.[0];
+            const firstPending = firstPanel?.replicaCandidates.find((rc: any) => rc.status === 'PENDING') || firstPanel?.replicaCandidates?.[0];
+            if (firstPanel && firstPending) {
                 await rawGraphQL(`
-                    mutation SetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID) {
-                        setCommissionReplicaCurrentCandidate(id: $id, currentCandidateId: $currentCandidateId) {
-                            id
-                            currentCandidateId
-                        }
+                    mutation InitializeCommissionReplicaPanel($id: ID!, $panelId: ID!, $currentCandidateId: ID) {
+                        setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $panelId) { id }
+                        setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) { id }
                     }
-                `, { id, currentCandidateId: firstPending.id }, headers);
+                `, { id, panelId: firstPanel.id, currentCandidateId: firstPending.id }, headers);
                 console.log(`✅ Set initial current candidate ${firstPending.id} for replica ${id}`);
             }
         } catch (setCandErr: any) {
@@ -411,7 +417,7 @@ export async function updateCommissionDatesAction(
 }
 
 // CreateCommissionReplicaInput fields confirmed via introspection: commissionId (required),
-// name (optional), type (required, CommissionReplicaType enum), chaoticCurrentCandidateChangesEnabled
+// name (optional), type (required, CommissionReplicaType enum), chaoticCurrentPanelChangesEnabled
 // (optional Boolean), members (required — NON_NULL list of NON_NULL items, but an empty array is valid).
 // We don't add members here since that's out of scope for now; the shape of each member item
 // (CommissionReplicaMemberInput) is still unconfirmed — ask if member assignment gets added later.
@@ -419,7 +425,7 @@ export async function createCommissionReplicaAction(input: {
     commissionId: string;
     name?: string;
     type: "STANDARD" | "TRAINEE";
-    chaoticCurrentCandidateChangesEnabled?: boolean;
+    chaoticCurrentPanelChangesEnabled?: boolean;
 }) {
     if (!isValidUuid(input.commissionId)) throw new Error("Invalid UUID parameter");
     try {
@@ -519,7 +525,7 @@ export async function submitEvaluationAction(
             return { success: true, evaluation: response.submitEvaluation };
         }
 
-        return { success: false, error: "Не вдалося зберегти оцінку." };
+        return { success: false, error: "" };
     } catch (err: any) {
         console.error("Server Action Error (submitEvaluationAction):", err);
         return { success: false, error: err?.message || "Failed to submit evaluation" };
@@ -543,7 +549,7 @@ export async function confirmEvaluationAction(evaluationId: string) {
             return { success: true, evaluation: response.confirmEvaluation };
         }
 
-        return { success: false, error: "Не вдалося підтвердити оцінку." };
+        return { success: false, error: "" };
     } catch (err: any) {
         console.error("Server Action Error (confirmEvaluationAction):", err);
         return { success: false, error: err?.message || "Failed to confirm evaluation" };
@@ -578,10 +584,7 @@ export async function setCommissionTemplateAction(
 export async function getCommissionDataAction(commissionId: string) {
     if (!isValidUuid(commissionId)) return null;
     try {
-        const [commissionData, countData] = await Promise.all([
-            sdk.GetCommission({ id: commissionId }),
-            sdk.GetCommissionCandidateCount({ commissionId })
-        ]);
+        const commissionData = await sdk.GetCommission({ id: commissionId });
         const commission = commissionData.commission;
         if (!commission) return null;
 
@@ -617,30 +620,38 @@ export async function getCommissionDataAction(commissionId: string) {
             legacyTemplateEdition = null;
         }
 
-        const candidatesOrder = (commission.candidates || []).map((c: any) => c.id);
+        const candidatesOrder = (commission.panels || []).flatMap((panel: any) =>
+            (panel.candidates || []).map((candidate: any) => candidate.id),
+        );
 
         const replicas = (commission.replicas || []).map((r: any) => ({
             id: r.id,
             name: r.name || `${r.type} Replica`,
             type: r.type,
             status: r.status,
-            currentCandidateId: r.currentCandidateId || null,
+            currentPanelId: r.currentPanelId || null,
+            currentCandidateId: r.replicaPanels?.find((panel: any) => panel.id === r.currentPanelId)?.currentCandidateId || null,
+            chaoticCurrentPanelChangesEnabled: r.chaoticCurrentPanelChangesEnabled,
             members: (r.members || []).map((m: any) => ({
                 id: m.id,
                 auid: m.auid ? m.auid.flat() : [],
                 role: m.role,
                 isReady: m.isReady,
             })),
-            candidateCount: r.replicaCandidates ? r.replicaCandidates.length : 0,
-            replicaCandidates: (r.replicaCandidates || []).map((rc: any) => ({
+            replicaPanels: (r.replicaPanels || []).map((rp: any) => ({ ...rp, panelId: rp.panel?.id })),
+            candidateCount: (r.replicaPanels || []).reduce((count: number, rp: any) => count + (rp.replicaCandidates?.length || 0), 0),
+            replicaCandidates: (r.replicaPanels || []).flatMap((rp: any) => (rp.replicaCandidates || []).map((rc: any) => ({
                 id: rc.id,
                 status: rc.status,
+                replicaPanelId: rp.id,
+                panelId: rp.panel?.id,
                 candidate: rc.candidate ? {
                     id: rc.candidate.id,
                     anonymizedCode: rc.candidate.anonymizedCode || null,
-                    beverageType: rc.candidate.beverageType || null
+                    beverageType: rc.candidate.beverageType || null,
+                    panelId: rp.panel?.id,
                 } : null
-            })).sort((a: any, b: any) => {
+            }))).sort((a: any, b: any) => {
                 const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
                 const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
                 return idxA - idxB;
@@ -658,6 +669,11 @@ export async function getCommissionDataAction(commissionId: string) {
             plannedEndAt: commission.plannedDates?.end || null,
             startedAt: commission.startedAt || null,
             endedAt: commission.endedAt || null,
+            evaluationVisibleAttributes: commission.evaluationVisibleAttributes || {
+                beverage: [],
+                batch: [],
+                sample: []
+            },
             competition: {
                 id: commission.competition.id,
                 name: commission.competition.name,
@@ -669,7 +685,7 @@ export async function getCommissionDataAction(commissionId: string) {
                 evaluationTemplateEdition: legacyTemplateEdition
             },
             templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
-            candidateCount: countData.commissionCandidateCount ?? 0,
+            candidateCount: candidatesOrder.length,
             panels: commission.panels || [],
             replicas,
             members: defaultMembers
@@ -684,8 +700,17 @@ export async function getReplicaCandidatesAction(replicaId: string) {
     if (!isValidUuid(replicaId)) return [];
     try {
         const response = await sdk.GetReplicaCandidates({ replicaId });
-        const replicaCandidates = response.commissionReplica?.replicaCandidates || [];
-        const candidatesOrder = response.commissionReplica?.commission?.candidates?.map((c: any) => c.id) || [];
+        const replicaCandidates = (response.commissionReplica?.replicaPanels || []).flatMap((panel: any) =>
+            (panel.replicaCandidates || []).map((candidate: any) => ({
+                ...candidate,
+                replicaPanelId: panel.id,
+                panelId: panel.panel?.id,
+                candidate: candidate.candidate ? { ...candidate.candidate, panelId: panel.panel?.id } : null,
+            })),
+        );
+        const candidatesOrder = response.commissionReplica?.commission?.panels?.flatMap((panel: any) =>
+            (panel.candidates || []).map((candidate: any) => candidate.id),
+        ) || [];
         if (candidatesOrder.length > 0) {
             return [...replicaCandidates].sort((a: any, b: any) => {
                 const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
@@ -704,7 +729,14 @@ export async function getReplicaCandidateAction(id: string) {
     if (!isValidUuid(id)) return null;
     try {
         const response = await sdk.GetReplicaCandidate({ id });
-        return response.commissionReplicaCandidate;
+        const candidate = response.commissionReplicaCandidate;
+        if (!candidate) return null;
+        return {
+            ...candidate,
+            replica: candidate.replicaPanel.replica,
+            panelId: candidate.replicaPanel.panel.id,
+            candidate: { ...candidate.candidate, panelId: candidate.replicaPanel.panel.id },
+        };
     } catch (err: any) {
         console.error("Server Action Error (getReplicaCandidateAction):", err);
         throw new Error(err.message || "Failed to fetch replica candidate");
@@ -723,8 +755,34 @@ async function fetchMyTastingSummary(
         getReplicaCandidatesAction(replicaId),
         getCommissionTemplatesWithResultMarkers(commissionId),
     ]);
+
+    const cookieStore = await cookies();
+    const actorAuid = cookieStore.get("auid")?.value;
     const myEvaluations = await Promise.all(
-        candidatesWithBeverage.map((rc) => getMyEvaluationForCandidateAction(rc.id)),
+        candidatesWithBeverage.map(async (rc) => {
+            const directEvaluation = await getMyEvaluationForCandidateAction(rc.id);
+            if (directEvaluation?.isComplete || !actorAuid) {
+                return directEvaluation;
+            }
+
+            // Some backend versions return null from the actor-scoped lookup even
+            // though the same completed evaluation is present in the candidate's
+            // evaluation list. The group breakdown already uses that list, so use
+            // it as the source-of-truth fallback for the signed-in expert.
+            try {
+                const candidateEvaluations = await getEvaluationsForCandidateAction(rc.id);
+                const matchingEvaluation = findEvaluationForMember(candidateEvaluations, actorAuid);
+                return matchingEvaluation?.isComplete
+                    ? matchingEvaluation
+                    : directEvaluation ?? matchingEvaluation ?? null;
+            } catch (err) {
+                console.error(
+                    `Failed to resolve the signed-in expert's evaluation for replica candidate ${rc.id}:`,
+                    err,
+                );
+                return directEvaluation;
+            }
+        }),
     );
     const evalMap = new Map<string, any>();
     candidatesWithBeverage.forEach((rc, index) => {
@@ -771,34 +829,17 @@ export async function getMyTastingSummaryAction(replicaId: string): Promise<MyTa
     }
 }
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || getGraphQLEndpoint() || 'https://winelore-dev.thewinelore.com/graphql';
-
+// Thin wrapper kept so the ~40 call sites below don't need to change; the
+// actual HTTP transport and endpoint resolution now live in lib/apiClient.ts
+// and lib/graphqlEndpoint.ts, which is the one place either can be reasoned
+// about (see WIN consistency audit, item 1.4 — this used to have its own
+// endpoint fallback that could silently diverge from every other caller's).
 async function rawGraphQL(
     query: string,
     variables: Record<string, any>,
     headers?: Record<string, string>,
 ) {
-    const res = await fetch(GRAPHQL_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...headers },
-        body: JSON.stringify({ query, variables }),
-        next: { revalidate: 0 },
-    });
-    const text = await res.text();
-    let json: any;
-    try {
-        json = JSON.parse(text);
-    } catch {
-        const cleanText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        console.error(`[rawGraphQL] Received non-JSON response (HTTP ${res.status}):`, text.slice(0, 500));
-        throw new Error(
-            res.status >= 500
-                ? `GraphQL server error (${res.status}): Сервер тимчасово недоступний`
-                : `GraphQL response error (${res.status}): ${cleanText.slice(0, 150) || 'Некоректна відповідь сервера'}`
-        );
-    }
-    if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
-    return json.data;
+    return fetchGraphQLRaw<any, Record<string, any>>(query, variables, headers);
 }
 
 async function getActorHeaders(): Promise<Record<string, string>> {
@@ -829,6 +870,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         members: [] as any[],
         currentCandidateId: null as string | null,
         currentCandidateCode: null as string | null,
+        currentCandidateBeverageName: null as string | null,
         allCandidatesEvaluated: false,
         evaluations: [] as any[],
         propertyMap: {} as Record<string, PropertyMeta>,
@@ -839,9 +881,12 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         myEvaluation: null as any,
         hasCompletedCurrentCandidate: false,
         myTastingSummary: null as MyTastingSummaryData | null,
+        replicaStatus: null as string | null,
         isPanelFinished: false,
         currentPanelName: "",
         currentPanelId: null as string | null,
+        currentReplicaPanelId: null as string | null,
+        nextPanelId: null as string | null,
         nextPanelFirstCandidateId: null as string | null,
         ...emptyFeatureFlags,
     };
@@ -866,52 +911,13 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             auid: Array.isArray(m.auid) ? m.auid.flat() : m.auid,
         }));
 
-        const candidatesOrder = (commission.candidates || []).map((c: any) => c.id);
-        const replicaCandidates = [...(replica.replicaCandidates || [])].sort((a: any, b: any) => {
-            const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
-            const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
-            return idxA - idxB;
-        });
-        // The backend is the single source of truth for which candidate is current.
-        let currentCandidateId = replica.currentCandidateId || null;
-        if (!currentCandidateId && replica.status === 'STARTED' && replicaCandidates.length > 0) {
-            const firstPending = replicaCandidates.find((rc: any) => rc.status === 'PENDING') || replicaCandidates[0];
-            if (firstPending) {
-                try {
-                    const actorHeaders = await getActorHeaders().catch(() => ({}));
-                    await rawGraphQL(`
-                        mutation SetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID) {
-                            setCommissionReplicaCurrentCandidate(id: $id, currentCandidateId: $currentCandidateId) {
-                                id
-                                currentCandidateId
-                            }
-                        }
-                    `, { id: replicaId, currentCandidateId: firstPending.id }, actorHeaders);
-                    currentCandidateId = firstPending.id;
-                    console.log(`✅ Auto-initialized current candidate ${firstPending.id} for replica ${replicaId}`);
-                } catch (autoSetErr: any) {
-                    console.warn("Could not auto-set current candidate in getWaitDataAction:", autoSetErr?.message);
-                    currentCandidateId = firstPending.id;
-                }
-            }
-        }
-        const currentCandidateObj = replicaCandidates.find((rc: any) => rc.id === currentCandidateId);
-        const currentCandidateCode = currentCandidateObj?.candidate?.anonymizedCode || null;
-        let currentPanelId = currentCandidateObj?.candidate?.panelId || null;
-        if (!currentPanelId && replicaCandidates.length > 0) {
-            const lastEvaluated = [...replicaCandidates].reverse().find((rc: any) => isReplicaCandidateFinished(rc.status));
-            if (lastEvaluated) {
-                currentPanelId = lastEvaluated.candidate?.panelId || null;
-            } else {
-                currentPanelId = replicaCandidates[0].candidate?.panelId || null;
-            }
-        }
-        const panels = commission.panels || [];
-        const currentPanelName = panels.find((p: any) => p.id === currentPanelId)?.name || "Panel";
-
-        const currentPanelCandidates = currentPanelId
-            ? replicaCandidates.filter((rc: any) => rc.candidate?.panelId === currentPanelId)
-            : replicaCandidates;
+        const replicaPanels = replica.replicaPanels || [];
+        const currentPanel = replicaPanels.find((panel: any) => panel.id === replica.currentPanelId) || null;
+        const replicaCandidates = replicaPanels.flatMap((panel: any) => panel.replicaCandidates || []);
+        const currentCandidateId = currentPanel?.currentCandidateId || null;
+        const currentCandidateObj = (currentPanel?.replicaCandidates || []).find((rc: any) => rc.id === currentCandidateId);
+        const currentPanelName = currentPanel?.panel?.name || "Panel";
+        const currentPanelCandidates = currentPanel?.replicaCandidates || [];
 
         const totalCandidates = currentPanelCandidates.length;
         const evaluatedCount = currentPanelCandidates.filter((rc: any) => isReplicaCandidateFinished(rc.status)).length;
@@ -919,19 +925,24 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             ? currentPanelCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
             : -1;
 
+        const rawCandidateCode = currentCandidateObj?.candidate?.anonymizedCode;
+        const currentCandidateCode = (rawCandidateCode && rawCandidateCode.trim())
+            ? rawCandidateCode.trim()
+            : (currentCandidateIndex >= 0 ? `#${currentCandidateIndex + 1}` : (currentCandidateId ? `#${currentCandidateId.slice(0, 8)}` : null));
+        const currentCandidateBeverageName = (currentCandidateObj?.candidate as any)?.sample?.batch?.beverage?.name || null;
+
         const candidatesLeft = totalCandidates - evaluatedCount;
         const candidatesLeftAfterCurrent = currentCandidateIndex >= 0
             ? totalCandidates - currentCandidateIndex - 1
             : candidatesLeft;
 
-        const isPanelFinished = currentPanelCandidates.length > 0 &&
-            currentPanelCandidates.every((rc: any) => isReplicaCandidateFinished(rc.status));
+        const isPanelFinished = currentPanel?.status === "COMPLETED";
 
-        const allCandidatesEvaluated = replicaCandidates.length > 0
-            && replicaCandidates.every((rc: any) => isReplicaCandidateFinished(rc.status));
+        const allCandidatesEvaluated = replicaPanels.length > 0
+            && replicaPanels.every((panel: any) => panel.status === "COMPLETED");
 
-        const nextPanelFirstCandidateId = replicaCandidates.find((rc: any) =>
-            rc.status === "PENDING" && rc.candidate?.panelId !== currentPanelId)?.id || null;
+        const currentPanelIndex = currentPanel ? replicaPanels.findIndex((panel: any) => panel.id === currentPanel.id) : -1;
+        const nextPanel = replicaPanels.slice(currentPanelIndex + 1).find((panel: any) => panel.status === "NOT_STARTED") || null;
 
         let evaluations: any[] = [];
         const propertyMap: Record<string, PropertyMeta> = {};
@@ -969,7 +980,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         const hasCompletedCurrentCandidate = myEvaluation?.isComplete === true;
 
         let myTastingSummary: MyTastingSummaryData | null = null;
-        if (allCandidatesEvaluated) {
+        if (replica.status === "COMPLETED") {
             try {
                 myTastingSummary = await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
                 if (myTastingSummary) {
@@ -991,6 +1002,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             members,
             currentCandidateId,
             currentCandidateCode,
+            currentCandidateBeverageName,
             allCandidatesEvaluated,
             evaluations,
             propertyMap: myTastingSummary?.propertyMap ?? propertyMap,
@@ -1001,10 +1013,13 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             myEvaluation: myEvaluation ?? null,
             hasCompletedCurrentCandidate,
             myTastingSummary,
+            replicaStatus: replica.status || null,
             isPanelFinished,
             currentPanelName,
-            currentPanelId,
-            nextPanelFirstCandidateId,
+            currentPanelId: currentPanel?.panel?.id || null,
+            currentReplicaPanelId: currentPanel?.id || null,
+            nextPanelId: nextPanel?.id || null,
+            nextPanelFirstCandidateId: nextPanel?.replicaCandidates?.[0]?.id || null,
             ...featureFlags,
         };
     } catch (err: any) {
@@ -1043,11 +1058,11 @@ export async function getEvaluationsForCandidateAction(candidateId: string) {
     }
 }
 
-const SET_REPLICA_CURRENT_CANDIDATE_MUTATION = `
-    mutation SetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID) {
-        setCommissionReplicaCurrentCandidate(id: $id, currentCandidateId: $currentCandidateId) {
+const SET_REPLICA_PANEL_CURRENT_CANDIDATE_MUTATION = `
+    mutation SetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {
+        setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {
             id
-            currentCandidateId
+            currentPanelId
         }
     }
 `;
@@ -1064,43 +1079,45 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
         const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId }, { headers });
 
         const candidatesResponse = await sdk.GetReplicaCandidates({ replicaId });
-        const replicaCandidates = candidatesResponse.commissionReplica?.replicaCandidates || [];
-        const candidatesOrder = candidatesResponse.commissionReplica?.commission?.candidates?.map((c: any) => c.id) || [];
-        let sortedCandidates = replicaCandidates;
-        if (candidatesOrder.length > 0) {
-            sortedCandidates = [...replicaCandidates].sort((a: any, b: any) => {
-                const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
-                const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
-                return idxA - idxB;
-            });
-        }
-        const currentReplicaCandidate = sortedCandidates.find((c: any) => c.id === candidateId);
-        const currentPanelId = currentReplicaCandidate?.candidate?.panelId;
-
-        const nextCandidate = sortedCandidates.find((rc: any) =>
-            rc.status === "PENDING" && rc.candidate?.panelId === currentPanelId
+        const currentPanel = candidatesResponse.commissionReplica?.replicaPanels.find((panel: any) =>
+            panel.replicaCandidates.some((candidate: any) => candidate.id === candidateId),
         );
+        if (!currentPanel) throw new Error("Replica panel not found for candidate");
+        const currentCandidateIndex = currentPanel.replicaCandidates.findIndex((candidate: any) => candidate.id === candidateId);
+        const nextCandidate = currentPanel.chaoticCurrentCandidateChangesEnabled
+            ? currentPanel.replicaCandidates.find((candidate: any) => candidate.status === "PENDING")
+            : currentPanel.replicaCandidates[currentCandidateIndex + 1];
 
         const nextCandidateId = nextCandidate?.id ?? null;
 
-        // 3. Explicitly advance (or clear, when finished) the replica's current candidate.
-        //    The backend treats currentCandidateId as the single source of truth and
-        //    rejects evaluations for any other candidate.
-        await rawGraphQL(
-            SET_REPLICA_CURRENT_CANDIDATE_MUTATION,
-            { id: replicaId, currentCandidateId: nextCandidateId },
-            headers,
-        );
+        if (nextCandidateId) {
+            // Sequential mode requires an exact N -> N+1 transition. Chaotic mode
+            // may instead select any remaining pending candidate.
+            await rawGraphQL(
+                SET_REPLICA_PANEL_CURRENT_CANDIDATE_MUTATION,
+                { id: replicaId, panelId: currentPanel.id, currentCandidateId: nextCandidateId },
+                headers,
+            );
+        } else {
+            // Do not clear currentCandidateId on the last candidate: in sequential
+            // mode null maps to index -1 and is rejected. Completing the panel keeps
+            // the last candidate pointer while changing only the panel lifecycle.
+            await rawGraphQL(`
+                mutation CompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {
+                    completeCommissionReplicaPanel(id: $id, panelId: $panelId) { id currentPanelId }
+                }
+            `, { id: replicaId, panelId: currentPanel.id }, headers);
+        }
 
         return { ...data.markCommissionReplicaCandidateAsEvaluated, nextCandidateId };
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
         const msg = String(err?.message || err);
         if (msg.includes("replica members") || msg.includes("confirmed evaluations") || msg.includes("PARTIAL_EVALUATION")) {
-            throw new Error("Не всі члени комісії надали підтверджені оцінки. Увімкніть часткову оцінку кандидатів у налаштуваннях комісії або зачекайте на оцінки всіх учасників.");
+            throw new Error("PARTIAL_EVALUATION_REQUIRED");
         }
-        if (msg.includes("CandidateNotNextInSequence") || msg.includes("not next in sequence")) {
-            throw new Error("Послідовний режим оцінювання: виберіть наступного кандидата за порядком або увімкніть хаотичний режим у налаштуваннях репліки.");
+        if (msg.includes("CandidateNotNextInSequence") || msg.includes("not next in sequence") || msg.includes("transition strictly to the next candidate")) {
+            throw new Error("SEQUENTIAL_ORDER_VIOLATION");
         }
         throw new Error(err.message || "Failed to mark candidate as evaluated");
     }
@@ -1201,22 +1218,66 @@ export async function setCommissionBeverageOriginDuringEvaluationEnabledAction(c
     }
 }
 
-export async function setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction(replicaId: string, enabled: boolean) {
+export async function setCommissionEvaluationVisibleAttributesAction(
+    commissionId: string,
+    input: { beverage: string[]; batch: string[]; sample: string[] }
+) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionEvaluationVisibleAttributes($id: ID!, $input: EvaluationVisibleAttributesInput!) {
+                setCommissionEvaluationVisibleAttributes(id: $id, input: $input) {
+                    id
+                    evaluationVisibleAttributes {
+                        beverage
+                        batch
+                        sample
+                    }
+                }
+            }
+        `, { id: commissionId, input }, headers);
+        return { success: true, commission: data?.setCommissionEvaluationVisibleAttributes };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionEvaluationVisibleAttributesAction):", err);
+        return { success: false, error: err?.message || "Failed to update visible attributes setting" };
+    }
+}
+
+export async function setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction(replicaId: string, panelId: string, enabled: boolean) {
+    if (!isValidUuid(replicaId) || !isValidUuid(panelId)) return { success: false, error: "Invalid replica or panel ID" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionReplicaPanelChaoticCurrentCandidateChangesEnabled($id: ID!, $panelId: ID!, $enabled: Boolean!) {
+                setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabled(id: $id, panelId: $panelId, enabled: $enabled) {
+                    id
+                    currentPanelId
+                }
+            }
+        `, { id: replicaId, panelId, enabled }, headers);
+        return { success: true, replica: data?.setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabled };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction):", err);
+        return { success: false, error: err?.message || "Failed to update chaotic candidate setting" };
+    }
+}
+
+export async function setCommissionReplicaChaoticCurrentPanelChangesEnabledAction(replicaId: string, enabled: boolean) {
     if (!isValidUuid(replicaId)) return { success: false, error: "Invalid replicaId parameter" };
     try {
         const headers = await getActorHeaders();
         const data = await rawGraphQL(`
-            mutation SetCommissionReplicaChaoticCurrentCandidateChangesEnabled($id: ID!, $enabled: Boolean!) {
-                setCommissionReplicaChaoticCurrentCandidateChangesEnabled(id: $id, enabled: $enabled) {
+            mutation SetCommissionReplicaChaoticCurrentPanelChangesEnabled($id: ID!, $enabled: Boolean!) {
+                setCommissionReplicaChaoticCurrentPanelChangesEnabled(id: $id, enabled: $enabled) {
                     id
-                    chaoticCurrentCandidateChangesEnabled
+                    chaoticCurrentPanelChangesEnabled
                 }
             }
         `, { id: replicaId, enabled }, headers);
-        return { success: true, replica: data?.setCommissionReplicaChaoticCurrentCandidateChangesEnabled };
+        return { success: true, replica: data?.setCommissionReplicaChaoticCurrentPanelChangesEnabled };
     } catch (err: any) {
-        console.error("Server Action Error (setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction):", err);
-        return { success: false, error: err?.message || "Failed to update chaotic candidate setting" };
+        return { success: false, error: err?.message || "Failed to update chaotic panel setting" };
     }
 }
 
@@ -1313,13 +1374,18 @@ export async function renameCommissionReplicaAction(id: string, name?: string) {
         return {success: false, error: err.message || "Failed to rename replica"};
     }
 }
-export async function startNextPanelAction(replicaId: string, nextCandidateId: string) {
-    if (!isValidUuid(replicaId) || !isValidUuid(nextCandidateId)) return null;
+export async function startNextPanelAction(replicaId: string, nextPanelId: string, firstCandidateId: string) {
+    if (!isValidUuid(replicaId) || !isValidUuid(nextPanelId) || !isValidUuid(firstCandidateId)) return null;
     try {
         const headers = await getActorHeaders();
+        await rawGraphQL(`
+            mutation SetCommissionReplicaCurrentPanel($id: ID!, $currentPanelId: ID) {
+                setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $currentPanelId) { id currentPanelId }
+            }
+        `, { id: replicaId, currentPanelId: nextPanelId }, headers);
         await rawGraphQL(
-            SET_REPLICA_CURRENT_CANDIDATE_MUTATION,
-            { id: replicaId, currentCandidateId: nextCandidateId },
+            SET_REPLICA_PANEL_CURRENT_CANDIDATE_MUTATION,
+            { id: replicaId, panelId: nextPanelId, currentCandidateId: firstCandidateId },
             headers,
         );
         return true;
@@ -1329,10 +1395,27 @@ export async function startNextPanelAction(replicaId: string, nextCandidateId: s
     }
 }
 
-const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || 'https://axusid.thewinelore.com/graphql';
+export async function completeCommissionReplicaAction(replicaId: string) {
+    if (!isValidUuid(replicaId)) return null;
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation CompleteCommissionReplica($id: ID!) {
+                completeCommissionReplica(id: $id) {
+                    id
+                    status
+                }
+            }
+        `, { id: replicaId }, headers);
+        return data?.completeCommissionReplica ?? null;
+    } catch (err: any) {
+        console.error("Server Action Error (completeCommissionReplicaAction):", err);
+        throw new Error(err.message || "Failed to complete commission replica");
+    }
+}
 
 async function fetchAxusGraphQL(query: string, variables: Record<string, any> = {}) {
-    const res = await fetch(AXUS_GRAPHQL_ENDPOINT, {
+    const res = await fetch(getAxusEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, variables }),
@@ -1347,12 +1430,12 @@ async function fetchAxusGraphQL(query: string, variables: Record<string, any> = 
 
 export async function searchUserByUsernameAction(username: string) {
     const trimmed = username.trim().replace(/^@/, "");
-    if (!trimmed) return { success: false, error: "Введіть юзернейм" };
+    if (!trimmed) return { success: false, error: "" };
     try {
         const ownerRes = await axusSdk.OwnerByUsername({ username: trimmed });
         const auid = ownerRes?.ownerByUsername;
         if (!auid) {
-            return { success: false, error: `Користувача @${trimmed} не знайдено` };
+            return { success: false, error: "" };
         }
 
         let displayName = `@${trimmed}`;
@@ -1396,7 +1479,7 @@ export async function searchUserByUsernameAction(username: string) {
         };
     } catch (err: any) {
         console.error("searchUserByUsernameAction error:", err);
-        return { success: false, error: err.message || "Помилка пошуку користувача" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1431,7 +1514,7 @@ export async function addCommissionReplicaMemberAction(
         return { success: true, replica: data.addCommissionReplicaMember };
     } catch (err: any) {
         console.error("Server Action Error (addCommissionReplicaMemberAction):", err);
-        return { success: false, error: err.message || "Не вдалося додати учасника" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1459,14 +1542,14 @@ export async function removeCommissionReplicaMemberAction(replicaId: string, mem
         return { success: true, replica: data.removeCommissionReplicaMember };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionReplicaMemberAction):", err);
-        return { success: false, error: err.message || "Не вдалося видалити учасника" };
+        return { success: false, error: err.message || "" };
     }
 }
 
 export async function addCommissionPanelAction(commissionId: string, name: string) {
     if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
     const trimmed = name.trim();
-    if (!trimmed) return { success: false, error: "Вкажіть назву панелі" };
+    if (!trimmed) return { success: false, error: "" };
     try {
         const headers = await getActorHeaders();
         const data = await rawGraphQL(`
@@ -1483,14 +1566,14 @@ export async function addCommissionPanelAction(commissionId: string, name: strin
         return { success: true, panel: data.addCommissionPanel };
     } catch (err: any) {
         console.error("Server Action Error (addCommissionPanelAction):", err);
-        return { success: false, error: err.message || "Не вдалося створити панель" };
+        return { success: false, error: err.message || "" };
     }
 }
 
 export async function renameCommissionPanelAction(commissionId: string, panelId: string, name: string) {
     if (!isValidUuid(commissionId) || !isValidUuid(panelId)) return { success: false, error: "Invalid parameters" };
     const trimmed = name.trim();
-    if (!trimmed) return { success: false, error: "Вкажіть назву панелі" };
+    if (!trimmed) return { success: false, error: "" };
     try {
         const headers = await getActorHeaders();
         const data = await rawGraphQL(`
@@ -1508,7 +1591,7 @@ export async function renameCommissionPanelAction(commissionId: string, panelId:
         return { success: true, panel: data.renameCommissionPanel };
     } catch (err: any) {
         console.error("Server Action Error (renameCommissionPanelAction):", err);
-        return { success: false, error: err.message || "Не вдалося перейменувати панель" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1529,7 +1612,7 @@ export async function removeCommissionPanelAction(commissionId: string, panelId:
         return { success: true, result: data.removeCommissionPanel };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionPanelAction):", err);
-        return { success: false, error: err.message || "Не вдалося видалити панель" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1587,7 +1670,7 @@ export async function searchBeveragesAction(search?: string, page: number = 1, l
         }
     } catch (err: any) {
         console.error("Server Action Error (searchBeveragesAction):", err);
-        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка пошуку напоїв" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
 
@@ -1623,7 +1706,7 @@ export async function getBatchesForBeverageAction(beverageId: string, page: numb
         };
     } catch (err: any) {
         console.error("Server Action Error (getBatchesForBeverageAction):", err);
-        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання партій" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
 
@@ -1657,7 +1740,7 @@ export async function getSamplesForBatchAction(batchId: string, page: number = 1
         };
     } catch (err: any) {
         console.error("Server Action Error (getSamplesForBatchAction):", err);
-        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "Помилка отримання зразків" };
+        return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
 
@@ -1668,7 +1751,7 @@ export async function addCommissionCandidateAction(input: {
     anonymizedCode?: string;
 }) {
     if (!isValidUuid(input.commissionId) || !isValidUuid(input.panelId) || !isValidUuid(input.sampleId)) {
-        return { success: false, error: "Некоректні параметри кандидата" };
+        return { success: false, error: "" };
     }
     try {
         const headers = await getActorHeaders();
@@ -1676,7 +1759,7 @@ export async function addCommissionCandidateAction(input: {
             mutation AddCommissionCandidate($input: AddCommissionCandidateInput!) {
                 addCommissionCandidate(input: $input) {
                     id
-                    panelId
+                    panel { id }
                     anonymizedCode
                     sample {
                         id
@@ -1695,7 +1778,6 @@ export async function addCommissionCandidateAction(input: {
             }
         `, {
             input: {
-                commissionId: input.commissionId,
                 panelId: input.panelId,
                 sampleId: input.sampleId,
                 anonymizedCode: input.anonymizedCode ? input.anonymizedCode.trim() : null
@@ -1767,10 +1849,16 @@ export async function addCommissionCandidateAction(input: {
             console.warn("Could not auto-bind template for candidate beverage type:", autoTplErr?.message);
         }
 
-        return { success: true, candidate: data.addCommissionCandidate };
+        return {
+            success: true,
+            candidate: {
+                ...data.addCommissionCandidate,
+                panelId: data.addCommissionCandidate.panel.id,
+            },
+        };
     } catch (err: any) {
         console.error("Server Action Error (addCommissionCandidateAction):", err);
-        return { success: false, error: err.message || "Не вдалося додати кандидата" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1786,7 +1874,7 @@ export async function removeCommissionCandidateAction(candidateId: string) {
         return { success: true, result: data.removeCommissionCandidate };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionCandidateAction):", err);
-        return { success: false, error: err.message || "Не вдалося видалити кандидата" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1808,7 +1896,7 @@ export async function changeCommissionCandidateCodeAction(candidateId: string, a
         return { success: true, candidate: data.changeCommissionCandidateCode };
     } catch (err: any) {
         console.error("Server Action Error (changeCommissionCandidateCodeAction):", err);
-        return { success: false, error: err.message || "Не вдалося змінити код" };
+        return { success: false, error: err.message || "" };
     }
 }
 
@@ -1818,15 +1906,15 @@ export async function reorderCommissionCandidatesAction(commissionId: string, pa
     try {
         const headers = await getActorHeaders();
         const data = await rawGraphQL(`
-            mutation ReorderCommissionCandidates($commissionId: ID!, $panelId: ID!, $candidateIds: [ID!]!) {
-                reorderCommissionCandidates(commissionId: $commissionId, panelId: $panelId, candidateIds: $candidateIds) {
+            mutation ReorderCommissionCandidates($panelId: ID!, $candidateIds: [ID!]!) {
+                reorderCommissionCandidates(panelId: $panelId, candidateIds: $candidateIds) {
                     id
                 }
             }
-        `, { commissionId, panelId, candidateIds }, headers);
+        `, { panelId, candidateIds }, headers);
         return { success: true, commission: data.reorderCommissionCandidates };
     } catch (err: any) {
         console.error("Server Action Error (reorderCommissionCandidatesAction):", err);
-        return { success: false, error: err.message || "Не вдалося змінити порядок кандидатів" };
+        return { success: false, error: err.message || "" };
     }
 }

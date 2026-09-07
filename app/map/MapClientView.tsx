@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
 import { Wine, MapPin, Shield, X, Globe, Loader2, Info, Calendar, Users } from "lucide-react"
-import { AppHeader, type AppTabId } from "@/components/AppHeader"
+import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { SEARCH_MAP_BEVERAGES, GET_BEVERAGE_DETAILS_MAP } from "./queries"
@@ -39,16 +39,16 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
 
     let displayRole: string = producer.role
     const roleUpper = producer.role.toUpperCase()
-    if (roleUpper === "MAKER") displayRole = (t("roles.maker" as any) as string) || "Maker"
-    else if (roleUpper === "OWNER") displayRole = (t("roles.owner" as any) as string) || "Owner"
-    else if (roleUpper === "DISTRIBUTOR") displayRole = (t("roles.distributor" as any) as string) || "Distributor"
-    else if (roleUpper === "BOTTLER") displayRole = "Bottler"
+    if (roleUpper === "MAKER") displayRole = t("roles.maker")
+    else if (roleUpper === "OWNER") displayRole = t("roles.owner")
+    else if (roleUpper === "DISTRIBUTOR") displayRole = t("roles.distributor")
+    else if (roleUpper === "BOTTLER") displayRole = t("roles.bottler")
 
     // Виправлено: тепер завжди @username, без перевірки на цифри
     const renderName = () => {
         if (producer.displayName) return producer.displayName;
         if (producer.username) return `@${producer.username}`;
-        return (t("common.unknownUser" as any) as string) || "Unknown User";
+        return t("common.unknownUser");
     }
 
     return (
@@ -61,8 +61,7 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
 }
 
 export default function MapClientView() {
-    const [activeTab, setActiveTab] = useState<AppTabId>("none")
-    const { t, formatDateTime, formatStatus, formatBeverageType } = useTranslation()
+    const { t, tCount, formatDateTime, formatStatus, formatBeverageType } = useTranslation()
 
     const [beverages, setBeverages] = useState<any[]>([])
     const [visiblePolygons, setVisiblePolygons] = useState<WineRegionLayer[]>([])
@@ -76,9 +75,9 @@ export default function MapClientView() {
     const [sidebarWidth, setSidebarWidth] = useState(420)
     const [isResizing, setIsResizing] = useState(false)
 
-    const producersLabel = t("beverage.producers" as any) === "beverage.producers" ? "Producers" : t("beverage.producers" as any);
-    const createdLabel = t("beverage.created" as any) === "beverage.created" ? "Created" : t("beverage.created" as any);
-    const geoLabel = t("map.geography" as any) === "map.geography" ? "Geography" : t("map.geography" as any);
+    const producersLabel = t("beverage.producers");
+    const createdLabel = t("beverage.created");
+    const geoLabel = t("map.geography");
 
     const fetchPolygonsForBounds = useCallback(async (bounds: {
         south: number
@@ -156,10 +155,14 @@ export default function MapClientView() {
 
                 let colorVal = "WINE";
                 if (fullBev.attributes) {
-                    try {
-                        const parsed = JSON.parse(fullBev.attributes);
-                        if (parsed?.color) colorVal = parsed.color;
-                    } catch(e) {}
+                    if (typeof fullBev.attributes === "object" && fullBev.attributes !== null) {
+                        colorVal = (fullBev.attributes as any).color || "WINE";
+                    } else if (typeof fullBev.attributes === "string") {
+                        try {
+                            const parsed = JSON.parse(fullBev.attributes);
+                            if (parsed?.color) colorVal = parsed.color;
+                        } catch(e) {}
+                    }
                 }
                 fullBev.type = colorVal;
 
@@ -216,7 +219,7 @@ export default function MapClientView() {
 
     return (
         <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            <AppHeader activeTab="map" />
 
             <main className="flex-1 relative flex overflow-hidden">
                 <div className="flex-1 relative z-0">
@@ -282,7 +285,7 @@ export default function MapClientView() {
                                 {/* Зафіксована кнопка закриття */}
                                 <button
                                     onClick={closeBeverageDetails}
-                                    aria-label="Close beverage details"
+                                    aria-label={t("map.closeDetails")}
                                     className="relative z-10 shrink-0 p-2 mt-1 bg-slate-100 text-slate-400 hover:text-rose-600 hover:bg-rose-100 rounded-full transition-all duration-200"
                                 >
                                     <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -294,7 +297,7 @@ export default function MapClientView() {
                                 {isLoadingDetails ? (
                                     <div className="flex flex-col items-center justify-center h-48 space-y-4">
                                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                                        <p className="text-sm font-bold text-slate-400">Loading details...</p>
+                                        <p className="text-sm font-bold text-slate-400">{t("map.loadingDetails")}</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
@@ -320,7 +323,7 @@ export default function MapClientView() {
                                                         </div>
                                                     ) : (
                                                         <p className="text-sm font-bold text-slate-700">
-                                                            {t("common.na" as any) as string || "N/A"}
+                                                            {t("common.na")}
                                                         </p>
                                                     )}
                                                 </div>
@@ -355,7 +358,7 @@ export default function MapClientView() {
                                                     <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 truncate group-hover/geo-header:text-indigo-600 transition-colors duration-300">
                                                         {geoLabel}
                                                     </h3>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">Origin details</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{t("map.originDetails")}</p>
                                                 </div>
                                                 <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2 group-hover/geo-header:from-indigo-200 transition-colors duration-300"></div>
                                             </div>
@@ -363,12 +366,12 @@ export default function MapClientView() {
                                             {loadingRegion ? (
                                                 <div className="flex items-center gap-3 text-sm font-bold text-slate-500 bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm">
                                                     <Loader2 className="w-5 h-5 animate-spin text-indigo-500 shrink-0" />
-                                                    Detecting region...
+                                                    {t("map.detectingRegion")}
                                                 </div>
                                             ) : regionData ? (
                                                 <div className="group/geo bg-white p-5 rounded-[24px] border border-slate-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300">
                                                     <p className="text-sm font-bold text-slate-700 group-hover/geo:text-indigo-700 transition-colors">
-                                                        {regionData.region || "Unknown Region"}
+                                                        {regionData.region || t("map.unknownRegion")}
                                                     </p>
                                                     <p className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 mt-2 truncate">
                                                         <Globe className="w-3.5 h-3.5 shrink-0 group-hover/geo:text-indigo-500 transition-colors" />
@@ -389,9 +392,9 @@ export default function MapClientView() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <h3 className="text-[11px] font-extrabold uppercase tracking-widest truncate bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">
-                                                            Wine Regions
+                                                            {t("map.wineRegions")}
                                                         </h3>
-                                                        <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-0.5 truncate">Mapped origin areas</p>
+                                                        <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-0.5 truncate">{t("map.mappedOriginAreas")}</p>
                                                     </div>
                                                     <div className="flex-1 h-px bg-gradient-to-r from-blue-200 to-transparent ml-2"></div>
                                                 </div>
@@ -401,7 +404,7 @@ export default function MapClientView() {
                                                         <div className="flex items-start gap-3 bg-blue-50/50 text-blue-800 p-4 rounded-[20px] border border-blue-100/50">
                                                             <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                                                             <p className="text-xs font-medium leading-relaxed">
-                                                                This origin falls within <strong className="font-extrabold">{regionData.wineRegions.length}</strong> mapped wine {regionData.wineRegions.length === 1 ? "region" : "regions"}. A geographic match does not by itself establish a beverage&apos;s regional designation.
+                                                                {tCount("map.regionNotice", regionData.wineRegions.length)}
                                                             </p>
                                                         </div>
 
@@ -419,7 +422,7 @@ export default function MapClientView() {
                                                                     <div className="flex items-center gap-2 mt-auto">
                                                                         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${gi.status?.toLowerCase() === 'registered' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                                                                         <p className="text-[10px] font-extrabold tracking-widest uppercase text-slate-400 group-hover/gi:text-slate-500 transition-colors truncate">
-                                                                            {gi.status?.toLowerCase() === 'registered' ? 'Registered wine region' : 'Mapped wine region'}
+                                                                            {gi.status?.toLowerCase() === 'registered' ? t("map.registeredRegion") : t("map.mappedRegion")}
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -429,8 +432,8 @@ export default function MapClientView() {
                                                 ) : (
                                                     <div className="bg-white border border-slate-100 p-8 rounded-[24px] text-center shadow-sm">
                                                         <Shield className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                                                        <p className="text-sm font-bold text-slate-700">No mapped wine region at this origin</p>
-                                                        <p className="text-xs text-slate-500 mt-1">The point is outside the currently mapped wine-region coverage.</p>
+                                                        <p className="text-sm font-bold text-slate-700">{t("map.noRegionTitle")}</p>
+                                                        <p className="text-xs text-slate-500 mt-1">{t("map.noRegionDesc")}</p>
                                                     </div>
                                                 )}
                                             </div>

@@ -1,6 +1,8 @@
 import { parseJwt } from "./pkce";
+import { deriveRefreshTokenTtl } from "./tokenTtl";
+import { getAxusEndpoint } from "./graphqlEndpoint";
 
-const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || "https://axusid.thewinelore.com/graphql";
+const AXUS_GRAPHQL_ENDPOINT = getAxusEndpoint();
 
 const USER_DETAILS_QUERY = `
   query UserDetails($auid: ID!) {
@@ -31,6 +33,7 @@ export interface RefreshResult {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+  refreshTokenExpiresIn: number;
 }
 
 export async function refreshTokens(refreshToken: string): Promise<RefreshResult> {
@@ -117,12 +120,15 @@ export async function refreshTokens(refreshToken: string): Promise<RefreshResult
     console.error("Failed to fetch user details during token refresh:", err);
   }
 
+  const nextRefreshToken = tokens.refresh_token || refreshToken;
+
   return {
     auid,
     username,
     displayName,
     accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token || refreshToken,
+    refreshToken: nextRefreshToken,
     expiresIn,
+    refreshTokenExpiresIn: deriveRefreshTokenTtl(tokens, nextRefreshToken),
   };
 }

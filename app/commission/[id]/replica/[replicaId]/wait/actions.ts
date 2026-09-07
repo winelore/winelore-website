@@ -24,10 +24,11 @@ const GET_COMMISSION_RESULTS_WITH_PANEL = `
           isResult
         }
       }
-      candidates {
+      panels {
         id
-        anonymizedCode
-        panelId
+        candidates {
+          id
+          anonymizedCode
         beverageType {
           id
           code
@@ -55,6 +56,7 @@ const GET_COMMISSION_RESULTS_WITH_PANEL = `
             }
           }
         }
+        }
       }
       replicas {
         id
@@ -70,11 +72,13 @@ const GET_COMMISSION_RESULTS_WITH_PANEL = `
           beverageId
           scores
         }
-        replicaCandidates {
+        replicaPanels {
           id
-          status
-          candidate {
+          panel { id }
+          replicaCandidates {
             id
+            status
+            candidate { id }
           }
         }
       }
@@ -108,6 +112,15 @@ export async function getPanelResultsAction(commissionId: string, replicaId: str
         commission = response?.commission;
 
         if (!commission) return null;
+        commission.candidates = (commission.panels || []).flatMap((panel: any) =>
+            (panel.candidates || []).map((candidate: any) => ({ ...candidate, panelId: panel.id })),
+        );
+        commission.replicas = (commission.replicas || []).map((replica: any) => ({
+            ...replica,
+            replicaCandidates: (replica.replicaPanels || []).flatMap((panel: any) =>
+                (panel.replicaCandidates || []).map((candidate: any) => ({ ...candidate, replicaPanelId: panel.id, panelId: panel.panel?.id })),
+            ),
+        }));
         try {
             const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
             propertyMap = buildPropertyMapFromCommissionTemplates(templateResult);

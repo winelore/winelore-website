@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
+import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, ArrowLeft } from "lucide-react"
+import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, Send, Download } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
@@ -11,17 +12,13 @@ import { getDateLocale } from "@/lib/i18n"
 import Link from "next/link"
 import {
     startCompetitionAction,
+    submitCompetitionForReviewAction,
     getCompetitionDataAction,
     updateCompetitionDatesAction,
     updateCompetitionNameAction,
     createCommission
 } from "../actions"
-
-const tabs = (t: any) => [
-    { id: "feed", label: t("common.feed"), icon: FileText },
-    { id: "competitions", label: t("common.competitions"), icon: Trophy },
-    { id: "beverages", label: t("common.beverages"), icon: Wine },
-]
+import { BackLink } from "@/components/BackLink"
 
 function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -286,7 +283,7 @@ export default function CompetitionClientView({
 
     const handleSaveName = async () => {
         if (!editNameData.trim()) {
-            alert("Name cannot be empty")
+            toast.error("Name cannot be empty")
             return
         }
         setIsMutating(true)
@@ -296,10 +293,10 @@ export default function CompetitionClientView({
                 setIsEditingName(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save name")
+                toast.error(res.error || "Failed to save name")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -317,10 +314,10 @@ export default function CompetitionClientView({
                 setIsEditingDates(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save dates")
+                toast.error(res.error || "Failed to save dates")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -350,16 +347,14 @@ export default function CompetitionClientView({
                 setIsAddingCommission(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to add commission")
+                toast.error(res.error || "Failed to add commission")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
     }
-
-    const compTabs = tabs(t)
 
     // Fetch usernames for competition holders
     const allHolderAuids = useMemo(() => {
@@ -372,19 +367,31 @@ export default function CompetitionClientView({
     }, [propInitialData])
 
     useEffect(() => {
+        if (localData.status === "COMPLETED") return
+
+        let isMounted = true
+        let isFetching = false
+
         const pollInterval = setInterval(async () => {
+            if (!isMounted || isFetching) return
+            isFetching = true
             try {
                 const updated = await getCompetitionDataAction(localData.id)
-                if (updated) {
+                if (isMounted && updated) {
                     setLocalData(updated)
                 }
             } catch (err) {
                 console.error("Failed to poll competition data:", err)
+            } finally {
+                isFetching = false
             }
         }, 3000)
 
-        return () => clearInterval(pollInterval)
-    }, [localData.id])
+        return () => {
+            isMounted = false
+            clearInterval(pollInterval)
+        }
+    }, [localData.id, localData.status])
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -401,6 +408,22 @@ export default function CompetitionClientView({
             router.refresh()
         } catch (err) {
             console.error("Failed to start competition:", err)
+        } finally {
+            setIsMutating(false)
+        }
+    }
+
+    const handleSubmitForReview = async () => {
+        if (isMutating) return
+        setIsMutating(true)
+        try {
+            await submitCompetitionForReviewAction(initialData.id)
+            const updated = await getCompetitionDataAction(initialData.id)
+            if (updated) setLocalData(updated)
+            router.refresh()
+        } catch (err: any) {
+            console.error("Failed to submit competition for review:", err)
+            toast.error(err.message || t("competition.submitReviewError"))
         } finally {
             setIsMutating(false)
         }
@@ -464,24 +487,28 @@ export default function CompetitionClientView({
             <AppHeader activeTab="competitions" />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex justify-start">
+                <div className="w-full max-w-7xl mb-4 flex items-center justify-between">
+                    <BackLink href="/myCompetitions" label={t("commission.backToCompetitions")} />
+
                     <Link
-                        href="/myCompetitions"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
+                        href={`/competition/${initialData.id}/results`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 cursor-pointer"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        {t("commission.backToCompetitions")}
+                        <Trophy className="w-4 h-4" />
+                        <span>{t("competition.resultsButton")}</span>
                     </Link>
                 </div>
                 <div className="w-full max-w-7xl flex flex-col gap-8">
-                    <div className="w-full flex flex-col lg:flex-row items-start gap-8">
+                    <div className="w-full flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
 
                         {/* Left Column: Status, Series, timeline */}
-                        <div className="w-full lg:w-[45%] flex flex-col gap-6">
-                            <StatusSteps status={initialData.status} />
+                        <div className="contents lg:flex lg:flex-col lg:w-[45%] lg:gap-6">
+                            <div className="order-2 lg:order-none">
+                                <StatusSteps status={initialData.status} />
+                            </div>
 
                             {/* Series Details */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex items-center gap-4 order-3 lg:order-none">
                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-inner">
                                     <Layers className="h-6 w-6" />
                                 </div>
@@ -496,7 +523,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {/* Timeline and Dates */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-4 lg:order-none">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-indigo-500" />
@@ -510,7 +537,7 @@ export default function CompetitionClientView({
                                                     onClick={handleSaveDates}
                                                     disabled={isMutating}
                                                     className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                                    title="Save dates"
+                                                    title={t("common.saveDates")}
                                                 >
                                                     {isMutating ? (
                                                         <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -524,7 +551,7 @@ export default function CompetitionClientView({
                                                     onClick={() => setIsEditingDates(false)}
                                                     disabled={isMutating}
                                                     className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                                                    title="Cancel"
+                                                    title={t("competition.cancel")}
                                                 >
                                                     <X className="w-3.5 h-3.5" />
                                                 </button>
@@ -533,7 +560,7 @@ export default function CompetitionClientView({
                                             <button
                                                 onClick={openEditDates}
                                                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                title="Edit planned dates"
+                                                title={t("common.editPlannedDates")}
                                             >
                                                 <Pencil className="w-4 h-4" />
                                             </button>
@@ -630,9 +657,9 @@ export default function CompetitionClientView({
                         </div>
 
                         {/* Right Column: Info & Commissions List */}
-                        <div className="w-full lg:w-[55%] flex flex-col gap-6">
+                        <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
                             {/* Competition Header Card */}
-                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                                 <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                                 <div className="flex items-start justify-between gap-4 mb-6">
@@ -662,7 +689,7 @@ export default function CompetitionClientView({
                                                         onClick={handleSaveName}
                                                         disabled={isMutating}
                                                         className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
-                                                        title="Save"
+                                                        title={t("common.save")}
                                                     >
                                                         {isMutating ? (
                                                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -675,7 +702,7 @@ export default function CompetitionClientView({
                                                         onClick={() => setIsEditingName(false)}
                                                         disabled={isMutating}
                                                         className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
-                                                        title="Cancel"
+                                                        title={t("competition.cancel")}
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </button>
@@ -689,7 +716,7 @@ export default function CompetitionClientView({
                                                         <button
                                                             onClick={openEditName}
                                                             className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                            title="Edit competition name"
+                                                            title={t("competition.editCompetitionName")}
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>
@@ -745,8 +772,38 @@ export default function CompetitionClientView({
                                 </div>
                             </div>
 
+                            {initialData.status === "DRAFT" && isHolder && (
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
+                                        {t("competition.actionsControls")}
+                                    </h3>
+                                    <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 flex-wrap sm:flex-nowrap">
+                                        <div className="max-w-full sm:max-w-[65%]">
+                                            <h4 className="text-sm font-bold text-slate-800">
+                                                {t("competition.submitReviewTitle")}
+                                            </h4>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                {t("competition.submitReviewDescription")}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleSubmitForReview}
+                                            disabled={isMutating}
+                                            className="group flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 px-6 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0"
+                                        >
+                                            {isMutating ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            ) : (
+                                                <Send className="h-4 w-4" />
+                                            )}
+                                            <span>{t("competition.submitReviewButton")}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {initialData.status === "PLANNED" && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50">
+                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                         {t("competition.actionsControls")}
                                     </h3>
@@ -792,7 +849,7 @@ export default function CompetitionClientView({
                             )}
 
                             {/* Commissions list */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-6 lg:order-none">
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
@@ -804,9 +861,16 @@ export default function CompetitionClientView({
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                        {t("common.total")}: {initialData.commissions.length}
-                                    </span>
+                                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                            {t("common.total")}: {initialData.commissions.length}
+                                        </span>
+                                        <Link
+                                            href={`/competition/${initialData.id}/results`}
+                                            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+                                        >
+                                            <Trophy className="w-3.5 h-3.5 text-indigo-600" />
+                                            <span>{t("competition.resultsButton")}</span>
+                                        </Link>
                                         {isHolder && (
                                             <button
                                                 onClick={openAddCommission}

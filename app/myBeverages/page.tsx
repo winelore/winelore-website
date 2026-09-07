@@ -5,12 +5,13 @@ import { redirect } from "next/navigation"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { getGeographicInfo } from "@/lib/geocoding"
 import { GET_MY_BEVERAGES } from "./queries"
+import { getBeverageTypesAction } from "@/app/myTemplates/actions"
 import MyBeveragesClientView from "./MyBeveragesClientView"
 
-export default async function MyBeveragesPage({ searchParams, }: { searchParams: Promise<{ cursor?: string; page?: string }> }) {
+export default async function MyBeveragesPage({ searchParams, }: { searchParams: Promise<{ page?: string }> }) {
     const resolvedParams = await searchParams;
-    const cursor = resolvedParams.cursor;
-    const currentPage = parseInt(resolvedParams.page || "1", 10);
+    const parsedPage = parseInt(resolvedParams.page || "1", 10);
+    const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
 
     const LIMIT = 16;
 
@@ -23,22 +24,15 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
 
     let myBeverages: any[] = [];
     let totalCount = 0;
-    let nextCursor: string | null = null;
+    let hasError = false;
 
     try {
-        const args: any = {
+        const response = await fetchGraphQL(GET_MY_BEVERAGES, {
             limit: LIMIT,
+            offset: (currentPage - 1) * LIMIT,
             filter: { producers: [[currentAuid]] },
             producer: [currentAuid]
-        };
-
-        if (cursor) {
-            args.cursor = cursor;
-        } else if (currentPage > 1) {
-            args.offset = (currentPage - 1) * LIMIT;
-        }
-
-        const response = await fetchGraphQL(GET_MY_BEVERAGES, args);
+        });
         const rawBeverages = response.beverages?.items || [];
         totalCount = response.beverageCount || 0;
 
@@ -52,19 +46,23 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
                         originParts = [info.country, info.district].filter(Boolean) as string[];
                     }
                 }
-                
+
                 // Parse attributes for color to keep type formatting happy
                 let colorVal = "WINE";
                 if (bev.attributes) {
-                    try {
-                        const parsed = JSON.parse(bev.attributes);
-                        if (parsed && parsed.color) {
-                            colorVal = parsed.color;
-                        }
-                    } catch (e) {
-                        const match = bev.attributes.match(/color=([^,\}]+)/);
-                        if (match) {
-                            colorVal = match[1].trim().replace(/^["']|["']$/g, "");
+                    if (typeof bev.attributes === "object" && bev.attributes !== null) {
+                        colorVal = (bev.attributes as any).color || "WINE";
+                    } else if (typeof bev.attributes === "string") {
+                        try {
+                            const parsed = JSON.parse(bev.attributes);
+                            if (parsed && parsed.color) {
+                                colorVal = parsed.color;
+                            }
+                        } catch (e) {
+                            const match = bev.attributes.match(/color=([^,\}]+)/);
+                            if (match) {
+                                colorVal = match[1].trim().replace(/^["']|["']$/g, "");
+                            }
                         }
                     }
                 }
@@ -72,24 +70,34 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
                 return { ...bev, type: colorVal, originParts };
             })
         );
-
-        if (rawBeverages.length > 0) {
-            nextCursor = rawBeverages[rawBeverages.length - 1].id;
-        }
-
     } catch (error) {
         console.error("Failed to fetch beverages:", error)
+        hasError = true;
     }
 
-    const totalPages = Math.ceil(totalCount / LIMIT);
+    const totalPages = Math.max(1, Math.ceil(totalCount / LIMIT));
+
+    // Same type dictionary the other beverage lists use, so the card kicker
+    // reads the beverage type rather than the raw colour attribute.
+    let beverageTypesDict: Record<string, string> = {};
+    try {
+        const typesList = await getBeverageTypesAction();
+        beverageTypesDict = typesList.reduce((acc, type) => {
+            acc[type.id] = type.code;
+            return acc;
+        }, {} as Record<string, string>);
+    } catch (e) {
+        console.error("Failed to load beverage types map:", e);
+    }
 
     return (
         <MyBeveragesClientView
             initialData={{ beverages: myBeverages }}
-            nextCursor={nextCursor}
+            beverageTypesMap={beverageTypesDict}
             currentPage={currentPage}
             totalPages={totalPages}
             totalCount={totalCount}
+            hasError={hasError}
         />
     )
 }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { X, Tag, Check, AlertCircle, Loader2 } from "lucide-react"
 import { changeCommissionCandidateCodeAction } from "../../actions"
+import { useTranslation } from "@/lib/i18n/context"
 
 interface EditCandidateCodeModalProps {
     isOpen: boolean
@@ -21,6 +22,7 @@ export function EditCandidateCodeModal({
     candidateLabel,
     onCodeUpdated,
 }: EditCandidateCodeModalProps) {
+    const { t } = useTranslation()
     const [code, setCode] = useState(currentCode || "")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -43,18 +45,18 @@ export function EditCandidateCodeModal({
                 onCodeUpdated()
                 onClose()
             } else {
-                setError(res.error || "Не вдалося оновити код кандидата")
+                setError(res.error || t("panels.updateCodeError"))
             }
         } catch (err: any) {
-            setError(err.message || "Помилка збереження")
+            setError(err.message || t("panels.updateCodeErrorGeneric"))
         } finally {
             setIsSubmitting(false)
         }
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-md overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-2xl animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up">
                 <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-2.5">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/60">
@@ -62,7 +64,7 @@ export function EditCandidateCodeModal({
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-slate-800">
-                                Змінити анонімізований код
+                                {t("panels.editCodeModalTitle")}
                             </h3>
                             {candidateLabel && (
                                 <p className="text-[11px] text-slate-400 truncate max-w-[240px]">
@@ -82,11 +84,11 @@ export function EditCandidateCodeModal({
                 <div className="p-5 flex flex-col gap-4">
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                            Анонімізований код
+                            {t("panels.anonymizedCodeFieldLabel")}
                         </label>
                         <input
                             type="text"
-                            placeholder="Наприклад: W-101, B-05..."
+                            placeholder={t("panels.anonymizedCodeFieldPlaceholder")}
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             onKeyDown={(e) => {
@@ -112,7 +114,7 @@ export function EditCandidateCodeModal({
                         onClick={onClose}
                         className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                     >
-                        Скасувати
+                        {t("competition.cancel")}
                     </button>
                     <button
                         type="button"
@@ -125,7 +127,7 @@ export function EditCandidateCodeModal({
                         ) : (
                             <Check className="w-3.5 h-3.5" />
                         )}
-                        <span>Зберегти</span>
+                        <span>{t("common.save")}</span>
                     </button>
                 </div>
             </div>

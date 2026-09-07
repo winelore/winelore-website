@@ -2,22 +2,27 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import {
     Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin, Calendar, Award, ArrowLeft, Clock,
-    Users, Percent, Droplet, Layers, HelpCircle, Barcode
+    Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send, Pencil
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
+import { submitBeverageForReviewAction } from "../actions"
+import { BackLink } from "@/components/BackLink"
+import { EditBeverageModal } from "./EditBeverageModal"
 
-type BeverageStatus = "APPROVED" | "DRAFT" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
+type BeverageStatus = "APPROVED" | "DRAFT" | "IN_REVIEW" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
 type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
 
 interface ProducerDetails {
     id: string
-    auid: number[]
+    producerId?: string | null
+    auid?: number[] | null
     role: string // Can be MAKER, OWNER, DISTRIBUTOR, BOTTLER, etc.
-    displayName?: string
-    username?: string
+    displayName?: string | null
+    username?: string | null
 }
 
 interface Beverage {
@@ -27,9 +32,15 @@ interface Beverage {
     type: BeverageType
     typeId: string
     schemaEditionIds: string[]
-    attributes: string
+    attributes: any
     producers: ProducerDetails[]
     originParts?: string[]
+    createdBy?: number[] | null
+    createdByUser?: {
+        auid: string
+        displayName?: string | null
+        username?: string | null
+    } | null
     createdAt: string
     origin?: {
         latitude?: number | null
@@ -76,7 +87,7 @@ interface BatchType {
     id: string
     volumeMl?: number | null
     lotNumber?: string | null
-    attributes?: string | null
+    attributes?: any
     createdAt?: string | null
 }
 
@@ -93,45 +104,58 @@ interface Props {
     isError?: boolean;
 }
 
-function parseAttributes(attrStr: string | null | undefined): Record<string, string> {
-    if (!attrStr) return {}
-    const trimmed = attrStr.trim()
-    if (!trimmed) return {}
+function parseAttributes(attrInput: unknown): Record<string, string> {
+    if (!attrInput) return {}
 
-    // First try standard JSON.parse
-    try {
-        const parsed = JSON.parse(trimmed)
-        if (parsed && typeof parsed === "object") {
+    if (typeof attrInput === "object" && attrInput !== null) {
+        const result: Record<string, string> = {}
+        Object.entries(attrInput).forEach(([k, v]) => {
+            if (v !== null && v !== undefined) {
+                result[k] = String(v)
+            }
+        })
+        return result
+    }
+
+    if (typeof attrInput === "string") {
+        const trimmed = attrInput.trim()
+        if (!trimmed) return {}
+
+        // First try standard JSON.parse
+        try {
+            const parsed = JSON.parse(trimmed)
+            if (parsed && typeof parsed === "object" && parsed !== null) {
+                const result: Record<string, string> = {}
+                Object.entries(parsed).forEach(([k, v]) => {
+                    if (v !== null && v !== undefined) {
+                        result[k] = String(v)
+                    }
+                })
+                return result
+            }
+        } catch {
+            // Fall back to Kotlin Map toString parser
+        }
+
+        // Parse Kotlin Map toString representation: {key1=val1, key2=val2}
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            const content = trimmed.slice(1, -1).trim()
+            if (!content) return {}
+            
             const result: Record<string, string> = {}
-            Object.entries(parsed).forEach(([k, v]) => {
-                if (v !== null && v !== undefined) {
-                    result[k] = String(v)
+            const parts = content.split(/,\s*/)
+            parts.forEach(part => {
+                const eqIdx = part.indexOf('=')
+                if (eqIdx !== -1) {
+                    const key = part.substring(0, eqIdx).trim().replace(/^["']|["']$/g, "")
+                    const val = part.substring(eqIdx + 1).trim().replace(/^["']|["']$/g, "")
+                    if (key) {
+                        result[key] = val
+                    }
                 }
             })
             return result
         }
-    } catch {
-        // Fall back to Kotlin Map toString parser
-    }
-
-    // Parse Kotlin Map toString representation: {key1=val1, key2=val2}
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-        const content = trimmed.slice(1, -1).trim()
-        if (!content) return {}
-        
-        const result: Record<string, string> = {}
-        const parts = content.split(/,\s*/)
-        parts.forEach(part => {
-            const eqIdx = part.indexOf('=')
-            if (eqIdx !== -1) {
-                const key = part.substring(0, eqIdx).trim().replace(/^["']|["']$/g, "")
-                const val = part.substring(eqIdx + 1).trim().replace(/^["']|["']$/g, "")
-                if (key) {
-                    result[key] = val
-                }
-            }
-        })
-        return result
     }
 
     return {}
@@ -237,12 +261,14 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
     } else if (roleUpper === "DISTRIBUTOR") {
         displayRole = (t("roles.distributor") as string) || "Distributor"
     } else if (roleUpper === "BOTTLER") {
-        displayRole = "Bottler"
+        displayRole = (t("roles.bottler") as string) || "Bottler"
     }
 
     const renderName = () => {
         if (producer.displayName) return producer.displayName
         if (producer.username) return `@${producer.username}`
+        if (producer.auid && producer.auid.length > 0) return `@user-${producer.auid[0]}`
+        if (producer.producerId) return `Winery ${String(producer.producerId).slice(0, 8)}`
         return (t("common.unknownUser") as string) || "Unknown User"
     }
 
@@ -255,7 +281,7 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
     )
 }
 
-export default function BeverageClientView({ initialData, isNotFound, isError }: Props) {
+export default function BeverageClientView({ initialData, currentAuid, isNotFound, isError }: Props) {
     const [currentTab, setCurrentTab] = useState<"batches" | "awards" | "specs">(() => {
         if (initialData?.beverage?.attributes) {
             const parsed = parseAttributes(initialData.beverage.attributes)
@@ -264,6 +290,14 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
         }
         return "batches"
     })
+    const [beverageStatus, setBeverageStatus] = useState<BeverageStatus | null>(initialData?.beverage?.status || null)
+    const [isSubmittingForReview, setIsSubmittingForReview] = useState(false)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [beverageEdits, setBeverageEdits] = useState<{
+        name?: string
+        origin?: Beverage["origin"]
+        producers?: ProducerDetails[]
+    }>({})
     const { formatStatus, formatBeverageType, formatDateTime, t } = useTranslation()
 
     if (isNotFound) {
@@ -318,7 +352,34 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
         )
     }
 
-    const { beverage, awards, batches = [] } = initialData
+    const { awards, batches = [] } = initialData
+    const beverage = {
+        ...initialData.beverage,
+        status: beverageStatus || initialData.beverage.status,
+        ...beverageEdits,
+    }
+    const isProducer = beverage.producers.some((producer) => {
+        const auidMatches = producer.auid
+            ? (Array.isArray(producer.auid) ? producer.auid.includes(currentAuid) : Number(producer.auid) === currentAuid)
+            : false
+        const idMatches = Boolean(producer.producerId && producer.producerId === String(currentAuid))
+        return auidMatches || idMatches
+    })
+
+    const handleSubmitForReview = async () => {
+        if (isSubmittingForReview || beverage.status !== "DRAFT" || !isProducer) return
+        setIsSubmittingForReview(true)
+        try {
+            const updated = await submitBeverageForReviewAction(beverage.id)
+            setBeverageStatus(updated?.status || "IN_REVIEW")
+            toast.success(t("beverage.submitReviewSuccess", { defaultValue: "Напій успішно відправлено на перевірку!" }))
+        } catch (err: any) {
+            console.error("Failed to submit beverage for review:", err)
+            toast.error(err.message || t("beverage.submitReviewError"))
+        } finally {
+            setIsSubmittingForReview(false)
+        }
+    }
 
     const getStatusConfig = (status: string) => {
         switch (status.toUpperCase()) {
@@ -393,13 +454,7 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                 <div className="w-full max-w-6xl space-y-6">
 
                     {/* Back Button */}
-                    <Link
-                        href="/myBeverages"
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors w-fit"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {t("beverage.backToMyBeverages")}
-                    </Link>
+                    <BackLink href="/myBeverages" label={t("beverage.backToMyBeverages")} />
 
                     {/* Main Premium Card Header (Includes Overview Meta now) */}
                     <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/40 relative overflow-hidden group/header">
@@ -434,15 +489,42 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                                                     ID: {beverage.id.slice(-6)}
                                                 </span>
                                             </div>
-                                            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mt-3 mb-2 tracking-tight group-hover/header:text-indigo-950 transition-colors">
+                                            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mt-3 mb-2 tracking-tight group-hover/header:text-indigo-950 transition-colors flex items-center justify-center md:justify-start gap-2">
                                                 {beverage.name}
+                                                {isProducer && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsEditModalOpen(true)}
+                                                        title={t("beverage.edit.button")}
+                                                        className="shrink-0 p-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-150 text-slate-400 hover:text-indigo-600 rounded-xl transition-all cursor-pointer"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </h1>
                                         </div>
 
-                                        <span className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest shrink-0 border shadow-sm self-center md:self-start ${statusConfig.className}`}>
-                                            {statusConfig.icon}
-                                            {formatStatus(beverage.status)}
-                                        </span>
+                                        <div className="flex items-center gap-2 self-center md:self-start flex-wrap justify-center md:justify-end">
+                                            {beverage.status === "DRAFT" && isProducer && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSubmitForReview}
+                                                    disabled={isSubmittingForReview}
+                                                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-bold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-600/15 cursor-pointer"
+                                                >
+                                                    {isSubmittingForReview ? (
+                                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                    ) : (
+                                                        <Send className="h-3.5 w-3.5" />
+                                                    )}
+                                                    {t("beverage.submitReviewButton")}
+                                                </button>
+                                            )}
+                                            <span className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest shrink-0 border shadow-sm ${statusConfig.className}`}>
+                                                {statusConfig.icon}
+                                                {formatStatus(beverage.status)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -458,7 +540,18 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                                         <MapPin className="w-3.5 h-3.5 text-indigo-500" />
                                         <span>{t("beverage.origin")}</span>
                                     </div>
-                                    {beverage.originParts && beverage.originParts.length > 0 ? (
+                                    {beverageEdits.origin !== undefined ? (
+                                        // Origin was just edited — originParts was geocoded from the old
+                                        // coordinates server-side, so show the raw numbers instead of a
+                                        // now-possibly-stale place name until the page next reloads.
+                                        beverage.origin?.latitude != null && beverage.origin?.longitude != null ? (
+                                            <span className="text-sm font-bold text-slate-700 tabular-nums">
+                                                {beverage.origin.latitude.toFixed(4)}, {beverage.origin.longitude.toFixed(4)}
+                                            </span>
+                                        ) : (
+                                            <div className="text-sm font-medium text-slate-400">{t("common.na")}</div>
+                                        )
+                                    ) : beverage.originParts && beverage.originParts.length > 0 ? (
                                         <span className="text-sm font-bold text-slate-700">
                                             {beverage.originParts.join(", ")}
                                         </span>
@@ -484,7 +577,7 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                                     )}
                                 </div>
 
-                                {/* Created date */}
+                                {/* Created date & Provenance */}
                                 <div className="space-y-1.5">
                                     <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                                         <Calendar className="w-3.5 h-3.5 text-indigo-500" />
@@ -493,6 +586,14 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                                     <p suppressHydrationWarning className="text-sm font-bold text-slate-700">
                                         {formatDateTime(beverage.createdAt)}
                                     </p>
+                                    {beverage.createdByUser && (
+                                        <p className="text-[11px] font-semibold text-slate-500">
+                                            {t("beverage.enteredBy")}:{" "}
+                                            <span className="font-bold text-slate-700">
+                                                {beverage.createdByUser.displayName || (beverage.createdByUser.username ? `@${beverage.createdByUser.username}` : `AUID ${beverage.createdByUser.auid}`)}
+                                            </span>
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -529,7 +630,7 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                     </div>
 
                     {/* Tab Panels */}
-                    <div className="pt-2 animate-fadeIn transition-all duration-300">
+                    <div className="pt-2 animate-fade-in transition-all duration-300">
                         {currentTab === "batches" && (
                             <div className="space-y-4">
                                 <div>
@@ -717,6 +818,13 @@ export default function BeverageClientView({ initialData, isNotFound, isError }:
                     </div>
                 </div>
             </main>
+
+            <EditBeverageModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                beverage={beverage}
+                onUpdated={(patch) => setBeverageEdits((prev) => ({ ...prev, ...patch }))}
+            />
         </div>
     )
 }

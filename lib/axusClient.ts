@@ -1,8 +1,9 @@
 import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '../src/gql/axus/sdk';
+import { getAxusEndpoint } from './graphqlEndpoint';
 
-const AXUS_GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT || 'https://axusid.thewinelore.com/graphql';
+const AXUS_GRAPHQL_ENDPOINT = getAxusEndpoint();
 
 export interface AxusRequesterOptions {
     headers?: Record<string, string>;

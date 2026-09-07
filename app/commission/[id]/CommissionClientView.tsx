@@ -1,19 +1,31 @@
 "use client"
 
 import React, {useState, useEffect, useRef, useMemo, useCallback} from "react"
+import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
     FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
-    Save, Search, ChevronRight, Sliders, Trash2, ArrowLeft, Loader2, UserPlus, Settings, ExternalLink
+    Save, Search, ChevronRight, Sliders, Trash2, Loader2, UserPlus, Settings, ExternalLink, Send
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
     markMemberReadyAction,
     markMemberNotReadyAction,
+    submitCommissionForReviewAction,
     startCommissionAction,
     getCommissionDataAction,
     renameCommissionAction,
@@ -26,28 +38,15 @@ import {
     setCommissionVoiceCommentsEnabledAction,
     setCommissionPropertyCommentsEnabledAction,
     setCommissionBeverageOriginDuringEvaluationEnabledAction,
-    setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction,
+    setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction,
+    setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
     setCommissionTemplateAction,
 } from "../actions"
-import { getEvaluationTemplatesAction } from "@/app/templates/actions"
+import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
-
-const tabs = (t: any) => [
-    { id: "feed", label: t("common.feed"), icon: FileText },
-    { id: "competitions", label: t("common.competitions"), icon: Trophy },
-    { id: "beverages", label: t("common.beverages"), icon: Wine },
-]
-
-const formatEnumStatus = (status: string | undefined): string => {
-    if (!status) return ""
-    return status
-        .toLowerCase()
-        .split("_")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
-}
+import { BackLink } from "@/components/BackLink"
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -167,7 +166,15 @@ interface Replica {
     name: string;
     type: "STANDARD" | "TRAINEE";
     status: string;
-    chaoticCurrentCandidateChangesEnabled?: boolean;
+    currentPanelId?: string | null;
+    chaoticCurrentPanelChangesEnabled?: boolean;
+    replicaPanels: {
+        id: string;
+        status: string;
+        currentCandidateId?: string | null;
+        chaoticCurrentCandidateChangesEnabled: boolean;
+        panel?: { id: string; name: string };
+    }[];
     members: Member[];
     candidateCount: number;
     replicaCandidates: {
@@ -224,7 +231,7 @@ function EvaluationTemplatesBlock({
     canEdit: boolean,
     onRefresh: () => void
 }) {
-    const { t } = useTranslation()
+    const { t, tCount, formatStatus } = useTranslation()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedBeverageType, setSelectedBeverageType] = useState<BeverageType | null>(null)
 
@@ -268,10 +275,10 @@ function EvaluationTemplatesBlock({
                 setIsModalOpen(false)
                 onRefresh()
             } else {
-                alert(t("commission.templateAssignError" as any) || res.error)
+                toast.error(t("commission.templateAssignError") || res.error)
             }
         } catch (e) {
-            alert(t("commission.templateAssignError" as any))
+            toast.error(t("commission.templateAssignError"))
         } finally {
             setIsAssigning(false)
         }
@@ -290,10 +297,10 @@ function EvaluationTemplatesBlock({
                     </div>
                     <div>
                         <h3 className="text-sm font-bold tracking-tight text-slate-800">
-                            {t("commission.evaluationTemplates" as any) || "Evaluation Templates"}
+                            {t("commission.evaluationTemplates")}
                         </h3>
                         <p className="text-[10px] text-slate-400 font-medium">
-                            {t("commission.evaluationTemplatesSubtitle" as any) || "One template per beverage type"}
+                            {t("commission.evaluationTemplatesSubtitle")}
                         </p>
                     </div>
                 </div>
@@ -304,7 +311,7 @@ function EvaluationTemplatesBlock({
                         className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
                     >
                         <Plus className="w-4 h-4" />
-                        <span>{t("commission.assignTemplate" as any) || "Assign Template"}</span>
+                        <span>{t("commission.assignTemplate")}</span>
                     </button>
                 )}
             </div>
@@ -333,7 +340,7 @@ function EvaluationTemplatesBlock({
                                             onClick={() => handleOpenCatalog(bevType)}
                                             className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                                         >
-                                            {isAssigned ? (t("commission.changeTemplate" as any) || "Change") : (t("commission.assignTemplate" as any) || "Assign Template")}
+                                            {isAssigned ? (t("commission.changeTemplate")) : (t("commission.assignTemplate"))}
                                         </button>
                                     )}
                                 </div>
@@ -341,13 +348,13 @@ function EvaluationTemplatesBlock({
                                 {isAssigned && te ? (
                                     <div className="flex flex-col gap-2">
                                         <Link
-                                            href={`/templates?templateId=${te.template?.id}-${te.version}`}
+                                            href={`/myTemplates?templateId=${te.template?.id}-${te.version}`}
                                             target="_blank"
                                             className="group/link flex items-center gap-1.5 w-fit outline-none"
-                                            title="Open template details in new tab"
+                                            title={t("commission.openTemplateInNewTab")}
                                         >
                                             <span className="text-sm font-extrabold text-slate-800 group-hover/link:text-indigo-600 transition-colors">
-                                                {te.template?.name || "Standard Template"}
+                                                {te.template?.name || t("commission.standardTemplate")}
                                             </span>
                                             <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover/link:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-1 group-hover/link:translate-x-0" />
                                         </Link>
@@ -355,15 +362,15 @@ function EvaluationTemplatesBlock({
                                         <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
                                             <span className="bg-white border border-slate-200 shadow-sm px-1.5 py-0.5 rounded-md">v{te.version}</span>
                                             <span className="text-slate-300">•</span>
-                                            <span className="uppercase text-emerald-600">{formatEnumStatus(te.status)}</span>
+                                            <span className="uppercase text-emerald-600">{te.status ? formatStatus(te.status) : ""}</span>
                                             <span className="text-slate-300">•</span>
-                                            <span>{te.categories?.length || 0} Categories</span>
+                                            <span>{tCount("commission.categoriesCount", te.categories?.length || 0)}</span>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
                                         <AlertCircle className="w-5 h-5 mb-1 opacity-75" />
-                                        <span className="text-xs font-bold">{t("commission.noTemplateForType" as any) || "No template assigned"}</span>
+                                        <span className="text-xs font-bold">{t("commission.noTemplateForType")}</span>
                                     </div>
                                 )}
                             </div>
@@ -374,16 +381,16 @@ function EvaluationTemplatesBlock({
 
             {/* Modal Catalog */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in">
-                    <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+                    <div className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col">
 
                         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div>
-                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog" as any) || "Template Catalog"}</h2>
+                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog")}</h2>
                                 <p className="text-xs text-slate-500 mt-0.5">
                                     {selectedBeverageType
-                                        ? <>Selecting template for <strong className="text-indigo-600">{selectedBeverageType.name}</strong></>
-                                        : "Select a template from the catalog"
+                                        ? t("commission.selectingTemplateFor", { type: selectedBeverageType.name })
+                                        : t("commission.selectFromCatalog")
                                     }
                                 </p>
                             </div>
@@ -397,7 +404,7 @@ function EvaluationTemplatesBlock({
                                 <Search className="w-4 h-4 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder={t("commission.searchTemplates" as any) || "Search templates..."}
+                                    placeholder={t("commission.searchTemplates")}
                                     className="bg-transparent border-none outline-none text-sm w-full text-slate-700"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -409,12 +416,12 @@ function EvaluationTemplatesBlock({
                             {isCatalogLoading ? (
                                 <div className="flex flex-col items-center justify-center h-40 gap-3 text-indigo-500">
                                     <Loader2 className="w-8 h-8 animate-spin" />
-                                    <span className="text-sm font-bold">Loading catalog...</span>
+                                    <span className="text-sm font-bold">{t("commission.loadingCatalog")}</span>
                                 </div>
                             ) : paginatedCatalog.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                                     <FileText className="w-10 h-10 mb-2 opacity-50" />
-                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound" as any) || "No templates found"}</span>
+                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound")}</span>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
@@ -435,7 +442,7 @@ function EvaluationTemplatesBlock({
                                                         <div className="flex items-center gap-2 mt-1.5 text-[10px] font-semibold text-slate-500">
                                                             <span className="bg-slate-50 border px-1.5 py-0.5 rounded-md">v{ed.version}</span>
                                                             <span>•</span>
-                                                            <span>{ed.categories?.length || 0} Categories</span>
+                                                            <span>{tCount("commission.categoriesCount", ed.categories?.length || 0)}</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-3">
@@ -443,14 +450,14 @@ function EvaluationTemplatesBlock({
                                                             onClick={() => setExpandedTemplateId(isExpanded ? null : template.id)}
                                                             className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
                                                         >
-                                                            Preview <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                                            {t("common.preview")} <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                                                         </button>
                                                         <button
                                                             onClick={() => handleAssignTemplate(ed.id, template.beverageTypeId)}
                                                             disabled={isAssigning}
                                                             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
                                                         >
-                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate" as any) || "Apply")}
+                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate"))}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -460,7 +467,7 @@ function EvaluationTemplatesBlock({
                                                     <div className="px-6 pb-6 pt-4 border-t border-slate-50 bg-slate-50/15 max-h-[350px] overflow-y-auto">
                                                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
                                                             <Settings className="w-4 h-4 text-indigo-500" />
-                                                            {t("commission.templatePreview" as any) || "Structure Preview"}
+                                                            {t("commission.templatePreview")}
                                                         </h4>
 
                                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -482,8 +489,8 @@ function EvaluationTemplatesBlock({
                                                                                     <div className="flex flex-col min-w-0 flex-1 pr-3">
                                                                                         <span className="font-bold text-slate-700 truncate flex items-center gap-1.5">
                                                                                             {prop.name}
-                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title="Required">*</span>}
-                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">Result</span>}
+                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title={t("common.required")}>*</span>}
+                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">{t("commission.resultBadge")}</span>}
                                                                                         </span>
                                                                                         {prop.description && (
                                                                                             <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
@@ -531,7 +538,7 @@ function EvaluationTemplatesBlock({
                         {totalPages > 1 && (
                             <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
                                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                                    Page {currentPage} of {totalPages} <span className="text-slate-300 mx-1">|</span> {filteredCatalog.length} total
+                                    {t("common.pageOf", { current: currentPage, total: totalPages })} <span className="text-slate-300 mx-1">|</span> {t("common.itemsTotal", { count: filteredCatalog.length })}
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <button
@@ -539,14 +546,14 @@ function EvaluationTemplatesBlock({
                                         disabled={currentPage === 1}
                                         className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
                                     >
-                                        Previous
+                                        {t("common.previous")}
                                     </button>
                                     <button
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
                                         className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
                                     >
-                                        Next
+                                        {t("common.next")}
                                     </button>
                                 </div>
                             </div>
@@ -590,6 +597,7 @@ export default function CommissionClientView({
     const [editReplicaName, setEditReplicaName] = useState("")
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
     const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
+    const [memberPendingRemoval, setMemberPendingRemoval] = useState<string | null>(null)
     const initialData = localData
 
     const beverageTypesInCommission = useMemo(() => {
@@ -629,17 +637,17 @@ export default function CommissionClientView({
 
     const handleRemoveMember = async (memberId: string) => {
         if (!selectedReplica || isMutating) return
-        if (!confirm("Ви дійсно бажаєте видалити цього експерта з комісії?")) return
+        setMemberPendingRemoval(null)
         setRemovingMemberId(memberId)
         try {
             const res = await removeCommissionReplicaMemberAction(selectedReplica.id, memberId)
             if (res.success) {
                 await refreshCommissionData()
             } else {
-                alert(res.error || "Не вдалося видалити учасника")
+                toast.error(res.error || t("commission.removeMemberError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при видаленні учасника")
+            toast.error(err.message || t("commission.removeMemberErrorGeneric"))
         } finally {
             setRemovingMemberId(null)
         }
@@ -682,10 +690,10 @@ export default function CommissionClientView({
                 setIsEditingReplica(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to rename replica")
+                toast.error(res.error || "Failed to rename replica")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -693,7 +701,7 @@ export default function CommissionClientView({
 
     const handleSaveName = async () => {
         if (!editNameData.trim()) {
-            alert("Name cannot be empty")
+            toast.error("Name cannot be empty")
             return
         }
         setIsMutating(true)
@@ -703,10 +711,10 @@ export default function CommissionClientView({
                 setIsEditingName(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save name")
+                toast.error(res.error || "Failed to save name")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -724,10 +732,10 @@ export default function CommissionClientView({
                 setIsEditingDates(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to save dates")
+                toast.error(res.error || "Failed to save dates")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -745,10 +753,10 @@ export default function CommissionClientView({
                 setIsAddingReplica(false)
                 router.refresh()
             } else {
-                alert(res.error || "Failed to add replica")
+                toast.error(res.error || "Failed to add replica")
             }
         } catch (err: any) {
-            alert(err.message || "An error occurred")
+            toast.error(err.message || "An error occurred")
         } finally {
             setIsMutating(false)
         }
@@ -771,10 +779,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, partialCandidateEvaluationEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -789,10 +797,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, wineJumperMiniGameEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -807,10 +815,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, voiceCommentsEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -825,10 +833,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, propertyCommentsEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -843,10 +851,10 @@ export default function CommissionClientView({
             if (res.success) {
                 setLocalData(prev => ({ ...prev, beverageOriginDuringEvaluationEnabled: nextState }));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -854,17 +862,34 @@ export default function CommissionClientView({
 
     const handleToggleChaoticCandidateChanges = async () => {
         if (!selectedReplica || isMutating) return;
-        const nextState = !selectedReplica.chaoticCurrentCandidateChangesEnabled;
+        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId);
+        if (!activePanel) return;
+        const nextState = !activePanel.chaoticCurrentCandidateChangesEnabled;
         setIsMutating(true);
         try {
-            const res = await setCommissionReplicaChaoticCurrentCandidateChangesEnabledAction(selectedReplica.id, nextState);
+            const res = await setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction(selectedReplica.id, activePanel.id, nextState);
             if (res.success) {
-                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentCandidateChangesEnabled: nextState } : r));
+                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? {
+                    ...r,
+                    replicaPanels: r.replicaPanels.map(panel => panel.id === activePanel.id ? { ...panel, chaoticCurrentCandidateChangesEnabled: nextState } : panel),
+                } : r));
             } else {
-                alert(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("commission.addMemberError"));
             }
         } catch (err: any) {
-            alert(err?.message || t("commission.addMemberError"));
+            toast.error(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleToggleChaoticPanelChanges = async () => {
+        if (!selectedReplica || isMutating) return;
+        const nextState = !selectedReplica.chaoticCurrentPanelChangesEnabled;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionReplicaChaoticCurrentPanelChangesEnabledAction(selectedReplica.id, nextState);
+            if (res.success) setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: nextState } : r));
         } finally {
             setIsMutating(false);
         }
@@ -880,12 +905,27 @@ export default function CommissionClientView({
     const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
     const localMembers = selectedReplica ? selectedReplica.members : []
 
-    // Fetch usernames for panel members and competition creators/holders
+    // Fetch usernames for panel members, competition creators/holders, and beverage producers
     const allMemberAuids = useMemo(() => {
         const memberIds = localMembers.flatMap(m => m.auid);
         const holderIds = initialData.competition.holders || [];
-        return Array.from(new Set([...memberIds, ...holderIds]));
-    }, [localMembers, initialData.competition.holders])
+        const producerIds: number[] = [];
+        (localData.panels || []).forEach(p => {
+            (p.candidates || []).forEach(c => {
+                const producers = c.sample?.batch?.beverage?.producers;
+                if (producers) {
+                    producers.forEach(prod => {
+                        if (Array.isArray(prod.auid)) {
+                            prod.auid.forEach(id => producerIds.push(id));
+                        } else if (prod.auid) {
+                            producerIds.push(prod.auid);
+                        }
+                    });
+                }
+            });
+        });
+        return Array.from(new Set([...memberIds, ...holderIds, ...producerIds]));
+    }, [localMembers, initialData.competition.holders, localData.panels])
     const { usernames } = useUsernames(allMemberAuids)
 
     const prevReplicaStatusRef = useRef(selectedReplica?.status)
@@ -998,10 +1038,15 @@ export default function CommissionClientView({
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
 
     useEffect(() => {
+        let isMounted = true
+        let isFetching = false
+
         const pollInterval = setInterval(async () => {
+            if (!isMounted || isFetching) return
+            isFetching = true
             try {
                 const updated = await getCommissionDataAction(localData.id)
-                if (updated) {
+                if (isMounted && updated) {
                     setLocalData(updated)
                     if (updated.replicas) {
                         setLocalReplicas(updated.replicas)
@@ -1009,10 +1054,15 @@ export default function CommissionClientView({
                 }
             } catch (err) {
                 console.error("Failed to poll commission data:", err)
+            } finally {
+                isFetching = false
             }
         }, 3000)
 
-        return () => clearInterval(pollInterval)
+        return () => {
+            isMounted = false
+            clearInterval(pollInterval)
+        }
     }, [localData.id])
 
     const handleToggleReady = async (shouldBeReady: boolean) => {
@@ -1064,11 +1114,11 @@ export default function CommissionClientView({
     const handleStartCommission = async () => {
         if (!selectedReplica || isMutating) return
         if (!hasCandidates) {
-            alert("Неможливо розпочати дегустацію: додайте щонайменше 1 зразок (кандидата) до комісії.")
+            toast.error(t("commission.startTastingNoSamplesError"))
             return
         }
         if (!hasMembers) {
-            alert("Неможливо розпочати дегустацію: додайте щонайменше 1 експерта до комісії.")
+            toast.error(t("commission.startTastingNoExpertsError"))
             return
         }
         setIsMutating(true)
@@ -1078,7 +1128,26 @@ export default function CommissionClientView({
             router.refresh()
         } catch (err: any) {
             console.error("Failed to start replica tasting session:", err)
-            alert(err.message || "Помилка при запуску дегустації")
+            if (err.message === "NO_CANDIDATES_TO_START") {
+                toast.error(t("commission.startTastingNoSamplesError"))
+            } else {
+                toast.error(t("commission.startTastingErrorGeneric"))
+            }
+        } finally {
+            setIsMutating(false)
+        }
+    }
+
+    const handleSubmitForReview = async () => {
+        if (isMutating || !isCommissionDraft) return
+        setIsMutating(true)
+        try {
+            await submitCommissionForReviewAction(localData.id)
+            await refreshCommissionData()
+            router.refresh()
+        } catch (err: any) {
+            console.error("Failed to submit commission for review:", err)
+            toast.error(err.message || t("commission.submitReviewError"))
         } finally {
             setIsMutating(false)
         }
@@ -1090,6 +1159,7 @@ export default function CommissionClientView({
     })
 
     const currentCommissionStatus = localData.status || initialData.status
+    const competitionResultsHref = `/competition/${localData.competition.id}/results?commission=${localData.id}`
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const isReplicaDraft = replicaStatus === "DRAFT"
     const isCommissionDraft = currentCommissionStatus === "DRAFT"
@@ -1097,24 +1167,25 @@ export default function CommissionClientView({
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = currentCommissionStatus === "COMPLETED"
     const isCompetitionHolder = currentAuid !== null && (localData.competition?.holders || initialData.competition?.holders || []).includes(currentAuid)
-    const showResultsBanner = isCompetitionHolder
+    const completedUserReplica = localReplicas.find(
+        (replica) =>
+            replica.status === "COMPLETED" &&
+            replica.members.some(
+                (member) => currentAuid !== null && member.auid.includes(currentAuid),
+            ),
+    ) ?? null
+    const showResultsBanner = isCompetitionHolder || completedUserReplica !== null
     const isUserReplicaMember = selectedReplica?.members.some(
         (m) => currentAuid !== null && m.auid.includes(currentAuid),
     ) ?? false
     const myReplica = localReplicas.find((r) =>
         r.members.some((m) => currentAuid !== null && m.auid.includes(currentAuid)),
     ) ?? null
-    const allCandidatesEvaluated =
-        (selectedReplica?.replicaCandidates?.length ?? 0) > 0 &&
-        selectedReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status))
     const selectedReplicaReadyForSummary =
         isUserReplicaMember &&
         selectedReplica &&
-        (replicaStatus === "COMPLETED" || allCandidatesEvaluated)
-    const myReplicaReadyForSummary =
-        myReplica?.status === "COMPLETED" ||
-        ((myReplica?.replicaCandidates?.length ?? 0) > 0 &&
-            myReplica!.replicaCandidates.every((rc) => isReplicaCandidateFinished(rc.status)))
+        replicaStatus === "COMPLETED"
+    const myReplicaReadyForSummary = myReplica?.status === "COMPLETED"
     const summaryReplica = selectedReplicaReadyForSummary
         ? selectedReplica
         : myReplicaReadyForSummary
@@ -1128,16 +1199,13 @@ export default function CommissionClientView({
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-7xl mb-4 flex justify-start">
-                    <Link
+                    <BackLink
                         href={initialData.competition?.id ? `/competition/${initialData.competition.id}` : "/myCommissions"}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
-                    </Link>
+                        label={initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
+                    />
                 </div>
                 {showMyTastingSummary && (
-                    <div className="w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
+                    <div className="w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
                         <div className="flex items-center gap-3">
                             <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
                             <div>
@@ -1151,7 +1219,7 @@ export default function CommissionClientView({
                         </div>
                         <button
                             onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
-                            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                            className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                             <Wine className="w-4 h-4" />
                             {t("commission.viewMyTastingSummary")}
@@ -1159,7 +1227,7 @@ export default function CommissionClientView({
                     </div>
                 )}
                 {showResultsBanner && (
-                    <div className={`w-full max-w-7xl mb-6 flex items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
+                    <div className={`w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
                         isCommissionCompleted
                             ? "bg-emerald-50 border-emerald-200"
                             : "bg-indigo-50 border-indigo-200"
@@ -1184,8 +1252,8 @@ export default function CommissionClientView({
                             </div>
                         </div>
                         <button
-                            onClick={() => router.push(`/commission/${localData.id}/results`)}
-                            className={`shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
+                            onClick={() => router.push(competitionResultsHref)}
+                            className={`w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
                                 isCommissionCompleted
                                     ? "bg-emerald-600 hover:bg-emerald-700"
                                     : "bg-indigo-600 hover:bg-indigo-700"
@@ -1196,14 +1264,14 @@ export default function CommissionClientView({
                         </button>
                     </div>
                 )}
-                <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start gap-8">
+                <div className="w-full max-w-7xl flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
 
                     {/* Left Column: Replicas, Stepper and Tasting Panel */}
-                    <div className="w-full lg:w-[45%] flex flex-col gap-6">
+                    <div className="contents lg:flex lg:flex-col lg:w-[45%] lg:gap-6">
 
                         {/* Replica Selector Tabs */}
                         {(localReplicas.length > 0 || isCompetitionHolder) && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50 order-3 lg:order-none">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                                         <Layers className="w-4 h-4 text-indigo-500" />
@@ -1315,7 +1383,7 @@ export default function CommissionClientView({
                                                         <input
                                                             type="text"
                                                             autoFocus
-                                                            placeholder="Replica Name"
+                                                            placeholder={t("commission.replicaNamePlaceholder")}
                                                             className="text-xs font-semibold text-slate-900 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none flex-1 min-w-0"
                                                             value={editReplicaName}
                                                             onChange={e => setEditReplicaName(e.target.value)}
@@ -1331,7 +1399,7 @@ export default function CommissionClientView({
                                                             onClick={handleSaveReplica}
                                                             disabled={isMutating}
                                                             className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-                                                            title="Save"
+                                                            title={t("common.save")}
                                                         >
                                                             {isMutating ? (
                                                                 <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -1344,7 +1412,7 @@ export default function CommissionClientView({
                                                             onClick={() => setIsEditingReplica(false)}
                                                             disabled={isMutating}
                                                             className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors cursor-pointer"
-                                                            title="Cancel"
+                                                            title={t("competition.cancel")}
                                                         >
                                                             <X className="w-3.5 h-3.5" />
                                                         </button>
@@ -1360,13 +1428,13 @@ export default function CommissionClientView({
                                                     setSelectedReplicaId(r.id)
                                                     setHasRedirected(false)
                                                 }}
-                                                className={`flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full ${
+                                                className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full gap-2 ${
                                                     isSelected
                                                         ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
                                                         : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-600 hover:text-slate-800"
                                                 }`}
                                             >
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                                     <span>{r.name}</span>
                                                     <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
                                                         isSelected
@@ -1379,13 +1447,13 @@ export default function CommissionClientView({
                                                         <div
                                                             onClick={(e) => openEditReplica(e, r)}
                                                             className="p-1 rounded cursor-pointer transition-colors ml-1 hover:bg-white/20 text-white/70 hover:text-white"
-                                                            title="Rename Replica"
+                                                            title={t("commission.renameReplica")}
                                                         >
                                                             <Pencil className="w-3.5 h-3.5" />
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center gap-1.5 sm:justify-end shrink-0">
                                                     {isUserReplica && (
                                                         <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
                                                             isSelected ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
@@ -1397,8 +1465,8 @@ export default function CommissionClientView({
                                                         r.status === "STARTED"
                                                             ? (isSelected ? "bg-emerald-400 text-indigo-950 font-extrabold" : "bg-emerald-500/10 text-emerald-600")
                                                             : r.status === "COMPLETED"
-                                                                ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
-                                                                : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
+                                                                 ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
+                                                                 : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
                                                     }`}>
                                                         {formatStatus(r.status)}
                                                     </span>
@@ -1410,9 +1478,11 @@ export default function CommissionClientView({
                             </div>
                         )}
 
-                        <StatusSteps status={replicaStatus} />
+                        <div className="order-4 lg:order-none">
+                            <StatusSteps status={replicaStatus} />
+                        </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
@@ -1466,7 +1536,7 @@ export default function CommissionClientView({
                                                     {isCompetitionHolder && isCommissionDraft && isReplicaDraft && (
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleRemoveMember(p.id)}
+                                                            onClick={() => setMemberPendingRemoval(p.id)}
                                                             disabled={removingMemberId === p.id}
                                                             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
                                                             title={t("commission.deleteExpert")}
@@ -1524,19 +1594,23 @@ export default function CommissionClientView({
                         </div>
 
                         {/* Panels and Wine Candidates Section */}
-                        <PanelsSection
-                            commissionId={localData.id}
-                            panels={localData.panels || []}
-                            candidates={localData.candidates || []}
-                            isCompetitionHolder={isCompetitionHolder}
-                            isDraft={isCommissionDraft}
-                            onRefresh={refreshCommissionData}
-                        />
+                        <div className="order-6 lg:order-none">
+                            <PanelsSection
+                                commissionId={localData.id}
+                                panels={localData.panels || []}
+                                candidates={localData.candidates || []}
+                                isCompetitionHolder={isCompetitionHolder}
+                                isDraft={isCommissionDraft}
+                                isEnded={isCommissionCompleted}
+                                usernames={usernames}
+                                onRefresh={refreshCommissionData}
+                            />
+                        </div>
                     </div>
 
                     {/* Right Column: Actions & Session Details */}
-                    <div className="w-full lg:w-[55%] flex flex-col gap-6">
-                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                    <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
+                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                             <div className="flex items-start gap-4 mb-6">
@@ -1565,7 +1639,7 @@ export default function CommissionClientView({
                                                 onClick={handleSaveName}
                                                 disabled={isMutating}
                                                 className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
-                                                title="Save"
+                                                title={t("common.save")}
                                             >
                                                 {isMutating ? (
                                                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -1578,7 +1652,7 @@ export default function CommissionClientView({
                                                 onClick={() => setIsEditingName(false)}
                                                 disabled={isMutating}
                                                 className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
-                                                title="Cancel"
+                                                title={t("competition.cancel")}
                                             >
                                                 <X className="w-4 h-4" />
                                             </button>
@@ -1592,7 +1666,7 @@ export default function CommissionClientView({
                                                 <button
                                                     onClick={openEditName}
                                                     className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                    title="Edit commission name"
+                                                    title={t("commission.editCommissionName")}
                                                 >
                                                     <Pencil className="w-4 h-4" />
                                                 </button>
@@ -1664,7 +1738,7 @@ export default function CommissionClientView({
 
                         {/* Commission Settings Card */}
                         {isCompetitionHolder && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-8 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Sliders className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.evaluationSettings")}</span>
@@ -1776,7 +1850,7 @@ export default function CommissionClientView({
 
                         {/* Replica Settings Card */}
                         {isCompetitionHolder && selectedReplica && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-9 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Layers className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.replicaSettings", { name: selectedReplica.name })}</span>
@@ -1790,31 +1864,43 @@ export default function CommissionClientView({
                                     <button
                                         type="button"
                                         onClick={handleToggleChaoticCandidateChanges}
-                                        disabled={isMutating}
+                                        disabled={isMutating || !selectedReplica.currentPanelId}
                                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                            selectedReplica.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                         }`}
                                     >
                                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                            selectedReplica.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
                                         }`} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                    <div className="flex flex-col pr-4">
+                                        <span className="text-xs font-bold text-slate-800">{t("commission.chaoticPanelChangesTitle")}</span>
+                                        <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.chaoticPanelChangesDesc")}</span>
+                                    </div>
+                                    <button type="button" onClick={handleToggleChaoticPanelChanges} disabled={isMutating}
+                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs transition ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
                             </div>
                         )}
 
                         {/* Evaluation Template Details */}
-                        <EvaluationTemplatesBlock
-                            commissionId={initialData.id}
-                            templateEditions={initialData.templateEditions || []}
-                            beverageTypesInCommission={beverageTypesInCommission}
-                            isCompetitionHolder={isCompetitionHolder}
-                            canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
-                            onRefresh={refreshData}
-                        />
+                        <div className="order-7 lg:order-none">
+                            <EvaluationTemplatesBlock
+                                commissionId={initialData.id}
+                                templateEditions={initialData.templateEditions || []}
+                                beverageTypesInCommission={beverageTypesInCommission}
+                                isCompetitionHolder={isCompetitionHolder}
+                                canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
+                                onRefresh={refreshData}
+                            />
+                        </div>
 
                         {/* Timeline and Dates */}
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide order-2 lg:order-none">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-indigo-500" />
@@ -1828,7 +1914,7 @@ export default function CommissionClientView({
                                                 onClick={handleSaveDates}
                                                 disabled={isMutating}
                                                 className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                                title="Save dates"
+                                                title={t("common.saveDates")}
                                             >
                                                 {isMutating ? (
                                                     <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -1842,7 +1928,7 @@ export default function CommissionClientView({
                                                 onClick={() => setIsEditingDates(false)}
                                                 disabled={isMutating}
                                                 className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                                                title="Cancel"
+                                                title={t("competition.cancel")}
                                             >
                                                 <X className="w-3.5 h-3.5" />
                                             </button>
@@ -1851,7 +1937,7 @@ export default function CommissionClientView({
                                         <button
                                             onClick={openEditDates}
                                             className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                            title="Edit planned dates"
+                                            title={t("common.editPlannedDates")}
                                         >
                                             <Pencil className="w-4 h-4" />
                                         </button>
@@ -1941,12 +2027,37 @@ export default function CommissionClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-10 lg:order-none">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                 {t("commission.actionsControls")}
                             </h3>
 
                             <div className="flex flex-col gap-6">
+                                {isCompetitionHolder && isCommissionDraft && (
+                                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 flex-wrap sm:flex-nowrap">
+                                        <div className="max-w-full sm:max-w-[65%]">
+                                            <h4 className="text-sm font-bold text-slate-800">
+                                                {t("commission.submitReviewTitle")}
+                                            </h4>
+                                            <p className="text-xs text-slate-500 mt-0.5">
+                                                {t("commission.submitReviewDescription")}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleSubmitForReview}
+                                            disabled={isMutating}
+                                            className="group flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-600/15 cursor-pointer shrink-0"
+                                        >
+                                            {isMutating ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            ) : (
+                                                <Send className="h-4 w-4" />
+                                            )}
+                                            <span>{t("commission.submitReviewButton")}</span>
+                                        </button>
+                                    </div>
+                                )}
+
                                 {isPreStart && currentUserRole && (
                                     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
                                         <div className="max-w-full sm:max-w-[65%]">
@@ -2049,9 +2160,9 @@ export default function CommissionClientView({
                                             <p className="text-xs text-emerald-600/90 mt-1">
                                                 {t("commission.sessionCompletedDesc")}
                                             </p>
-                                            {isCompetitionHolder && (
+                                            {(isCompetitionHolder || isUserReplicaMember) && (
                                                 <button
-                                                    onClick={() => router.push(`/commission/${localData.id}/results`)}
+                                                    onClick={() => router.push(competitionResultsHref)}
                                                     className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
                                                 >
                                                     <Trophy className="w-3.5 h-3.5" />
@@ -2080,10 +2191,12 @@ export default function CommissionClientView({
                                         </div>
                                         {selectedReplica?.currentCandidateId && (() => {
                                             const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const code = currentCandidateObj?.candidate?.anonymizedCode;
+                                            const candIndex = selectedReplica.replicaCandidates.findIndex(rc => rc.id === selectedReplica.currentCandidateId);
+                                            const rawCode = currentCandidateObj?.candidate?.anonymizedCode;
+                                            const code = (rawCode && rawCode.trim()) ? rawCode.trim() : (candIndex >= 0 ? `#${candIndex + 1}` : t("common.na"));
                                             return (
                                                 <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
-                                                    <span>{t("commission.currentCandidate", { code: code || t("common.na") })}</span>
+                                                    <span>{t("commission.currentCandidate", { code })}</span>
                                                     <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
                                                 </p>
                                             );
@@ -2112,21 +2225,6 @@ export default function CommissionClientView({
                                 )}
                             </div>
                         </div>
-
-                        <style>{`
-                            @keyframes fadeInSlide {
-                                from {
-                                    opacity: 0;
-                                    transform: translateY(4px)                                 }
-                                to {
-                                    opacity: 1;
-                                    transform: translateY(0);
-                                }
-                            }
-                            .animate-fade-in-slide {
-                                animation: fadeInSlide 0.25s ease-out forwards;
-                            }
-                        `}</style>
                     </div>
 
                 </div>
@@ -2140,6 +2238,24 @@ export default function CommissionClientView({
                 replicaName={selectedReplicaName}
                 onMemberAdded={refreshCommissionData}
             />
+
+            <AlertDialog open={memberPendingRemoval !== null} onOpenChange={(open) => !open && setMemberPendingRemoval(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t("commission.deleteExpert")}</AlertDialogTitle>
+                        <AlertDialogDescription>{t("commission.confirmDeleteExpert")}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t("competition.cancel")}</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => memberPendingRemoval && handleRemoveMember(memberPendingRemoval)}
+                            className="bg-rose-600 hover:bg-rose-700 focus:ring-rose-500"
+                        >
+                            {t("commission.deleteExpert")}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

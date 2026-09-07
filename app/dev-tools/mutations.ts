@@ -120,8 +120,8 @@ export const DevAddCommissionPanelMutation = gql(`
 `);
 
 export const DevAddCommissionCandidatesMutation = gql(`
-  mutation DevAddCommissionCandidates($commissionId: ID!, $panelId: ID!, $candidates: [AddCommissionCandidateItemInput!]!) {
-    addCommissionCandidates(commissionId: $commissionId, panelId: $panelId, candidates: $candidates) {
+  mutation DevAddCommissionCandidates($panelId: ID!, $candidates: [AddCommissionCandidateItemInput!]!) {
+    addCommissionCandidates(panelId: $panelId, candidates: $candidates) {
       id
     }
   }
@@ -255,9 +255,15 @@ export const DevMarkCommissionReplicaMemberReadyMutation = gql(`
   }
 `);
 
-export const DevSetCommissionReplicaCurrentCandidateMutation = gql(`
-  mutation DevSetCommissionReplicaCurrentCandidate($id: ID!, $currentCandidateId: ID!) {
-    setCommissionReplicaCurrentCandidate(id: $id, currentCandidateId: $currentCandidateId) {
+export const DevSetCommissionReplicaCurrentPanelMutation = gql(`
+  mutation DevSetCommissionReplicaCurrentPanel($id: ID!, $currentPanelId: ID!) {
+    setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $currentPanelId) { id }
+  }
+`);
+
+export const DevSetCommissionReplicaPanelCurrentCandidateMutation = gql(`
+  mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {
+    setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {
       id
     }
   }

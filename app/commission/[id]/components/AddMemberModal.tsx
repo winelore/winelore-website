@@ -109,8 +109,8 @@ export function AddMemberModal({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-lg overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-2xl animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-lg overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-3">

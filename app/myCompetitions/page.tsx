@@ -7,12 +7,11 @@ import { GET_MY_COMPETITIONS } from "./queries"
 import MyCompetitionsClientView from "./MyCompetitionsClientView"
 
 export default async function MyCompetitionsPage({searchParams, }: {
-    searchParams: Promise<{ cursor?: string; h?: string }>
+    searchParams: Promise<{ page?: string }>
 }) {
     const resolvedParams = await searchParams;
-    const cursor = resolvedParams.cursor;
-    const historyStr = resolvedParams.h || "";
-    const historyArray = historyStr ? historyStr.split(',') : [];
+    const parsedPage = parseInt(resolvedParams.page || "1", 10);
+    const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
 
     const LIMIT = 16;
 
@@ -25,11 +24,12 @@ export default async function MyCompetitionsPage({searchParams, }: {
 
     let rawCompetitions: any[] = [];
     let totalCount = 0;
+    let hasError = false;
 
     try {
         const response = await fetchGraphQL(GET_MY_COMPETITIONS, {
-            limit: LIMIT + 1,
-            cursor: cursor || undefined,
+            limit: LIMIT,
+            offset: (currentPage - 1) * LIMIT,
             filter: { holders: [[currentAuid]] },
             holder: [currentAuid]
         });
@@ -37,37 +37,18 @@ export default async function MyCompetitionsPage({searchParams, }: {
         totalCount = response.competitionCount || 0;
     } catch (error) {
         console.error("Failed to fetch competitions:", error);
+        hasError = true;
     }
 
-    const hasNextPage = rawCompetitions.length > LIMIT;
-    const competitionsToDisplay = rawCompetitions.slice(0, LIMIT);
-
-    const nextCursor = hasNextPage ? competitionsToDisplay[competitionsToDisplay.length - 1].id : null;
-    const currentCursorRep = cursor || "root";
-    const nextHistory = historyStr ? `${historyStr},${currentCursorRep}` : currentCursorRep;
-
-    let prevCursor: string | null = null;
-    let prevHistory = "";
-
-    if (historyArray.length > 0) {
-        const targetPrev = historyArray[historyArray.length - 1];
-        prevCursor = targetPrev === "root" ? null : targetPrev;
-        prevHistory = historyArray.slice(0, -1).join(',');
-    }
-
-    const currentPage = historyArray.length + 1;
+    const totalPages = Math.max(1, Math.ceil(totalCount / LIMIT));
 
     return (
         <MyCompetitionsClientView
-            initialData={{ competitions: competitionsToDisplay }}
-            nextCursor={nextCursor}
-            nextHistory={nextHistory}
-            prevCursor={prevCursor}
-            prevHistory={prevHistory}
-            hasPrev={historyArray.length > 0}
-            hasNext={hasNextPage}
+            initialData={{ competitions: rawCompetitions }}
             currentPage={currentPage}
+            totalPages={totalPages}
             totalCount={totalCount}
+            hasError={hasError}
         />
     )
 }

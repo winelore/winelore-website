@@ -33,7 +33,7 @@ interface BatchItem {
     lotNumber?: string | null
     volumeMl?: number | null
     createdAt?: string | null
-    attributes?: string | null
+    attributes?: any
 }
 
 interface SampleItem {
@@ -325,8 +325,8 @@ export function CandidateWizardModal({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-xl overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-xl overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-3">
@@ -532,12 +532,16 @@ export function CandidateWizardModal({
                                             const isSelected = selectedBatch?.id === batch.id
                                             let vintageVal: string | null = null
                                             if (batch.attributes) {
-                                                try {
-                                                    const parsed = JSON.parse(batch.attributes)
-                                                    if (parsed && parsed.vintage) {
-                                                        vintageVal = String(parsed.vintage)
-                                                    }
-                                                } catch (e) {}
+                                                if (typeof batch.attributes === "object" && batch.attributes !== null) {
+                                                    vintageVal = (batch.attributes as any).vintage ? String((batch.attributes as any).vintage) : null
+                                                } else if (typeof batch.attributes === "string") {
+                                                    try {
+                                                        const parsed = JSON.parse(batch.attributes)
+                                                        if (parsed && parsed.vintage) {
+                                                            vintageVal = String(parsed.vintage)
+                                                        }
+                                                    } catch (e) {}
+                                                }
                                             }
 
                                             return (
@@ -688,7 +692,7 @@ export function CandidateWizardModal({
                                     <div className="bg-white/80 p-2.5 rounded-xl border border-indigo-50">
                                         <span className="text-[10px] text-slate-400 block">{t("panels.wizard.sampleStep")}</span>
                                         <span className="font-bold text-slate-800 truncate block">
-                                            {selectedSample?.volumeMl ? `${selectedSample.volumeMl} мл` : t("panels.wizard.selected")}
+                                            {selectedSample?.volumeMl ? `${selectedSample.volumeMl} ml` : t("panels.wizard.selected")}
                                         </span>
                                     </div>
                                     <div className="bg-white/80 p-2.5 rounded-xl border border-indigo-50">

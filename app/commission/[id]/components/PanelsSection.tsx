@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { toast } from "sonner"
 import {
     Layers,
     Plus,
@@ -14,7 +15,8 @@ import {
     X,
     Loader2,
     AlertCircle,
-    GripVertical
+    GripVertical,
+    User
 } from "lucide-react"
 import {
     addCommissionPanelAction,
@@ -34,10 +36,13 @@ export interface CandidateSample {
         id: string
         lotNumber?: string | null
         volumeMl?: number | null
-        attributes?: string | null
+        attributes?: any
         beverage?: {
             id: string
             name: string
+            status?: string
+            attributes?: any
+            producers?: { auid?: number[] | number | null; producerId?: string | null }[] | null
         } | null
     } | null
 }
@@ -62,6 +67,8 @@ interface PanelsSectionProps {
     isCompetitionHolder: boolean
     isDraft?: boolean
     isPreStart?: boolean
+    isEnded?: boolean
+    usernames?: Record<string, string>
     onRefresh: () => void
 }
 
@@ -71,6 +78,8 @@ export function PanelsSection({
     candidates,
     isCompetitionHolder,
     isDraft = false,
+    isEnded = false,
+    usernames,
     onRefresh,
 }: PanelsSectionProps) {
     const { t } = useTranslation()
@@ -182,10 +191,10 @@ export function PanelsSection({
             if (res.success) {
                 onRefresh()
             } else {
-                alert(res.error || "Не вдалося змінити порядок")
+                toast.error(res.error || t("panels.reorderError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при зміні порядку")
+            toast.error(err.message || t("panels.reorderErrorGeneric"))
         } finally {
             setIsReordering(false)
         }
@@ -201,10 +210,10 @@ export function PanelsSection({
                 setIsAddingPanel(false)
                 onRefresh()
             } else {
-                alert(res.error || "Не вдалося створити панель")
+                toast.error(res.error || t("panels.createPanelError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при створенні панелі")
+            toast.error(err.message || t("panels.createPanelErrorGeneric"))
         } finally {
             setIsCreatingPanel(false)
         }
@@ -219,10 +228,10 @@ export function PanelsSection({
                 setEditingPanelId(null)
                 onRefresh()
             } else {
-                alert(res.error || "Не вдалося перейменувати панель")
+                toast.error(res.error || t("panels.renamePanelError"))
             }
         } catch (err: any) {
-            alert(err.message || "Помилка при перейменуванні")
+            toast.error(err.message || t("panels.renamePanelErrorGeneric"))
         } finally {
             setIsSavingPanel(false)
         }
@@ -461,9 +470,6 @@ export function PanelsSection({
                                             }
                                         } else {
                                             const lastIdx = panelCandidates.length - 1
-                                            if (draggedItem.index !== lastIdx) {
-                                                handleReorder(panel.id, draggedItem.index, null, "bottom")
-                                            }
                                         }
                                     }}
                                     className="p-4 pt-12 pb-14 flex flex-col gap-2 relative transition-all"
@@ -474,19 +480,29 @@ export function PanelsSection({
                                         </p>
                                     ) : (
                                         panelCandidates.map((cand, idx) => {
-                                            const bevName = cand.sample?.batch?.beverage?.name || t("commission.results.candidate")
+                                            const canShowRealBeverage = isCompetitionHolder || isEnded
+                                            const rawBevName = cand.sample?.batch?.beverage?.name
+                                            const bevName = canShowRealBeverage && rawBevName ? rawBevName : t("commission.results.candidate")
+                                            const producers = cand.sample?.batch?.beverage?.producers
+                                            const producerName = canShowRealBeverage && producers && producers.length > 0 && usernames
+                                                ? producers.flatMap((p: any) => p.auid ? (Array.isArray(p.auid) ? p.auid : [p.auid]) : []).map((id: any) => id ? (usernames[id] || String(id)) : '').filter(Boolean).join(", ")
+                                                : null
                                             const lotNo = cand.sample?.batch?.lotNumber
                                             const vol = cand.sample?.volumeMl
                                             
                                             let vintageVal: string | null = null
                                             const attrs = cand.sample?.batch?.attributes
                                             if (attrs) {
-                                                try {
-                                                    const parsed = JSON.parse(attrs)
-                                                    if (parsed && parsed.vintage) {
-                                                        vintageVal = String(parsed.vintage)
-                                                    }
-                                                } catch (e) {}
+                                                if (typeof attrs === "object" && attrs !== null) {
+                                                    vintageVal = (attrs as any).vintage ? String((attrs as any).vintage) : null
+                                                } else if (typeof attrs === "string") {
+                                                    try {
+                                                        const parsed = JSON.parse(attrs)
+                                                        if (parsed && parsed.vintage) {
+                                                            vintageVal = String(parsed.vintage)
+                                                        }
+                                                    } catch (e) {}
+                                                }
                                             }
 
                                             const isDragged = draggedItem?.panelId === panel.id && draggedItem.index === idx
@@ -544,7 +560,7 @@ export function PanelsSection({
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0">
                                                         {isCompetitionHolder && isDraft ? (
-                                                            <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 p-1 flex items-center justify-center" title="Drag to reorder">
+                                                            <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 p-1 flex items-center justify-center" title={t("common.dragToReorder")}>
                                                                 <GripVertical className="w-3.5 h-3.5" />
                                                             </div>
                                                         ) : (
@@ -585,6 +601,12 @@ export function PanelsSection({
                                                                 )}
                                                             </div>
                                                             <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 flex-wrap">
+                                                                {producerName && (
+                                                                    <span className="flex items-center gap-1 font-medium text-slate-500">
+                                                                        <User className="w-3 h-3 text-slate-400" />
+                                                                        <span>{producerName}</span>
+                                                                    </span>
+                                                                )}
                                                                 {lotNo && (
                                                                     <span className="flex items-center gap-1">
                                                                         <Boxes className="w-3 h-3 text-slate-400" />
@@ -671,7 +693,7 @@ export function PanelsSection({
 
             {/* Custom Delete Confirmation Modal */}
             {confirmDeleteState.isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
                     <div className="relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up p-6 flex flex-col items-center text-center gap-4">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-100/60 shadow-xs">
                             <Trash2 className="w-6 h-6" />
@@ -690,7 +712,7 @@ export function PanelsSection({
                                 onClick={() => setConfirmDeleteState((prev) => ({ ...prev, isOpen: false }))}
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                                {t("competition.cancel") || "Cancel"}
+                                {t("competition.cancel")}
                             </button>
                             <button
                                 type="button"
@@ -704,10 +726,10 @@ export function PanelsSection({
                                             if (res.success) {
                                                 onRefresh()
                                             } else {
-                                                alert(res.error || "Не вдалося видалити панель")
+                                                toast.error(res.error || t("panels.deletePanelError"))
                                             }
                                         } catch (err: any) {
-                                            alert(err.message || "Помилка при видаленні панелі")
+                                            toast.error(err.message || t("panels.deletePanelErrorGeneric"))
                                         } finally {
                                             setDeletingPanelId(null)
                                         }
@@ -718,10 +740,10 @@ export function PanelsSection({
                                             if (res.success) {
                                                 onRefresh()
                                             } else {
-                                                alert(res.error || "Не вдалося видалити кандидата")
+                                                toast.error(res.error || t("panels.deleteCandidateError"))
                                             }
                                         } catch (err: any) {
-                                            alert(err.message || "Помилка при видаленні зразка")
+                                            toast.error(err.message || t("panels.deleteCandidateErrorGeneric"))
                                         } finally {
                                             setDeletingCandidateId(null)
                                         }
