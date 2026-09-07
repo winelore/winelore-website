@@ -10,7 +10,8 @@ import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
 import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
 import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
-import { Mic, Square, Trash2 } from "lucide-react"
+import { Mic, Square, Trash2, Sparkles } from "lucide-react"
+import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
 interface EvaluationProperty {
     __typename: "BooleanProperty" | "IntProperty" | "DoubleProperty" | "EnumProperty" | "DiscreteNumbersProperty" | "SmartProperty"
@@ -264,6 +265,9 @@ export default function EvaluationForm({
     candidateId,
     commissionId,
     replicaId,
+    candidateCode,
+    beverageName,
+    visibleAttributes,
     propertyCommentsEnabled,
     voiceCommentsEnabled,
     onSubmittingChange,
@@ -272,12 +276,15 @@ export default function EvaluationForm({
     candidateId: string
     commissionId: string
     replicaId: string
+    candidateCode?: string
+    beverageName?: string | null
+    visibleAttributes?: { label: string; value: string }[]
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
     onSubmittingChange?: (submitting: boolean) => void
 }) {
     const router = useRouter()
-    const {t, formatEnumLabel} = useTranslation()
+    const {t, formatEnumLabel, locale} = useTranslation()
     const [values, setValues] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {}
         categories.forEach(category => {
@@ -317,6 +324,7 @@ export default function EvaluationForm({
     const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({})
     const [numericErrors, setNumericErrors] = useState<Record<string, NumericInputErrorReason | null>>({})
     const [generalComment, setGeneralComment] = useState("")
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
@@ -596,7 +604,103 @@ export default function EvaluationForm({
         return true
     }, [categories, values, numericErrors])
 
-    const handleSubmit = async () => {
+    const handleGenerateAIComment = async () => {
+        if (isGeneratingAI) return
+        setIsGeneratingAI(true)
+        try {
+            const categoryScores: TastingCategoryScore[] = categories.map((cat) => {
+                let catScore = 0
+                let catMax = 0
+                const propScores: TastingPropertyScore[] = []
+                cat.properties.forEach((prop) => {
+                    if (prop.__typename === "SmartProperty") {
+                        const smartVal = computedSmartValues[prop.code]
+                        if (typeof smartVal === "number" && !isNaN(smartVal)) {
+                            propScores.push({name: prop.name, score: smartVal, maxScore: 100})
+                        }
+                        return
+                    }
+                    let maxVal = 0
+                    if (prop.__typename === "IntProperty" && prop.intMaxLimit != null) maxVal = prop.intMaxLimit
+                    else if (prop.__typename === "DoubleProperty" && prop.doubleMaxLimit != null) maxVal = prop.doubleMaxLimit
+                    else if (prop.__typename === "DiscreteNumbersProperty" && prop.discreteAllowedValues?.length) {
+                        maxVal = Math.max(...prop.discreteAllowedValues)
+                    }
+                    const rawVal = values[prop.code]
+                    const numVal = typeof rawVal === "number" ? rawVal : parseFloat(rawVal)
+                    if (!isNaN(numVal)) {
+                        catScore += numVal
+                        catMax += maxVal
+                        propScores.push({
+                            name: prop.name,
+                            score: numVal,
+                            maxScore: maxVal || numVal,
+                        })
+                    }
+                })
+                return {
+                    name: cat.name,
+                    score: catScore,
+                    maxScore: catMax,
+                    properties: propScores,
+                }
+            })
+            let totalScore: number | null = null
+            categories.forEach((cat) => {
+                cat.properties.forEach((p) => {
+                    if (p.isResult) {
+                        const val = computedSmartValues[p.code] ?? values[p.code]
+                        if (val != null && !isNaN(Number(val))) {
+                            totalScore = Number(val)
+                        }
+                    }
+                })
+            })
+            const attributesMap: Record<string, string> = {}
+            if (visibleAttributes && visibleAttributes.length > 0) {
+                visibleAttributes.forEach((attr) => {
+                    attributesMap[attr.label] = attr.value
+                })
+            }
+            const payload: TastingPayload = {
+                locale: (locale as "en" | "uk" | "hu") || "en",
+                beverageType: beverageName || "Wine",
+                candidateCode: candidateCode || undefined,
+                totalScore,
+                maxTotalScore: 100,
+                categories: categoryScores,
+                attributes: attributesMap,
+            }
+            const response = await fetch("/api/generate-comment", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload),
+            })
+            if (!response.ok || !response.body) {
+                const errJson = await response.json().catch(() => ({}))
+                throw new Error(errJson.error || "Failed to generate AI comment")
+            }
+            setGeneralComment("")
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let accumulated = ""
+            while (true) {
+                const {done, value} = await reader.read()
+                if (done) break
+                const chunk = decoder.decode(value, {stream: true})
+                accumulated += chunk
+                setGeneralComment(accumulated)
+            }
+            toast.success(t("evaluation.aiDraftGenerated"))
+        } catch (err: any) {
+            console.error("AI Comment Generation error:", err)
+            toast.error(err.message || t("evaluation.aiDraftFailed"))
+        } finally {
+            setIsGeneratingAI(false)
+        }
+    }
+
+                const handleSubmit = async () => {
         setIsSubmitting(true)
         onSubmittingChange?.(true)
         setError(null)
@@ -1001,9 +1105,21 @@ export default function EvaluationForm({
                             {isLastCategory && (
                                 <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4">
                                     <div className="flex flex-col gap-1.5">
-                                        <h2 className="text-[13px] font-bold text-slate-700">
-                                            {t("evaluation.generalCommentLabel")}
-                                        </h2>
+                                        <div className="flex items-center justify-between">
+                                            <h2 className="text-[13px] font-bold text-slate-700">
+                                                {t("evaluation.generalCommentLabel")}
+                                            </h2>
+                                            <button
+                                                type="button"
+                                                onClick={handleGenerateAIComment}
+                                                disabled={isGeneratingAI}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200/60 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+                                                title={t("evaluation.aiGenerateDraft")}
+                                            >
+                                                <Sparkles className={`w-3.5 h-3.5 text-indigo-600 ${isGeneratingAI ? "animate-spin" : ""}`} />
+                                                <span>{isGeneratingAI ? t("evaluation.aiGenerating") : t("evaluation.aiGenerateDraft")}</span>
+                                            </button>
+                                        </div>
                                         <div className="flex items-end gap-2">
                                         <textarea
                                             rows={2}
