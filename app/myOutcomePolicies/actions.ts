@@ -1,20 +1,23 @@
 "use server"
 
-import { sdk } from '../../lib/apiClient';
+import { sdk, fetchGraphQLRaw } from '../../lib/apiClient';
 import { revalidatePath } from 'next/cache';
 
-const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT || process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+async function rawGraphQL(query: string, variables?: Record<string, any>, headers?: Record<string, string>) {
+    return fetchGraphQLRaw<any, Record<string, any> | undefined>(query, variables, headers);
+}
 
-async function rawGraphQL(query: string, variables?: Record<string, any>) {
-    const res = await fetch(GRAPHQL_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables }),
-        next: { revalidate: 0 },
-    });
-    const json = await res.json();
-    if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
-    return json.data;
+export async function activateOutcomePolicyEditionAction(editionId: string, ownerAuid: number = 1) {
+    const mutation = `
+        mutation ActivateOutcomePolicyEdition($id: ID!) {
+            activateOutcomePolicyEdition(id: $id) {
+                id
+                status
+            }
+        }
+    `;
+    const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
+    return rawGraphQL(mutation, { id: editionId }, actorHeaders);
 }
 
 export async function getOutcomePoliciesAction(ownerAuid: number, limit: number = 16, cursor?: string) {
@@ -31,23 +34,68 @@ export async function getOutcomePoliciesAction(ownerAuid: number, limit: number 
                 }
             }
         `;
+        const editionsQuery = `
+            query GetOutcomePolicyEditions($limit: Int) {
+                outcomePolicyEditions(limit: $limit) {
+                    items {
+                        id
+                        policyId
+                        version
+                        scriptCode
+                        status
+                        calculationScope
+                        createdAt
+                    }
+                }
+            }
+        `;
         const countQuery = `
             query GetOutcomePolicyCount($owner: [Int!]) {
                 outcomePolicyCount(owner: $owner)
             }
         `;
 
-        const [policiesData, countData] = await Promise.all([
+        const [policiesData, editionsData, countData] = await Promise.all([
             rawGraphQL(policiesQuery, {
                 limit,
                 cursor: cursor || undefined,
                 filter: { owners: [[ownerAuid]] },
             }),
+            rawGraphQL(editionsQuery, { limit: 500 }),
             rawGraphQL(countQuery, { owner: [ownerAuid] }),
         ]);
 
+        const rawPolicies: any[] = policiesData?.outcomePolicies?.items || [];
+        const editionItems: any[] = editionsData?.outcomePolicyEditions?.items || [];
+
+        const latestEditionMap = new Map<string, any>();
+        for (const edition of editionItems) {
+            if (!edition.policyId) continue;
+            const existing = latestEditionMap.get(edition.policyId);
+            if (!existing || edition.version > existing.version) {
+                latestEditionMap.set(edition.policyId, edition);
+            }
+        }
+
+        const policies = rawPolicies.map((policy) => {
+            const latestEdition = latestEditionMap.get(policy.id);
+            return {
+                ...policy,
+                latestEdition: latestEdition
+                    ? {
+                        id: latestEdition.id,
+                        version: latestEdition.version,
+                        status: latestEdition.status,
+                        scriptCode: latestEdition.scriptCode,
+                        calculationScope: latestEdition.calculationScope,
+                        createdAt: latestEdition.createdAt,
+                    }
+                    : undefined,
+            };
+        });
+
         return {
-            policies: policiesData?.outcomePolicies?.items || [],
+            policies,
             totalCount: countData?.outcomePolicyCount || 0,
         };
     } catch (err: any) {
@@ -56,9 +104,6 @@ export async function getOutcomePoliciesAction(ownerAuid: number, limit: number 
     }
 }
 
-// Lightweight, names-only fetch used purely for client-side duplicate-name
-// validation before we attempt a create — avoids surfacing a raw backend
-// 500 when the real problem is just "name already taken".
 export async function getOutcomePolicyNamesAction(ownerAuid: number): Promise<string[]> {
     try {
         const query = `
@@ -77,8 +122,6 @@ export async function getOutcomePolicyNamesAction(ownerAuid: number): Promise<st
         return (data?.outcomePolicies?.items || []).map((item: any) => item.name as string);
     } catch (err: any) {
         console.error("❌ [OutcomePolicy:names] Failed to fetch outcome policy names for duplicate check:", err.message);
-        // Non-fatal — if this fails we just skip the client-side pre-check
-        // and fall back to whatever the backend returns on create.
         return [];
     }
 }
@@ -159,15 +202,15 @@ export async function createOutcomePolicyAction(
             }
         }, { headers: actorHeaders });
         const editionId = editionRes.createOutcomePolicyEdition.id;
-        console.log(`  Created outcome policy edition: ${editionId}`);
+        console.log(`  Created outcome policy edition: ${editionId} (v1)`);
+
+        await activateOutcomePolicyEditionAction(editionId, ownerAuid);
+        console.log(`  Activated outcome policy edition: ${editionId}`);
 
         revalidatePath('/myOutcomePolicies');
 
         return { success: true, policyId, editionId };
     } catch (err: any) {
-        // Structured, greppable log line: the trace id embedded in err.message
-        // (e.g. "INTERNAL_ERROR for <traceId>") can be cross-referenced against
-        // backend logs for this exact failure.
         console.error("❌ [OutcomePolicy:create] Failed to create outcome policy on backend", {
             actor: ownerAuid,
             attemptedName: name,
@@ -178,30 +221,62 @@ export async function createOutcomePolicyAction(
     }
 }
 
-export async function updateOutcomePolicyScriptAction(
-    editionId: string,
+export async function updateOutcomePolicyAction(
+    policyId: string,
     scriptCode: string,
     ownerAuid: number = 1
 ) {
     try {
-        console.log(`🔄 Updating outcome policy edition "${editionId}"...`);
+        console.log(`🔄 Updating outcome policy "${policyId}"...`);
         const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
 
+        const { edition } = await getOutcomePolicyByIdAction(policyId);
+        const nextVersion = (edition?.version || 1) + 1;
+
+        const editionRes = await sdk.CreateOutcomePolicyEdition({
+            input: {
+                policyId,
+                version: nextVersion,
+                scriptCode,
+                calculationScope: edition?.calculationScope || "REPLICA_WIDE"
+            }
+        }, { headers: actorHeaders });
+        const editionId = editionRes.createOutcomePolicyEdition.id;
+        console.log(`  Created new outcome policy edition: ${editionId} (v${nextVersion})`);
+
+        await activateOutcomePolicyEditionAction(editionId, ownerAuid);
+        console.log(`  Activated new outcome policy edition: ${editionId}`);
+
+        revalidatePath('/myOutcomePolicies');
+
+        return { success: true, policyId, editionId };
+    } catch (err: any) {
+        console.error("❌ [OutcomePolicy:update] Failed to update outcome policy on backend", {
+            actor: ownerAuid,
+            policyId,
+            error: err?.message,
+            timestamp: new Date().toISOString(),
+        });
+        throw err;
+    }
+}
+
+export async function updateOutcomePolicyScriptAction(
+    editionIdOrPolicyId: string,
+    scriptCode: string,
+    ownerAuid: number = 1
+) {
+    try {
+        return await updateOutcomePolicyAction(editionIdOrPolicyId, scriptCode, ownerAuid);
+    } catch {
+        const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
         const res = await sdk.UpdateOutcomePolicyEditionScript({
-            id: editionId,
+            id: editionIdOrPolicyId,
             scriptCode
         }, { headers: actorHeaders });
 
         revalidatePath('/myOutcomePolicies');
 
         return { success: true, edition: res.updateOutcomePolicyEditionScript };
-    } catch (err: any) {
-        console.error("❌ [OutcomePolicy:update] Failed to update outcome policy script on backend", {
-            actor: ownerAuid,
-            editionId,
-            error: err?.message,
-            timestamp: new Date().toISOString(),
-        });
-        throw err;
     }
 }

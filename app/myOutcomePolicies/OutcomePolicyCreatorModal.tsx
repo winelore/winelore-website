@@ -8,7 +8,7 @@ import { AlertCircle, X } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import {
     createOutcomePolicyAction,
-    updateOutcomePolicyScriptAction,
+    updateOutcomePolicyAction,
     getOutcomePolicyByIdAction,
     getOutcomePolicyNamesAction,
 } from "./actions"
@@ -102,8 +102,7 @@ export default function OutcomePolicyCreatorModal({
         setIsSaving(true)
         try {
             if (initialPolicyId) {
-                if (!editionId) throw new Error(t("outcomePolicyModal.editionNotFoundError"))
-                await updateOutcomePolicyScriptAction(editionId, scriptCode)
+                await updateOutcomePolicyAction(initialPolicyId, scriptCode, currentAuid)
             } else {
                 await createOutcomePolicyAction(trimmedName, scriptCode, currentAuid)
             }

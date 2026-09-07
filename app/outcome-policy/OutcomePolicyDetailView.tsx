@@ -7,9 +7,8 @@ import { ScrollText, Calendar, Save, Loader2, CheckCircle } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { getDateLocale } from "@/lib/i18n"
 import { AppHeader } from "@/components/AppHeader"
-import { fetchGraphQL } from "@/lib/apiClient"
 import { useRouter } from "next/navigation"
-import { UPDATE_OUTCOME_POLICY_EDITION_SCRIPT } from "./mutations"
+import { updateOutcomePolicyAction } from "@/app/myOutcomePolicies/actions"
 
 interface OutcomePolicy {
     id: string
@@ -52,10 +51,7 @@ export default function OutcomePolicyDetailView({ policy, edition }: OutcomePoli
 
         setIsSaving(true)
         try {
-            await fetchGraphQL(UPDATE_OUTCOME_POLICY_EDITION_SCRIPT, {
-                id: edition.id,
-                scriptCode,
-            })
+            await updateOutcomePolicyAction(policy.id, scriptCode)
             setSavedRecently(true)
             router.push("/myOutcomePolicies")
         } catch (error) {

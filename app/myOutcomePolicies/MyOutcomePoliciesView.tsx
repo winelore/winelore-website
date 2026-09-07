@@ -16,6 +16,14 @@ interface OutcomePolicy {
     id: string
     name: string
     createdAt: string
+    latestEdition?: {
+        id: string
+        version: number
+        status: string
+        scriptCode?: string
+        calculationScope?: string
+        createdAt?: string
+    }
 }
 
 interface InitialData {
@@ -58,6 +66,15 @@ function OutcomePolicyRow({ policy, onEdit }: { policy: OutcomePolicy; onEdit: (
                         <span className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-slate-500">
                             <Calendar className="w-3.5 h-3.5" />
                             {t("myOutcomePolicies.createdAt")}: {formattedDate}
+                            {policy.latestEdition && (
+                                <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${
+                                    policy.latestEdition.status === "ACTIVE"
+                                        ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                        : "bg-slate-100 text-slate-500"
+                                }`}>
+                                    v{policy.latestEdition.version} · {policy.latestEdition.status}
+                                </span>
+                            )}
                         </span>
                     </div>
                 </div>

@@ -1,12 +1,12 @@
 "use client"
 
-import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Activity } from "lucide-react"
+import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Activity, ScrollText } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useTranslation } from "@/lib/i18n/context"
 import { BadgeCheck } from "lucide-react"
 
-// These four are the only routes in the menu with no dedicated tab in
+// These five are the only routes in the menu with no dedicated tab in
 // AppHeader, so this menu is the one place that can show which of them is
 // current.
 function isMenuLinkActive(pathname: string | null, href: string): boolean {
@@ -99,6 +99,10 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
           <a href="/myTemplates" className={menuLinkClass(isMenuLinkActive(pathname, "/myTemplates"))}>
             <ListTodo className={menuIconClass(isMenuLinkActive(pathname, "/myTemplates"))} />
             <span>{t("common.myTemplates")}</span>
+          </a>
+          <a href="/myOutcomePolicies" className={menuLinkClass(isMenuLinkActive(pathname, "/myOutcomePolicies"))}>
+            <ScrollText className={menuIconClass(isMenuLinkActive(pathname, "/myOutcomePolicies"))} />
+            <span>{t("common.myOutcomePolicies")}</span>
           </a>
         </div>
 
