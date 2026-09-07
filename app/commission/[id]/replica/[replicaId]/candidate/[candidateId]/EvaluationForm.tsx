@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
@@ -123,19 +124,22 @@ function DiscreteNumbersInput({
         }
 
         const checkFit = () => {
-            const width = container.offsetWidth
+            const target = container.parentElement || container
+            const width = target.clientWidth || container.offsetWidth
             if (width === 0) return
 
             measure.style.width = `${width}px`
             const firstButton = measure.querySelector("button")
             const rowHeight = firstButton?.offsetHeight ?? 36
             const maxHeight = rowHeight * DISCRETE_BUBBLE_MAX_ROWS + 8
-            setUseBubbles(measure.scrollHeight <= maxHeight)
+            const fits = measure.scrollHeight <= maxHeight
+            setUseBubbles((prev) => (prev !== fits ? fits : prev))
         }
 
         checkFit()
+        const targetElement = container.parentElement || container
         const observer = new ResizeObserver(checkFit)
-        observer.observe(container)
+        observer.observe(targetElement)
         return () => observer.disconnect()
     }, [allowedValues])
 
@@ -262,6 +266,7 @@ export default function EvaluationForm({
     replicaId,
     propertyCommentsEnabled,
     voiceCommentsEnabled,
+    onSubmittingChange,
 }: {
     categories: EvaluationCategory[]
     candidateId: string
@@ -269,6 +274,7 @@ export default function EvaluationForm({
     replicaId: string
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
+    onSubmittingChange?: (submitting: boolean) => void
 }) {
     const router = useRouter()
     const {t, formatEnumLabel} = useTranslation()
@@ -334,6 +340,49 @@ export default function EvaluationForm({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    useEffect(() => {
+        const initial: Record<string, any> = {}
+        categories.forEach(category => {
+            category.properties.forEach(prop => {
+                switch (prop.__typename) {
+                    case "BooleanProperty":
+                        if (prop.boolDefaultValue !== null && prop.boolDefaultValue !== undefined) {
+                            initial[prop.code] = prop.boolDefaultValue
+                        }
+                        break
+                    case "IntProperty":
+                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
+                            initial[prop.code] = prop.intDefaultValue
+                        }
+                        break
+                    case "DoubleProperty":
+                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
+                            initial[prop.code] = prop.doubleDefaultValue
+                        }
+                        break
+                    case "EnumProperty":
+                        if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
+                            initial[prop.code] = prop.enumDefaultValue
+                        }
+                        break
+                    case "DiscreteNumbersProperty":
+                        if (prop.discreteDefaultValue !== null && prop.discreteDefaultValue !== undefined) {
+                            initial[prop.code] = prop.discreteDefaultValue
+                        }
+                        break
+                }
+            })
+        })
+        setValues(initial)
+        setCommentValues({})
+        setNumericDrafts({})
+        setNumericErrors({})
+        setGeneralComment("")
+        setError(null)
+        setSuccess(false)
+        setIsSubmitting(false)
+    }, [candidateId, categories])
+
     const startRecording = async (key: string) => {
         if (activeRecordingKey) stopRecording()
         audioChunksRef.current = []
@@ -365,7 +414,7 @@ export default function EvaluationForm({
                 setRecordingTime(Math.round((Date.now() - start) / 1000))
             }, 1000)
         } catch {
-            alert(t("evaluation.voiceMicError"))
+            toast.error(t("evaluation.voiceMicError"))
         }
     }
 
@@ -549,6 +598,7 @@ export default function EvaluationForm({
 
     const handleSubmit = async () => {
         setIsSubmitting(true)
+        onSubmittingChange?.(true)
         setError(null)
         setSuccess(false)
         try {
@@ -600,8 +650,39 @@ export default function EvaluationForm({
                 }]
                 : perPropertyComments
 
-            const submitted = await submitEvaluationAction(candidateId, scores, comments)
+            const result = await submitEvaluationAction(candidateId, scores, comments)
+            if (!result.success) {
+                const msg = result.error || ""
+                if (
+                    msg.includes("already submitted") ||
+                    msg.includes("not pending") ||
+                    msg.includes("REPLICA_CANDIDATE_EVALUATION_ENDED") ||
+                    msg.includes("EVALUATION_ALREADY_EXISTS") ||
+                    msg.includes("Replica is not started") ||
+                    msg.includes("REPLICA_NOT_STARTED")
+                ) {
+                    writeCachedWaitEvaluation(commissionId, replicaId, {
+                        candidateId,
+                        isComplete: true,
+                        scores: [],
+                        comments: [],
+                    })
+                    setSuccess(true)
+                    setTimeout(() => {
+                        window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
+                    }, 500)
+                    return
+                }
 
+                if (msg.includes("current active candidate")) {
+                    setError(t("evaluation.onlyCurrentCandidate"))
+                } else {
+                    setError(msg || t("evaluation.submitError"))
+                }
+                return
+            }
+
+            const submitted = result.evaluation
             writeCachedWaitEvaluation(commissionId, replicaId, {
                 candidateId,
                 isComplete: submitted?.isComplete ?? true,
@@ -621,10 +702,12 @@ export default function EvaluationForm({
             setTimeout(() => {
                 window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
             }, 1000)
-        } catch {
-            setError(t("evaluation.submitError"))
+        } catch (err: any) {
+            console.error("Evaluation submit error:", err)
+            setError(err?.message || t("evaluation.submitError"))
         } finally {
             setIsSubmitting(false)
+            onSubmittingChange?.(false)
         }
     }
 
@@ -757,6 +840,17 @@ export default function EvaluationForm({
 
                                                             return (
                                                                 <div className="w-full flex flex-col">
+                                                                    {!hasValue && (
+                                                                        <div className="flex items-center gap-1.5 self-end mb-1">
+                                                                            <span
+                                                                                title={t("evaluation.notRatedHint")}
+                                                                                className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase tracking-wide"
+                                                                            >
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                                {t("evaluation.notRated")}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="flex items-center gap-3 w-full">
                                                                         <div
                                                                             className={`flex-1 relative flex flex-col ${showSliderTicks ? "pb-5" : "py-1"}`}>
@@ -787,7 +881,7 @@ export default function EvaluationForm({
                                                                                     setNumericErrors(prev => ({...prev, [prop.code]: null}))
                                                                                     handleValueChange(prop.code, normalizeNumericValue(val[0]))
                                                                                 }}
-                                                                                className={`cursor-pointer relative z-10 transition-opacity ${!hasValue ? "opacity-50 [&_[role=slider]]:opacity-0" : ""}`}
+                                                                                className={`cursor-pointer relative z-10 transition-opacity ${!hasValue ? "opacity-60 [&_[role=slider]]:opacity-0 [&_[data-slot=slider-track]]:bg-amber-200/70" : ""}`}
                                                                             />
                                                                         </div>
                                                                         <input
@@ -799,7 +893,7 @@ export default function EvaluationForm({
                                                                             value={inputDisplayValue}
                                                                             onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
                                                                             onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
-                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-800"}`}
+                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : !hasValue ? "border-dashed border-amber-400 bg-amber-50 text-amber-600 placeholder:text-amber-400" : "border-slate-200 bg-white text-slate-800"}`}
                                                                             placeholder={t("evaluation.val")}
                                                                         />
                                                                     </div>

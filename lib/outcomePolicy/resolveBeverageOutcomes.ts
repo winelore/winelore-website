@@ -44,7 +44,8 @@ function getEvaluatedBeveragesByReplica(
     for (const replica of commission.replicas) {
         const beverageIds = new Set<string>()
         for (const rc of replica.replicaCandidates ?? []) {
-            if ((rc.evaluations?.length ?? 0) === 0) continue
+            const confirmedEvals = (rc.evaluations ?? []).filter((e: any) => e.status !== "DRAFT")
+            if (confirmedEvals.length === 0) continue
             const beverageId = candidateIdToBeverageId.get(rc.candidate.id)
             if (beverageId) beverageIds.add(beverageId)
         }

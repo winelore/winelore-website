@@ -3,6 +3,7 @@
 import { fetchGraphQL } from '@/lib/apiClient';
 import { GET_COMPETITION_PAGE } from './queries';
 import CompetitionClientView from './CompetitionClientView';
+import CompetitionNotFound from './CompetitionNotFound';
 import { cookies } from 'next/headers';
 
 interface PageProps {
@@ -26,47 +27,18 @@ export default async function CompetitionStartPage({ params }: PageProps) {
         const data = await fetchGraphQL(GET_COMPETITION_PAGE, { id: competitionId });
         // console.log("GraphQL Data:", data);
         if (data) {
-            const responseData = data.data || data;
+            const responseData = (data as any).data || data;
             competition = responseData.competition;
             commissions = responseData.commissionsByCompetition?.items || [];
         } else {
-            console.error("Порожня відповідь від GraphQL (data is undefined)");
+            console.error("Empty GraphQL response (data is undefined)");
         }
     } catch (error) {
-        console.error("Помилка завантаження змагання:", error);
+        console.error("Failed to load competition:", error);
     }
 
     if (!competition) {
-        competition = {
-            id: competitionId,
-            name: "Червоні вина Бордо 2026 (Резервний режим)",
-            status: "PLANNED",
-            plannedDates: {
-                start: new Date().toISOString(),
-                end: new Date(Date.now() + 2 * 3600 * 1000).toISOString()
-            },
-            startedAt: null,
-            endedAt: null,
-            series: {
-                id: "33333333-3333-3333-3333-333333333333",
-                name: "Бордо Гран Крю",
-                status: "ACTIVE"
-            },
-            holders: [[1]]
-        };
-        commissions = [
-            {
-                id: "22222222-2222-2222-2222-222222222222",
-                name: "Дегустаційна комісія А (Резерв)",
-                status: "PLANNED",
-                plannedDates: {
-                    start: new Date().toISOString(),
-                    end: new Date(Date.now() + 2 * 3600 * 1000).toISOString()
-                },
-                startedAt: null,
-                endedAt: null
-            }
-        ];
+        return <CompetitionNotFound />;
     }
 
     const initialData = {

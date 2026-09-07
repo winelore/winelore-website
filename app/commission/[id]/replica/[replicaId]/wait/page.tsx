@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState, useEffect, use, useMemo } from "react"
+import React, { useState, useEffect, use, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Cookies from "js-cookie"
-import { Users, Wine, Loader2, ArrowRight, ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
+import { Users, Wine, Loader2, ArrowRight, AlertTriangle } from "lucide-react"
 import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -12,7 +13,6 @@ import { useUsernames } from "@/hooks/useUsernames"
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
-    startNextPanelAction,
 } from "../../../../actions"
 import { findEvaluationForMember, normalizeAuids } from "../../../../auidUtils"
 import {
@@ -23,10 +23,9 @@ import {
     hasEvaluationData,
     MemberEvaluationSection,
 } from "../../../../EvaluationCommentsDisplay"
+import { annotateEvaluationsWithDelta, formatSignedDiff } from "@/lib/deltaOutliers"
 import type { PropertyMeta } from "../../../../propertyMap"
-import type { MyTastingSummaryData } from "../../../../expertRanking"
-import { MyTastingSummary } from "../../../../MyTastingSummary"
-import WaitPanelResults from "./WaitPanelResults"
+import { BackLink } from "@/components/BackLink"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -37,22 +36,23 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [members, setMembers] = useState<any[]>([]);
     const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(null);
     const [currentCandidateCode, setCurrentCandidateCode] = useState<string | null>(null);
+    const [currentCandidateBeverageName, setCurrentCandidateBeverageName] = useState<string | null>(null);
     const [isSwitching, setIsSwitching] = useState(false);
     const [evaluations, setEvaluations] = useState<any[]>([]);
     const [propertyMap, setPropertyMap] = useState<Record<string, PropertyMeta>>({});
     const [candidatesLeft, setCandidatesLeft] = useState<number>(0);
     const [candidatesLeftAfterCurrent, setCandidatesLeftAfterCurrent] = useState<number>(0);
-    const [allDone, setAllDone] = useState(false);
     const [myEvaluation, setMyEvaluation] = useState<any | null>(null);
     const [wineJumperMiniGameEnabled, setWineJumperMiniGameEnabled] = useState(false);
     const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
-    const [myTastingSummary, setMyTastingSummary] = useState<MyTastingSummaryData | null>(null);
-    const [isPanelFinished, setIsPanelFinished] = useState(false);
     const [currentPanelName, setCurrentPanelName] = useState<string>("");
-    const [nextPanelFirstCandidateId, setNextPanelFirstCandidateId] = useState<string | null>(null);
-    const [currentPanelId, setCurrentPanelId] = useState<string | null>(null);
+
+    const currentCandidateIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        currentCandidateIdRef.current = currentCandidateId;
+    }, [currentCandidateId]);
 
     // Fetch usernames for commission members
     const allMemberAuids = useMemo(() => {
@@ -75,15 +75,27 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     }, [commissionId, replicaId, router]);
 
-    // 2. Polling loop every 3 seconds
+    // 2. Polling loop every 10 ms with in-flight and unmount guards
     useEffect(() => {
         if (auid === null || isRedirecting) return;
 
+        let isMounted = true;
+        let isFetching = false;
+
         const fetchData = async () => {
-            if (isRedirecting) return;
+            if (!isMounted || isRedirecting || isFetching) return;
+            isFetching = true;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, allCandidatesEvaluated, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, myTastingSummary: newMyTastingSummary, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, nextPanelFirstCandidateId: newNextPanelFirstCandidateId } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, replicaStatus: newReplicaStatus } =
                     await getWaitDataAction(commissionId, replicaId);
+
+                if (!isMounted || isRedirecting) return;
+
+                if (newReplicaStatus === "COMPLETED") {
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/results`;
+                    return;
+                }
 
                 setMembers(commMembers);
                 setEvaluations(newEvaluations || []);
@@ -91,10 +103,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 setWineJumperMiniGameEnabled(newWineJumperEnabled);
                 setVoiceCommentsEnabled(newVoiceCommentsEnabled);
                 setPropertyCommentsEnabled(newPropertyCommentsEnabled);
-                setIsPanelFinished(newIsPanelFinished || false);
                 setCurrentPanelName(newPanelName || "");
-                setCurrentPanelId(newPanelId || null);
-                setNextPanelFirstCandidateId(newNextPanelFirstCandidateId || null);
                 const commentFlags = {
                     propertyCommentsEnabled: newPropertyCommentsEnabled,
                     voiceCommentsEnabled: newVoiceCommentsEnabled,
@@ -112,11 +121,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 const me = commMembers.find((m: any) => auid !== null && (Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid));
                 if (me) setRole(me.role);
 
-                if (allCandidatesEvaluated) {
-                    setAllDone(true);
-                    if (newMyTastingSummary != null) {
-                        setMyTastingSummary(newMyTastingSummary);
-                    }
+                if (newIsPanelFinished && newPanelId) {
+                    setIsRedirecting(true);
+                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
                     return;
                 }
 
@@ -135,7 +142,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 }
 
                 // If candidate changed (HEAD advanced) — redirect everyone to evaluation
-                if (currentCandidateId && currentCandidateId !== newCandidateId) {
+                if (currentCandidateIdRef.current && currentCandidateIdRef.current !== newCandidateId) {
                     setIsRedirecting(true);
                     window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
                     return;
@@ -143,104 +150,69 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
                 setCurrentCandidateId(newCandidateId);
                 setCurrentCandidateCode(newCandidateCode);
+                setCurrentCandidateBeverageName(newCandidateBeverageName || null);
                 setIsSwitching(false);
 
             } catch (err) {
                 console.error("Polling error", err);
+            } finally {
+                isFetching = false;
             }
         };
 
         fetchData();
         const interval = setInterval(fetchData, 3000);
-        return () => clearInterval(interval);
-    }, [commissionId, replicaId, auid, currentCandidateId, router, isRedirecting]);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [commissionId, replicaId, auid, isRedirecting]);
 
     const heads = members.filter(m => m.role === "HEAD");
     const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
     const commentFlags = { propertyCommentsEnabled, voiceCommentsEnabled };
+    const evaluationsOutlierMap = useMemo(() => {
+        return annotateEvaluationsWithDelta(evaluations, propertyMap);
+    }, [evaluations, propertyMap]);
     const canAdvanceToNextBeverage =
         Boolean(currentCandidateId) &&
         members.length > 0 &&
         members.every((member) => findEvaluationForMember(evaluations, member.auid)?.isComplete === true);
+    const isLastBeverageInPanel = Boolean(currentCandidateId) && candidatesLeft === 1;
 
     // HEAD action: advance to next beverage
     const handleNextBeverage = async () => {
         if (!canAdvanceToNextBeverage || isSwitching || !currentCandidateId) return;
         setIsSwitching(true);
         try {
-            await markCandidateEvaluatedAction(replicaId, currentCandidateId);
-            // Polling will detect the advanced current candidate and redirect automatically
-        } catch (err) {
+            const result = await markCandidateEvaluatedAction(replicaId, currentCandidateId);
+            if (!result?.nextCandidateId) {
+                setIsRedirecting(true);
+                window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
+            }
+            // For a regular beverage transition, polling detects the new candidate.
+        } catch (err: any) {
             console.error(err);
+            const msg = err?.message || "";
+            if (msg === "PARTIAL_EVALUATION_REQUIRED") {
+                toast.error(t("commission.partialEvaluationRequiredError"));
+            } else if (msg === "SEQUENTIAL_ORDER_VIOLATION") {
+                toast.error(t("commission.sequentialOrderError"));
+            } else {
+                toast.error(t("commission.markEvaluatedErrorGeneric"));
+            }
             setIsSwitching(false);
         }
     };
-
-    // HEAD action: advance to next panel
-    const handleStartNextPanel = async () => {
-        if (!nextPanelFirstCandidateId || isSwitching) return;
-        setIsSwitching(true);
-        try {
-            await startNextPanelAction(replicaId, nextPanelFirstCandidateId);
-        } catch (err) {
-            console.error(err);
-            setIsSwitching(false);
-        }
-    };
-
-    // ==========================================
-    // HEAD OF COMMISSION VIEW
-    // ==========================================
-    if (allDone) {
-        return (
-            <div className="flex min-h-screen flex-col bg-slate-50">
-                <AppHeader activeTab="competitions" />
-                <main className="flex-1 p-6 md:p-10">
-                    <div className="max-w-7xl mx-auto space-y-8">
-                        <div>
-                            <Link
-                                href={`/commission/${commissionId}`}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all w-fit"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                {t("commission.backToCommission")}
-                            </Link>
-                        </div>
-                        {currentPanelId && (
-                            <WaitPanelResults
-                                commissionId={commissionId}
-                                replicaId={replicaId}
-                                panelId={currentPanelId}
-                                panelName={currentPanelName || "Panel"}
-                                propertyCommentsEnabled={propertyCommentsEnabled}
-                                voiceCommentsEnabled={voiceCommentsEnabled}
-                            />
-                        )}
-                        <MyTastingSummary
-                            data={myTastingSummary}
-                            commissionId={commissionId}
-                            showBackLink
-                        />
-                    </div>
-                </main>
-            </div>
-        )
-    }
 
     if (role === "HEAD") {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50">
+            <div className="flex min-h-screen flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex-1 p-6 md:p-10">
                     <div className="max-w-7xl mx-auto space-y-8">
                     <div>
-                        <Link
-                            href={`/commission/${commissionId}`}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all w-fit"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            {t("commission.backToCommission")}
-                        </Link>
+                        <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
                     </div>
                     <header className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 gap-4">
                         <div>
@@ -257,11 +229,17 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                             <p className="text-slate-500 text-sm mt-1 flex items-center gap-1.5 flex-wrap">
                                 <span>{t("commission.currentCandidateLabel")}</span>
                                 <span className="font-mono font-semibold text-indigo-600">
-                                    {currentCandidateCode || (currentCandidateId ? t("common.loading") : t("common.none"))}
+                                    {currentCandidateCode || (currentCandidateId ? `#${currentCandidateId.slice(0, 8)}` : t("common.none"))}
                                 </span>
                                 {currentCandidateId && (
                                     <span className="text-[11px] text-slate-400 font-mono font-normal">
                                         ({currentCandidateId})
+                                    </span>
+                                )}
+                                {currentCandidateBeverageName && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 ml-1">
+                                        <Wine className="w-3 h-3 text-amber-700 shrink-0" />
+                                        {currentCandidateBeverageName}
                                     </span>
                                 )}
                             </p>
@@ -271,45 +249,23 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 </p>
                             )}
                         </div>
-                        {isPanelFinished && !allDone ? (
-                            <button
-                                onClick={handleStartNextPanel}
-                                disabled={isSwitching}
-                                className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 disabled:bg-slate-300 disabled:shadow-none"
-                            >
-                                {isSwitching ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <>{t("commission.startNextPanel")} <ArrowRight className="w-5 h-5" /></>
-                                )}
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleNextBeverage}
-                                disabled={!canAdvanceToNextBeverage || isSwitching}
-                                className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
-                            >
-                                {isSwitching ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <>{t("commission.nextBeverage")} <ArrowRight className="w-5 h-5" /></>
-                                )}
-                            </button>
-                        )}
+                        <button
+                            onClick={handleNextBeverage}
+                            disabled={!canAdvanceToNextBeverage || isSwitching}
+                            className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+                        >
+                            {isSwitching ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    {isLastBeverageInPanel
+                                        ? t("commission.finishPanel")
+                                        : t("commission.nextBeverage")}
+                                    <ArrowRight className="w-5 h-5" />
+                                </>
+                            )}
+                        </button>
                     </header>
-
-                    {isPanelFinished && currentPanelId && (
-                        <div className="w-full">
-                            <WaitPanelResults
-                                commissionId={commissionId}
-                                replicaId={replicaId}
-                                panelId={currentPanelId}
-                                panelName={currentPanelName || "Panel"}
-                                propertyCommentsEnabled={propertyCommentsEnabled}
-                                voiceCommentsEnabled={voiceCommentsEnabled}
-                            />
-                        </div>
-                    )}
 
                     <div className={wineJumperMiniGameEnabled ? "grid grid-cols-1 xl:grid-cols-3 gap-8" : "flex flex-col gap-8"}>
                         {/* Experts list */}
@@ -375,13 +331,41 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                     const evaluation = findEvaluationForMember(evaluations, expert.auid);
 
                                     const isCompleted = evaluation?.isComplete || false;
+                                    const outlierInfo = evaluation ? evaluationsOutlierMap.get(evaluation) : null;
+                                    const isOutlier = Boolean(outlierInfo?.isOutlier);
 
                                     return (
-                                        <div key={`${currentCandidateId}-expert-${expertKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                                        <div
+                                            key={`${currentCandidateId}-expert-${expertKeyAuid}`}
+                                            className={`flex flex-col p-4 rounded-2xl space-y-3 transition-all ${
+                                                isOutlier
+                                                    ? "bg-amber-50/90 border-2 border-amber-300 shadow-amber-100/50"
+                                                    : "bg-slate-50 border border-slate-100"
+                                            }`}
+                                        >
                                             <div className="flex items-center justify-between">
-                                                <span className="font-semibold text-slate-700">
-                                                    {expertAuidsStr} {expert.role === "TRAINEE_EXPERT" ? `(${t("commission.roleTrainee")})` : ""}
-                                                </span>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-semibold text-slate-700">
+                                                        {expertAuidsStr} {expert.role === "TRAINEE_EXPERT" ? `(${t("commission.roleTrainee")})` : ""}
+                                                    </span>
+                                                    {isOutlier && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                                                            title={t("commission.results.outOfDeltaTooltip", {
+                                                                score: evaluation?.scores?.find((s: any) => propertyMap[s.code]?.isResult)?.value ?? "-",
+                                                                diff: formatSignedDiff(outlierInfo?.signedDiff),
+                                                                avg: outlierInfo?.preAvg != null ? outlierInfo.preAvg.toFixed(1) : "-",
+                                                                threshold: 5,
+                                                            })}
+                                                        >
+                                                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                                            <span>{t("commission.results.outOfDelta")}</span>
+                                                            {outlierInfo?.signedDiff != null && (
+                                                                <span className="opacity-90 font-mono">({formatSignedDiff(outlierInfo.signedDiff)})</span>
+                                                            )}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 {isCompleted ? (
                                                     <span className="text-emerald-600 font-bold bg-emerald-100 px-3 py-1 rounded-full text-xs animate-fade-in">
                                                         {t("commission.completed")}
@@ -426,17 +410,11 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // EXPERT VIEW
     // ==========================================
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-full max-w-2xl flex justify-start mb-6">
-                    <Link
-                        href={`/commission/${commissionId}`}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-xs transition-all"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {t("commission.backToCommission")}
-                    </Link>
+                    <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
                 </div>
 
                 <div className="relative mb-10 flex justify-center">
@@ -450,10 +428,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 </h1>
                 <div className="max-w-md mx-auto mb-8 space-y-4">
                     <p className="text-slate-500 text-lg font-medium">
-                        {isPanelFinished
-                            ? `Panel "${currentPanelName}" is completed! Waiting for the Head to start the next panel.`
-                            : `${t("commission.waitingNextRound")} ${t("commission.autoRefreshNotice")}`
-                        }
+                        {t("commission.waitingNextRound")} {t("commission.autoRefreshNotice")}
                     </p>
                     {candidatesLeftAfterCurrent > 0 && (
                         <p className="text-indigo-600 text-sm font-semibold">
@@ -461,20 +436,6 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </p>
                     )}
                 </div>
-
-                {isPanelFinished && currentPanelId && (
-                    <div className="w-full mb-8">
-                        <WaitPanelResults
-                            commissionId={commissionId}
-                            replicaId={replicaId}
-                            panelId={currentPanelId}
-                            panelName={currentPanelName || "Panel"}
-                            propertyCommentsEnabled={propertyCommentsEnabled}
-                            voiceCommentsEnabled={voiceCommentsEnabled}
-                        />
-                    </div>
-                )}
-
 
                 {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
                 <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">

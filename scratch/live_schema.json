@@ -1,0 +1,6360 @@
+{
+  "types": [
+    {
+      "name": "AddCommissionCandidateInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "AddCommissionCandidateItemInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "Award",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "sortOrder",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "badgeUrl",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "AwardInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "AwardType",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "beverageType",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "owners",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "AwardTypeEdition",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "awardType",
+          "args": []
+        },
+        {
+          "name": "version",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "awards",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "AwardTypeEditionStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "AwardTypeStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "Batch",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "beverage",
+          "args": []
+        },
+        {
+          "name": "volumeMl",
+          "args": []
+        },
+        {
+          "name": "lotNumber",
+          "args": []
+        },
+        {
+          "name": "attributes",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "Beverage",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "typeId",
+          "args": []
+        },
+        {
+          "name": "schemaEditionIds",
+          "args": []
+        },
+        {
+          "name": "attributes",
+          "args": []
+        },
+        {
+          "name": "producers",
+          "args": []
+        },
+        {
+          "name": "origin",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "BeverageAwardAssignment",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "commissionId",
+          "args": []
+        },
+        {
+          "name": "candidateId",
+          "args": []
+        },
+        {
+          "name": "beverageId",
+          "args": []
+        },
+        {
+          "name": "awardTypeId",
+          "args": []
+        },
+        {
+          "name": "awardTypeEditionId",
+          "args": []
+        },
+        {
+          "name": "award",
+          "args": []
+        },
+        {
+          "name": "assignedBy",
+          "args": []
+        },
+        {
+          "name": "assignedAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "BeverageFilterInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "BeverageStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "BeverageType",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "parent",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "BeverageTypeEdition",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "type",
+          "args": []
+        },
+        {
+          "name": "version",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "propertySchemas",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "BeverageTypeStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "BinaryExpression",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "type",
+          "args": []
+        },
+        {
+          "name": "left",
+          "args": []
+        },
+        {
+          "name": "right",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "Boolean",
+      "kind": "SCALAR",
+      "fields": null
+    },
+    {
+      "name": "BooleanProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRequired",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "defaultValue",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "ChangeCompetitionSeriesCountriesInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "Commission",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "competition",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "plannedDates",
+          "args": []
+        },
+        {
+          "name": "startedAt",
+          "args": []
+        },
+        {
+          "name": "endedAt",
+          "args": []
+        },
+        {
+          "name": "panels",
+          "args": []
+        },
+        {
+          "name": "candidates",
+          "args": []
+        },
+        {
+          "name": "replicas",
+          "args": []
+        },
+        {
+          "name": "templateEditions",
+          "args": []
+        },
+        {
+          "name": "awardTypeEditions",
+          "args": []
+        },
+        {
+          "name": "outcomePolicyEdition",
+          "args": []
+        },
+        {
+          "name": "wineJumperMiniGameEnabled",
+          "args": []
+        },
+        {
+          "name": "voiceCommentsEnabled",
+          "args": []
+        },
+        {
+          "name": "propertyCommentsEnabled",
+          "args": []
+        },
+        {
+          "name": "beverageOriginDuringEvaluationEnabled",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CommissionAwardTypeEditionLink",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "beverageType",
+          "args": []
+        },
+        {
+          "name": "awardTypeEdition",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CommissionCandidate",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "commission",
+          "args": []
+        },
+        {
+          "name": "panelId",
+          "args": []
+        },
+        {
+          "name": "sample",
+          "args": []
+        },
+        {
+          "name": "beverageType",
+          "args": []
+        },
+        {
+          "name": "awards",
+          "args": []
+        },
+        {
+          "name": "anonymizedCode",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CommissionPanel",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "parentId",
+          "args": []
+        },
+        {
+          "name": "parentType",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "candidates",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CommissionReplica",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "commission",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "type",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "chaoticCurrentCandidateChangesEnabled",
+          "args": []
+        },
+        {
+          "name": "members",
+          "args": []
+        },
+        {
+          "name": "replicaCandidates",
+          "args": []
+        },
+        {
+          "name": "currentCandidateId",
+          "args": []
+        },
+        {
+          "name": "outcomes",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CommissionReplicaCandidate",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "replica",
+          "args": []
+        },
+        {
+          "name": "candidate",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "evaluations",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CommissionReplicaCandidateStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "CommissionReplicaMember",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "auid",
+          "args": []
+        },
+        {
+          "name": "role",
+          "args": []
+        },
+        {
+          "name": "isReady",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CommissionReplicaMemberInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CommissionReplicaMemberRole",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "CommissionReplicaStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "CommissionReplicaType",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "CommissionStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "CommissionTemplateEditionLink",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "beverageType",
+          "args": []
+        },
+        {
+          "name": "templateEdition",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "Competition",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "series",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "plannedDates",
+          "args": []
+        },
+        {
+          "name": "startedAt",
+          "args": []
+        },
+        {
+          "name": "endedAt",
+          "args": []
+        },
+        {
+          "name": "holders",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CompetitionFilterInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CompetitionSeries",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "countriesType",
+          "args": []
+        },
+        {
+          "name": "countriesCodes",
+          "args": []
+        },
+        {
+          "name": "owners",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CompetitionSeriesStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "CompetitionStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "ConstantExpression",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "type",
+          "args": []
+        },
+        {
+          "name": "value",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "Coordinates",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "latitude",
+          "args": []
+        },
+        {
+          "name": "longitude",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "CoordinatesInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CountriesType",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "CreateAwardTypeEditionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateAwardTypeInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateBatchInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateBeverageInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateBeverageTypeEditionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateBeverageTypeInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateCommissionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateCommissionReplicaInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateCompetitionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateCompetitionSeriesInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateEvaluationTemplateEditionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateEvaluationTemplateInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateExportTemplateEditionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateExportTemplateInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateOutcomePolicyEditionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateOutcomePolicyInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "CreateSampleInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "DiscreteNumbersProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRequired",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "allowedValues",
+          "args": []
+        },
+        {
+          "name": "defaultValue",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "DoubleProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRequired",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "minLimit",
+          "args": []
+        },
+        {
+          "name": "maxLimit",
+          "args": []
+        },
+        {
+          "name": "defaultValue",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EnumProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRequired",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "allowedValues",
+          "args": []
+        },
+        {
+          "name": "defaultValue",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluatedPropertyScore",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "value",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluatedPropertyScoreInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "Evaluation",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "replicaCandidate",
+          "args": []
+        },
+        {
+          "name": "templateEdition",
+          "args": []
+        },
+        {
+          "name": "evaluatorAuid",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "isComplete",
+          "args": []
+        },
+        {
+          "name": "scores",
+          "args": []
+        },
+        {
+          "name": "comments",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluationComment",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "propertyId",
+          "args": []
+        },
+        {
+          "name": "text",
+          "args": []
+        },
+        {
+          "name": "voiceUrl",
+          "args": []
+        },
+        {
+          "name": "sortOrder",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluationCommentInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "EvaluationExpression",
+      "kind": "INTERFACE",
+      "fields": [
+        {
+          "name": "type",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluationExpressionInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "EvaluationProperty",
+      "kind": "INTERFACE",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRequired",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluationPropertyInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "EvaluationTemplate",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "beverageType",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "owners",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluationTemplateEdition",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "template",
+          "args": []
+        },
+        {
+          "name": "version",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "categories",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluationTemplateEditionCategory",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "properties",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "EvaluationTemplateEditionCategoryInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "EvaluationTemplateEditionStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "EvaluationTemplateStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "ExportTemplate",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "owners",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "ExportTemplateEdition",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "template",
+          "args": []
+        },
+        {
+          "name": "version",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "definitionJson",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "ExportTemplateEditionStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "ExportTemplateStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "Float",
+      "kind": "SCALAR",
+      "fields": null
+    },
+    {
+      "name": "ID",
+      "kind": "SCALAR",
+      "fields": null
+    },
+    {
+      "name": "Int",
+      "kind": "SCALAR",
+      "fields": null
+    },
+    {
+      "name": "IntProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRequired",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "minLimit",
+          "args": []
+        },
+        {
+          "name": "maxLimit",
+          "args": []
+        },
+        {
+          "name": "defaultValue",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "Mutation",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "createBeverage",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateBeverageInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "publishBeverage",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createBatch",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateBatchInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createSample",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateSampleInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createBeverageType",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateBeverageTypeInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "publishBeverageType",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createBeverageTypeEdition",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateBeverageTypeEditionInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateBeverageTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "archiveBeverageTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createCompetitionSeries",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateCompetitionSeriesInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "changeCompetitionSeriesName",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "newName",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "changeCompetitionSeriesCountries",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ChangeCompetitionSeriesCountriesInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addCompetitionSeriesOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCompetitionSeriesOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "submitCompetitionSeriesForReview",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "approveCompetitionSeries",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "publishCompetitionSeries",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "suspendCompetitionSeries",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "archiveCompetitionSeries",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createCompetition",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateCompetitionInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "startCompetition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "completeCompetition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "submitCompetitionForReview",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "approveCompetition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "planCompetition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancelCompetition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "changeCompetitionName",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "newName",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addCompetitionHolder",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCompetitionHolder",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateCompetitionDates",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "PlannedDatesInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createCommission",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateCommissionInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "startCommission",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "submitCommissionForReview",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "approveCommission",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "planCommission",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancelCommission",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "renameCommission",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "name",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateCommissionDates",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "PlannedDatesInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionWineJumperMiniGameEnabled",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "enabled",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "Boolean",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionVoiceCommentsEnabled",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "enabled",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "Boolean",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionPropertyCommentsEnabled",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "enabled",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "Boolean",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionBeverageOriginDuringEvaluationEnabled",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "enabled",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "Boolean",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "beverageTypeId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "templateEditionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCommissionTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "beverageTypeId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionAwardTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "beverageTypeId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "awardTypeEditionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCommissionAwardTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "beverageTypeId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addCommissionPanel",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "name",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "renameCommissionPanel",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "panelId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "name",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCommissionPanel",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "panelId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "reorderCommissionPanels",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "panelIds",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addCommissionCandidate",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "AddCommissionCandidateInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addCommissionCandidates",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "panelId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "candidates",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCommissionCandidate",
+          "args": [
+            {
+              "name": "candidateId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "changeCommissionCandidateCode",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "anonymizedCode",
+              "type": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "reorderCommissionCandidates",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "panelId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "candidateIds",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createCommissionReplica",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateCommissionReplicaInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "planCommissionReplica",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "submitCommissionReplicaForReview",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "startCommissionReplica",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancelCommissionReplica",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "renameCommissionReplica",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "name",
+              "type": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "addCommissionReplicaMember",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CommissionReplicaMemberInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCommissionReplicaMember",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "memberId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "markCommissionReplicaMemberReady",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "memberId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "markCommissionReplicaMembersReady",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "memberIds",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "markCommissionReplicaMemberNotReady",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "memberId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionReplicaCurrentCandidate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "currentCandidateId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionReplicaChaoticCurrentCandidateChangesEnabled",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "enabled",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "Boolean",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "markCommissionReplicaCandidateAsEvaluated",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "disqualifyCommissionReplicaCandidate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "postponeCommissionReplicaCandidate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "resetCommissionReplicaCandidateToPending",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createEvaluationTemplate",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateEvaluationTemplateInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "changeEvaluationTemplateName",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "newName",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addEvaluationTemplateOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeEvaluationTemplateOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateEvaluationTemplate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "deprecateEvaluationTemplate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createEvaluationTemplateEdition",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateEvaluationTemplateEditionInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateEvaluationTemplateEditionCategories",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "categories",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateEvaluationTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "archiveEvaluationTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createExportTemplate",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateExportTemplateInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "changeExportTemplateName",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "newName",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addExportTemplateOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeExportTemplateOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateExportTemplate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "deprecateExportTemplate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createExportTemplateEdition",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateExportTemplateEditionInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateExportTemplateEditionDefinition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "definitionJson",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateExportTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "archiveExportTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "submitEvaluation",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "SubmitEvaluationInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateEvaluationScores",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "UpdateEvaluationScoresInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateEvaluationComments",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "UpdateEvaluationCommentsInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createAwardType",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateAwardTypeInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "changeAwardTypeName",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "newName",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "addAwardTypeOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeAwardTypeOwner",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "auid",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateAwardType",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "deprecateAwardType",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createAwardTypeEdition",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateAwardTypeEditionInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateAwardTypeEditionAwards",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "awards",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateAwardTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "archiveAwardTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "assignAward",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "candidateId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "awardId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "revokeAward",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "candidateId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "awardTypeId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createOutcomePolicy",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateOutcomePolicyInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateOutcomePolicy",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "UpdateOutcomePolicyInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "deleteOutcomePolicy",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "createOutcomePolicyEdition",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CreateOutcomePolicyEditionInput",
+                  "kind": "INPUT_OBJECT"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateOutcomePolicyEditionScript",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "scriptCode",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateOutcomePolicyEditionOutputProperties",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "outputProperties",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": null,
+                  "kind": "LIST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "activateOutcomePolicyEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "archiveOutcomePolicyEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCommissionOutcomePolicyEdition",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "outcomePolicyEditionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "removeCommissionOutcomePolicyEdition",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OutcomeBooleanProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomeCalculationScope",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "OutcomeDiscreteNumbersProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "allowedValues",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomeDoubleProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "minLimit",
+          "args": []
+        },
+        {
+          "name": "maxLimit",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomeEnumProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "allowedValues",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomeIntProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "minLimit",
+          "args": []
+        },
+        {
+          "name": "maxLimit",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomeOutputProperty",
+      "kind": "INTERFACE",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomeOutputPropertyInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "OutcomePolicy",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomePolicyEdition",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "policyId",
+          "args": []
+        },
+        {
+          "name": "version",
+          "args": []
+        },
+        {
+          "name": "scriptCode",
+          "args": []
+        },
+        {
+          "name": "status",
+          "args": []
+        },
+        {
+          "name": "calculationScope",
+          "args": []
+        },
+        {
+          "name": "inputTemplateEdition",
+          "args": []
+        },
+        {
+          "name": "outputProperties",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "OutcomePolicyEditionStatus",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "PaginatedAwardTypeEditions",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedAwardTypes",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedBatches",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedBeverageTypes",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedBeverages",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedCommissionCandidates",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedCommissionReplicas",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedCommissions",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedCompetitionSeries",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedCompetitions",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedEvaluationTemplateEditions",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedEvaluationTemplates",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedEvaluations",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedExportTemplateEditions",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedExportTemplates",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedOutcomePolicies",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedOutcomePolicyEditions",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedSamples",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PaginatedSearchHits",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "items",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PlannedDates",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "start",
+          "args": []
+        },
+        {
+          "name": "end",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "PlannedDatesInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "ProducerDetails",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "auid",
+          "args": []
+        },
+        {
+          "name": "role",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "ProducerInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "ProducerRole",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "Query",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "search",
+          "args": [
+            {
+              "name": "query",
+              "type": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "types",
+              "type": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "cursorType",
+              "type": {
+                "name": "SearchableAggregateType",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "latitude",
+              "type": {
+                "name": "Float",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "longitude",
+              "type": {
+                "name": "Float",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "maxDistanceKm",
+              "type": {
+                "name": "Float",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverages",
+          "args": [
+            {
+              "name": "filter",
+              "type": {
+                "name": "BeverageFilterInput",
+                "kind": "INPUT_OBJECT",
+                "ofType": null
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverage",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "batch",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "batches",
+          "args": [
+            {
+              "name": "beverageId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "sample",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "samples",
+          "args": [
+            {
+              "name": "batchId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageType",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageTypes",
+          "args": [
+            {
+              "name": "parentId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageTypeEditionsByType",
+          "args": [
+            {
+              "name": "typeId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "competitionSeriesList",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "competitionSeries",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "competition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "competitions",
+          "args": [
+            {
+              "name": "filter",
+              "type": {
+                "name": "CompetitionFilterInput",
+                "kind": "INPUT_OBJECT",
+                "ofType": null
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "competitionsBySeries",
+          "args": [
+            {
+              "name": "seriesId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "commission",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissions",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionsByCompetition",
+          "args": [
+            {
+              "name": "competitionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionCandidate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionCandidatesByCommission",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionReplica",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionReplicas",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionReplicasByCommission",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionReplicaCandidate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationTemplate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationTemplates",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationTemplateEditionsByTemplate",
+          "args": [
+            {
+              "name": "templateId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationTemplateEditions",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "exportTemplate",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "exportTemplates",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "exportTemplateEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "exportTemplateEditionsByTemplate",
+          "args": [
+            {
+              "name": "templateId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "exportTemplateEditions",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "awardType",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "awardTypes",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "awardTypeEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "awardTypeEditions",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "awardTypeEditionsByAwardType",
+          "args": [
+            {
+              "name": "awardTypeId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageAwards",
+          "args": [
+            {
+              "name": "beverageId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluation",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationsByReplicaCandidate",
+          "args": [
+            {
+              "name": "replicaCandidateId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationByReplicaCandidateAndEvaluator",
+          "args": [
+            {
+              "name": "replicaCandidateId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageCount",
+          "args": [
+            {
+              "name": "producer",
+              "type": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "batchCount",
+          "args": [
+            {
+              "name": "beverageId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "sampleCount",
+          "args": [
+            {
+              "name": "batchId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageTypeCount",
+          "args": [
+            {
+              "name": "parentId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionCandidateCount",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "competitionSeriesCount",
+          "args": [
+            {
+              "name": "owner",
+              "type": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "competitionCount",
+          "args": [
+            {
+              "name": "seriesId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "holder",
+              "type": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionCount",
+          "args": [
+            {
+              "name": "competitionId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "commissionReplicaCount",
+          "args": [
+            {
+              "name": "commissionId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationTemplateCount",
+          "args": [
+            {
+              "name": "owner",
+              "type": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationTemplateEditionCount",
+          "args": [
+            {
+              "name": "templateId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "exportTemplateCount",
+          "args": [
+            {
+              "name": "owner",
+              "type": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "exportTemplateEditionCount",
+          "args": [
+            {
+              "name": "templateId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "awardTypeCount",
+          "args": [
+            {
+              "name": "owner",
+              "type": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "awardTypeEditionCount",
+          "args": [
+            {
+              "name": "awardTypeId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "beverageAwardAssignmentCount",
+          "args": [
+            {
+              "name": "beverageId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluationCount",
+          "args": [
+            {
+              "name": "replicaCandidateId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "outcomePolicy",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "outcomePolicies",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "outcomePolicyEdition",
+          "args": [
+            {
+              "name": "id",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "outcomePolicyEditions",
+          "args": [
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "outcomePolicyEditionsByPolicyId",
+          "args": [
+            {
+              "name": "policyId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "offset",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            {
+              "name": "limit",
+              "type": {
+                "name": "Int",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "outcomePolicyEditionCount",
+          "args": [
+            {
+              "name": "policyId",
+              "type": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "replicaBeverageOutcomes",
+          "args": [
+            {
+              "name": "replicaId",
+              "type": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ReplicaBeverageOutcome",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "replicaId",
+          "args": []
+        },
+        {
+          "name": "beverageId",
+          "args": []
+        },
+        {
+          "name": "templateEditionId",
+          "args": []
+        },
+        {
+          "name": "scores",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "Sample",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "batch",
+          "args": []
+        },
+        {
+          "name": "volumeMl",
+          "args": []
+        },
+        {
+          "name": "attributes",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "SearchHit",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "aggregateType",
+          "args": []
+        },
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "createdAt",
+          "args": []
+        },
+        {
+          "name": "latitude",
+          "args": []
+        },
+        {
+          "name": "longitude",
+          "args": []
+        },
+        {
+          "name": "distance",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "SearchableAggregateType",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "SmartProperty",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRequired",
+          "args": []
+        },
+        {
+          "name": "isResult",
+          "args": []
+        },
+        {
+          "name": "expression",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "String",
+      "kind": "SCALAR",
+      "fields": null
+    },
+    {
+      "name": "SubmitEvaluationInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "UpdateEvaluationCommentsInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "UpdateEvaluationScoresInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "UpdateOutcomePolicyInput",
+      "kind": "INPUT_OBJECT",
+      "fields": null
+    },
+    {
+      "name": "VariableExpression",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "type",
+          "args": []
+        },
+        {
+          "name": "code",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "__Directive",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isRepeatable",
+          "args": []
+        },
+        {
+          "name": "locations",
+          "args": []
+        },
+        {
+          "name": "args",
+          "args": [
+            {
+              "name": "includeDeprecated",
+              "type": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "__DirectiveLocation",
+      "kind": "ENUM",
+      "fields": null
+    },
+    {
+      "name": "__EnumValue",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "isDeprecated",
+          "args": []
+        },
+        {
+          "name": "deprecationReason",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "__Field",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "args",
+          "args": [
+            {
+              "name": "includeDeprecated",
+              "type": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "type",
+          "args": []
+        },
+        {
+          "name": "isDeprecated",
+          "args": []
+        },
+        {
+          "name": "deprecationReason",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "__InputValue",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "type",
+          "args": []
+        },
+        {
+          "name": "defaultValue",
+          "args": []
+        },
+        {
+          "name": "isDeprecated",
+          "args": []
+        },
+        {
+          "name": "deprecationReason",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "__Schema",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "types",
+          "args": []
+        },
+        {
+          "name": "queryType",
+          "args": []
+        },
+        {
+          "name": "mutationType",
+          "args": []
+        },
+        {
+          "name": "directives",
+          "args": []
+        },
+        {
+          "name": "subscriptionType",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "__Type",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "kind",
+          "args": []
+        },
+        {
+          "name": "name",
+          "args": []
+        },
+        {
+          "name": "description",
+          "args": []
+        },
+        {
+          "name": "fields",
+          "args": [
+            {
+              "name": "includeDeprecated",
+              "type": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "interfaces",
+          "args": []
+        },
+        {
+          "name": "possibleTypes",
+          "args": []
+        },
+        {
+          "name": "enumValues",
+          "args": [
+            {
+              "name": "includeDeprecated",
+              "type": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "inputFields",
+          "args": [
+            {
+              "name": "includeDeprecated",
+              "type": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            }
+          ]
+        },
+        {
+          "name": "ofType",
+          "args": []
+        },
+        {
+          "name": "isOneOf",
+          "args": []
+        },
+        {
+          "name": "specifiedByURL",
+          "args": []
+        }
+      ]
+    },
+    {
+      "name": "__TypeKind",
+      "kind": "ENUM",
+      "fields": null
+    }
+  ]
+}

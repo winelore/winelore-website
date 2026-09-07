@@ -91,6 +91,7 @@ function buildScriptEvaluationsForReplica(
     for (const rc of replica.replicaCandidates ?? []) {
         const candidateId = rc.candidate.id
         for (const ev of rc.evaluations ?? []) {
+            if ((ev as any).status === "DRAFT") continue
             const templateEditionId = ev.templateEdition?.id
             const templateEdition = templateEditionId
                 ? templateEditionById[templateEditionId]

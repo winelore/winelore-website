@@ -1,12 +1,23 @@
 import { cookies } from 'next/headers';
 import { sdk } from '@/lib/apiClient';
+import { getGraphQLEndpoint } from '@/lib/graphqlEndpoint';
+
+export type ReplicaConfig = {
+  name: string;
+  expertsCount: number;
+};
+
+export type PanelConfig = {
+  name: string;
+  winesCount: number;
+};
 
 export type CommissionConfig = {
-  expertsCount: number;
-  winesCount: number;
-  evaluatedWinesCount?: number;
-  type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';
   name: string;
+  type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED';
+  panels: PanelConfig[];
+  replicas: ReplicaConfig[];
+  evaluatedWinesCount?: number;
 };
 
 export type SeederFormData = {
@@ -17,6 +28,12 @@ export type SeederFormData = {
 
 function generateAuid() {
   return Math.floor(Math.random() * 10000) + 1;
+}
+
+function cleanString(str?: string | null, fallback = ''): string {
+  if (!str) return fallback;
+  const cleaned = str.trim().replace(/\s+/g, ' ');
+  return cleaned || fallback;
 }
 
 const isValidUuid = (id?: string | null) => 
@@ -40,9 +57,11 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     log(`🔑 Авторизовано! Актор ID: ${auidInt}`);
     console.log(`🔑 [SEEDER SUCCESS] Актор ID: ${auidInt}`);
     
-    const uniqueSuffix = `#${Math.floor(Math.random() * 9000) + 1000}`;
-    const finalSeriesName = `${data.seriesName || 'Test Series'} ${uniqueSuffix}`;
-    const finalCompetitionName = `${data.competitionName} ${uniqueSuffix}`;
+    const uniqueSuffix = `${Math.floor(Math.random() * 9000) + 1000}`;
+    const baseSeriesName = cleanString(data.seriesName, 'Test Series');
+    const baseCompetitionName = cleanString(data.competitionName, 'Test Competition');
+    const finalSeriesName = cleanString(`${baseSeriesName} ${uniqueSuffix}`);
+    const finalCompetitionName = cleanString(`${baseCompetitionName} ${uniqueSuffix}`);
     
     // Fetch default beverage type for candidates
     let beverageTypeId = '';
@@ -173,8 +192,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
              }
            }
          `;
-         const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
-         const tplRes = await fetch(GRAPHQL_ENDPOINT, {
+         const tplRes = await fetch(getGraphQLEndpoint(), {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', ...headers },
            body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
@@ -208,15 +226,16 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
     // Helper for creating commission and seeding data
     const seedCommission = async (
-      name: string, 
-      config: CommissionConfig, 
+      name: string,
+      config: CommissionConfig,
       type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED'
     ) => {
       // 2. Створення комісії
+      const commCleanName = cleanString(name, 'Комісія');
       const commRes = await sdk.DevCreateCommission({
         input: {
           competitionId,
-          name
+          name: commCleanName
         }
       });
       const commissionId = commRes.createCommission.id;
@@ -235,26 +254,28 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         console.log(`🔗 [SEEDER SUCCESS] Template linked`);
       }
 
-      // Властивості для оцінювання вже завантажені глобально (evaluationProperties)
-
       // 3. Створення панелей та вин
       let globalCandidateIndex = 0;
-      for (const panelConfig of config.panels) {
+      for (let pIdx = 0; pIdx < config.panels.length; pIdx++) {
+        const panelConfig = config.panels[pIdx];
+        const cleanPanelName = cleanString(panelConfig.name, `Панель ${pIdx + 1}`);
         const panelRes = await sdk.DevAddCommissionPanel({
           commissionId,
-          name: panelConfig.name
+          name: cleanPanelName
         });
         const panelId = panelRes.addCommissionPanel.id;
-        log(`   Панель "${panelConfig.name}" створено (ID: ${panelId})`);
+        log(`   Панель "${cleanPanelName}" створено (ID: ${panelId})`);
 
         const candidates = [];
         for (let i = 0; i < panelConfig.winesCount; i++) {
           const wineIndex = globalCandidateIndex++;
+          const safeCommName = commCleanName.replace(/[^a-zA-Z0-9]/g, '');
+          const bevName = cleanString(`Test Wine ${uniqueSuffix} - Comm${safeCommName || '1'}-${wineIndex}`);
           const bevRes = await sdk.DevCreateBeverage({
             input: {
-              name: `Test Wine ${uniqueSuffix} - Comm${config.name.replace(/\s+/g, '')}-${wineIndex}`,
+              name: bevName,
               typeId: beverageTypeId,
-              producers: [{ auid: auidInt, role: "MAKER" }]
+              producers: [{ auid: [auidInt], role: "MAKER" }]
             }
           }, { headers });
           const beverageId = bevRes.createBeverage.id;
@@ -276,11 +297,10 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         }
         
         await sdk.DevAddCommissionCandidates({
-          commissionId,
           panelId,
           candidates
         });
-        log(`   Додано ${panelConfig.winesCount} зразків вин у панель "${panelConfig.name}"`);
+        log(`   Додано ${panelConfig.winesCount} зразків вин у панель "${cleanPanelName}"`);
       }
 
       // 4. Життєвий цикл комісії (Перехід за State Machine)
@@ -296,7 +316,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       await sdk.DevStartCommission({ id: commissionId });
       log(`▶️ Комісія активована (STARTED)`);
 
-      const totalWinesCount = config.panels.reduce((sum, p) => sum + p.winesCount, 0);
+      const totalWinesCount = config.panels.reduce((sum: number, p: PanelConfig) => sum + p.winesCount, 0);
       let evalCount = 0;
       if (type === 'IN_PROGRESS') {
         evalCount = config.evaluatedWinesCount || 0;
@@ -308,18 +328,20 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       const createdReplicas = [];
 
       // 5. Створення реплік та експертів
-      for (const replicaConfig of config.replicas) {
+      for (let rIdx = 0; rIdx < config.replicas.length; rIdx++) {
+        const replicaConfig = config.replicas[rIdx];
+        const cleanReplicaName = cleanString(replicaConfig.name, `Репліка ${rIdx + 1}`);
         const replicaRes = await sdk.DevCreateCommissionReplica({
           input: {
             commissionId,
-            name: replicaConfig.name,
+            name: cleanReplicaName,
             type: 'STANDARD',
-            chaoticCurrentCandidateChangesEnabled: false,
+            chaoticCurrentPanelChangesEnabled: false,
             members: []
           }
         });
         const replicaId = replicaRes.createCommissionReplica.id;
-        log(`   Репліку "${replicaConfig.name}" створено (ID: ${replicaId})`);
+        log(`   Репліку "${cleanReplicaName}" створено (ID: ${replicaId})`);
 
         // Генеруємо нового голову для репліки!
         const headAuid = generateAuid();
@@ -344,7 +366,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
         // Життєвий цикл репліки
         await sdk.DevPlanCommissionReplica({ id: replicaId });
-        log(`📅 Репліка "${replicaConfig.name}" запланована (PLANNED)`);
+        log(`📅 Репліка "${cleanReplicaName}" запланована (PLANNED)`);
 
         // Голова та експерти підтверджують готовність
         if (headMemberUuid) {
@@ -355,19 +377,19 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
             await sdk.DevMarkCommissionReplicaMemberReady({ id: replicaId, memberId: expert.uuid });
           }
         }
-        log(`🤝 Усі члени репліки "${replicaConfig.name}" готові!`);
+        log(`🤝 Усі члени репліки "${cleanReplicaName}" готові!`);
 
         await sdk.DevStartCommissionReplica(
           { id: replicaId },
           { headers: { 'actor': headAuid.toString(), 'x-actor': headAuid.toString() } }
         );
-        log(`▶️ Репліка "${replicaConfig.name}" активована (STARTED)`);
+        log(`▶️ Репліка "${cleanReplicaName}" активована (STARTED)`);
 
-        createdReplicas.push({ replicaId, replicaName: replicaConfig.name, headAuid, experts });
+        createdReplicas.push({ replicaId, replicaName: cleanReplicaName, headAuid, experts });
         
         commissionReplicasOutput.push({
           replicaId,
-          replicaName: replicaConfig.name,
+          replicaName: cleanReplicaName,
           head: { auid: headAuid },
           experts
         });
@@ -377,7 +399,9 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       for (const rep of createdReplicas) {
         const commissionData = await sdk.GetCommission({ id: commissionId });
         const activeReplica = commissionData.commission?.replicas.find(r => r.id === rep.replicaId);
-        const replicaCandidates = activeReplica?.replicaCandidates || [];
+        const replicaCandidates = (activeReplica?.replicaPanels || []).flatMap(panel =>
+          panel.replicaCandidates.map(candidate => ({ ...candidate, replicaPanelId: panel.id })),
+        );
 
         if (evalCount > 0 && replicaCandidates.length > 0) {
           log(`   Імітуємо оцінювання для ${evalCount} вин у "${rep.replicaName}"...`);
@@ -385,8 +409,13 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
           
           for (const wine of winesToEvaluate) {
             try {
-              await sdk.DevSetCommissionReplicaCurrentCandidate({
+              await sdk.DevSetCommissionReplicaCurrentPanel({
                 id: rep.replicaId,
+                currentPanelId: wine.replicaPanelId,
+              }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+              await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
+                id: rep.replicaId,
+                panelId: wine.replicaPanelId,
                 currentCandidateId: wine.id
               }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
             } catch (e: any) {
@@ -436,8 +465,13 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         if (evalCount < replicaCandidates.length) {
           const nextWine = replicaCandidates[evalCount];
           try {
-            await sdk.DevSetCommissionReplicaCurrentCandidate({
+            await sdk.DevSetCommissionReplicaCurrentPanel({
               id: rep.replicaId,
+              currentPanelId: nextWine.replicaPanelId,
+            }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+            await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
+              id: rep.replicaId,
+              panelId: nextWine.replicaPanelId,
               currentCandidateId: nextWine.id
             }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
           } catch (e: any) {
@@ -448,7 +482,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
       resultCommissions.push({
         id: commissionId,
-        name,
+        name: commCleanName,
         replicas: commissionReplicasOutput,
         type
       });
@@ -469,13 +503,10 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     const errorMessage = e?.message || JSON.stringify(e);
     log(`❌ Критична помилка генератора: ${errorMessage}`);
     
-    // НАШ РЯТІВНИЙ КРОК: виводимо повний об'єкт помилки у консоль сервера
     console.error("================ GENERATOR ERROR DUMP ================");
-    // Виводимо весь об'єкт помилки з усіма потрохами, включаючи extensions від сервера Kotlin
     console.error(JSON.stringify(e, null, 2));
     console.error("======================================================");
     
-    // Возвращаем объект СЮДА, вместо throw! Тогда Next.js покажет текст на экране.
     return { success: false, error: e?.message || "Internal Error" };
   }
 }

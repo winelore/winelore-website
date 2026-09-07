@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { parseJwt } from "@/lib/pkce";
+import { deriveRefreshTokenTtl } from "@/lib/tokenTtl";
 import { axusSdk } from "@/lib/axusClient";
 
 export async function GET(request: NextRequest) {
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";
+  const redirectUri = new URL("/callback", request.url).toString();
 
   try {
     const tokenResponse = await fetch(`${issuer}/oauth/token`, {
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: process.env.NEXT_PUBLIC_AXUS_ID_REDIRECT_URI!,
+        redirect_uri: redirectUri,
         client_id: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
         code_verifier: codeVerifier,
       }),
@@ -123,7 +125,7 @@ export async function GET(request: NextRequest) {
         sameSite: "lax",
         secure: false,
         path: "/",
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: deriveRefreshTokenTtl(tokens, tokens.refresh_token),
       });
     }
 
