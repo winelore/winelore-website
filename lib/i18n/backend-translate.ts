@@ -56,7 +56,11 @@ export async function translateBackendText(
   if (cached && cached.toUpperCase().includes("IS AN INVALID SOURCE LANGUAGE")) {
     memoryCache.delete(cacheKey)
     if (typeof window !== "undefined") {
-      localStorage.removeItem(CACHE_PREFIX + cacheKey)
+      try {
+        localStorage.removeItem(CACHE_PREFIX + cacheKey)
+      } catch {
+        // Ignore private browsing storage errors
+      }
     }
     cached = null
   }

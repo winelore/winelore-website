@@ -93,6 +93,8 @@ export function getDateLocale(locale: Locale): string {
 export function formatDateTime(dateStr: string | null, locale: Locale): string {
   if (!dateStr) return translate(locale, "common.na")
   const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return translate(locale, "common.na")
+  if (isNaN(date.getTime())) return translate(locale, "common.na")
   return new Intl.DateTimeFormat(getDateLocale(locale), {
     month: "short",
     day: "numeric",
