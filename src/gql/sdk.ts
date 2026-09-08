@@ -160,6 +160,20 @@ export type CreateEvaluationTemplateInput = {
   owners: Array<Array<number>>;
 };
 
+export type CreateOutcomePolicyEditionInput = {
+  calculationScope?: OutcomeCalculationScope | null | undefined;
+  inputTemplateEditionId?: string | number | null | undefined;
+  outputProperties?: Array<OutcomeOutputPropertyInput> | null | undefined;
+  policyId: string | number;
+  scriptCode: string;
+  version: number;
+};
+
+export type CreateOutcomePolicyInput = {
+  name: string;
+  owners: Array<Array<number>>;
+};
+
 export type CreateSampleInput = {
   attributes?: unknown;
   batchId: string | number;
@@ -217,6 +231,27 @@ export type EvaluationVisibleAttributesInput = {
   beverage?: Array<string>;
   sample?: Array<string>;
 };
+
+export type OutcomeCalculationScope =
+  | 'PER_BEVERAGE'
+  | 'REPLICA_WIDE';
+
+export type OutcomeOutputPropertyInput = {
+  allowedValues?: Array<string> | null | undefined;
+  code: string;
+  description?: string | null | undefined;
+  id?: string | number | null | undefined;
+  isResult?: boolean | null | undefined;
+  maxLimit?: number | null | undefined;
+  minLimit?: number | null | undefined;
+  name: string;
+  type: string;
+};
+
+export type OutcomePolicyEditionStatus =
+  | 'ACTIVE'
+  | 'ARCHIVED'
+  | 'DRAFT';
 
 export type PlannedDatesInput = {
   end?: string | null | undefined;
@@ -817,6 +852,43 @@ export type ChangeEvaluationTemplateNameMutationVariables = Exact<{
 
 
 export type ChangeEvaluationTemplateNameMutation = { changeEvaluationTemplateName: { id: string, name: string } };
+
+export type UpdateOutcomePolicyEditionScriptMutationVariables = Exact<{
+  id: string | number;
+  scriptCode: string;
+}>;
+
+
+export type UpdateOutcomePolicyEditionScriptMutation = { updateOutcomePolicyEditionScript: { id: string, scriptCode: string, version: number } };
+
+export type CreateOutcomePolicyMutationVariables = Exact<{
+  input: Types.CreateOutcomePolicyInput;
+}>;
+
+
+export type CreateOutcomePolicyMutation = { createOutcomePolicy: { id: string, name: string } };
+
+export type CreateOutcomePolicyEditionMutationVariables = Exact<{
+  input: Types.CreateOutcomePolicyEditionInput;
+}>;
+
+
+export type CreateOutcomePolicyEditionMutation = { createOutcomePolicyEdition: { id: string, policyId: string, version: number } };
+
+export type GetOutcomePolicyDetailQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type GetOutcomePolicyDetailQuery = { outcomePolicy: { id: string, name: string, createdAt: string } | null };
+
+export type GetOutcomePolicyEditionsByPolicyQueryVariables = Exact<{
+  policyId: string | number;
+  limit?: number | null | undefined;
+}>;
+
+
+export type GetOutcomePolicyEditionsByPolicyQuery = { outcomePolicyEditionsByPolicyId: { items: Array<{ id: string, policyId: string, version: number, scriptCode: string, status: Types.OutcomePolicyEditionStatus, calculationScope: Types.OutcomeCalculationScope, createdAt: string }> } };
 
 export type GetDashboardCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -2068,6 +2140,56 @@ export const ChangeEvaluationTemplateNameDocument = gql`
   }
 }
     `;
+export const UpdateOutcomePolicyEditionScriptDocument = gql`
+    mutation UpdateOutcomePolicyEditionScript($id: ID!, $scriptCode: String!) {
+  updateOutcomePolicyEditionScript(id: $id, scriptCode: $scriptCode) {
+    id
+    scriptCode
+    version
+  }
+}
+    `;
+export const CreateOutcomePolicyDocument = gql`
+    mutation CreateOutcomePolicy($input: CreateOutcomePolicyInput!) {
+  createOutcomePolicy(input: $input) {
+    id
+    name
+  }
+}
+    `;
+export const CreateOutcomePolicyEditionDocument = gql`
+    mutation CreateOutcomePolicyEdition($input: CreateOutcomePolicyEditionInput!) {
+  createOutcomePolicyEdition(input: $input) {
+    id
+    policyId
+    version
+  }
+}
+    `;
+export const GetOutcomePolicyDetailDocument = gql`
+    query GetOutcomePolicyDetail($id: ID!) {
+  outcomePolicy(id: $id) {
+    id
+    name
+    createdAt
+  }
+}
+    `;
+export const GetOutcomePolicyEditionsByPolicyDocument = gql`
+    query GetOutcomePolicyEditionsByPolicy($policyId: ID!, $limit: Int) {
+  outcomePolicyEditionsByPolicyId(policyId: $policyId, limit: $limit) {
+    items {
+      id
+      policyId
+      version
+      scriptCode
+      status
+      calculationScope
+      createdAt
+    }
+  }
+}
+    `;
 export const GetDashboardCompetitionsDocument = gql`
     query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {
   competitions(limit: $limit, cursor: $cursor, offset: $offset) {
@@ -2301,6 +2423,21 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     ChangeEvaluationTemplateName(variables: Types.ChangeEvaluationTemplateNameMutationVariables, options?: C): Promise<Types.ChangeEvaluationTemplateNameMutation> {
       return requester<Types.ChangeEvaluationTemplateNameMutation, Types.ChangeEvaluationTemplateNameMutationVariables>(ChangeEvaluationTemplateNameDocument, variables, options) as Promise<Types.ChangeEvaluationTemplateNameMutation>;
+    },
+    UpdateOutcomePolicyEditionScript(variables: Types.UpdateOutcomePolicyEditionScriptMutationVariables, options?: C): Promise<Types.UpdateOutcomePolicyEditionScriptMutation> {
+      return requester<Types.UpdateOutcomePolicyEditionScriptMutation, Types.UpdateOutcomePolicyEditionScriptMutationVariables>(UpdateOutcomePolicyEditionScriptDocument, variables, options) as Promise<Types.UpdateOutcomePolicyEditionScriptMutation>;
+    },
+    CreateOutcomePolicy(variables: Types.CreateOutcomePolicyMutationVariables, options?: C): Promise<Types.CreateOutcomePolicyMutation> {
+      return requester<Types.CreateOutcomePolicyMutation, Types.CreateOutcomePolicyMutationVariables>(CreateOutcomePolicyDocument, variables, options) as Promise<Types.CreateOutcomePolicyMutation>;
+    },
+    CreateOutcomePolicyEdition(variables: Types.CreateOutcomePolicyEditionMutationVariables, options?: C): Promise<Types.CreateOutcomePolicyEditionMutation> {
+      return requester<Types.CreateOutcomePolicyEditionMutation, Types.CreateOutcomePolicyEditionMutationVariables>(CreateOutcomePolicyEditionDocument, variables, options) as Promise<Types.CreateOutcomePolicyEditionMutation>;
+    },
+    GetOutcomePolicyDetail(variables: Types.GetOutcomePolicyDetailQueryVariables, options?: C): Promise<Types.GetOutcomePolicyDetailQuery> {
+      return requester<Types.GetOutcomePolicyDetailQuery, Types.GetOutcomePolicyDetailQueryVariables>(GetOutcomePolicyDetailDocument, variables, options) as Promise<Types.GetOutcomePolicyDetailQuery>;
+    },
+    GetOutcomePolicyEditionsByPolicy(variables: Types.GetOutcomePolicyEditionsByPolicyQueryVariables, options?: C): Promise<Types.GetOutcomePolicyEditionsByPolicyQuery> {
+      return requester<Types.GetOutcomePolicyEditionsByPolicyQuery, Types.GetOutcomePolicyEditionsByPolicyQueryVariables>(GetOutcomePolicyEditionsByPolicyDocument, variables, options) as Promise<Types.GetOutcomePolicyEditionsByPolicyQuery>;
     },
     GetDashboardCompetitions(variables?: Types.GetDashboardCompetitionsQueryVariables, options?: C): Promise<Types.GetDashboardCompetitionsQuery> {
       return requester<Types.GetDashboardCompetitionsQuery, Types.GetDashboardCompetitionsQueryVariables>(GetDashboardCompetitionsDocument, variables, options) as Promise<Types.GetDashboardCompetitionsQuery>;
