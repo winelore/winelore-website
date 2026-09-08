@@ -4,12 +4,12 @@ import React, { useState, useEffect, useMemo } from "react"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, Send, Download } from "lucide-react"
-import { AppHeader, type AppTabId } from "@/components/AppHeader"
+import Link from "next/link"
+import { Trophy, Wine, Timer, Layers, PlayCircle, X, Plus, Send, Users, ChevronRight } from "lucide-react"
+import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
 import { getDateLocale } from "@/lib/i18n"
-import Link from "next/link"
 import {
     startCompetitionAction,
     submitCompetitionForReviewAction,
@@ -18,8 +18,19 @@ import {
     updateCompetitionNameAction,
     createCommission
 } from "../actions"
-import { BackLink } from "@/components/BackLink"
-import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
+import {
+    ActionButton,
+    ActionRow,
+    DetailPageHeader,
+    EmptyState,
+    MetaTile,
+    ScheduleTimeline,
+    SectionCard,
+    StatusPill,
+    StatusStepper,
+    UserAvatar,
+    useScrolledPast,
+} from "@/components/detail"
 
 function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -36,117 +47,33 @@ function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: str
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${encodedDetails}`
 }
 
-function getAvatarGradient(auid: number): string {
-    const gradients = [
-        "from-pink-500 via-rose-500 to-red-500",
-        "from-indigo-500 via-purple-500 to-pink-500",
-        "from-blue-500 via-teal-500 to-emerald-500",
-        "from-amber-400 via-orange-500 to-red-500",
-        "from-violet-600 via-purple-600 to-indigo-600",
-        "from-cyan-500 via-blue-500 to-indigo-500",
-        "from-emerald-400 via-teal-500 to-cyan-500",
-        "from-fuchsia-500 via-purple-600 to-pink-600",
-    ]
-    const idx = Math.abs(auid) % gradients.length
-    return gradients[idx]
-}
-
-function HolderAvatar({ auid, username, className }: { auid: number; username?: string; className?: string }) {
-    const gradient = getAvatarGradient(auid)
-    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : `${auid}`.slice(-2)
-    return (
-        <div className={`flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[10px] shadow-sm shrink-0 border border-white/10 ${className}`}>
-            <span>{initials}</span>
-        </div>
-    )
-}
-
-function StatusSteps({ status }: { status: string }) {
-    const { t } = useTranslation()
-    const steps = [
-        { id: "planned", label: t("competition.stepPlanned"), description: t("competition.stepPlannedDesc") },
-        { id: "started", label: t("competition.stepStarted"), description: t("competition.stepStartedDesc") },
-        { id: "completed", label: t("competition.stepCompleted"), description: t("competition.stepCompletedDesc") }
-    ]
-
-    let currentStepIdx = 0
-    if (status === "STARTED") {
-        currentStepIdx = 1
-    } else if (status === "COMPLETED") {
-        currentStepIdx = 2
-    }
-
-    return (
-        <div className="w-full bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                {steps.map((step, idx) => {
-                    const isCompleted = idx < currentStepIdx
-                    const isActive = idx === currentStepIdx
-
-                    return (
-                        <React.Fragment key={step.id}>
-                            <div className="flex items-center gap-3 flex-1">
-                                <div className={`flex items-center justify-center w-8 h-8 rounded-full border text-xs font-semibold transition-all duration-350 shrink-0 ${
-                                    isCompleted
-                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                                        : isActive
-                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-4 ring-indigo-500/10"
-                                            : "bg-slate-50 border-slate-200 text-slate-400"
-                                }`}>
-                                    {isCompleted ? (
-                                        <CheckCircle className="w-4 h-4" />
-                                    ) : (
-                                        <span>{idx + 1}</span>
-                                    )}
-                                </div>
-                                <div>
-                                    <h4 className={`text-xs font-bold ${isActive ? "text-slate-900" : "text-slate-500"}`}>{step.label}</h4>
-                                    <p className="text-[10px] text-slate-400">{step.description}</p>
-                                </div>
-                            </div>
-
-                        </React.Fragment>
-                    )
-                })}
-            </div>
-        </div>
-    )
-}
-
-function CommissionCard({ comm }: { comm: Commission }) {
+function CommissionRow({ comm }: { comm: Commission }) {
     const [timeStr, setTimeStr] = useState<string>("")
-    const { t, formatStatus, locale } = useTranslation()
+    const { t, locale } = useTranslation()
 
     useEffect(() => {
-        let intervalId: NodeJS.Timeout;
+        let intervalId: NodeJS.Timeout
 
         const updateTime = () => {
             if (comm.status === "STARTED" && comm.startedAt) {
-                const start = new Date(comm.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
+                const diff = Math.max(0, Date.now() - new Date(comm.startedAt).getTime())
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
                 const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
-                setTimeStr(`${time} ${seconds}s`)
+                setTimeStr(`${time} ${t("time.durationSeconds", { seconds })}`)
             } else if (comm.status === "COMPLETED" && comm.startedAt && comm.endedAt) {
-                const start = new Date(comm.startedAt).getTime()
-                const end = new Date(comm.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
+                const diff = Math.max(0, new Date(comm.endedAt).getTime() - new Date(comm.startedAt).getTime())
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
                 const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
                 setTimeStr(t("time.lasted", { time }))
             } else if (comm.status === "PLANNED" && comm.plannedStartAt) {
-                const date = new Date(comm.plannedStartAt)
                 const formattedDate = new Intl.DateTimeFormat(getDateLocale(locale), {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                }).format(date)
+                }).format(new Date(comm.plannedStartAt))
                 setTimeStr(t("time.plannedFor", { date: formattedDate }))
             } else {
                 setTimeStr("")
@@ -154,47 +81,31 @@ function CommissionCard({ comm }: { comm: Commission }) {
         }
 
         updateTime()
-
-        if (comm.status === "STARTED") {
-            intervalId = setInterval(updateTime, 1000)
-        }
-
+        if (comm.status === "STARTED") intervalId = setInterval(updateTime, 1000)
         return () => clearInterval(intervalId)
     }, [comm.status, comm.startedAt, comm.endedAt, comm.plannedStartAt, t, locale])
 
     return (
         <Link
             href={`/commission/${comm.id}`}
-            className="group flex items-center gap-4 rounded-[24px] border border-slate-100 bg-white p-5 shadow-md shadow-slate-100/50 transition-all duration-350 hover:scale-[1.02] hover:shadow-xl hover:shadow-slate-200/40 hover:border-indigo-100 active:scale-[0.98]"
+            className="group flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white p-3.5 transition-all hover:border-indigo-200 hover:bg-indigo-50/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 sm:gap-4 sm:p-4"
         >
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-350">
-                <Wine className="h-6 w-6" />
-            </div>
-            <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
-                    {t("commission.session")}
-                </span>
-                <span className="block text-base font-bold text-slate-800 truncate">
-                    {comm.name}
-                </span>
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider mt-1.5">
-                    <span className={
-                        comm.status === 'STARTED' ? 'text-emerald-500' :
-                            comm.status === 'COMPLETED' ? 'text-slate-400' : 'text-amber-500'
-                    }>
-                        {formatStatus(comm.status || "")}
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+                <Wine className="h-5 w-5" />
+            </span>
+
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-semibold text-slate-900">{comm.name}</span>
+                {timeStr && (
+                    <span className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
+                        <Timer className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{timeStr}</span>
                     </span>
-                    {timeStr && (
-                        <>
-                            <span className="text-slate-300">|</span>
-                            <span className="text-slate-500 flex items-center gap-1">
-                                <Timer className="w-3.5 h-3.5" />
-                                {timeStr}
-                            </span>
-                        </>
-                    )}
-                </div>
-            </div>
+                )}
+            </span>
+
+            <StatusPill status={comm.status || ""} size="sm" />
+            <ChevronRight className="hidden h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500 sm:block" />
         </Link>
     )
 }
@@ -203,7 +114,6 @@ function CommissionCard({ comm }: { comm: Commission }) {
 // INTERFACES
 // ====================================================================
 type CompetitionStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PLANNED" | "STARTED" | "COMPLETED" | "CANCELLED"
-type CommissionStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PLANNED" | "STARTED" | "COMPLETED" | "CANCELLED"
 
 interface Series {
     id: string
@@ -250,88 +160,69 @@ export default function CompetitionClientView({
     serverAuid?: number | null;
     children?: React.ReactNode;
 }) {
-    const { t, locale, formatStatus, formatDateTime } = useTranslation()
+    const { t, locale } = useTranslation()
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
-    const [isMutating, setIsMutating] = useState(false)
-    const [isEditingName, setIsEditingName] = useState(false)
-    const [editNameData, setEditNameData] = useState("")
-    const [isEditingDates, setIsEditingDates] = useState(false)
-    const [editDatesData, setEditDatesData] = useState({
-        plannedStartAt: "",
-        plannedEndAt: "",
-    })
+
+    // One flag per action rather than a single page-wide `isMutating`, so saving
+    // the name no longer freezes "Start competition" and vice versa.
+    const [isSavingName, setIsSavingName] = useState(false)
+    const [isRunningLifecycle, setIsRunningLifecycle] = useState(false)
     const [isAddingCommission, setIsAddingCommission] = useState(false)
+    const [isSubmittingCommission, setIsSubmittingCommission] = useState(false)
     const [newCommissionName, setNewCommissionName] = useState("")
 
     const initialData = localData
 
-    const openEditName = () => {
-        setEditNameData(initialData.name)
-        setIsEditingName(true)
-    }
+    // The header CTA only appears once its own card has scrolled away.
+    const [actionsRef, actionsScrolledPast] = useScrolledPast<HTMLDivElement>()
 
-    const openEditDates = () => {
-        setEditDatesData({
-            plannedStartAt: toLocalDatetimeInput(initialData.plannedStartAt),
-            plannedEndAt: toLocalDatetimeInput(initialData.plannedEndAt)
-        })
-        setIsEditingDates(true)
-    }
-
-    const handleSaveName = async () => {
-        if (!editNameData.trim()) {
-            toast.error("Name cannot be empty")
-            return
+    const handleSaveName = async (nextName: string) => {
+        const trimmed = nextName.trim()
+        if (!trimmed) {
+            toast.error(t("common.errorNameEmpty"))
+            throw new Error("empty name")
         }
-        setIsMutating(true)
+        setIsSavingName(true)
         try {
-            const res = await updateCompetitionNameAction(initialData.id, editNameData.trim())
+            const res = await updateCompetitionNameAction(initialData.id, trimmed)
             if (res.success) {
-                setIsEditingName(false)
+                setLocalData(prev => ({ ...prev, name: trimmed }))
                 router.refresh()
             } else {
-                toast.error(res.error || "Failed to save name")
+                toast.error(res.error || t("common.errorSaveFailed"))
+                throw new Error(res.error || "save failed")
             }
-        } catch (err: any) {
-            toast.error(err.message || "An error occurred")
         } finally {
-            setIsMutating(false)
+            setIsSavingName(false)
         }
     }
 
-    const handleSaveDates = async () => {
-        setIsMutating(true)
+    const handleSaveDates = async (startIso: string | null, endIso: string | null) => {
         try {
-            const res = await updateCompetitionDatesAction(
-                initialData.id,
-                fromLocalDatetimeInputToIso(editDatesData.plannedStartAt),
-                fromLocalDatetimeInputToIso(editDatesData.plannedEndAt),
-            )
+            const res = await updateCompetitionDatesAction(initialData.id, startIso, endIso)
             if (res.success) {
-                setIsEditingDates(false)
                 router.refresh()
-            } else {
-                toast.error(res.error || "Failed to save dates")
+                return true
             }
+            toast.error(res.error || t("common.errorSaveFailed"))
+            return false
         } catch (err: any) {
-            toast.error(err.message || "An error occurred")
-        } finally {
-            setIsMutating(false)
+            toast.error(err?.message || t("common.errorGeneric"))
+            return false
         }
     }
 
     const openAddCommission = () => {
-        setNewCommissionName(`Commission ${initialData.commissions.length + 1}`)
+        setNewCommissionName(t("competition.commissionNameDefault", { number: initialData.commissions.length + 1 }))
         setIsAddingCommission(true)
     }
 
     const handleAddCommission = async () => {
-        const finalName = newCommissionName.trim() || `Commission ${initialData.commissions.length + 1}`
-        setIsMutating(true)
+        const finalName = newCommissionName.trim() || t("competition.commissionNameDefault", { number: initialData.commissions.length + 1 })
+        setIsSubmittingCommission(true)
         try {
             const res = await createCommission({
                 competitionId: initialData.id,
@@ -348,19 +239,17 @@ export default function CompetitionClientView({
                 setIsAddingCommission(false)
                 router.refresh()
             } else {
-                toast.error(res.error || "Failed to add commission")
+                toast.error(res.error || t("common.errorGeneric"))
             }
         } catch (err: any) {
-            toast.error(err.message || "An error occurred")
+            toast.error(err.message || t("common.errorGeneric"))
         } finally {
-            setIsMutating(false)
+            setIsSubmittingCommission(false)
         }
     }
 
     // Fetch usernames for competition holders
-    const allHolderAuids = useMemo(() => {
-        return initialData.holders || []
-    }, [initialData.holders])
+    const allHolderAuids = useMemo(() => initialData.holders || [], [initialData.holders])
     const { usernames } = useUsernames(allHolderAuids)
 
     useEffect(() => {
@@ -374,7 +263,8 @@ export default function CompetitionClientView({
         let isFetching = false
 
         const pollInterval = setInterval(async () => {
-            if (!isMounted || isFetching) return
+            // Don't keep hammering the server for a tab nobody is looking at.
+            if (!isMounted || isFetching || document.visibilityState !== "visible") return
             isFetching = true
             try {
                 const updated = await getCompetitionDataAction(localData.id)
@@ -402,21 +292,22 @@ export default function CompetitionClientView({
     }, [])
 
     const handleStartCompetition = async () => {
-        if (isMutating) return
-        setIsMutating(true)
+        if (isRunningLifecycle) return
+        setIsRunningLifecycle(true)
         try {
             await startCompetitionAction(initialData.id)
             router.refresh()
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to start competition:", err)
+            toast.error(err?.message || t("common.errorGeneric"))
         } finally {
-            setIsMutating(false)
+            setIsRunningLifecycle(false)
         }
     }
 
     const handleSubmitForReview = async () => {
-        if (isMutating) return
-        setIsMutating(true)
+        if (isRunningLifecycle) return
+        setIsRunningLifecycle(true)
         try {
             await submitCompetitionForReviewAction(initialData.id)
             const updated = await getCompetitionDataAction(initialData.id)
@@ -426,7 +317,7 @@ export default function CompetitionClientView({
             console.error("Failed to submit competition for review:", err)
             toast.error(err.message || t("competition.submitReviewError"))
         } finally {
-            setIsMutating(false)
+            setIsRunningLifecycle(false)
         }
     }
 
@@ -435,476 +326,191 @@ export default function CompetitionClientView({
 
         const updateTime = () => {
             if (initialData.status === "STARTED" && initialData.startedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
+                const diff = Math.max(0, Date.now() - new Date(initialData.startedAt).getTime())
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-                const formattedTime = hours > 0
-                    ? `${hours}h ${minutes}m ${seconds}s`
-                    : `${minutes}m ${seconds}s`
-
-                setTimeDisplay(formattedTime)
-
+                setTimeDisplay(hours > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${minutes}m ${seconds}s`)
             } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const end = new Date(initialData.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
+                const diff = Math.max(0, new Date(initialData.endedAt).getTime() - new Date(initialData.startedAt).getTime())
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
                 const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
                 setTimeDisplay(t("time.lasted", { time }))
-
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
-                const date = new Date(initialData.plannedStartAt)
                 const formattedDate = new Intl.DateTimeFormat(getDateLocale(locale), {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                }).format(date)
+                }).format(new Date(initialData.plannedStartAt))
                 setTimeDisplay(t("time.plannedFor", { date: formattedDate }))
-
             } else {
                 setTimeDisplay("")
             }
         }
 
         updateTime()
-
-        if (initialData.status === "STARTED") {
-            intervalId = setInterval(updateTime, 1000)
-        }
-
+        if (initialData.status === "STARTED") intervalId = setInterval(updateTime, 1000)
         return () => clearInterval(intervalId)
-    }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
+    }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt, t, locale])
 
     const isHolder = currentAuid !== null && initialData.holders.includes(currentAuid)
 
+    const steps = useMemo(() => [
+        { id: "planned", label: t("competition.stepPlanned"), description: t("competition.stepPlannedDesc") },
+        { id: "started", label: t("competition.stepStarted"), description: t("competition.stepStartedDesc") },
+        { id: "completed", label: t("competition.stepCompleted"), description: t("competition.stepCompletedDesc") }
+    ], [t])
+
+    const currentStepIdx = initialData.status === "COMPLETED" ? 2 : initialData.status === "STARTED" ? 1 : 0
+
+    const calendarUrl = initialData.status === "PLANNED" && initialData.plannedStartAt
+        ? getGoogleCalendarUrl(
+            initialData.name,
+            t("competition.calendarDetails", { name: initialData.name }),
+            initialData.plannedStartAt,
+            initialData.plannedEndAt
+        )
+        : null
+
+    /**
+     * The single action the holder is most likely to want next, promoted into the
+     * sticky header so it stays reachable from anywhere on the page.
+     */
+    const primaryAction = useMemo(() => {
+        if (!isHolder) return null
+        if (initialData.status === "DRAFT") {
+            return (
+                <ActionButton icon={Send} loading={isRunningLifecycle} onClick={handleSubmitForReview}>
+                    <span className="hidden sm:inline">{t("competition.submitReviewButton")}</span>
+                    <span className="sm:hidden">{t("competition.submitReviewShort")}</span>
+                </ActionButton>
+            )
+        }
+        if (initialData.status === "PLANNED") {
+            return (
+                <ActionButton icon={PlayCircle} loading={isRunningLifecycle} onClick={handleStartCompetition}>
+                    <span className="hidden sm:inline">{t("competition.startButton")}</span>
+                    <span className="sm:hidden">{t("competition.startShort")}</span>
+                </ActionButton>
+            )
+        }
+        return null
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isHolder, initialData.status, isRunningLifecycle, t])
+
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="flex h-screen flex-col bg-slate-50">
             <AppHeader activeTab="competitions" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex items-center justify-between">
-                    <BackLink href="/myCompetitions" label={t("commission.backToCompetitions")} />
+            <main className="flex-1 overflow-auto">
+                <DetailPageHeader
+                    backHref="/myCompetitions"
+                    backLabel={t("commission.backToCompetitions")}
+                    eyebrow={t("competition.panel")}
+                    name={initialData.name}
+                    status={initialData.status}
+                    timeDisplay={timeDisplay}
+                    canEditName={isHolder}
+                    onSaveName={handleSaveName}
+                    isSavingName={isSavingName}
+                    actions={
+                        <>
+                            {actionsScrolledPast && primaryAction}
+                            <ActionButton
+                                variant={actionsScrolledPast && primaryAction ? "secondary" : "primary"}
+                                icon={Trophy}
+                                href={`/competition/${initialData.id}/results`}
+                            >
+                                <span className="hidden sm:inline">{t("competition.resultsButton")}</span>
+                                <span className="sm:hidden">{t("competition.resultsShort")}</span>
+                            </ActionButton>
+                        </>
+                    }
+                />
 
-                    <Link
-                        href={`/competition/${initialData.id}/results`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 cursor-pointer"
-                    >
-                        <Trophy className="w-4 h-4" />
-                        <span>{t("competition.resultsButton")}</span>
-                    </Link>
-                </div>
-                <div className="w-full max-w-7xl flex flex-col gap-8">
-                    <div className="w-full flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 md:gap-6 md:px-8 md:py-8">
+                    <SectionCard padding="tight">
+                        <StatusStepper steps={steps} currentStepIdx={currentStepIdx} />
+                    </SectionCard>
 
-                        {/* Left Column: Status, Series, timeline */}
-                        <div className="contents lg:flex lg:flex-col lg:w-[45%] lg:gap-6">
-                            <div className="order-2 lg:order-none">
-                                <StatusSteps status={initialData.status} />
-                            </div>
-
-                            {/* Series Details */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex items-center gap-4 order-3 lg:order-none">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-inner">
-                                    <Layers className="h-6 w-6" />
-                                </div>
-                                <div className="min-w-0">
-                                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
-                                    {t("competition.series")}
-                                </span>
-                                    <p className="text-base font-bold text-slate-800 mt-0.5 truncate">
-                                        {initialData.series.name}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Timeline and Dates */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-4 lg:order-none">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-indigo-500" />
-                                        {t("competition.timelineDetails")}
-                                    </h3>
-                                    {isHolder && (
-                                        isEditingDates ? (
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    onClick={handleSaveDates}
-                                                    disabled={isMutating}
-                                                    className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                                    title={t("common.saveDates")}
-                                                >
-                                                    {isMutating ? (
-                                                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                    ) : (
-                                                        <Check className="w-3.5 h-3.5" />
-                                                    )}
-                                                    <span>Save</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsEditingDates(false)}
-                                                    disabled={isMutating}
-                                                    className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                                                    title={t("competition.cancel")}
-                                                >
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
+                    <div className="grid gap-5 md:gap-6 lg:grid-cols-5">
+                        {/* Main column — the work you came here to do. */}
+                        <div className="flex min-w-0 flex-col gap-5 md:gap-6 lg:col-span-3">
+                            {((initialData.status === "DRAFT" && isHolder) || initialData.status === "PLANNED") && (
+                                <div ref={actionsRef}>
+                                    <SectionCard title={t("competition.actionsControls")}>
+                                        {initialData.status === "DRAFT" ? (
+                                            <ActionRow
+                                                title={t("competition.submitReviewTitle")}
+                                                description={t("competition.submitReviewDescription")}
+                                                action={
+                                                    <ActionButton icon={Send} loading={isRunningLifecycle} onClick={handleSubmitForReview}>
+                                                        {t("competition.submitReviewButton")}
+                                                    </ActionButton>
+                                                }
+                                            />
+                                        ) : isHolder ? (
+                                            <ActionRow
+                                                title={t("competition.startTitle")}
+                                                description={t("competition.startDescription")}
+                                                action={
+                                                    <ActionButton icon={PlayCircle} loading={isRunningLifecycle} onClick={handleStartCompetition}>
+                                                        {t("competition.startButton")}
+                                                    </ActionButton>
+                                                }
+                                            />
                                         ) : (
-                                            <button
-                                                onClick={openEditDates}
-                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                title={t("common.editPlannedDates")}
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-
-                                <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
-                                    {/* Planned Start */}
-                                    <div className="relative">
-                                        <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
-                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.plannedStart")}</span>
-                                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                            {isEditingDates ? (
-                                                <input
-                                                    type="datetime-local"
-                                                    className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                                                    value={editDatesData.plannedStartAt}
-                                                    onChange={e => setEditDatesData({ ...editDatesData, plannedStartAt: e.target.value })}
-                                                    onKeyDown={e => {
-                                                        if (e.key === "Enter") handleSaveDates()
-                                                        if (e.key === "Escape") setIsEditingDates(false)
-                                                    }}
-                                                />
-                                            ) : (
-                                                <p className="text-xs font-semibold text-slate-800">
-                                                    {formatDateTime(initialData.plannedStartAt)}
-                                                </p>
-                                            )}
-                                            {!isEditingDates && initialData.status === "PLANNED" && initialData.plannedStartAt && (
-                                                <a
-                                                    href={getGoogleCalendarUrl(
-                                                        initialData.name,
-                                                        t("competition.calendarDetails", { name: initialData.name }),
-                                                        initialData.plannedStartAt,
-                                                        initialData.plannedEndAt
-                                                    )}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
-                                                >
-                                                    {t("common.addToCalendar")}
-                                                </a>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {/* Planned End */}
-                                    {(initialData.plannedEndAt || isEditingDates) && (
-                                        <div className="relative">
-                                            <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-400 border-2 border-white" />
-                                            <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.plannedEnd")}</span>
-                                            <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                                {isEditingDates ? (
-                                                    <input
-                                                        type="datetime-local"
-                                                        className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                                                        value={editDatesData.plannedEndAt}
-                                                        onChange={e => setEditDatesData({ ...editDatesData, plannedEndAt: e.target.value })}
-                                                        onKeyDown={e => {
-                                                            if (e.key === "Enter") handleSaveDates()
-                                                            if (e.key === "Escape") setIsEditingDates(false)
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <p className="text-xs font-semibold text-slate-800">
-                                                        {formatDateTime(initialData.plannedEndAt)}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {/* Actual Start */}
-                                    <div className="relative">
-                                        <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
-                                            initialData.startedAt ? 'bg-emerald-500' : 'bg-slate-200'
-                                        }`} />
-                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.actualStart")}</span>
-                                        <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                            {initialData.startedAt ? formatDateTime(initialData.startedAt) : t("competition.notStartedYet")}
-                                        </p>
-                                    </div>
-                                    {/* Actual End */}
-                                    <div className="relative">
-                                        <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
-                                            initialData.endedAt ? 'bg-rose-500' : 'bg-slate-200'
-                                        }`} />
-                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("competition.actualEnd")}</span>
-                                        <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                            {initialData.endedAt ? formatDateTime(initialData.endedAt) : t("competition.notEndedYet")}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Column: Info & Commissions List */}
-                        <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
-                            {/* Competition Header Card */}
-                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
-                                <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
-
-                                <div className="flex items-start justify-between gap-4 mb-6">
-                                    <div className="flex items-start gap-4 min-w-0 flex-1">
-                                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100/55 shadow-sm">
-                                            <Trophy className="h-8 w-8" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
-                                            {t("competition.panel")}
-                                        </span>
-                                            {isEditingName ? (
-                                                <div className="flex items-center gap-2 mt-1 w-full">
-                                                    <input
-                                                        type="text"
-                                                        autoFocus
-                                                        className="text-xl md:text-2xl font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-xl px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[180px] flex-1 max-w-lg"
-                                                        value={editNameData}
-                                                        onChange={e => setEditNameData(e.target.value)}
-                                                        onKeyDown={e => {
-                                                            if (e.key === "Enter") handleSaveName()
-                                                            if (e.key === "Escape") setIsEditingName(false)
-                                                        }}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleSaveName}
-                                                        disabled={isMutating}
-                                                        className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
-                                                        title={t("common.save")}
-                                                    >
-                                                        {isMutating ? (
-                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                        ) : (
-                                                            <Check className="w-4 h-4" />
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsEditingName(false)}
-                                                        disabled={isMutating}
-                                                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
-                                                        title={t("competition.cancel")}
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
-                                                        {initialData.name}
-                                                    </h2>
-                                                    {isHolder && (
-                                                        <button
-                                                            onClick={openEditName}
-                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                            title={t("competition.editCompetitionName")}
-                                                        >
-                                                            <Pencil className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
-                                            <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                                initialData.status === "STARTED"
-                                                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                                                    : initialData.status === "COMPLETED"
-                                                        ? "bg-slate-100 text-slate-500 border border-slate-200"
-                                                        : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                                            }`}>
-                                                {initialData.status === "STARTED" && (
-                                                    <span className="relative flex h-2 w-2 mr-1">
-                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                                    </span>
-                                                )}
-                                                {formatStatus(initialData.status)}
-                                            </span>
-                                                {timeDisplay && (
-                                                    <>
-                                                        <span className="text-slate-300">|</span>
-                                                        <span className="text-slate-500 font-semibold flex items-center gap-1 text-xs">
-                                                        <Timer className="w-3.5 h-3.5 text-indigo-500" />
-                                                            {timeDisplay}
-                                                    </span>
-                                                    </>
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-slate-100 pt-6">
-                                    <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-3">
-                                        {t("competition.holders")}
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {initialData.holders.length > 0 ? (
-                                            initialData.holders.map((holderAuid) => (
-                                                <div key={holderAuid} className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-1.5 hover:border-indigo-200 transition-colors duration-250">
-                                                    <HolderAvatar auid={holderAuid} username={usernames[holderAuid]} className="h-5 w-5" />
-                                                    <span className="text-xs font-bold text-slate-700">{usernames[holderAuid] || String(holderAuid)}</span>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <span className="text-xs text-slate-400">{t("competition.noHolders")}</span>
+                                            <ActionRow
+                                                tone="muted"
+                                                title={t("competition.plannedTitle")}
+                                                description={t("competition.plannedDescription")}
+                                            />
                                         )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {initialData.status === "DRAFT" && isHolder && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-                                        {t("competition.actionsControls")}
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 flex-wrap sm:flex-nowrap">
-                                        <div className="max-w-full sm:max-w-[65%]">
-                                            <h4 className="text-sm font-bold text-slate-800">
-                                                {t("competition.submitReviewTitle")}
-                                            </h4>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                {t("competition.submitReviewDescription")}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={handleSubmitForReview}
-                                            disabled={isMutating}
-                                            className="group flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 px-6 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0"
-                                        >
-                                            {isMutating ? (
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                            ) : (
-                                                <Send className="h-4 w-4" />
-                                            )}
-                                            <span>{t("competition.submitReviewButton")}</span>
-                                        </button>
-                                    </div>
+                                    </SectionCard>
                                 </div>
                             )}
 
-                            {initialData.status === "PLANNED" && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-                                        {t("competition.actionsControls")}
-                                    </h3>
-                                    <div className="flex flex-col gap-4">
-                                        {isHolder ? (
-                                            <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 flex-wrap sm:flex-nowrap">
-                                                <div className="max-w-full sm:max-w-[65%]">
-                                                    <h4 className="text-sm font-bold text-slate-800">
-                                                        {t("competition.startTitle")}
-                                                    </h4>
-                                                    <p className="text-xs text-slate-500 mt-1">
-                                                        {t("competition.startDescription")}
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={handleStartCompetition}
-                                                    disabled={isMutating}
-                                                    className="group flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 px-6 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shrink-0"
-                                                >
-                                                    {isMutating ? (
-                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                    ) : (
-                                                        <PlayCircle className="h-4 w-4" />
-                                                    )}
-                                                    <span>{t("competition.startButton")}</span>
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-start gap-3 p-5 rounded-2xl bg-slate-50 border border-slate-100">
-                                                <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
-                                                <div className="min-w-0">
-                                                    <h4 className="text-xs font-bold text-slate-800">
-                                                        {t("competition.plannedTitle")}
-                                                    </h4>
-                                                    <p className="text-xs text-slate-500 mt-1">
-                                                        {t("competition.plannedDescription")}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Commissions list */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-6 lg:order-none">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                                            <Wine className="w-5 h-5 text-indigo-500" />
-                                            {t("competition.commissions")}
-                                        </h3>
-                                        <p className="text-xs text-slate-400 mt-0.5">
-                                            {t("competition.commissionsSubtitle")}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                            {t("common.total")}: {initialData.commissions.length}
+                            <SectionCard
+                                icon={Wine}
+                                title={t("competition.commissions")}
+                                subtitle={t("competition.commissionsSubtitle")}
+                                actions={
+                                    <>
+                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-500">
+                                            {initialData.commissions.length}
                                         </span>
-                                        <Link
-                                            href={`/competition/${initialData.id}/results`}
-                                            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
-                                        >
-                                            <Trophy className="w-3.5 h-3.5 text-indigo-600" />
-                                            <span>{t("competition.resultsButton")}</span>
-                                        </Link>
-                                        {isHolder && (
-                                            <button
-                                                onClick={openAddCommission}
-                                                disabled={isMutating}
-                                                className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 text-xs font-semibold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" />
-                                                <span>{t("competition.addCommission")}</span>
-                                            </button>
+                                        {isHolder && !isAddingCommission && (
+                                            <ActionButton size="sm" icon={Plus} onClick={openAddCommission}>
+                                                {t("competition.addCommission")}
+                                            </ActionButton>
                                         )}
-
-                                    </div>
-                                </div>
-
+                                    </>
+                                }
+                            >
                                 {isAddingCommission && (
-                                    <div className="mb-4 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-3">
+                                    <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-800">{t("competition.addCommissionTitle")}</span>
+                                            <span className="text-xs font-semibold text-slate-800">{t("competition.addCommissionTitle")}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => setIsAddingCommission(false)}
-                                                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                                                title={t("common.close")}
+                                                aria-label={t("common.close")}
+                                                className="cursor-pointer rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-600"
                                             >
-                                                <X className="w-4 h-4" />
+                                                <X className="h-4 w-4" />
                                             </button>
                                         </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("competition.commissionName")}</label>
+                                        <label className="flex flex-col gap-1.5">
+                                            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                                                {t("competition.commissionName")}
+                                            </span>
                                             <input
                                                 type="text"
                                                 autoFocus
                                                 placeholder={t("competition.commissionNamePlaceholder", { number: initialData.commissions.length + 1 })}
-                                                className="w-full text-xs font-semibold text-slate-800 outline-none border-b border-slate-300 focus:border-indigo-500 py-1 bg-transparent"
+                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                                                 value={newCommissionName}
                                                 onChange={e => setNewCommissionName(e.target.value)}
                                                 onKeyDown={e => {
@@ -912,52 +518,103 @@ export default function CompetitionClientView({
                                                     if (e.key === "Escape") setIsAddingCommission(false)
                                                 }}
                                             />
-                                        </div>
-                                        <div className="flex justify-end gap-2 mt-1">
-                                            <button
-                                                type="button"
+                                        </label>
+                                        <div className="flex justify-end gap-2">
+                                            <ActionButton
+                                                size="sm"
+                                                variant="secondary"
                                                 onClick={() => setIsAddingCommission(false)}
-                                                disabled={isMutating}
-                                                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                                                disabled={isSubmittingCommission}
                                             >
-                                                {t("competition.cancel")}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleAddCommission}
-                                                disabled={isMutating}
-                                                className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-1 disabled:opacity-75 cursor-pointer"
-                                            >
-                                                {isMutating ? (
-                                                    <>
-                                                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                        <span>{t("competition.adding")}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Plus className="w-3.5 h-3.5" />
-                                                        <span>{t("competition.addCommission")}</span>
-                                                    </>
-                                                )}
-                                            </button>
+                                                {t("common.cancel")}
+                                            </ActionButton>
+                                            <ActionButton size="sm" icon={Plus} loading={isSubmittingCommission} onClick={handleAddCommission}>
+                                                {isSubmittingCommission ? t("competition.adding") : t("competition.addCommission")}
+                                            </ActionButton>
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="flex flex-col gap-4">
-                                    {initialData.commissions.map((comm) => (
-                                        <CommissionCard key={comm.id} comm={comm} />
-                                    ))}
-
-                                    {initialData.commissions.length === 0 && (
-                                        <div className="text-slate-400 text-sm py-4 text-center">
-                                            {t("competition.noCommissions")}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                {initialData.commissions.length > 0 ? (
+                                    <div className="flex flex-col gap-2.5">
+                                        {initialData.commissions.map((comm) => (
+                                            <CommissionRow key={comm.id} comm={comm} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    !isAddingCommission && (
+                                        <EmptyState
+                                            icon={Wine}
+                                            title={t("competition.noCommissions")}
+                                            description={t("competition.noCommissionsDescription")}
+                                            action={
+                                                isHolder ? (
+                                                    <ActionButton size="sm" icon={Plus} onClick={openAddCommission}>
+                                                        {t("competition.addCommission")}
+                                                    </ActionButton>
+                                                ) : undefined
+                                            }
+                                        />
+                                    )
+                                )}
+                            </SectionCard>
                         </div>
+
+                        {/* Sidebar — reference information you glance at. */}
+                        <aside className="flex min-w-0 flex-col gap-5 md:gap-6 lg:col-span-2">
+                            <SectionCard title={t("common.overview")} icon={Layers}>
+                                <div className="flex flex-col gap-3">
+                                    <MetaTile icon={Layers} label={t("competition.series")} value={initialData.series.name} />
+
+                                    <div className="rounded-2xl border border-slate-200/70 bg-slate-50/60 p-3.5">
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-[18px] w-[18px] shrink-0 text-indigo-500" />
+                                            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                                                {t("competition.holders")}
+                                            </span>
+                                        </div>
+                                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                            {initialData.holders.length > 0 ? (
+                                                initialData.holders.map((holderAuid) => (
+                                                    <span
+                                                        key={holderAuid}
+                                                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white py-1 pl-1 pr-2.5"
+                                                    >
+                                                        <UserAvatar auid={holderAuid} username={usernames[holderAuid]} className="h-6 w-6" />
+                                                        <span className="text-xs font-semibold text-slate-700">
+                                                            {usernames[holderAuid] || String(holderAuid)}
+                                                        </span>
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-slate-400">{t("competition.noHolders")}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </SectionCard>
+
+                            <ScheduleTimeline
+                                labels={{
+                                    title: t("competition.timelineDetails"),
+                                    plannedStart: t("competition.plannedStart"),
+                                    plannedEnd: t("competition.plannedEnd"),
+                                    actualStart: t("competition.actualStart"),
+                                    actualEnd: t("competition.actualEnd"),
+                                    notStartedYet: t("competition.notStartedYet"),
+                                    notEndedYet: t("competition.notEndedYet"),
+                                }}
+                                plannedStartAt={initialData.plannedStartAt}
+                                plannedEndAt={initialData.plannedEndAt}
+                                startedAt={initialData.startedAt}
+                                endedAt={initialData.endedAt}
+                                canEdit={isHolder}
+                                onSave={handleSaveDates}
+                                calendarUrl={calendarUrl}
+                            />
+                        </aside>
                     </div>
+
                     {children}
                 </div>
             </main>

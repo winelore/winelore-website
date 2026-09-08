@@ -2,6 +2,12 @@ import type { TranslationKey } from "./en"
 
 const uk: TranslationKey = {
   common: {
+    name: "Назва",
+    rename: "Перейменувати",
+    overview: "Огляд",
+    errorGeneric: "Щось пішло не так. Спробуйте ще раз.",
+    errorNameEmpty: "Назва не може бути порожньою.",
+    errorSaveFailed: "Не вдалося зберегти зміни.",
     required: "Обов'язкове",
     save: "Зберегти",
     home: "Головна",
@@ -157,6 +163,11 @@ const uk: TranslationKey = {
     noRegionsInView: "У полі зору немає нанесених винних регіонів",
   },
   competition: {
+    commissionNameDefault: "Комісія {{number}}",
+    noCommissionsDescription: "Комісії розподіляють напої цього конкурсу між дегустаційними панелями.",
+    resultsShort: "Результати",
+    startShort: "Почати",
+    submitReviewShort: "Надіслати",
     notFoundTitle: "Конкурс не знайдено",
     notFoundDescription: "Не вдалося завантажити цей конкурс. Можливо, він не існує, або сервер тимчасово недоступний.",
     calendarDetails: "Деталі календаря",
@@ -252,6 +263,17 @@ const uk: TranslationKey = {
     editCompetitionName: "Редагувати назву конкурсу",
   },
   commission: {
+    enterTastingSessionShort: "Увійти",
+    evaluationSettingsSubtitle: "Застосовується до всіх реплік цієї комісії",
+    noTemplatesTitle: "Шаблони ще не налаштовані",
+    noTemplatesDescription: "Оберіть шаблон з каталогу або додайте напої — їхні типи з'являться тут.",
+    notAMemberTitle: "Лише перегляд",
+    notAMemberDescription: "Ви не є учасником цієї репліки, тож поки що тут немає дій для вас.",
+    previewDefault: "За замовчуванням: {{value}}",
+    previewOptions: "Варіанти: {{values}}",
+    previewRange: "Діапазон: {{min}} ... {{max}}",
+    startTastingDescription: "Як голова комісії ви починаєте сесію, коли всі учасники готові.",
+    startTastingShort: "Почати",
     evaluationTemplates: "Шаблони оцінювання",
     evaluationTemplatesSubtitle: "По одному шаблону на кожен тип напою",
     assignTemplate: "Призначити шаблон",
@@ -660,6 +682,7 @@ const uk: TranslationKey = {
     TRAINEE: "Стажерська",
   },
   time: {
+    durationSeconds: "{{seconds}}с",
     ended: "Завершено",
     startsInDays: "Розпочнеться через {{days}} д.",
     startsInHours: "Розпочнеться через {{hours}} год.",

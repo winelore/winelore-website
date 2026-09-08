@@ -1,15 +1,14 @@
 "use client"
 
-import React, {useState, useEffect, useRef, useMemo, useCallback} from "react"
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import {
-    FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
-    Save, Search, ChevronRight, Sliders, Trash2, Loader2, UserPlus, Settings, ExternalLink, Send
+    Trophy, Wine, Layers, PlayCircle, CheckCircle, AlertCircle, Users, Check,
+    Sliders, Send, ArrowRight,
 } from "lucide-react"
-import { AppHeader, type AppTabId } from "@/components/AppHeader"
+import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
 import {
@@ -40,119 +39,33 @@ import {
     setCommissionBeverageOriginDuringEvaluationEnabledAction,
     setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction,
     setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
-    setCommissionTemplateAction,
 } from "../actions"
-import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
-import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
-import { BackLink } from "@/components/BackLink"
-import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
+import { EvaluationTemplatesBlock, type BeverageType, type TemplateEditionLink } from "./components/EvaluationTemplatesBlock"
+import { ReplicaSelector } from "./components/ReplicaSelector"
+import { PanelMembers } from "./components/PanelMembers"
+import {
+    ActionButton,
+    ActionRow,
+    DetailPageHeader,
+    MetaTile,
+    ScheduleTimeline,
+    SectionCard,
+    SettingsGroup,
+    StatusPill,
+    StatusStepper,
+    useScrolledPast,
+    type ToggleSpec,
+} from "@/components/detail"
 
+/** Google Calendar "add event" link for the commission's planned window. */
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
     const end = plannedEndAt ? new Date(plannedEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000)
-
-    const formatToGCal = (date: Date) => {
-        return date.toISOString().replace(/-|:|\.\d\d\d/g, "")
-    }
+    const formatToGCal = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "")
 
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(name)}&dates=${formatToGCal(start)}/${formatToGCal(end)}`
-}
-
-function getAvatarGradient(auid: number): string {
-    const gradients = [
-        "from-pink-500 via-rose-500 to-red-500",
-        "from-indigo-500 via-purple-500 to-pink-500",
-        "from-blue-500 via-teal-500 to-emerald-500",
-        "from-amber-400 via-orange-500 to-red-500",
-        "from-violet-600 via-purple-600 to-indigo-600",
-        "from-cyan-500 via-blue-500 to-indigo-500",
-        "from-emerald-400 via-teal-500 to-cyan-500",
-        "from-fuchsia-500 via-purple-600 to-pink-600",
-    ]
-    const idx = Math.abs(auid) % gradients.length
-    return gradients[idx]
-}
-
-function MemberAvatar({ auid, role, username, className }: { auid: number[]; role: string; username?: string; className?: string }) {
-    const primaryAuid = auid[0] || 0
-    const gradient = getAvatarGradient(primaryAuid)
-    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : (primaryAuid ? `${primaryAuid}`.slice(-2) : "?")
-
-    return (
-        <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm shrink-0 border border-white/10 ${className}`}>
-            <span>{initials}</span>
-            {role === "HEAD" && (
-                <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-0.5 border border-background shadow-xs">
-                    <Crown className="w-2.5 h-2.5 text-white" />
-                </div>
-            )}
-        </div>
-    )
-}
-
-function StatusSteps({ status }: { status: string }) {
-    const { t } = useTranslation()
-    const steps = [
-        { id: "readying", label: t("commission.stepReadying"), description: t("commission.stepReadyingDesc") },
-        { id: "tasting", label: t("commission.stepTasting"), description: t("commission.stepTastingDesc") },
-        { id: "completed", label: t("commission.stepCompleted"), description: t("commission.stepCompletedDesc") }
-    ]
-
-    let currentStepIdx = 0
-    if (status === "STARTED") {
-        currentStepIdx = 1
-    } else if (status === "COMPLETED") {
-        currentStepIdx = 2
-    }
-
-    return (
-        <div className="w-full bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 mb-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                {steps.map((step, idx) => {
-                    const isCompleted = idx < currentStepIdx
-                    const isActive = idx === currentStepIdx
-
-                    return (
-                        <React.Fragment key={step.id}>
-                            <div className="flex items-center gap-3 flex-1">
-                                <div className={`flex items-center justify-center w-8 h-8 rounded-full border text-xs font-semibold transition-all duration-350 shrink-0 ${
-                                    isCompleted
-                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                                        : isActive
-                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-4 ring-indigo-500/10"
-                                            : "bg-slate-50 border-slate-200 text-slate-400"
-                                }`}>
-                                    {isCompleted ? (
-                                        <CheckCircle className="w-4 h-4" />
-                                    ) : (
-                                        <span>{idx + 1}</span>
-                                    )}
-                                </div>
-                                <div>
-                                    <h4 className={`text-xs font-bold ${isActive ? "text-slate-900" : "text-slate-500"}`}>{step.label}</h4>
-                                    <p className="text-[10px] text-slate-400">{step.description}</p>
-                                </div>
-                            </div>
-                        </React.Fragment>
-                    )
-                })}
-            </div>
-        </div>
-    )
-}
-
-interface BeverageType {
-    id: string;
-    code: string;
-    name: string;
-}
-
-interface TemplateEditionLink {
-    id: string;
-    beverageType: BeverageType;
-    templateEdition: any;
 }
 
 interface Member {
@@ -217,351 +130,34 @@ interface InitialData {
     candidates?: Candidate[];
 }
 
-function EvaluationTemplatesBlock({
-                                      commissionId,
-                                      templateEditions,
-                                      beverageTypesInCommission,
-                                      isCompetitionHolder,
-                                      canEdit,
-                                      onRefresh
-                                  }: {
-    commissionId: string,
-    templateEditions: TemplateEditionLink[],
-    beverageTypesInCommission: BeverageType[],
-    isCompetitionHolder: boolean,
-    canEdit: boolean,
-    onRefresh: () => void
+/** Banner above the fold — "the thing you came back for is ready". */
+function CalloutBanner({
+    tone,
+    icon: Icon,
+    title,
+    description,
+    action,
+}: {
+    tone: "indigo" | "emerald"
+    icon: React.ComponentType<{ className?: string }>
+    title: string
+    description: string
+    action: React.ReactNode
 }) {
-    const { t, tCount, formatStatus } = useTranslation()
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [selectedBeverageType, setSelectedBeverageType] = useState<BeverageType | null>(null)
-
-    const [catalogTemplates, setCatalogTemplates] = useState<any[]>([])
-    const [isCatalogLoading, setIsCatalogLoading] = useState(false)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [isAssigning, setIsAssigning] = useState(false)
-    const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
-
-    const ITEMS_PER_PAGE = 50;
-    const [currentPage, setCurrentPage] = useState(1);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, selectedBeverageType]);
-
-    const handleOpenCatalog = async (bevType?: BeverageType) => {
-        setSelectedBeverageType(bevType || null)
-        setSearchQuery("")
-        setCurrentPage(1)
-        setIsModalOpen(true)
-        setIsCatalogLoading(true)
-        try {
-            const data = await getEvaluationTemplatesAction()
-            const filtered = bevType
-                ? data.templates.filter((t: any) => t.beverageTypeId === bevType.id)
-                : data.templates;
-            setCatalogTemplates(filtered)
-        } catch (e) {
-            console.error("Failed to load templates catalog", e)
-        } finally {
-            setIsCatalogLoading(false)
-        }
-    }
-
-    const handleAssignTemplate = async (templateEditionId: string, templateBevTypeId: string) => {
-        setIsAssigning(true)
-        try {
-            const res = await setCommissionTemplateAction(commissionId, templateBevTypeId, templateEditionId)
-            if (res.success) {
-                setIsModalOpen(false)
-                onRefresh()
-            } else {
-                toast.error(t("commission.templateAssignError") || res.error)
-            }
-        } catch (e) {
-            toast.error(t("commission.templateAssignError"))
-        } finally {
-            setIsAssigning(false)
-        }
-    }
-
-    const filteredCatalog = catalogTemplates.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    const totalPages = Math.ceil(filteredCatalog.length / ITEMS_PER_PAGE);
-    const paginatedCatalog = filteredCatalog.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const styles = tone === "emerald"
+        ? { wrap: "border-emerald-200 bg-emerald-50", icon: "text-emerald-600", title: "text-emerald-900", desc: "text-emerald-700" }
+        : { wrap: "border-indigo-200 bg-indigo-50", icon: "text-indigo-600", title: "text-indigo-900", desc: "text-indigo-700" }
 
     return (
-        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/50 shadow-xs">
-                        <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold tracking-tight text-slate-800">
-                            {t("commission.evaluationTemplates")}
-                        </h3>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                            {t("commission.evaluationTemplatesSubtitle")}
-                        </p>
-                    </div>
+        <div className={`flex flex-col gap-3 rounded-2xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 ${styles.wrap}`}>
+            <div className="flex items-center gap-3">
+                <Icon className={`h-5 w-5 shrink-0 ${styles.icon}`} />
+                <div className="min-w-0">
+                    <p className={`text-sm font-semibold ${styles.title}`}>{title}</p>
+                    <p className={`mt-0.5 text-xs ${styles.desc}`}>{description}</p>
                 </div>
-
-                {isCompetitionHolder && canEdit && (
-                    <button
-                        onClick={() => handleOpenCatalog()}
-                        className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>{t("commission.assignTemplate")}</span>
-                    </button>
-                )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {beverageTypesInCommission.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-8 text-slate-400 text-sm bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl gap-3">
-                        <FileText className="w-8 h-8 opacity-50" />
-                        <p className="font-medium text-slate-500">Немає налаштованих шаблонів або доданих напоїв.</p>
-                        <p className="text-xs">Натисніть кнопку вище, щоб обрати перший шаблон з каталогу.</p>
-                    </div>
-                ) : (
-                    beverageTypesInCommission.map((bevType) => {
-                        const assignedLink = templateEditions.find(te => te.beverageType?.id === bevType.id);
-                        const isAssigned = !!assignedLink;
-                        const te = assignedLink?.templateEdition;
-
-                        return (
-                            <div key={bevType.id} className={`flex flex-col border rounded-2xl p-4 transition-all duration-300 ${isAssigned ? 'bg-slate-50/50 border-slate-200' : 'bg-rose-50/30 border-rose-200 border-dashed'}`}>
-                                <div className="flex justify-between items-start mb-3">
-                                    <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
-                                        {bevType.name || bevType.code}
-                                    </span>
-                                    {isCompetitionHolder && canEdit && (
-                                        <button
-                                            onClick={() => handleOpenCatalog(bevType)}
-                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                                        >
-                                            {isAssigned ? (t("commission.changeTemplate")) : (t("commission.assignTemplate"))}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isAssigned && te ? (
-                                    <div className="flex flex-col gap-2">
-                                        <Link
-                                            href={`/myTemplates?templateId=${te.template?.id}-${te.version}`}
-                                            target="_blank"
-                                            className="group/link flex items-center gap-1.5 w-fit outline-none"
-                                            title={t("commission.openTemplateInNewTab")}
-                                        >
-                                            <span className="text-sm font-extrabold text-slate-800 group-hover/link:text-indigo-600 transition-colors">
-                                                {te.template?.name || t("commission.standardTemplate")}
-                                            </span>
-                                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover/link:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-1 group-hover/link:translate-x-0" />
-                                        </Link>
-
-                                        <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-                                            <span className="bg-white border border-slate-200 shadow-sm px-1.5 py-0.5 rounded-md">v{te.version}</span>
-                                            <span className="text-slate-300">•</span>
-                                            <span className="uppercase text-emerald-600">{te.status ? formatStatus(te.status) : ""}</span>
-                                            <span className="text-slate-300">•</span>
-                                            <span>{tCount("commission.categoriesCount", te.categories?.length || 0)}</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
-                                        <AlertCircle className="w-5 h-5 mb-1 opacity-75" />
-                                        <span className="text-xs font-bold">{t("commission.noTemplateForType")}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })
-                )}
-            </div>
-
-            {/* Modal Catalog */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-                    <div className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col">
-
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                            <div>
-                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog")}</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    {selectedBeverageType
-                                        ? t("commission.selectingTemplateFor", { type: selectedBeverageType.name })
-                                        : t("commission.selectFromCatalog")
-                                    }
-                                </p>
-                            </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors cursor-pointer">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl flex-1 border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white transition-colors">
-                                <Search className="w-4 h-4 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder={t("commission.searchTemplates")}
-                                    className="bg-transparent border-none outline-none text-sm w-full text-slate-700"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
-                            {isCatalogLoading ? (
-                                <div className="flex flex-col items-center justify-center h-40 gap-3 text-indigo-500">
-                                    <Loader2 className="w-8 h-8 animate-spin" />
-                                    <span className="text-sm font-bold">{t("commission.loadingCatalog")}</span>
-                                </div>
-                            ) : paginatedCatalog.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                                    <FileText className="w-10 h-10 mb-2 opacity-50" />
-                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound")}</span>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-4">
-                                    {paginatedCatalog.map(template => {
-                                        const ed = template.latestEdition;
-                                        const isExpanded = expandedTemplateId === template.id;
-
-                                        return (
-                                            <div key={template.id} className="border border-slate-200 rounded-2xl bg-white shadow-sm hover:border-indigo-300 transition-all overflow-hidden">
-                                                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase tracking-widest border border-slate-200">
-                                                                {template.beverageType}
-                                                            </span>
-                                                        </div>
-                                                        <h4 className="text-sm font-bold text-slate-800">{template.name}</h4>
-                                                        <div className="flex items-center gap-2 mt-1.5 text-[10px] font-semibold text-slate-500">
-                                                            <span className="bg-slate-50 border px-1.5 py-0.5 rounded-md">v{ed.version}</span>
-                                                            <span>•</span>
-                                                            <span>{tCount("commission.categoriesCount", ed.categories?.length || 0)}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <button
-                                                            onClick={() => setExpandedTemplateId(isExpanded ? null : template.id)}
-                                                            className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
-                                                        >
-                                                            {t("common.preview")} <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleAssignTemplate(ed.id, template.beverageTypeId)}
-                                                            disabled={isAssigning}
-                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-                                                        >
-                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate"))}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {/* ДИЗАЙН ПРЕВ'Ю ЯК НА СТОРІНЦІ /TEMPLATES + ПАРАМЕТРИ */}
-                                                {isExpanded && ed.categories && (
-                                                    <div className="px-6 pb-6 pt-4 border-t border-slate-50 bg-slate-50/15 max-h-[350px] overflow-y-auto">
-                                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                                                            <Settings className="w-4 h-4 text-indigo-500" />
-                                                            {t("commission.templatePreview")}
-                                                        </h4>
-
-                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                            {ed.categories.map((cat: any) => (
-                                                                <div
-                                                                    key={cat.id}
-                                                                    className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs flex flex-col gap-3.5"
-                                                                >
-                                                                    <h5 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
-                                                                        {cat.name}
-                                                                    </h5>
-                                                                    <div className="flex flex-col gap-2">
-                                                                        {cat.properties?.map((prop: any) => (
-                                                                            <div
-                                                                                key={prop.id || prop.code}
-                                                                                className="flex flex-col bg-slate-50/30 hover:bg-slate-50/70 border border-slate-100/80 rounded-xl px-3 py-2 text-xs transition-colors"
-                                                                            >
-                                                                                <div className="flex justify-between items-start">
-                                                                                    <div className="flex flex-col min-w-0 flex-1 pr-3">
-                                                                                        <span className="font-bold text-slate-700 truncate flex items-center gap-1.5">
-                                                                                            {prop.name}
-                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title={t("common.required")}>*</span>}
-                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">{t("commission.resultBadge")}</span>}
-                                                                                        </span>
-                                                                                        {prop.description && (
-                                                                                            <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                                                        <span className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60 uppercase">
-                                                                                            {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <div className="flex flex-wrap gap-2 mt-2 text-[9px] text-slate-500 font-medium">
-                                                                                    {(prop.minLimit !== undefined || prop.maxLimit !== undefined) && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                                                                            Range: {prop.minLimit ?? '-∞'} ... {prop.maxLimit ?? '∞'}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {prop.allowedValues && prop.allowedValues.length > 0 && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200 truncate max-w-[150px]" title={prop.allowedValues.join(', ')}>
-                                                                                            Options: {prop.allowedValues.join(', ')}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {prop.defaultValue !== undefined && prop.defaultValue !== null && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                                                                            Default: {String(prop.defaultValue)}
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {totalPages > 1 && (
-                            <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
-                                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                                    {t("common.pageOf", { current: currentPage, total: totalPages })} <span className="text-slate-300 mx-1">|</span> {t("common.itemsTotal", { count: filteredCatalog.length })}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                    >
-                                        {t("common.previous")}
-                                    </button>
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                    >
-                                        {t("common.next")}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            <div className="shrink-0">{action}</div>
         </div>
     )
 }
@@ -573,45 +169,43 @@ export default function CommissionClientView({
     initialData: InitialData;
     serverAuid?: number | null;
 }) {
-    const { t, tCount, formatStatus, formatReplicaType, formatDateTime, formatShortDateTime } = useTranslation()
+    const { t, tCount } = useTranslation()
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
     const [localData, setLocalData] = useState<InitialData>(propInitialData)
     const [localReplicas, setLocalReplicas] = useState<Replica[]>(propInitialData.replicas || [])
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
-    const [isMutating, setIsMutating] = useState(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [hasRedirected, setHasRedirected] = useState(false)
-    const [isEditingName, setIsEditingName] = useState(false)
-    const [editNameData, setEditNameData] = useState("")
-    const [isEditingDates, setIsEditingDates] = useState(false)
-    const [editDatesData, setEditDatesData] = useState({
-        plannedStartAt: "",
-        plannedEndAt: "",
-    })
-    const [isAddingReplica, setIsAddingReplica] = useState(false)
-    const [newReplicaName, setNewReplicaName] = useState("")
-    const [newReplicaType, setNewReplicaType] = useState<"STANDARD" | "TRAINEE">("STANDARD")
-    const [isEditingReplica, setIsEditingReplica] = useState(false)
-    const [editReplicaName, setEditReplicaName] = useState("")
+
+    // Scoped pending flags. The page used to share one `isMutating` across every
+    // control, so flipping a setting disabled the start button and vice versa.
+    const [isSavingName, setIsSavingName] = useState(false)
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+    const [isStarting, setIsStarting] = useState(false)
+    const [isTogglingReady, setIsTogglingReady] = useState(false)
+
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
     const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
     const [memberPendingRemoval, setMemberPendingRemoval] = useState<string | null>(null)
     const initialData = localData
 
+    // The header CTA only appears once the actions card has scrolled away.
+    const [actionsRef, actionsScrolledPast] = useScrolledPast<HTMLDivElement>()
+
     const beverageTypesInCommission = useMemo(() => {
         const typesMap = new Map<string, BeverageType>()
 
-        // 1. Беремо типи з уже призначених шаблонів (щоб вони відображалися навіть якщо немає напоїв)
+        // Types from templates that are already assigned, so they still show up
+        // before any beverage has been added.
         if (initialData.templateEditions) {
             initialData.templateEditions.forEach(te => {
                 if (te.beverageType) typesMap.set(te.beverageType.id, te.beverageType)
             })
         }
 
-        // 2. Беремо типи з доданих напоїв (якщо вони є)
+        // Plus the types of the beverages actually in the commission.
         localData.replicas.forEach(r => {
             r.replicaCandidates.forEach(rc => {
                 if (rc.candidate?.beverageType) {
@@ -622,7 +216,7 @@ export default function CommissionClientView({
         return Array.from(typesMap.values())
     }, [localData.replicas, initialData.templateEditions])
 
-    const refreshCommissionData = async () => {
+    const refreshCommissionData = useCallback(async () => {
         try {
             const updated = await getCommissionDataAction(localData.id)
             if (updated) {
@@ -634,10 +228,20 @@ export default function CommissionClientView({
         } catch (err) {
             console.error("Failed to refresh commission data:", err)
         }
-    }
+    }, [localData.id])
+
+    // Detect user's active replica
+    const activeReplica = localReplicas.find(r =>
+        r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
+    ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
+
+    const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
+
+    const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
+    const localMembers = selectedReplica ? selectedReplica.members : []
 
     const handleRemoveMember = async (memberId: string) => {
-        if (!selectedReplica || isMutating) return
+        if (!selectedReplica) return
         setMemberPendingRemoval(null)
         setRemovingMemberId(memberId)
         try {
@@ -654,257 +258,125 @@ export default function CommissionClientView({
         }
     }
 
-    const openEditName = () => {
-        setEditNameData(initialData.name)
-        setIsEditingName(true)
-    }
-
-    const openEditDates = () => {
-        setEditDatesData({
-            plannedStartAt: toLocalDatetimeInput(initialData.plannedStartAt),
-            plannedEndAt: toLocalDatetimeInput(initialData.plannedEndAt)
-        })
-        setIsEditingDates(true)
-    }
-
-    const openAddReplica = () => {
-        setNewReplicaName("")
-        setNewReplicaType("STANDARD")
-        setIsAddingReplica(true)
-    }
-
-    const openEditReplica = (e: React.MouseEvent, replica: Replica) => {
-        e.stopPropagation();
-        setEditReplicaName(replica.name || "");
-        setIsEditingReplica(true);
-    }
-
-    const handleSaveReplica = async () => {
-        if (!selectedReplicaId) return;
-        setIsMutating(true)
+    const handleSaveName = async (nextName: string) => {
+        const trimmed = nextName.trim()
+        if (!trimmed) {
+            toast.error(t("common.errorNameEmpty"))
+            throw new Error("empty name")
+        }
+        setIsSavingName(true)
         try {
-            const res = await renameCommissionReplicaAction(
-                selectedReplicaId,
-                editReplicaName.trim() || undefined
-            )
+            const res = await renameCommissionAction(initialData.id, trimmed)
             if (res.success) {
-                setIsEditingReplica(false)
+                setLocalData(prev => ({ ...prev, name: trimmed }))
                 router.refresh()
             } else {
-                toast.error(res.error || "Failed to rename replica")
+                toast.error(res.error || t("common.errorSaveFailed"))
+                throw new Error(res.error || "save failed")
             }
-        } catch (err: any) {
-            toast.error(err.message || "An error occurred")
         } finally {
-            setIsMutating(false)
+            setIsSavingName(false)
         }
     }
 
-    const handleSaveName = async () => {
-        if (!editNameData.trim()) {
-            toast.error("Name cannot be empty")
-            return
-        }
-        setIsMutating(true)
+    const handleSaveDates = async (startIso: string | null, endIso: string | null) => {
         try {
-            const res = await renameCommissionAction(initialData.id, editNameData.trim())
+            const res = await updateCommissionDatesAction(initialData.id, startIso, endIso)
             if (res.success) {
-                setIsEditingName(false)
                 router.refresh()
-            } else {
-                toast.error(res.error || "Failed to save name")
+                return true
             }
+            toast.error(res.error || t("common.errorSaveFailed"))
+            return false
         } catch (err: any) {
-            toast.error(err.message || "An error occurred")
-        } finally {
-            setIsMutating(false)
+            toast.error(err?.message || t("common.errorGeneric"))
+            return false
         }
     }
 
-    const handleSaveDates = async () => {
-        setIsMutating(true)
+    const handleAddReplica = async (name: string | undefined, type: "STANDARD" | "TRAINEE") => {
         try {
-            const res = await updateCommissionDatesAction(
-                initialData.id,
-                fromLocalDatetimeInputToIso(editDatesData.plannedStartAt),
-                fromLocalDatetimeInputToIso(editDatesData.plannedEndAt),
-            )
+            const res = await createCommissionReplicaAction({ commissionId: initialData.id, name, type })
             if (res.success) {
-                setIsEditingDates(false)
                 router.refresh()
-            } else {
-                toast.error(res.error || "Failed to save dates")
+                return true
             }
+            toast.error(res.error || t("common.errorGeneric"))
+            return false
         } catch (err: any) {
-            toast.error(err.message || "An error occurred")
-        } finally {
-            setIsMutating(false)
+            toast.error(err?.message || t("common.errorGeneric"))
+            return false
         }
     }
 
-    const handleAddReplica = async () => {
-        setIsMutating(true)
+    const handleRenameReplica = async (replicaId: string, name: string | undefined) => {
         try {
-            const res = await createCommissionReplicaAction({
-                commissionId: initialData.id,
-                name: newReplicaName.trim() || undefined,
-                type: newReplicaType,
-            })
+            const res = await renameCommissionReplicaAction(replicaId, name)
             if (res.success) {
-                setIsAddingReplica(false)
                 router.refresh()
-            } else {
-                toast.error(res.error || "Failed to add replica")
+                return true
             }
+            toast.error(res.error || t("common.errorSaveFailed"))
+            return false
         } catch (err: any) {
-            toast.error(err.message || "An error occurred")
-        } finally {
-            setIsMutating(false)
+            toast.error(err?.message || t("common.errorGeneric"))
+            return false
         }
     }
 
-    const refreshData = useCallback(async () => {
-        const updated = await getCommissionDataAction(localData.id)
-        if (updated) {
-            setLocalData(updated)
-            if (updated.replicas) setLocalReplicas(updated.replicas)
-        }
-    }, [localData.id])
-
-    const handleTogglePartialEvaluation = async () => {
-        if (isMutating) return;
-        const nextState = !localData.partialCandidateEvaluationEnabled;
-        setIsMutating(true);
+    /**
+     * Commission-level switches all follow the same shape: call the action, keep
+     * the new value on success, leave the old one in place (and explain) on
+     * failure so `SettingToggle` rolls its optimistic state back.
+     */
+    const makeCommissionToggle = (
+        action: (id: string, next: boolean) => Promise<{ success: boolean; error?: string }>,
+        field: keyof InitialData,
+    ) => async (next: boolean) => {
         try {
-            const res = await setCommissionPartialCandidateEvaluationEnabledAction(localData.id, nextState);
+            const res = await action(localData.id, next)
             if (res.success) {
-                setLocalData(prev => ({ ...prev, partialCandidateEvaluationEnabled: nextState }));
+                setLocalData(prev => ({ ...prev, [field]: next }))
             } else {
-                toast.error(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("common.errorSaveFailed"))
             }
         } catch (err: any) {
-            toast.error(err?.message || t("commission.addMemberError"));
-        } finally {
-            setIsMutating(false);
+            toast.error(err?.message || t("common.errorGeneric"))
         }
-    };
+    }
 
-    const handleToggleWineJumper = async () => {
-        if (isMutating) return;
-        const nextState = !localData.wineJumperMiniGameEnabled;
-        setIsMutating(true);
+    const handleToggleChaoticCandidateChanges = async (next: boolean) => {
+        if (!selectedReplica) return
+        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)
+        if (!activePanel) return
         try {
-            const res = await setCommissionWineJumperMiniGameEnabledAction(localData.id, nextState);
-            if (res.success) {
-                setLocalData(prev => ({ ...prev, wineJumperMiniGameEnabled: nextState }));
-            } else {
-                toast.error(res.error || t("commission.addMemberError"));
-            }
-        } catch (err: any) {
-            toast.error(err?.message || t("commission.addMemberError"));
-        } finally {
-            setIsMutating(false);
-        }
-    };
-
-    const handleToggleVoiceComments = async () => {
-        if (isMutating) return;
-        const nextState = !localData.voiceCommentsEnabled;
-        setIsMutating(true);
-        try {
-            const res = await setCommissionVoiceCommentsEnabledAction(localData.id, nextState);
-            if (res.success) {
-                setLocalData(prev => ({ ...prev, voiceCommentsEnabled: nextState }));
-            } else {
-                toast.error(res.error || t("commission.addMemberError"));
-            }
-        } catch (err: any) {
-            toast.error(err?.message || t("commission.addMemberError"));
-        } finally {
-            setIsMutating(false);
-        }
-    };
-
-    const handleTogglePropertyComments = async () => {
-        if (isMutating) return;
-        const nextState = !localData.propertyCommentsEnabled;
-        setIsMutating(true);
-        try {
-            const res = await setCommissionPropertyCommentsEnabledAction(localData.id, nextState);
-            if (res.success) {
-                setLocalData(prev => ({ ...prev, propertyCommentsEnabled: nextState }));
-            } else {
-                toast.error(res.error || t("commission.addMemberError"));
-            }
-        } catch (err: any) {
-            toast.error(err?.message || t("commission.addMemberError"));
-        } finally {
-            setIsMutating(false);
-        }
-    };
-
-    const handleToggleBeverageOrigin = async () => {
-        if (isMutating) return;
-        const nextState = !localData.beverageOriginDuringEvaluationEnabled;
-        setIsMutating(true);
-        try {
-            const res = await setCommissionBeverageOriginDuringEvaluationEnabledAction(localData.id, nextState);
-            if (res.success) {
-                setLocalData(prev => ({ ...prev, beverageOriginDuringEvaluationEnabled: nextState }));
-            } else {
-                toast.error(res.error || t("commission.addMemberError"));
-            }
-        } catch (err: any) {
-            toast.error(err?.message || t("commission.addMemberError"));
-        } finally {
-            setIsMutating(false);
-        }
-    };
-
-    const handleToggleChaoticCandidateChanges = async () => {
-        if (!selectedReplica || isMutating) return;
-        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId);
-        if (!activePanel) return;
-        const nextState = !activePanel.chaoticCurrentCandidateChangesEnabled;
-        setIsMutating(true);
-        try {
-            const res = await setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction(selectedReplica.id, activePanel.id, nextState);
+            const res = await setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction(selectedReplica.id, activePanel.id, next)
             if (res.success) {
                 setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? {
                     ...r,
-                    replicaPanels: r.replicaPanels.map(panel => panel.id === activePanel.id ? { ...panel, chaoticCurrentCandidateChangesEnabled: nextState } : panel),
-                } : r));
+                    replicaPanels: r.replicaPanels.map(panel => panel.id === activePanel.id ? { ...panel, chaoticCurrentCandidateChangesEnabled: next } : panel),
+                } : r))
             } else {
-                toast.error(res.error || t("commission.addMemberError"));
+                toast.error(res.error || t("common.errorSaveFailed"))
             }
         } catch (err: any) {
-            toast.error(err?.message || t("commission.addMemberError"));
-        } finally {
-            setIsMutating(false);
+            toast.error(err?.message || t("common.errorGeneric"))
         }
-    };
+    }
 
-    const handleToggleChaoticPanelChanges = async () => {
-        if (!selectedReplica || isMutating) return;
-        const nextState = !selectedReplica.chaoticCurrentPanelChangesEnabled;
-        setIsMutating(true);
+    const handleToggleChaoticPanelChanges = async (next: boolean) => {
+        if (!selectedReplica) return
         try {
-            const res = await setCommissionReplicaChaoticCurrentPanelChangesEnabledAction(selectedReplica.id, nextState);
-            if (res.success) setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: nextState } : r));
-        } finally {
-            setIsMutating(false);
+            const res = await setCommissionReplicaChaoticCurrentPanelChangesEnabledAction(selectedReplica.id, next)
+            if (res.success) {
+                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: next } : r))
+            } else {
+                toast.error(res.error || t("common.errorSaveFailed"))
+            }
+        } catch (err: any) {
+            toast.error(err?.message || t("common.errorGeneric"))
         }
-    };
-
-    // Detect user's active replica
-    const activeReplica = localReplicas.find(r =>
-        r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
-    ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
-
-    const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
-
-    const selectedReplica = localReplicas.find(r => r.id === selectedReplicaId) || activeReplica
-    const localMembers = selectedReplica ? selectedReplica.members : []
+    }
 
     // Fetch usernames for panel members, competition creators/holders, and beverage producers
     const allMemberAuids = useMemo(() => {
@@ -966,8 +438,6 @@ export default function CommissionClientView({
         ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
         : t("common.unknownCreator")
 
-    const isHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
-
     useEffect(() => {
         const prevStatus = prevReplicaStatusRef.current
         const currentStatus = selectedReplica?.status
@@ -985,32 +455,22 @@ export default function CommissionClientView({
 
         const updateTime = () => {
             if (initialData.status === "STARTED" && initialData.startedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
+                const diff = Math.max(0, Date.now() - new Date(initialData.startedAt).getTime())
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-                const formattedTime = hours > 0
+                setTimeDisplay(hours > 0
                     ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-
-                setTimeDisplay(formattedTime)
+                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
             } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const end = new Date(initialData.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
+                const diff = Math.max(0, new Date(initialData.endedAt).getTime() - new Date(initialData.startedAt).getTime())
                 const hours = Math.floor(diff / (1000 * 60 * 60))
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
                 setTimeDisplay(hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes }))
             } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
-                const start = new Date(initialData.plannedStartAt).getTime()
-                const now = new Date().getTime()
-                const diff = start - now
+                const diff = new Date(initialData.plannedStartAt).getTime() - Date.now()
 
                 if (diff <= 0) {
                     setTimeDisplay(t("time.startingSoon"))
@@ -1019,11 +479,9 @@ export default function CommissionClientView({
                     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
                     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
-                    if (days > 0) {
-                        setTimeDisplay(t("time.inDaysHours", { days, hours }))
-                    } else {
-                        setTimeDisplay(t("time.inHoursMinutes", { hours, minutes }))
-                    }
+                    setTimeDisplay(days > 0
+                        ? t("time.inDaysHours", { days, hours })
+                        : t("time.inHoursMinutes", { hours, minutes }))
                 }
             } else {
                 setTimeDisplay("")
@@ -1036,14 +494,15 @@ export default function CommissionClientView({
         }
 
         return () => clearInterval(intervalId)
-    }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
+    }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt, t])
 
     useEffect(() => {
         let isMounted = true
         let isFetching = false
 
         const pollInterval = setInterval(async () => {
-            if (!isMounted || isFetching) return
+            // Skip the round trip while the tab is in the background.
+            if (!isMounted || isFetching || document.visibilityState !== "visible") return
             isFetching = true
             try {
                 const updated = await getCommissionDataAction(localData.id)
@@ -1067,8 +526,8 @@ export default function CommissionClientView({
     }, [localData.id])
 
     const handleToggleReady = async (shouldBeReady: boolean) => {
-        if (!selectedReplica || !currentMemberId || isMutating) return
-        setIsMutating(true)
+        if (!selectedReplica || !currentMemberId || isTogglingReady) return
+        setIsTogglingReady(true)
 
         try {
             let updatedMembers;
@@ -1098,8 +557,9 @@ export default function CommissionClientView({
             }
         } catch (err) {
             console.error("Failed to update readiness status:", err)
+            toast.error(t("common.errorGeneric"))
         } finally {
-            setIsMutating(false)
+            setIsTogglingReady(false)
         }
     }
 
@@ -1112,59 +572,11 @@ export default function CommissionClientView({
     const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
     const nonReadyCount = localMembers.filter(m => !m.isReady).length
 
-    const handleStartCommission = async () => {
-        if (!selectedReplica || isMutating) return
-        if (!hasCandidates) {
-            toast.error(t("commission.startTastingNoSamplesError"))
-            return
-        }
-        if (!hasMembers) {
-            toast.error(t("commission.startTastingNoExpertsError"))
-            return
-        }
-        setIsMutating(true)
-        try {
-            await startCommissionAction(selectedReplica.id, localData.id)
-            router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)
-            router.refresh()
-        } catch (err: any) {
-            console.error("Failed to start replica tasting session:", err)
-            if (err.message === "NO_CANDIDATES_TO_START") {
-                toast.error(t("commission.startTastingNoSamplesError"))
-            } else {
-                toast.error(t("commission.startTastingErrorGeneric"))
-            }
-        } finally {
-            setIsMutating(false)
-        }
-    }
-
-    const handleSubmitForReview = async () => {
-        if (isMutating || !isCommissionDraft) return
-        setIsMutating(true)
-        try {
-            await submitCommissionForReviewAction(localData.id)
-            await refreshCommissionData()
-            router.refresh()
-        } catch (err: any) {
-            console.error("Failed to submit commission for review:", err)
-            toast.error(err.message || t("commission.submitReviewError"))
-        } finally {
-            setIsMutating(false)
-        }
-    }
-
-    const sortedMembers = [...localMembers].sort((a, b) => {
-        const roleOrder = { HEAD: 1, EXPERT: 2, TRAINEE_EXPERT: 3 }
-        return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)
-    })
-
     const currentCommissionStatus = localData.status || initialData.status
     const competitionResultsHref = `/competition/${localData.competition.id}/results?commission=${localData.id}`
     const replicaStatus = selectedReplica?.status || "DRAFT"
     const isReplicaDraft = replicaStatus === "DRAFT"
     const isCommissionDraft = currentCommissionStatus === "DRAFT"
-    const isCommissionPreStart = currentCommissionStatus !== "STARTED" && currentCommissionStatus !== "COMPLETED"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = currentCommissionStatus === "COMPLETED"
     const isCompetitionHolder = currentAuid !== null && (localData.competition?.holders || initialData.competition?.holders || []).includes(currentAuid)
@@ -1194,408 +606,414 @@ export default function CommissionClientView({
             : null
     const showMyTastingSummary = summaryReplica != null
 
+    const handleStartCommission = async () => {
+        if (!selectedReplica || isStarting) return
+        if (!hasCandidates) {
+            toast.error(t("commission.startTastingNoSamplesError"))
+            return
+        }
+        if (!hasMembers) {
+            toast.error(t("commission.startTastingNoExpertsError"))
+            return
+        }
+        setIsStarting(true)
+        try {
+            await startCommissionAction(selectedReplica.id, localData.id)
+            router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)
+            router.refresh()
+        } catch (err: any) {
+            console.error("Failed to start replica tasting session:", err)
+            if (err.message === "NO_CANDIDATES_TO_START") {
+                toast.error(t("commission.startTastingNoSamplesError"))
+            } else {
+                toast.error(t("commission.startTastingErrorGeneric"))
+            }
+        } finally {
+            setIsStarting(false)
+        }
+    }
+
+    const handleSubmitForReview = async () => {
+        if (isSubmittingReview || !isCommissionDraft) return
+        setIsSubmittingReview(true)
+        try {
+            await submitCommissionForReviewAction(localData.id)
+            await refreshCommissionData()
+            router.refresh()
+        } catch (err: any) {
+            console.error("Failed to submit commission for review:", err)
+            toast.error(err.message || t("commission.submitReviewError"))
+        } finally {
+            setIsSubmittingReview(false)
+        }
+    }
+
+    const steps = useMemo(() => [
+        { id: "readying", label: t("commission.stepReadying"), description: t("commission.stepReadyingDesc") },
+        { id: "tasting", label: t("commission.stepTasting"), description: t("commission.stepTastingDesc") },
+        { id: "completed", label: t("commission.stepCompleted"), description: t("commission.stepCompletedDesc") },
+    ], [t])
+
+    const currentStepIdx = replicaStatus === "COMPLETED" ? 2 : replicaStatus === "STARTED" ? 1 : 0
+
+    const activePanel = selectedReplica?.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)
+
+    const commissionToggles: ToggleSpec[] = [
+        {
+            id: "partial",
+            label: t("commission.partialCandidateEvaluationSetting"),
+            description: t("commission.partialCandidateEvaluationSettingDesc"),
+            checked: Boolean(localData.partialCandidateEvaluationEnabled),
+            onToggle: makeCommissionToggle(setCommissionPartialCandidateEvaluationEnabledAction, "partialCandidateEvaluationEnabled"),
+        },
+        {
+            id: "wineJumper",
+            label: t("commission.wineJumperSetting"),
+            description: t("commission.wineJumperSettingDesc"),
+            checked: Boolean(localData.wineJumperMiniGameEnabled),
+            onToggle: makeCommissionToggle(setCommissionWineJumperMiniGameEnabledAction, "wineJumperMiniGameEnabled"),
+        },
+        {
+            id: "voiceComments",
+            label: t("commission.voiceCommentsSetting"),
+            description: t("commission.voiceCommentsSettingDesc"),
+            checked: Boolean(localData.voiceCommentsEnabled),
+            onToggle: makeCommissionToggle(setCommissionVoiceCommentsEnabledAction, "voiceCommentsEnabled"),
+        },
+        {
+            id: "propertyComments",
+            label: t("commission.propertyCommentsSetting"),
+            description: t("commission.propertyCommentsSettingDesc"),
+            checked: Boolean(localData.propertyCommentsEnabled),
+            onToggle: makeCommissionToggle(setCommissionPropertyCommentsEnabledAction, "propertyCommentsEnabled"),
+        },
+        {
+            id: "beverageOrigin",
+            label: t("commission.beverageOriginSetting"),
+            description: t("commission.beverageOriginSettingDesc"),
+            checked: Boolean(localData.beverageOriginDuringEvaluationEnabled),
+            onToggle: makeCommissionToggle(setCommissionBeverageOriginDuringEvaluationEnabledAction, "beverageOriginDuringEvaluationEnabled"),
+        },
+    ]
+
+    const replicaToggles: ToggleSpec[] = selectedReplica ? [
+        {
+            id: "chaoticCandidate",
+            label: t("commission.chaoticCandidateChangesTitle"),
+            description: t("commission.chaoticCandidateChangesDesc"),
+            checked: Boolean(activePanel?.chaoticCurrentCandidateChangesEnabled),
+            disabled: !selectedReplica.currentPanelId,
+            onToggle: handleToggleChaoticCandidateChanges,
+        },
+        {
+            id: "chaoticPanel",
+            label: t("commission.chaoticPanelChangesTitle"),
+            description: t("commission.chaoticPanelChangesDesc"),
+            checked: Boolean(selectedReplica.chaoticCurrentPanelChangesEnabled),
+            onToggle: handleToggleChaoticPanelChanges,
+        },
+    ] : []
+
+    /** The one action most likely wanted next, kept in reach in the sticky header. */
+    const primaryAction = (() => {
+        if (replicaStatus === "STARTED" && currentUserRole && selectedReplica) {
+            return (
+                <ActionButton
+                    icon={PlayCircle}
+                    onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
+                >
+                    <span className="hidden sm:inline">{t("commission.enterTastingSession")}</span>
+                    <span className="sm:hidden">{t("commission.enterTastingSessionShort")}</span>
+                </ActionButton>
+            )
+        }
+        if (currentUserRole === "HEAD" && isPreStart) {
+            return (
+                <ActionButton
+                    icon={PlayCircle}
+                    loading={isStarting}
+                    disabled={!isEveryoneReady || !hasCandidates}
+                    onClick={handleStartCommission}
+                    title={
+                        !hasCandidates ? t("commission.addSamplesBeforeStart")
+                            : !hasMembers ? t("commission.addExpertsBeforeStart")
+                                : !isEveryoneReady ? tCount("commission.waitingMembers", nonReadyCount)
+                                    : undefined
+                    }
+                >
+                    <span className="hidden sm:inline">{t("commission.startTasting")}</span>
+                    <span className="sm:hidden">{t("commission.startTastingShort")}</span>
+                </ActionButton>
+            )
+        }
+        if (isPreStart && currentUserRole) {
+            return (
+                <ActionButton
+                    variant={amIReady ? "success" : "primary"}
+                    icon={amIReady ? CheckCircle : PlayCircle}
+                    loading={isTogglingReady}
+                    onClick={() => handleToggleReady(!amIReady)}
+                >
+                    {amIReady ? t("commission.ready") : t("commission.markReady")}
+                </ActionButton>
+            )
+        }
+        if (isCompetitionHolder && isCommissionDraft) {
+            return (
+                <ActionButton icon={Send} loading={isSubmittingReview} onClick={handleSubmitForReview}>
+                    <span className="hidden sm:inline">{t("commission.submitReviewButton")}</span>
+                    <span className="sm:hidden">{t("competition.submitReviewShort")}</span>
+                </ActionButton>
+            )
+        }
+        return null
+    })()
+
+    const canManageReplicas = isCompetitionHolder && isCommissionDraft
+    const canEditPanel = isCompetitionHolder && isCommissionDraft && isReplicaDraft
+
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="flex h-screen flex-col bg-slate-50">
             <AppHeader activeTab="competitions" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex justify-start">
-                    <BackLink
-                        href={initialData.competition?.id ? `/competition/${initialData.competition.id}` : "/myCommissions"}
-                        label={initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
-                    />
-                </div>
-                {showMyTastingSummary && (
-                    <div className="w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
-                        <div className="flex items-center gap-3">
-                            <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
-                            <div>
-                                <p className="text-sm font-bold text-indigo-900">
-                                    {t("commission.myRankingTitle")}
-                                </p>
-                                <p className="text-xs mt-0.5 text-indigo-600">
-                                    {t("commission.myRankingDesc")}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
-                            className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
-                        >
-                            <Wine className="w-4 h-4" />
-                            {t("commission.viewMyTastingSummary")}
-                        </button>
-                    </div>
-                )}
-                {showResultsBanner && (
-                    <div className={`w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
-                        isCommissionCompleted
-                            ? "bg-emerald-50 border-emerald-200"
-                            : "bg-indigo-50 border-indigo-200"
-                    }`}>
-                        <div className="flex items-center gap-3">
-                            {isCommissionCompleted ? (
-                                <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
-                            ) : (
-                                <Trophy className="w-5 h-5 text-indigo-600 shrink-0" />
-                            )}
-                            <div>
-                                <p className={`text-sm font-bold ${isCommissionCompleted ? "text-emerald-800" : "text-indigo-900"}`}>
-                                    {isCommissionCompleted
-                                        ? t("commission.sessionCompleted")
-                                        : t("commission.resultsBannerTitle")}
-                                </p>
-                                <p className={`text-xs mt-0.5 ${isCommissionCompleted ? "text-emerald-600" : "text-indigo-600"}`}>
-                                    {isCommissionCompleted
-                                        ? t("commission.allCandidatesEvaluatedDesc")
-                                        : t("commission.resultsBannerDesc")}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => router.push(competitionResultsHref)}
-                            className={`w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer ${
-                                isCommissionCompleted
-                                    ? "bg-emerald-600 hover:bg-emerald-700"
-                                    : "bg-indigo-600 hover:bg-indigo-700"
-                            }`}
-                        >
-                            <Trophy className="w-4 h-4" />
-                            {t("commission.continueToResults")}
-                        </button>
-                    </div>
-                )}
-                <div className="w-full max-w-7xl flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+            <main className="flex-1 overflow-auto">
+                <DetailPageHeader
+                    backHref={initialData.competition?.id ? `/competition/${initialData.competition.id}` : "/myCommissions"}
+                    backLabel={initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
+                    eyebrow={t("commission.session")}
+                    name={initialData.name}
+                    status={currentCommissionStatus}
+                    timeDisplay={timeDisplay}
+                    canEditName={isCompetitionHolder && isCommissionDraft}
+                    onSaveName={handleSaveName}
+                    isSavingName={isSavingName}
+                    actions={
+                        <>
+                            {actionsScrolledPast && primaryAction}
+                            <ActionButton
+                                variant={actionsScrolledPast && primaryAction ? "secondary" : "primary"}
+                                icon={Trophy}
+                                href={competitionResultsHref}
+                            >
+                                <span className="hidden md:inline">{t("commission.viewResults")}</span>
+                                <span className="md:hidden">{t("competition.resultsShort")}</span>
+                            </ActionButton>
+                        </>
+                    }
+                />
 
-                    {/* Left Column: Replicas, Stepper and Tasting Panel */}
-                    <div className="contents lg:flex lg:flex-col lg:w-[45%] lg:gap-6">
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 md:gap-6 md:px-8 md:py-8">
+                    {showMyTastingSummary && (
+                        <CalloutBanner
+                            tone="indigo"
+                            icon={Wine}
+                            title={t("commission.myRankingTitle")}
+                            description={t("commission.myRankingDesc")}
+                            action={
+                                <ActionButton
+                                    icon={Wine}
+                                    className="w-full sm:w-auto"
+                                    onClick={() => router.push(`/commission/${localData.id}/replica/${summaryReplica!.id}/summary`)}
+                                >
+                                    {t("commission.viewMyTastingSummary")}
+                                </ActionButton>
+                            }
+                        />
+                    )}
 
-                        {/* Replica Selector Tabs */}
-                        {(localReplicas.length > 0 || isCompetitionHolder) && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50 order-3 lg:order-none">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                                        <Layers className="w-4 h-4 text-indigo-500" />
-                                        {t("commission.tastingReplicas")}
-                                    </h3>
-                                    {isCompetitionHolder && !isAddingReplica && isCommissionDraft && (
-                                        <button
-                                            onClick={openAddReplica}
-                                            disabled={isMutating}
-                                            className="flex items-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            <span>{t("commission.addReplica")}</span>
-                                        </button>
+                    {showResultsBanner && (
+                        <CalloutBanner
+                            tone={isCommissionCompleted ? "emerald" : "indigo"}
+                            icon={isCommissionCompleted ? CheckCircle : Trophy}
+                            title={isCommissionCompleted ? t("commission.sessionCompleted") : t("commission.resultsBannerTitle")}
+                            description={isCommissionCompleted ? t("commission.allCandidatesEvaluatedDesc") : t("commission.resultsBannerDesc")}
+                            action={
+                                <ActionButton
+                                    variant={isCommissionCompleted ? "success" : "primary"}
+                                    icon={Trophy}
+                                    className="w-full sm:w-auto"
+                                    onClick={() => router.push(competitionResultsHref)}
+                                >
+                                    {t("commission.continueToResults")}
+                                </ActionButton>
+                            }
+                        />
+                    )}
+
+                    {(localReplicas.length > 0 || isCompetitionHolder) && (
+                        <ReplicaSelector
+                            replicas={localReplicas}
+                            selectedReplicaId={selectedReplica?.id || null}
+                            onSelect={(id) => {
+                                setSelectedReplicaId(id)
+                                setHasRedirected(false)
+                            }}
+                            currentAuid={currentAuid}
+                            canManage={canManageReplicas}
+                            onAdd={handleAddReplica}
+                            onRename={handleRenameReplica}
+                        />
+                    )}
+
+                    <SectionCard padding="tight">
+                        <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+                            <Layers className="h-4 w-4 shrink-0 text-indigo-500" />
+                            <span className="text-xs font-semibold text-slate-700">{selectedReplicaName}</span>
+                            <StatusPill status={replicaStatus} size="sm" />
+                        </div>
+                        <StatusStepper steps={steps} currentStepIdx={currentStepIdx} />
+                    </SectionCard>
+
+                    <div className="grid gap-5 md:gap-6 lg:grid-cols-5">
+                        {/* Main column — running the session. */}
+                        <div className="flex min-w-0 flex-col gap-5 md:gap-6 lg:col-span-3">
+                            <div ref={actionsRef}>
+                            <SectionCard title={t("commission.actionsControls")}>
+                                <div className="flex flex-col gap-3">
+                                    {isCompetitionHolder && isCommissionDraft && (
+                                        <ActionRow
+                                            title={t("commission.submitReviewTitle")}
+                                            description={t("commission.submitReviewDescription")}
+                                            action={
+                                                <ActionButton icon={Send} loading={isSubmittingReview} onClick={handleSubmitForReview}>
+                                                    {t("commission.submitReviewButton")}
+                                                </ActionButton>
+                                            }
+                                        />
                                     )}
-                                </div>
 
-                                {isAddingReplica && (
-                                    <div className="mb-4 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-800">{t("commission.addTastingReplica")}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsAddingReplica(false)}
-                                                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("commission.replicaNameOptional")}</label>
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                placeholder="e.g. Replica B"
-                                                className="w-full text-xs font-semibold text-slate-700 outline-none border-b border-slate-300 focus:border-indigo-500 py-1 bg-transparent"
-                                                value={newReplicaName}
-                                                onChange={e => setNewReplicaName(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("commission.replicaType")}</label>
-                                            <div className="flex gap-2">
-                                                {(["STANDARD", "TRAINEE"] as const).map(type => (
-                                                    <button
-                                                        key={type}
-                                                        type="button"
-                                                        onClick={() => setNewReplicaType(type)}
-                                                        className={`flex-1 rounded-xl px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
-                                                            newReplicaType === type
-                                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
-                                                                : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"
-                                                        }`}
-                                                    >
-                                                        {type === "STANDARD" ? t("commission.typeStandard") : t("commission.typeTrainee")}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-end gap-2 mt-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsAddingReplica(false)}
-                                                disabled={isMutating}
-                                                className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
-                                            >
-                                                {t("competition.cancel")}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleAddReplica}
-                                                disabled={isMutating}
-                                                className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-1 disabled:opacity-75 cursor-pointer"
-                                            >
-                                                {isMutating ? (
-                                                    <>
-                                                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                        <span>{t("competition.adding")}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Plus className="w-3.5 h-3.5" />
-                                                        <span>{t("commission.addReplica")}</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {localReplicas.length === 0 && !isAddingReplica && (
-                                    <p className="text-xs text-slate-400 text-center py-3">
-                                        {t("commission.noReplicasYet")}
-                                    </p>
-                                )}
-
-                                <div className="flex flex-col gap-2">
-                                    {[...localReplicas].sort((a, b) => (a.members?.length || 0) - (b.members?.length || 0)).map((r) => {
-                                        const isSelected = r.id === selectedReplicaId
-                                        const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
-                                        
-                                        if (isEditingReplica && isSelected) {
-                                            return (
-                                                <div
-                                                    key={r.id}
-                                                    className="flex items-center justify-between rounded-2xl px-3 py-2 text-xs font-bold border border-indigo-300 bg-white shadow-sm w-full gap-2"
+                                    {isPreStart && currentUserRole && (
+                                        <ActionRow
+                                            tone="muted"
+                                            title={t("commission.yourReadiness")}
+                                            description={t("commission.readinessDescription")}
+                                            action={
+                                                <ActionButton
+                                                    variant={amIReady ? "success" : "primary"}
+                                                    icon={amIReady ? CheckCircle : PlayCircle}
+                                                    loading={isTogglingReady}
+                                                    onClick={() => handleToggleReady(!amIReady)}
                                                 >
-                                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                                        <input
-                                                            type="text"
-                                                            autoFocus
-                                                            placeholder={t("commission.replicaNamePlaceholder")}
-                                                            className="text-xs font-semibold text-slate-900 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none flex-1 min-w-0"
-                                                            value={editReplicaName}
-                                                            onChange={e => setEditReplicaName(e.target.value)}
-                                                            onKeyDown={e => {
-                                                                if (e.key === "Enter") handleSaveReplica()
-                                                                if (e.key === "Escape") setIsEditingReplica(false)
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-center gap-1 shrink-0">
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleSaveReplica}
-                                                            disabled={isMutating}
-                                                            className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-                                                            title={t("common.save")}
-                                                        >
-                                                            {isMutating ? (
-                                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                            ) : (
-                                                                <Check className="w-3.5 h-3.5" />
-                                                            )}
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setIsEditingReplica(false)}
-                                                            disabled={isMutating}
-                                                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors cursor-pointer"
-                                                            title={t("competition.cancel")}
-                                                        >
-                                                            <X className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )
-                                        }
-
-                                        return (
-                                            <button
-                                                key={r.id}
-                                                onClick={() => {
-                                                    setSelectedReplicaId(r.id)
-                                                    setHasRedirected(false)
-                                                }}
-                                                className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl px-4 py-3 text-xs font-bold transition-all border text-left cursor-pointer w-full gap-2 ${
-                                                    isSelected
-                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20"
-                                                        : "bg-slate-50 hover:bg-slate-100 border-slate-200/60 text-slate-600 hover:text-slate-800"
-                                                }`}
-                                            >
-                                                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                                                    <span>{r.name}</span>
-                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${
-                                                        isSelected
-                                                            ? "bg-indigo-700/60 border-indigo-500 text-indigo-100"
-                                                            : "bg-slate-150 border-slate-200 text-slate-500"
-                                                    }`}>
-                                                        {formatReplicaType(r.type)}
-                                                    </span>
-                                                    {isCompetitionHolder && isSelected && isCommissionDraft && r.status === "DRAFT" && (
-                                                        <div
-                                                            onClick={(e) => openEditReplica(e, r)}
-                                                            className="p-1 rounded cursor-pointer transition-colors ml-1 hover:bg-white/20 text-white/70 hover:text-white"
-                                                            title={t("commission.renameReplica")}
-                                                        >
-                                                            <Pencil className="w-3.5 h-3.5" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-1.5 sm:justify-end shrink-0">
-                                                    {isUserReplica && (
-                                                        <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
-                                                            isSelected ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
-                                                        }`}>
-                                                            {t("commission.myTasting")}
-                                                        </span>
-                                                    )}
-                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full ${
-                                                        r.status === "STARTED"
-                                                            ? (isSelected ? "bg-emerald-400 text-indigo-950 font-extrabold" : "bg-emerald-500/10 text-emerald-600")
-                                                            : r.status === "COMPLETED"
-                                                                 ? (isSelected ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-500")
-                                                                 : (isSelected ? "bg-amber-400 text-indigo-950" : "bg-amber-500/10 text-amber-600")
-                                                    }`}>
-                                                        {formatStatus(r.status)}
-                                                    </span>
-                                                </div>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="order-4 lg:order-none">
-                            <StatusSteps status={replicaStatus} />
-                        </div>
-
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                                        <Users className="w-5 h-5 text-indigo-500" />
-                                        {t("commission.tastingPanel", { name: selectedReplicaName })}
-                                    </h3>
-                                    <p className="text-xs text-slate-400 mt-0.5">
-                                        {t("commission.tastingPanelSubtitle")}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {isCompetitionHolder && isCommissionDraft && isReplicaDraft && selectedReplica && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsAddMemberOpen(true)}
-                                            className="flex items-center gap-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 text-xs font-bold transition-all active:scale-95 cursor-pointer"
-                                        >
-                                            <UserPlus className="w-3.5 h-3.5" />
-                                            <span>{t("commission.addExpert")}</span>
-                                        </button>
+                                                    {amIReady ? t("commission.ready") : t("commission.markReady")}
+                                                </ActionButton>
+                                            }
+                                        />
                                     )}
-                                    <span className="inline-flex items-center justify-center shrink-0 whitespace-nowrap text-xs font-semibold px-3 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100 tabular-nums">
-                                        {t("commission.readyCount", {
-                                            ready: localMembers.filter(m => m.isReady).length,
-                                            total: localMembers.length
-                                        })}
-                                    </span>
-                                </div>
-                            </div>
 
-                            <div className="flex flex-col gap-3">
-                                {sortedMembers.map((p) => {
-                                    const isMe = currentAuid !== null && p.auid.includes(currentAuid)
-                                    return (
-                                        <div key={p.id} className={`relative rounded-xl border p-4 shadow-sm flex items-center gap-3 transition-all duration-300 hover:shadow-md w-full ${
-                                            isMe
-                                                ? "border-indigo-200 bg-indigo-50/30 shadow-indigo-100/30 shadow-md"
-                                                : "border-slate-100 bg-slate-50/30 hover:border-slate-200/50 hover:bg-slate-50/50"
-                                        }`}>
-                                            <MemberAvatar auid={p.auid} role={p.role} username={usernames[p.auid[0]]} className="h-10 w-10 shrink-0" />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
-                                                        <span>{p.auid.map(id => usernames[id] || String(id)).join(", ")}</span>
-                                                        {isMe && (
-                                                            <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded-xs uppercase tracking-wider">
-                                                                {t("common.you")}
-                                                            </span>
-                                                        )}
+                                    {currentUserRole === "HEAD" && isPreStart && (
+                                        <ActionRow
+                                            title={t("commission.headTools", { name: selectedReplicaName })}
+                                            description={t("commission.startTastingDescription")}
+                                            action={
+                                                <ActionButton
+                                                    size="lg"
+                                                    icon={PlayCircle}
+                                                    loading={isStarting}
+                                                    disabled={!isEveryoneReady || !hasCandidates}
+                                                    onClick={handleStartCommission}
+                                                >
+                                                    {t("commission.startTasting")}
+                                                </ActionButton>
+                                            }
+                                        >
+                                            {!hasCandidates && (
+                                                <p className="flex items-center gap-1.5 rounded-xl border border-amber-200/60 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                                    {t("commission.addSamplesBeforeStart")}
+                                                </p>
+                                            )}
+                                            {hasCandidates && !hasMembers && (
+                                                <p className="flex items-center gap-1.5 rounded-xl border border-amber-200/60 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                                    {t("commission.addExpertsBeforeStart")}
+                                                </p>
+                                            )}
+                                            {hasCandidates && hasMembers && !isEveryoneReady && (
+                                                <p className="text-xs font-medium text-slate-500">
+                                                    {tCount("commission.waitingMembers", nonReadyCount)}
+                                                </p>
+                                            )}
+                                            {hasCandidates && isEveryoneReady && (
+                                                <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                                                    <Check className="h-4 w-4 shrink-0" />
+                                                    {t("commission.everyoneReady")}
+                                                </p>
+                                            )}
+                                        </ActionRow>
+                                    )}
+
+                                    {replicaStatus === "STARTED" && currentUserRole && selectedReplica && (
+                                        <ActionRow
+                                            title={t("commission.tastingActive")}
+                                            description={t("commission.tastingActiveDesc")}
+                                            action={
+                                                <ActionButton
+                                                    icon={ArrowRight}
+                                                    onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
+                                                >
+                                                    {t("commission.enterTastingSession")}
+                                                </ActionButton>
+                                            }
+                                        >
+                                            {selectedReplica.currentCandidateId && (() => {
+                                                const candIndex = selectedReplica.replicaCandidates.findIndex(rc => rc.id === selectedReplica.currentCandidateId)
+                                                const rawCode = selectedReplica.replicaCandidates[candIndex]?.candidate?.anonymizedCode
+                                                const code = (rawCode && rawCode.trim()) ? rawCode.trim() : (candIndex >= 0 ? `#${candIndex + 1}` : t("common.na"))
+                                                return (
+                                                    <p className="text-xs font-medium text-slate-500">
+                                                        {t("commission.currentCandidate", { code })}
                                                     </p>
-                                                    {isCompetitionHolder && isCommissionDraft && isReplicaDraft && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMemberPendingRemoval(p.id)}
-                                                            disabled={removingMemberId === p.id}
-                                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
-                                                            title={t("commission.deleteExpert")}
-                                                        >
-                                                            {removingMemberId === p.id ? (
-                                                                <div className="w-3.5 h-3.5 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
-                                                            ) : (
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            )}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center justify-between mt-2">
-                                                    <div className="flex items-center">
-                                                        {p.role === "HEAD" && (
-                                                            <span className="bg-amber-500/10 text-amber-600 border border-amber-500/15 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                                                                <Crown className="w-3 h-3"/> {t("commission.roleHead")}
-                                                            </span>
-                                                        )}
-                                                        {p.role === "TRAINEE_EXPERT" && (
-                                                            <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/15 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                                                                <GraduationCap className="w-3 h-3"/> {t("commission.roleTrainee")}
-                                                            </span>
-                                                        )}
-                                                        {p.role === "EXPERT" && (
-                                                            <span className="bg-indigo-50/70 text-indigo-600 border border-indigo-100 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                                                                {t("commission.roleExpert")}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider shrink-0 ${
-                                                        p.isReady ? "text-emerald-500" : "text-slate-400"
-                                                    }`}>
-                                                        {p.isReady ? (
-                                                            <>
-                                                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                                                                <span>{t("commission.statusReady")}</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-slate-300 animate-spin" style={{ animationDuration: '3s' }} />
-                                                                <span>{t("commission.statusWaiting")}</span>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                                {localMembers.length === 0 && (
-                                    <p className="text-sm text-slate-400 text-center py-4">{t("commission.noMembers")}</p>
-                                )}
-                            </div>
-                        </div>
+                                                )
+                                            })()}
+                                        </ActionRow>
+                                    )}
 
-                        {/* Panels and Wine Candidates Section */}
-                        <div className="order-6 lg:order-none">
+                                    {replicaStatus === "COMPLETED" && (
+                                        <ActionRow
+                                            tone="success"
+                                            title={t("commission.sessionCompleted")}
+                                            description={t("commission.sessionCompletedDesc")}
+                                            action={
+                                                (isCompetitionHolder || isUserReplicaMember) ? (
+                                                    <ActionButton variant="success" icon={Trophy} href={competitionResultsHref}>
+                                                        {t("commission.viewResults")}
+                                                    </ActionButton>
+                                                ) : undefined
+                                            }
+                                        />
+                                    )}
+
+                                    {isPreStart && currentUserRole && currentUserRole !== "HEAD" && (
+                                        <ActionRow
+                                            tone="muted"
+                                            title={t("commission.waitingStart")}
+                                            description={t("commission.waitingStartDesc")}
+                                        />
+                                    )}
+
+                                    {!currentUserRole && !isCompetitionHolder && (
+                                        <ActionRow
+                                            tone="muted"
+                                            title={t("commission.notAMemberTitle")}
+                                            description={t("commission.notAMemberDescription")}
+                                        />
+                                    )}
+                                </div>
+                            </SectionCard>
+                            </div>
+
+                            <PanelMembers
+                                replicaName={selectedReplicaName}
+                                members={localMembers}
+                                usernames={usernames}
+                                currentAuid={currentAuid}
+                                canAddMember={canEditPanel && Boolean(selectedReplica)}
+                                onAddMember={() => setIsAddMemberOpen(true)}
+                                canRemoveMember={canEditPanel}
+                                onRemoveMember={(id) => setMemberPendingRemoval(id)}
+                                removingMemberId={removingMemberId}
+                            />
+
                             <PanelsSection
                                 commissionId={localData.id}
                                 panels={localData.panels || []}
@@ -1607,631 +1025,87 @@ export default function CommissionClientView({
                                 onRefresh={refreshCommissionData}
                             />
                         </div>
-                    </div>
 
-                    {/* Right Column: Actions & Session Details */}
-                    <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
-                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
-                            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
-
-                            <div className="flex items-start gap-4 mb-6">
-                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm">
-                                    <Wine className="h-8 w-8" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <span className="text-xs font-bold tracking-widest uppercase text-slate-400">
-                                        {t("commission.session")}
-                                    </span>
-                                    {isEditingName ? (
-                                        <div className="flex items-center gap-2 mt-1 w-full">
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                className="text-xl md:text-2xl font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-xl px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[180px] flex-1 max-w-lg"
-                                                value={editNameData}
-                                                onChange={e => setEditNameData(e.target.value)}
-                                                onKeyDown={e => {
-                                                    if (e.key === "Enter") handleSaveName()
-                                                    if (e.key === "Escape") setIsEditingName(false)
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleSaveName}
-                                                disabled={isMutating}
-                                                className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
-                                                title={t("common.save")}
-                                            >
-                                                {isMutating ? (
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                ) : (
-                                                    <Check className="w-4 h-4" />
-                                                )}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsEditingName(false)}
-                                                disabled={isMutating}
-                                                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
-                                                title={t("competition.cancel")}
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
-                                                {initialData.name}
-                                            </h2>
-                                            {isCompetitionHolder && isCommissionDraft && (
-                                                <button
-                                                    onClick={openEditName}
-                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                    title={t("commission.editCommissionName")}
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                    <p className="text-sm mt-1.5 flex items-center gap-2 flex-wrap">
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                            replicaStatus === "STARTED"
-                                                ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                                                : replicaStatus === "COMPLETED"
-                                                    ? "bg-slate-100 text-slate-500 border border-slate-200"
-                                                    : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                                        }`}>
-                                            {replicaStatus === "STARTED" && (
-                                                <span className="relative flex h-2 w-2 mr-1">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                                </span>
-                                            )}
-                                            {formatStatus(replicaStatus)}
-                                        </span>
-                                        {timeDisplay && (
-                                            <>
-                                                <span className="text-slate-300">|</span>
-                                                <span className="text-slate-500 font-semibold flex items-center gap-1 text-xs">
-                                                    <Timer className="w-3.5 h-3.5 text-indigo-500" />
-                                                    {timeDisplay}
-                                                </span>
-                                            </>
+                        {/* Sidebar — setup and reference. */}
+                        <aside className="flex min-w-0 flex-col gap-5 md:gap-6 lg:col-span-2">
+                            <SectionCard title={t("common.overview")} icon={Wine}>
+                                <div className="flex flex-col gap-3">
+                                    <MetaTile
+                                        icon={Trophy}
+                                        iconClassName="text-amber-500"
+                                        label={t("commission.competition")}
+                                        value={initialData.competition.name}
+                                    />
+                                    <MetaTile
+                                        icon={Users}
+                                        label={t("commission.holders")}
+                                        value={creatorNames}
+                                        title={creatorNames}
+                                    />
+                                    <MetaTile
+                                        icon={Layers}
+                                        label={t("commission.replicaLabel")}
+                                        value={tCount(
+                                            "commission.replicaBeverages",
+                                            selectedReplica?.candidateCount || localData.candidateCount || localData.candidates?.length || 0
                                         )}
-                                    </p>
+                                    />
                                 </div>
-                            </div>
+                            </SectionCard>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-6">
-                                <div className="flex items-start gap-3 bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:border-indigo-100 transition-colors">
-                                    <Trophy className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                            {t("commission.competition")}
-                                        </h4>
-                                        <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">
-                                            {initialData.competition.name}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-3 bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:border-indigo-100 transition-colors">
-                                    <User className="h-5 w-5 text-indigo-500 mt-0.5 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                            {t("commission.holders")}
-                                        </h4>
-                                        <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate" title={creatorNames}>
-                                            {creatorNames}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl p-4 mt-4">
-                                <Layers className="h-5 w-5 text-indigo-500 shrink-0" />
-                                <span className="text-sm text-slate-500 font-medium">
-                                    {tCount("commission.replicaBeverages", selectedReplica?.candidateCount || localData.candidateCount || localData.candidates?.length || 0)}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Commission Settings Card */}
-                        {isCompetitionHolder && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-8 lg:order-none">
-                                <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                                    <Sliders className="w-4 h-4 text-indigo-500" />
-                                    <span>{t("commission.evaluationSettings")}</span>
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {/* Partial Candidate Evaluation */}
-                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-                                        <div className="flex flex-col pr-4">
-                                            <span className="text-xs font-bold text-slate-800">{t("commission.partialCandidateEvaluationSetting")}</span>
-                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.partialCandidateEvaluationSettingDesc")}</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleTogglePartialEvaluation}
-                                            disabled={isMutating}
-                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                                localData.partialCandidateEvaluationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                                            }`}
-                                        >
-                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                                localData.partialCandidateEvaluationEnabled ? 'translate-x-5' : 'translate-x-0'
-                                            }`} />
-                                        </button>
-                                    </div>
-
-                                    {/* Wine Jumper Mini Game */}
-                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-                                        <div className="flex flex-col pr-4">
-                                            <span className="text-xs font-bold text-slate-800">{t("commission.wineJumperSetting")}</span>
-                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.wineJumperSettingDesc")}</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleToggleWineJumper}
-                                            disabled={isMutating}
-                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                                localData.wineJumperMiniGameEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                                            }`}
-                                        >
-                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                                localData.wineJumperMiniGameEnabled ? 'translate-x-5' : 'translate-x-0'
-                                            }`} />
-                                        </button>
-                                    </div>
-
-                                    {/* Voice Comments */}
-                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-                                        <div className="flex flex-col pr-4">
-                                            <span className="text-xs font-bold text-slate-800">{t("commission.voiceCommentsSetting")}</span>
-                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.voiceCommentsSettingDesc")}</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleToggleVoiceComments}
-                                            disabled={isMutating}
-                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                                localData.voiceCommentsEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                                            }`}
-                                        >
-                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                                localData.voiceCommentsEnabled ? 'translate-x-5' : 'translate-x-0'
-                                            }`} />
-                                        </button>
-                                    </div>
-
-                                    {/* Property Text Comments */}
-                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-                                        <div className="flex flex-col pr-4">
-                                            <span className="text-xs font-bold text-slate-800">{t("commission.propertyCommentsSetting")}</span>
-                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.propertyCommentsSettingDesc")}</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleTogglePropertyComments}
-                                            disabled={isMutating}
-                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                                localData.propertyCommentsEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                                            }`}
-                                        >
-                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                                localData.propertyCommentsEnabled ? 'translate-x-5' : 'translate-x-0'
-                                            }`} />
-                                        </button>
-                                    </div>
-
-                                    {/* Beverage Origin Display */}
-                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-                                        <div className="flex flex-col pr-4">
-                                            <span className="text-xs font-bold text-slate-800">{t("commission.beverageOriginSetting")}</span>
-                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.beverageOriginSettingDesc")}</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleToggleBeverageOrigin}
-                                            disabled={isMutating}
-                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                                localData.beverageOriginDuringEvaluationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                                            }`}
-                                        >
-                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                                localData.beverageOriginDuringEvaluationEnabled ? 'translate-x-5' : 'translate-x-0'
-                                            }`} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Replica Settings Card */}
-                        {isCompetitionHolder && selectedReplica && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-9 lg:order-none">
-                                <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                                    <Layers className="w-4 h-4 text-indigo-500" />
-                                    <span>{t("commission.replicaSettings", { name: selectedReplica.name })}</span>
-                                </h3>
-
-                                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-                                    <div className="flex flex-col pr-4">
-                                        <span className="text-xs font-bold text-slate-800">{t("commission.chaoticCandidateChangesTitle")}</span>
-                                        <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.chaoticCandidateChangesDesc")}</span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleChaoticCandidateChanges}
-                                        disabled={isMutating || !selectedReplica.currentPanelId}
-                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                                        }`}
-                                    >
-                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
-                                        }`} />
-                                    </button>
-                                </div>
-                                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-                                    <div className="flex flex-col pr-4">
-                                        <span className="text-xs font-bold text-slate-800">{t("commission.chaoticPanelChangesTitle")}</span>
-                                        <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.chaoticPanelChangesDesc")}</span>
-                                    </div>
-                                    <button type="button" onClick={handleToggleChaoticPanelChanges} disabled={isMutating}
-                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}>
-                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs transition ${selectedReplica.chaoticCurrentPanelChangesEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Evaluation Template Details */}
-                        <div className="order-7 lg:order-none">
                             <EvaluationTemplatesBlock
                                 commissionId={initialData.id}
                                 templateEditions={initialData.templateEditions || []}
                                 beverageTypesInCommission={beverageTypesInCommission}
                                 isCompetitionHolder={isCompetitionHolder}
                                 canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
-                                onRefresh={refreshData}
+                                onRefresh={refreshCommissionData}
                             />
-                        </div>
 
-                        {/* Timeline and Dates */}
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide order-2 lg:order-none">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-indigo-500" />
-                                    {t("commission.timelineDetails")}
-                                </h3>
-                                {isCompetitionHolder && isCommissionDraft && !initialData.startedAt && (
-                                    isEditingDates ? (
-                                        <div className="flex items-center gap-1.5">
-                                            <button
-                                                type="button"
-                                                onClick={handleSaveDates}
-                                                disabled={isMutating}
-                                                className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                                title={t("common.saveDates")}
-                                            >
-                                                {isMutating ? (
-                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                ) : (
-                                                    <Check className="w-3.5 h-3.5" />
-                                                )}
-                                                <span>Save</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsEditingDates(false)}
-                                                disabled={isMutating}
-                                                className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                                                title={t("competition.cancel")}
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={openEditDates}
-                                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                            title={t("common.editPlannedDates")}
-                                        >
-                                            <Pencil className="w-4 h-4" />
-                                        </button>
-                                    )
-                                )}
-                            </div>
+                            {isCompetitionHolder && (
+                                <SettingsGroup
+                                    title={t("commission.evaluationSettings")}
+                                    subtitle={t("commission.evaluationSettingsSubtitle")}
+                                    icon={Sliders}
+                                    toggles={commissionToggles}
+                                />
+                            )}
 
-                            <div className="flex flex-col gap-4 relative pl-4 border-l border-slate-100 ml-2.5">
-                                {/* Planned Start */}
-                                <div className="relative">
-                                    <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.plannedStart")}</span>
-                                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                        {isEditingDates ? (
-                                            <input
-                                                type="datetime-local"
-                                                className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                                                value={editDatesData.plannedStartAt}
-                                                onChange={e => setEditDatesData({ ...editDatesData, plannedStartAt: e.target.value })}
-                                                onKeyDown={e => {
-                                                    if (e.key === "Enter") handleSaveDates()
-                                                    if (e.key === "Escape") setIsEditingDates(false)
-                                                }}
-                                            />
-                                        ) : (
-                                            <p className="text-xs font-semibold text-slate-800">
-                                                {formatDateTime(initialData.plannedStartAt)}
-                                            </p>
-                                        )}
-                                        {!isEditingDates && selectedReplica?.status === "PLANNED" && initialData.plannedStartAt && (
-                                            <a
-                                                href={getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-md px-1.5 py-0.5 transition-colors"
-                                            >
-                                                {t("common.addToCalendar")}
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                                {/* Planned End */}
-                                {(initialData.plannedEndAt || isEditingDates) && (
-                                    <div className="relative">
-                                        <div className="absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full bg-indigo-400 border-2 border-white" />
-                                        <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.plannedEnd")}</span>
-                                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                            {isEditingDates ? (
-                                                <input
-                                                    type="datetime-local"
-                                                    className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                                                    value={editDatesData.plannedEndAt}
-                                                    onChange={e => setEditDatesData({ ...editDatesData, plannedEndAt: e.target.value })}
-                                                    onKeyDown={e => {
-                                                        if (e.key === "Enter") handleSaveDates()
-                                                        if (e.key === "Escape") setIsEditingDates(false)
-                                                    }}
-                                                />
-                                            ) : (
-                                                <p className="text-xs font-semibold text-slate-800">
-                                                    {formatDateTime(initialData.plannedEndAt)}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                                {/* Actual Start */}
-                                <div className="relative">
-                                    <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
-                                        initialData.startedAt ? 'bg-emerald-500' : 'bg-slate-200'
-                                    }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.actualStart")}</span>
-                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.startedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                        {initialData.startedAt ? formatDateTime(initialData.startedAt) : t("commission.notStartedYet")}
-                                    </p>
-                                </div>
-                                {/* Actual End */}
-                                <div className="relative">
-                                    <div className={`absolute -left-[22.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
-                                        initialData.endedAt ? 'bg-rose-500' : 'bg-slate-200'
-                                    }`} />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">{t("commission.actualEnd")}</span>
-                                    <p className={`text-xs font-semibold mt-0.5 ${initialData.endedAt ? 'text-slate-800' : 'text-slate-400'}`}>
-                                        {initialData.endedAt ? formatDateTime(initialData.endedAt) : t("commission.notCompletedYet")}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                            {isCompetitionHolder && selectedReplica && (
+                                <SettingsGroup
+                                    title={t("commission.replicaSettings", { name: selectedReplica.name })}
+                                    icon={Layers}
+                                    toggles={replicaToggles}
+                                />
+                            )}
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-10 lg:order-none">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-                                {t("commission.actionsControls")}
-                            </h3>
-
-                            <div className="flex flex-col gap-6">
-                                {isCompetitionHolder && isCommissionDraft && (
-                                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 flex-wrap sm:flex-nowrap">
-                                        <div className="max-w-full sm:max-w-[65%]">
-                                            <h4 className="text-sm font-bold text-slate-800">
-                                                {t("commission.submitReviewTitle")}
-                                            </h4>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                {t("commission.submitReviewDescription")}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={handleSubmitForReview}
-                                            disabled={isMutating}
-                                            className="group flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-600/15 cursor-pointer shrink-0"
-                                        >
-                                            {isMutating ? (
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                            ) : (
-                                                <Send className="h-4 w-4" />
-                                            )}
-                                            <span>{t("commission.submitReviewButton")}</span>
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isPreStart && currentUserRole && (
-                                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex-wrap sm:flex-nowrap">
-                                        <div className="max-w-full sm:max-w-[65%]">
-                                            <h4 className="text-sm font-bold text-slate-800">
-                                                {t("commission.yourReadiness")}
-                                            </h4>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                {t("commission.readinessDescription")}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleToggleReady(!amIReady)}
-                                            disabled={isMutating}
-                                            className={`group flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-xs cursor-pointer shrink-0 ${
-                                                amIReady
-                                                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
-                                                    : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/15"
-                                            }`}
-                                        >
-                                            {isMutating ? (
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            ) : amIReady ? (
-                                                <>
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    <span>{t("commission.ready")}</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <PlayCircle className="h-4 w-4" />
-                                                    <span>{t("commission.markReady")}</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
-
-                                {currentUserRole === "HEAD" && (
-                                    <div className="border-t border-slate-100 pt-6">
-                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                                            {t("commission.headTools", { name: selectedReplicaName })}
-                                        </h4>
-
-                                        {isPreStart && (
-                                            <div className="flex flex-col gap-3">
-                                                <div className="flex items-center gap-4 flex-wrap">
-                                                    <button
-                                                        onClick={handleStartCommission}
-                                                        disabled={!isEveryoneReady || !hasCandidates || isMutating}
-                                                        className={`group flex items-center gap-2.5 rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-300 transform active:scale-95 disabled:opacity-45 disabled:pointer-events-none cursor-pointer ${
-                                                            isEveryoneReady && hasCandidates
-                                                                ? "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25"
-                                                                : "bg-slate-100 text-slate-400 border border-slate-200"
-                                                        }`}
-                                                    >
-                                                        {isMutating ? (
-                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                                        ) : (
-                                                            <PlayCircle className="h-5 w-5" />
-                                                        )}
-                                                        <span>{t("commission.startTasting")}</span>
-                                                    </button>
-
-                                                    {!hasCandidates && (
-                                                        <span className="text-xs text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/60">
-                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                                            {t("commission.addSamplesBeforeStart")}
-                                                        </span>
-                                                    )}
-                                                    {hasCandidates && !hasMembers && (
-                                                        <span className="text-xs text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/60">
-                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                                            {t("commission.addExpertsBeforeStart")}
-                                                        </span>
-                                                    )}
-                                                    {hasCandidates && hasMembers && !isEveryoneReady && (
-                                                        <span className="text-xs text-slate-500 font-medium animate-fade-in-slide">
-                                                            {tCount("commission.waitingMembers", nonReadyCount)}
-                                                        </span>
-                                                    )}
-                                                    {hasCandidates && isEveryoneReady && (
-                                                        <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5 animate-pulse">
-                                                            <Check className="w-4 h-4 shrink-0" />
-                                                            {t("commission.everyoneReady")}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                    </div>
-                                )}
-
-                                {replicaStatus === "COMPLETED" && (
-                                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
-                                        <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-bold text-emerald-800">
-                                                {t("commission.sessionCompleted")}
-                                            </h4>
-                                            <p className="text-xs text-emerald-600/90 mt-1">
-                                                {t("commission.sessionCompletedDesc")}
-                                            </p>
-                                            {(isCompetitionHolder || isUserReplicaMember) && (
-                                                <button
-                                                    onClick={() => router.push(competitionResultsHref)}
-                                                    className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 cursor-pointer"
-                                                >
-                                                    <Trophy className="w-3.5 h-3.5" />
-                                                    {t("commission.viewResults")}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {replicaStatus === "STARTED" && currentUserRole && (
-                                    <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                                            </div>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-indigo-800">
-                                                    {t("commission.tastingActive")}
-                                                </h4>
-                                                <p className="text-xs text-slate-600 mt-1">
-                                                    {t("commission.tastingActiveDesc")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {selectedReplica?.currentCandidateId && (() => {
-                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const candIndex = selectedReplica.replicaCandidates.findIndex(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const rawCode = currentCandidateObj?.candidate?.anonymizedCode;
-                                            const code = (rawCode && rawCode.trim()) ? rawCode.trim() : (candIndex >= 0 ? `#${candIndex + 1}` : t("common.na"));
-                                            return (
-                                                <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
-                                                    <span>{t("commission.currentCandidate", { code })}</span>
-                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">({selectedReplica.currentCandidateId})</span>
-                                                </p>
-                                            );
-                                        })()}
-                                        <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
-                                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
-                                        >
-                                            {t("commission.enterTastingSession")} →
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isPreStart && currentUserRole !== "HEAD" && (
-                                    <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-100 flex items-start gap-3">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mt-1.5 shrink-0" />
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800">
-                                                {t("commission.waitingStart")}
-                                            </h4>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                {t("commission.waitingStartDesc")}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                            <ScheduleTimeline
+                                labels={{
+                                    title: t("commission.timelineDetails"),
+                                    plannedStart: t("commission.plannedStart"),
+                                    plannedEnd: t("commission.plannedEnd"),
+                                    actualStart: t("commission.actualStart"),
+                                    actualEnd: t("commission.actualEnd"),
+                                    notStartedYet: t("commission.notStartedYet"),
+                                    notEndedYet: t("commission.notCompletedYet"),
+                                }}
+                                plannedStartAt={initialData.plannedStartAt}
+                                plannedEndAt={initialData.plannedEndAt}
+                                startedAt={initialData.startedAt}
+                                endedAt={initialData.endedAt}
+                                canEdit={isCompetitionHolder && isCommissionDraft && !initialData.startedAt}
+                                onSave={handleSaveDates}
+                                calendarUrl={
+                                    replicaStatus === "PLANNED" && initialData.plannedStartAt
+                                        ? getGoogleCalendarUrl(initialData.name, initialData.plannedStartAt, initialData.plannedEndAt)
+                                        : null
+                                }
+                            />
+                        </aside>
                     </div>
-
                 </div>
             </main>
 
-            {/* Add Member Modal */}
             <AddMemberModal
                 isOpen={isAddMemberOpen}
                 onClose={() => setIsAddMemberOpen(false)}
@@ -2247,7 +1121,7 @@ export default function CommissionClientView({
                         <AlertDialogDescription>{t("commission.confirmDeleteExpert")}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t("competition.cancel")}</AlertDialogCancel>
+                        <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => memberPendingRemoval && handleRemoveMember(memberPendingRemoval)}
                             className="bg-rose-600 hover:bg-rose-700 focus:ring-rose-500"
