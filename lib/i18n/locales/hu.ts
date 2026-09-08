@@ -607,6 +607,8 @@ const hu = {
         voiceDiscard: "Hangfelvétel elvetése",
         voiceRecorded: "Hang ({{seconds}}mp)",
         voiceMicError: "Mikrofon hozzáférés megtagadva. Ellenőrizze a böngésző beállításait.",
+        voiceMicNotFound: "Nem található mikrofon ezen az eszközön.",
+        voiceNotSupported: "A hangrögzítés nem támogatott ebben a böngészőben vagy alkalmazásban. Kérjük, nyissa meg a Safari vagy Chrome böngészőben.",
         voiceUploadFailed: "A hangfeltöltés sikertelen — csak szöveg beküldése.",
         myScore:"Pontszámom",
         averageScore: "Átlagpontszám",

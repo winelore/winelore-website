@@ -609,6 +609,8 @@ const uk: TranslationKey = {
     voiceDiscard: "Видалити голосовий запис",
     voiceRecorded: "Голос ({{seconds}}с)",
     voiceMicError: "Доступ до мікрофона відхилено. Перевірте дозволи браузера.",
+    voiceMicNotFound: "Мікрофон не знайдено на цьому пристрої.",
+    voiceNotSupported: "Запис голосу не підтримується у цьому браузері або додатку (Telegram, Viber). Будь ласка, відкрийте сторінку в Safari або Chrome.",
     voiceUploadFailed: "Помилка завантаження голосу — надсилається лише текст.",
     myScore:"Моя оцінка",
     averageScore: "Середня оцінка",

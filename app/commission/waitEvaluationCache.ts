@@ -26,10 +26,18 @@ export function writeCachedWaitEvaluation(
     evaluation: CachedWaitEvaluation,
 ) {
     if (typeof window === "undefined") return
-    sessionStorage.setItem(waitEvaluationCacheKey(commissionId, replicaId), JSON.stringify(evaluation))
+    try {
+        sessionStorage.setItem(waitEvaluationCacheKey(commissionId, replicaId), JSON.stringify(evaluation))
+    } catch {
+        // Ignore Safari Private Browsing QuotaExceededError or quota issues
+    }
 }
 
 export function clearCachedWaitEvaluation(commissionId: string, replicaId: string) {
     if (typeof window === "undefined") return
-    sessionStorage.removeItem(waitEvaluationCacheKey(commissionId, replicaId))
+    try {
+        sessionStorage.removeItem(waitEvaluationCacheKey(commissionId, replicaId))
+    } catch {
+        // Ignore Safari Private Browsing QuotaExceededError or quota issues
+    }
 }

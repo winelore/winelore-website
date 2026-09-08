@@ -47,6 +47,7 @@ import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
 import { BackLink } from "@/components/BackLink"
+import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -660,8 +661,8 @@ export default function CommissionClientView({
 
     const openEditDates = () => {
         setEditDatesData({
-            plannedStartAt: initialData.plannedStartAt ? initialData.plannedStartAt.substring(0, 16) : "",
-            plannedEndAt: initialData.plannedEndAt ? initialData.plannedEndAt.substring(0, 16) : ""
+            plannedStartAt: toLocalDatetimeInput(initialData.plannedStartAt),
+            plannedEndAt: toLocalDatetimeInput(initialData.plannedEndAt)
         })
         setIsEditingDates(true)
     }
@@ -725,8 +726,8 @@ export default function CommissionClientView({
         try {
             const res = await updateCommissionDatesAction(
                 initialData.id,
-                editDatesData.plannedStartAt || null,
-                editDatesData.plannedEndAt || null,
+                fromLocalDatetimeInputToIso(editDatesData.plannedStartAt),
+                fromLocalDatetimeInputToIso(editDatesData.plannedEndAt),
             )
             if (res.success) {
                 setIsEditingDates(false)
