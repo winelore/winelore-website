@@ -20,22 +20,20 @@ export async function getUsernamesAction(auids: (string | number)[]): Promise<Re
       const defaultUsername = res?.usernames?.defaultUsername;
       
       if (defaultUsername) {
-        // Find default variation or fallback to first variation
-        let defaultVar = null;
-        if (res.defaultVariation?.variationId) {
-          defaultVar = res.variations?.find(v => v.id === res.defaultVariation?.variationId);
+        let varId = res.defaultVariation?.variationId;
+        if (!varId && res.variations && res.variations.length > 0) {
+          varId = res.variations[0].id;
         }
-        if (!defaultVar && res.variations && res.variations.length > 0) {
-          defaultVar = res.variations[0];
-        }
-
-        const fName = defaultVar?.firstName?.trim();
-        const lName = defaultVar?.lastName?.trim();
-        const isPlaceholder = fName === "Default" && lName === "Variation";
 
         let displayName = "";
-        if ((fName || lName) && !isPlaceholder) {
-          displayName = [fName, lName].filter(Boolean).join(" ");
+        if (varId) {
+          const nameRes = await axusSdk.VariationName({ variationId: varId });
+          const nameText = nameRes?.name?.displayName?.trim();
+          if (nameText && nameText !== "Default Variation") {
+            displayName = nameText;
+          } else {
+            displayName = `@${defaultUsername}`;
+          }
         } else {
           displayName = `@${defaultUsername}`;
         }

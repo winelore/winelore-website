@@ -135,25 +135,38 @@ export function buildExpertBeverageSummary(
             return
         }
 
-        const totalScores = normalizedScores
-            .filter((s) => propertyMap[s.code]?.isResult === true)
+        let totalScores = normalizedScores
+            .filter((s) => propertyMap[s.code]?.isResult === true || s.code === "total_score" || s.code === "typicity")
             .map((s) => ({
                 code: s.code,
                 name: propertyMap[s.code]?.name ?? s.code,
                 value: s.value,
             }))
 
+        if (totalScores.length === 0 && normalizedScores.length > 0) {
+            totalScores = normalizedScores.slice(-2).map((s) => ({
+                code: s.code,
+                name: propertyMap[s.code]?.name ?? s.code,
+                value: s.value,
+            }))
+        }
+
         // Extract vintage from batch attributes
         let vintageVal = undefined;
         const batchAttrs = rc.candidate?.sample?.batch?.attributes;
         if (batchAttrs) {
-            try {
-                const parsed = JSON.parse(batchAttrs);
-                if (parsed && parsed.vintage) {
-                    vintageVal = String(parsed.vintage);
+            if (typeof batchAttrs === "object" && batchAttrs !== null) {
+                const v = (batchAttrs as any).vintage
+                if (v) vintageVal = String(v)
+            } else if (typeof batchAttrs === "string") {
+                try {
+                    const parsed = JSON.parse(batchAttrs);
+                    if (parsed && parsed.vintage) {
+                        vintageVal = String(parsed.vintage);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse batch attributes in expertRanking:", e);
                 }
-            } catch (e) {
-                console.error("Failed to parse batch attributes in expertRanking:", e);
             }
         }
 
@@ -161,19 +174,24 @@ export function buildExpertBeverageSummary(
         let wineTypeVal = undefined;
         const bevAttrs = rc.candidate?.sample?.batch?.beverage?.attributes;
         if (bevAttrs) {
-            try {
-                const parsed = JSON.parse(bevAttrs);
-                if (parsed && parsed.color) {
-                    wineTypeVal = parsed.color;
+            if (typeof bevAttrs === "object" && bevAttrs !== null) {
+                const color = (bevAttrs as any).color
+                if (color) wineTypeVal = color
+            } else if (typeof bevAttrs === "string") {
+                try {
+                    const parsed = JSON.parse(bevAttrs);
+                    if (parsed && parsed.color) {
+                        wineTypeVal = parsed.color;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse beverage attributes in expertRanking:", e);
                 }
-            } catch (e) {
-                console.error("Failed to parse beverage attributes in expertRanking:", e);
             }
         }
 
         entries.push({
             order: index + 1,
-            code: rc.candidate?.anonymizedCode || "N/A",
+            code: (rc.candidate?.anonymizedCode && rc.candidate.anonymizedCode.trim()) ? rc.candidate.anonymizedCode.trim() : `#${index + 1}`,
             beverageName:
                 rc.candidate?.sample?.batch?.beverage?.name || unknownBeverageLabel,
             totalScores,

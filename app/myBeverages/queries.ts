@@ -12,6 +12,7 @@ export const GET_MY_BEVERAGES = gql(`
         producers {
           id
           auid
+          producerId
           role
         }
         origin {

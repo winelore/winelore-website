@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Loader2, Search } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, Loader2, Search } from "lucide-react";
 import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
@@ -8,6 +8,7 @@ import { useUsernames } from "@/hooks/useUsernames";
 import { normalizeAuids } from "../../../../auidUtils";
 import { MemberEvaluationSection } from "../../../../EvaluationCommentsDisplay";
 import { aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore";
+import { calculateDeltaOutliers, formatSignedDiff } from "@/lib/deltaOutliers";
 import {
     getReplicaBeverageOutcome,
     resolveReplicaBeverageOutcomes,
@@ -42,6 +43,10 @@ interface ExpertBreakdownEntry {
         scores?: Array<{ code: string; value: string }>;
         comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }>;
     };
+    isOutlier?: boolean;
+    outlierDiff?: number | null;
+    signedDiff?: number | null;
+    preAvg?: number | null;
 }
 interface CandidateRow {
     candidate: any;
@@ -216,11 +221,12 @@ export default function WaitPanelResults({
             data.commission.replicas.forEach((r: any) => {
                 const rc = r.replicaCandidates?.find((c: any) => c.candidate.id === candidateId);
                 if (rc?.evaluations) {
+                    const replicaEntries: ExpertBreakdownEntry[] = [];
                     rc.evaluations.forEach((ev: any, idx: number) => {
                         if (ev.isComplete) {
                             const totalVal = parseEvaluationTotal(ev.scores, data.propertyMap);
                             const evaluatorAuids = normalizeAuids(ev.evaluatorAuid);
-                            breakdown.push({
+                            replicaEntries.push({
                                 key: `${r.id}-${evaluatorAuids.join("-")}-${idx}`,
                                 replicaId: r.id,
                                 replicaName: r.name || formatReplicaType(r.type),
@@ -234,6 +240,23 @@ export default function WaitPanelResults({
                             });
                         }
                     });
+
+                    const outlierMap = calculateDeltaOutliers(
+                        replicaEntries,
+                        (e) => (e.totalScore !== "-" ? parseFloat(e.totalScore) : null),
+                    );
+
+                    replicaEntries.forEach((entry) => {
+                        const info = outlierMap.get(entry);
+                        if (info) {
+                            entry.isOutlier = info.isOutlier;
+                            entry.outlierDiff = info.diff;
+                            entry.signedDiff = info.signedDiff;
+                            entry.preAvg = info.preAvg;
+                        }
+                    });
+
+                    breakdown.push(...replicaEntries);
                 }
             });
             return breakdown;
@@ -585,7 +608,11 @@ export default function WaitPanelResults({
                                                     {row.expertBreakdown.map((expert) => (
                                                         <div
                                                             key={expert.key}
-                                                            className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col"
+                                                            className={`p-4 rounded-xl shadow-sm flex flex-col transition-all ${
+                                                                expert.isOutlier
+                                                                    ? "bg-amber-50/90 border-2 border-amber-300 shadow-amber-100/50"
+                                                                    : "bg-white border border-slate-200"
+                                                            }`}
                                                         >
                                                             <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
                                                                 <div className="flex flex-col gap-1">
@@ -596,6 +623,23 @@ export default function WaitPanelResults({
                                                                         <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
                                                                                 {formatReplicaType(expert.replicaType)}
                                                                             </span>
+                                                                        {expert.isOutlier && (
+                                                                            <span
+                                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                                                                                title={t("commission.results.outOfDeltaTooltip", {
+                                                                                    score: expert.totalScore,
+                                                                                    diff: formatSignedDiff(expert.signedDiff),
+                                                                                    avg: expert.preAvg != null ? expert.preAvg.toFixed(1) : "-",
+                                                                                    threshold: 5,
+                                                                                })}
+                                                                            >
+                                                                                <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                                                                <span>{t("commission.results.outOfDelta")}</span>
+                                                                                {expert.signedDiff != null && (
+                                                                                    <span className="opacity-90 font-mono">({formatSignedDiff(expert.signedDiff)})</span>
+                                                                                )}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                     <span className="text-xs text-slate-600 font-semibold">
                                                                             {resolveEvaluatorName(expert.evaluatorAuids)}
@@ -616,7 +660,11 @@ export default function WaitPanelResults({
                                                                         const results = expert.evaluation.scores?.filter((s) => data.propertyMap[s.code]?.isResult) || [];
                                                                         if (results.length === 1) {
                                                                             return (
-                                                                                <div className="text-xl font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0 max-w-full">
+                                                                                <div className={`text-xl font-black px-2 py-1 rounded-lg shrink-0 max-w-full ${
+                                                                                    expert.isOutlier
+                                                                                        ? "text-amber-800 bg-amber-100/90 border border-amber-300"
+                                                                                        : "text-indigo-600 bg-indigo-50"
+                                                                                }`}>
                                                                                     {formatScore(results[0])}
                                                                                 </div>
                                                                             );
@@ -625,7 +673,11 @@ export default function WaitPanelResults({
                                                                             return results.map((s) => (
                                                                                 <div
                                                                                     key={s.code}
-                                                                                    className="text-[10px] sm:text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg text-right whitespace-nowrap"
+                                                                                    className={`text-[10px] sm:text-xs font-extrabold px-2 py-0.5 rounded-lg text-right whitespace-nowrap ${
+                                                                                        expert.isOutlier
+                                                                                            ? "text-amber-800 bg-amber-100/90 border border-amber-300"
+                                                                                            : "text-indigo-600 bg-indigo-50"
+                                                                                    }`}
                                                                                 >
                                                                                     {data.propertyMap[s.code]?.name ?? s.code}: {formatScore(s)}
                                                                                 </div>

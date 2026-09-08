@@ -7,6 +7,7 @@ import type {
     WineRegionFeatureCollection,
     WineRegionLayer,
 } from '@/lib/wineRegionTypes';
+import { useTranslation } from '@/lib/i18n/context';
 
 // Кастомна іконка без тіні
 const customIcon = L.icon({
@@ -71,6 +72,7 @@ interface MapComponentProps {
 }
 
 export default function MapComponent({ beverages, onSelectBeverage, onBoundsChange, selectedRegionGeoJson, visiblePolygons = [] }: MapComponentProps) {
+    const { t, tCount } = useTranslation();
     const selectedRegionIds = new Set(
         selectedRegionGeoJson?.features.map((feature) => feature.properties.id) || [],
     );
@@ -109,7 +111,7 @@ export default function MapComponent({ beverages, onSelectBeverage, onBoundsChan
                         key={backgroundRegionKey}
                         data={backgroundRegionCollection}
                         onEachFeature={(feature, layer) => {
-                            layer.bindTooltip(`${feature.properties?.name || "Wine region"} · Wine region`, {
+                            layer.bindTooltip(t("map.wineRegionTooltip", { name: feature.properties?.name || t("map.wineRegionFallback") }), {
                                 sticky: true,
                                 direction: "top",
                             });
@@ -133,7 +135,7 @@ export default function MapComponent({ beverages, onSelectBeverage, onBoundsChan
                             .join('-')}
                         data={selectedRegionGeoJson}
                         onEachFeature={(feature, layer) => {
-                            layer.bindTooltip(`${feature.properties?.name || "Wine region"} · Wine region`, {
+                            layer.bindTooltip(t("map.wineRegionTooltip", { name: feature.properties?.name || t("map.wineRegionFallback") }), {
                                 sticky: true,
                                 direction: "top",
                             });
@@ -166,8 +168,8 @@ export default function MapComponent({ beverages, onSelectBeverage, onBoundsChan
             <div className="pointer-events-none absolute bottom-4 left-4 z-[500] flex items-center gap-2 rounded-full border border-violet-200/80 bg-white/95 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wider text-violet-700 shadow-lg backdrop-blur">
                 <span className="h-2.5 w-5 rounded-sm border border-violet-500 bg-violet-100" />
                 {visiblePolygons.length > 0
-                    ? `${visiblePolygons.length} wine ${visiblePolygons.length === 1 ? "region" : "regions"} in view`
-                    : "No mapped wine regions in view"}
+                    ? tCount("map.regionsInView", visiblePolygons.length)
+                    : t("map.noRegionsInView")}
             </div>
         </div>
     )

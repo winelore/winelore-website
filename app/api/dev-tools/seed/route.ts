@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { seedCompetitionScenarioAction, SeederFormData } from '@/lib/seeder';
+import { isProd } from '@/lib/isProd';
 
 export async function POST(req: Request) {
+  if (isProd()) {
+    return NextResponse.json({ success: false, error: 'Not Found' }, { status: 404 });
+  }
+
   try {
     const data: SeederFormData = await req.json();
     const encoder = new TextEncoder();

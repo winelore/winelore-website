@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { parseJwt } from "@/lib/pkce";
+import { deriveRefreshTokenTtl } from "@/lib/tokenTtl";
 import { axusSdk } from "@/lib/axusClient";
 
 export async function GET(request: NextRequest) {
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";
+  const redirectUri = new URL("/callback", request.url).toString();
 
   try {
     const tokenResponse = await fetch(`${issuer}/oauth/token`, {
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: process.env.NEXT_PUBLIC_AXUS_ID_REDIRECT_URI!,
+        redirect_uri: redirectUri,
         client_id: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
         code_verifier: codeVerifier,
       }),
@@ -64,20 +66,19 @@ export async function GET(request: NextRequest) {
     try {
       const res = await axusSdk.UserDetails({ auid: String(auid) });
       const defaultUsername = res?.usernames?.defaultUsername || username;
-      let defaultVar = null;
-      if (res?.defaultVariation?.variationId) {
-        defaultVar = res.variations?.find(v => v.id === res.defaultVariation?.variationId);
-      }
-      if (!defaultVar && res?.variations && res.variations.length > 0) {
-        defaultVar = res.variations[0];
+      let varId = res?.defaultVariation?.variationId;
+      if (!varId && res?.variations && res.variations.length > 0) {
+        varId = res.variations[0].id;
       }
 
-      const fName = defaultVar?.firstName?.trim();
-      const lName = defaultVar?.lastName?.trim();
-      const isPlaceholder = fName === "Default" && lName === "Variation";
-
-      if ((fName || lName) && !isPlaceholder) {
-        displayName = [fName, lName].filter(Boolean).join(" ");
+      if (varId) {
+        const nameRes = await axusSdk.VariationName({ variationId: varId });
+        const nameText = nameRes?.name?.displayName?.trim();
+        if (nameText && nameText !== "Default Variation") {
+          displayName = nameText;
+        } else {
+          displayName = `@${defaultUsername}`;
+        }
       } else {
         displayName = `@${defaultUsername}`;
       }
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
         sameSite: "lax",
         secure: false,
         path: "/",
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: deriveRefreshTokenTtl(tokens, tokens.refresh_token),
       });
     }
 

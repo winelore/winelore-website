@@ -39,18 +39,34 @@ export default async function BeveragePage({ params }: PageProps) {
         }
 
         try {
+            const auidsToFetch: number[] = [];
+            if (beverage.createdBy) {
+                const cId = Array.isArray(beverage.createdBy) ? beverage.createdBy[0] : beverage.createdBy;
+                if (cId) auidsToFetch.push(Number(cId));
+            }
             if (beverage.producers && beverage.producers.length > 0) {
-                const auidsToFetch = beverage.producers.map((p: any) => String(p.auid[0]));
-                const usernamesMap = await getUsernamesAction(auidsToFetch) as Record<string, any>;
+                beverage.producers.forEach((p: any) => {
+                    if (p.auid) {
+                        const a = Array.isArray(p.auid) ? p.auid[0] : p.auid;
+                        if (a) auidsToFetch.push(Number(a));
+                    }
+                });
+            }
+            const uniqueAuids = Array.from(new Set(auidsToFetch));
+            const usernamesMap = uniqueAuids.length > 0
+                ? (await getUsernamesAction(uniqueAuids) as Record<string, any>)
+                : {};
 
+            if (beverage.producers && beverage.producers.length > 0) {
                 beverage.producers = beverage.producers.map((p: any) => {
-                    const auidStr = String(p.auid[0]);
-                    const userInfo = usernamesMap[auidStr];
+                    const auidKey = p.auid ? String(Array.isArray(p.auid) ? p.auid[0] : p.auid) : null;
+                    const userInfo = auidKey ? usernamesMap[auidKey] : null;
 
                     let dName = null;
                     let uName = null;
 
                     if (typeof userInfo === 'string') {
+                        dName = userInfo;
                         uName = userInfo;
                     } else if (userInfo && typeof userInfo === 'object') {
                         dName = userInfo.displayName || null;
@@ -63,6 +79,25 @@ export default async function BeveragePage({ params }: PageProps) {
                         username: uName
                     };
                 });
+            }
+
+            if (beverage.createdBy) {
+                const cId = String(Array.isArray(beverage.createdBy) ? beverage.createdBy[0] : beverage.createdBy);
+                const cInfo = usernamesMap[cId];
+                let createdByName = null;
+                let createdByUsername = null;
+                if (typeof cInfo === 'string') {
+                    createdByName = cInfo;
+                    createdByUsername = cInfo;
+                } else if (cInfo && typeof cInfo === 'object') {
+                    createdByName = cInfo.displayName || null;
+                    createdByUsername = cInfo.username || null;
+                }
+                beverage.createdByUser = {
+                    auid: cId,
+                    displayName: createdByName,
+                    username: createdByUsername
+                };
             }
         } catch (err) {
             console.error("Failed to fetch producer usernames:", err);
@@ -78,15 +113,19 @@ export default async function BeveragePage({ params }: PageProps) {
 
         let colorVal: string | null = null
         if (beverage.attributes) {
-            try {
-                const parsed = JSON.parse(beverage.attributes)
-                if (parsed && parsed.color) {
-                    colorVal = parsed.color
-                }
-            } catch (e) {
-                const match = beverage.attributes.match(/color=([^,\}]+)/)
-                if (match) {
-                    colorVal = match[1].trim().replace(/^["']|["']$/g, "")
+            if (typeof beverage.attributes === "object" && beverage.attributes !== null) {
+                colorVal = (beverage.attributes as any).color || null
+            } else if (typeof beverage.attributes === "string") {
+                try {
+                    const parsed = JSON.parse(beverage.attributes)
+                    if (parsed && parsed.color) {
+                        colorVal = parsed.color
+                    }
+                } catch (e) {
+                    const match = beverage.attributes.match(/color=([^,\}]+)/)
+                    if (match) {
+                        colorVal = match[1].trim().replace(/^["']|["']$/g, "")
+                    }
                 }
             }
         }

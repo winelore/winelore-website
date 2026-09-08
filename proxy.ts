@@ -3,8 +3,15 @@ import type { NextRequest } from "next/server";
 import { parseJwt } from "@/lib/pkce";
 import { refreshTokens } from "@/lib/authRefresh";
 
+import { isProd } from "@/lib/isProd";
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Disable dev-tools on production
+  if (isProd() && (pathname.startsWith("/dev-tools") || pathname.startsWith("/api/dev-tools"))) {
+    return new NextResponse(null, { status: 404 });
+  }
 
   // Do not intercept or try to refresh tokens on auth-related endpoints
   if (pathname.startsWith("/auth/") || pathname === "/callback") {
@@ -70,7 +77,7 @@ export async function proxy(request: NextRequest) {
       response.cookies.set("username", String(refreshed.username), { ...cookieOptions, maxAge: refreshed.expiresIn });
       response.cookies.set("displayName", String(refreshed.displayName), { ...cookieOptions, maxAge: refreshed.expiresIn });
       response.cookies.set("axus_access_token", refreshed.accessToken, { ...cookieOptions, httpOnly: true, maxAge: refreshed.expiresIn });
-      response.cookies.set("axus_refresh_token", refreshed.refreshToken, { ...cookieOptions, httpOnly: true, maxAge: 60 * 60 * 24 * 30 });
+      response.cookies.set("axus_refresh_token", refreshed.refreshToken, { ...cookieOptions, httpOnly: true, maxAge: refreshed.refreshTokenExpiresIn });
 
       return response;
     } catch (error) {

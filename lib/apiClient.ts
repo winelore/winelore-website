@@ -53,18 +53,34 @@ function logGraphQLPipelineError(context: string, errors: any[], isFatal: boolea
     }
 }
 
+async function parseJsonResponse(response: Response, context: string): Promise<any> {
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch {
+        const cleanText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        console.error(`[${context}] Received non-JSON response (HTTP ${response.status}):`, text.slice(0, 500));
+        throw new Error(
+            response.status >= 500
+                ? `GraphQL server error (${response.status}): Сервер тимчасово недоступний`
+                : `GraphQL response error (${response.status}): ${cleanText.slice(0, 150) || 'Некоректна відповідь сервера'}`
+        );
+    }
+}
+
 export async function fetchGraphQLRaw<TResult, TVariables>(
     query: string,
-    variables?: TVariables
+    variables?: TVariables,
+    headers?: Record<string, string>
 ): Promise<TResult> {
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 }
     });
 
-    const { data, errors } = await response.json();
+    const { data, errors } = await parseJsonResponse(response, 'fetchGraphQLRaw');
 
     if (errors) {
         const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
@@ -107,7 +123,7 @@ export async function fetchGraphQL<TResult, TVariables>(
         throw new Error('Не вдалося підключитися до GraphQL сервера');
     }
 
-    const { data, errors } = await response.json();
+    const { data, errors } = await parseJsonResponse(response, 'fetchGraphQL');
 
     if (errors) {
         const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
@@ -145,7 +161,7 @@ const requester = async <R, V>(
         next: { revalidate: 0 }
     });
 
-    const { data, errors } = await response.json();
+    const { data, errors } = await parseJsonResponse(response, 'SDK requester');
 
     if (errors) {
         const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));

@@ -9,9 +9,11 @@ export const GET_BEVERAGE = gql(`
       typeId
       schemaEditionIds
       attributes
+      createdBy
       producers {
         id
         auid
+        producerId
         role
       }
       origin {

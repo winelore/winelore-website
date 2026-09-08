@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createPkcePair } from "@/lib/pkce";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const { codeVerifier, codeChallenge } = await createPkcePair();
   const state = crypto.randomUUID();
 
@@ -20,14 +20,17 @@ export async function GET() {
     secure: false
   });
 
+  const redirectUri = new URL("/callback", request.url).toString();
+
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
-    redirect_uri: process.env.NEXT_PUBLIC_AXUS_ID_REDIRECT_URI!,
+    redirect_uri: redirectUri,
     scope: "openid profile offline_access",
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
+    prompt: "consent select_account",
   });
 
   const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";
