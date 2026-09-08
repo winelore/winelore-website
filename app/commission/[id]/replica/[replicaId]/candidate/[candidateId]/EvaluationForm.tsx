@@ -435,6 +435,7 @@ export default function EvaluationForm({
                 const recordedType = mr.mimeType || mimeType || "audio/mp4"
                 const blob = new Blob(audioChunksRef.current, { type: recordedType })
                 setVoiceBlobs(prev => ({ ...prev, [key]: blob }))
+                const url = URL.createObjectURL(blob)
                 setVoicePreviewUrls(prev => {
                     if (prev[key]) URL.revokeObjectURL(prev[key])
                     return { ...prev, [key]: url }
