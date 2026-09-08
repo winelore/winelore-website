@@ -137,6 +137,7 @@ function DiscreteNumbersInput({
         }
 
         checkFit()
+        if (typeof ResizeObserver === "undefined") return
         const targetElement = container.parentElement || container
         const observer = new ResizeObserver(checkFit)
         observer.observe(targetElement)
@@ -257,6 +258,35 @@ function VoiceCommentButton({
             <Mic className="w-4 h-4" />
         </button>
     )
+}
+
+function isVoiceRecordingSupported(): boolean {
+    if (typeof window === "undefined") return false
+    const hasGetUserMedia = Boolean(
+        navigator?.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function"
+    )
+    const hasMediaRecorder = typeof window.MediaRecorder !== "undefined"
+    return hasGetUserMedia && hasMediaRecorder
+}
+function getBestAudioMimeType(): string | undefined {
+    if (typeof window === "undefined" || typeof window.MediaRecorder === "undefined") return undefined
+    if (typeof MediaRecorder.isTypeSupported !== "function") return undefined
+    const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/aac",
+    ]
+    for (const candidate of candidates) {
+        try {
+            if (MediaRecorder.isTypeSupported(candidate)) {
+                return candidate
+            }
+        } catch {
+            // Ignore browsers that throw on unknown mime types
+        }
+    }
+    return undefined
 }
 
 export default function EvaluationForm({
@@ -387,21 +417,28 @@ export default function EvaluationForm({
         if (activeRecordingKey) stopRecording()
         audioChunksRef.current = []
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({audio: true})
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
             streamRef.current = stream
-            const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4"
-            const mr = new MediaRecorder(stream, {mimeType})
+            const mimeType = getBestAudioMimeType()
+            let mr: MediaRecorder
+            try {
+                mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+            } catch {
+                // Fallback if browser constructor rejects mimeType options
+                mr = new MediaRecorder(stream)
+            }
             mediaRecorderRef.current = mr
             mr.ondataavailable = (e) => {
-                if (e.data.size > 0) audioChunksRef.current.push(e.data)
+                if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data)
             }
             mr.onstop = () => {
-                const blob = new Blob(audioChunksRef.current, {type: mimeType})
+                const recordedType = mr.mimeType || mimeType || "audio/mp4"
+                const blob = new Blob(audioChunksRef.current, { type: recordedType })
+                setVoiceBlobs(prev => ({ ...prev, [key]: blob }))
                 const url = URL.createObjectURL(blob)
-                setVoiceBlobs(prev => ({...prev, [key]: blob}))
                 setVoicePreviewUrls(prev => {
                     if (prev[key]) URL.revokeObjectURL(prev[key])
-                    return {...prev, [key]: url}
+                    return { ...prev, [key]: url }
                 })
                 stream.getTracks().forEach(t => t.stop())
                 streamRef.current = null
@@ -413,8 +450,16 @@ export default function EvaluationForm({
             timerRef.current = setInterval(() => {
                 setRecordingTime(Math.round((Date.now() - start) / 1000))
             }, 1000)
-        } catch {
-            toast.error(t("evaluation.voiceMicError"))
+        } catch (err: any) {
+            if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+                toast.error(t("evaluation.voiceMicError"))
+            } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+                toast.error(t("evaluation.voiceMicNotFound"))
+            } else if (err?.name === "NotSupportedError" || err instanceof TypeError) {
+                toast.error(t("evaluation.voiceNotSupported"))
+            } else {
+                toast.error(t("evaluation.voiceMicError"))
+            }
         }
     }
 
@@ -445,7 +490,7 @@ export default function EvaluationForm({
 
     const uploadVoice = async (blob: Blob, key: string): Promise<string | undefined> => {
         try {
-            const ext = blob.type.includes("mp4") ? "mp4" : "webm"
+            const ext = blob.type.includes("mp4") || blob.type.includes("aac") || blob.type.includes("m4a") ? "mp4" : "webm"
             const fileName = `evaluation_voice_${key}_${Date.now()}.${ext}`
             const result = await getVoiceUploadUrlAction(fileName, blob.type)
             if (!result) return undefined

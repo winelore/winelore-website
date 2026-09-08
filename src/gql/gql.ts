@@ -75,6 +75,7 @@ type Documents = {
     "\n  mutation DevMarkCommissionReplicaMemberReady($id: ID!, $memberId: ID!) {\n    markCommissionReplicaMemberReady(id: $id, memberId: $memberId) {\n      id\n    }\n  }\n": typeof types.DevMarkCommissionReplicaMemberReadyDocument,
     "\n  mutation DevSetCommissionReplicaCurrentPanel($id: ID!, $currentPanelId: ID!) {\n    setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $currentPanelId) { id }\n  }\n": typeof types.DevSetCommissionReplicaCurrentPanelDocument,
     "\n  mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {\n    setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {\n      id\n    }\n  }\n": typeof types.DevSetCommissionReplicaPanelCurrentCandidateDocument,
+    "\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n": typeof types.DevCompleteCommissionReplicaPanelDocument,
     "\n  query DevGetCompetitionsList {\n    competitions {\n      items {\n        id\n        name\n      }\n    }\n  }\n": typeof types.DevGetCompetitionsListDocument,
     "\n  query DevGetCommissionsByCompetition($competitionId: ID!, $limit: Int) {\n    commissionsByCompetition(competitionId: $competitionId, limit: $limit) {\n      items {\n        id\n        name\n      }\n    }\n  }\n": typeof types.DevGetCommissionsByCompetitionDocument,
     "\n  query DevGetCommissionReplicasByCommission($commissionId: ID!) {\n    commissionReplicasByCommission(commissionId: $commissionId) {\n      id\n      name\n      type\n      members {\n        id\n        auid\n        role\n      }\n    }\n  }\n": typeof types.DevGetCommissionReplicasByCommissionDocument,
@@ -83,6 +84,11 @@ type Documents = {
     "\n  query GetMyBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput, $producer: [Int!]) {\n    beverages(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {\n      items {\n        id\n        name\n        status\n        typeId\n        attributes\n        producers {\n          id\n          auid\n          producerId\n          role\n        }\n        origin {\n          latitude\n          longitude\n        }\n      }\n    }\n    beverageCount(producer: $producer)\n  }\n": typeof types.GetMyBeveragesDocument,
     "\n  query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput, $holder: [Int!]) {\n    competitions(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {\n      items {\n        id\n        name\n        status\n        startedAt\n        endedAt\n        plannedDates {\n          start\n          end\n        }\n        series {\n          id\n          name\n        }\n        holders\n      }\n    }\n    competitionCount(holder: $holder)\n  }\n": typeof types.GetMyCompetitionsDocument,
     "\n  mutation ChangeEvaluationTemplateName($id: ID!, $newName: String!) {\n    changeEvaluationTemplateName(id: $id, newName: $newName) {\n      id\n      name\n    }\n  }\n": typeof types.ChangeEvaluationTemplateNameDocument,
+    "\n  mutation UpdateOutcomePolicyEditionScript($id: ID!, $scriptCode: String!) {\n    updateOutcomePolicyEditionScript(id: $id, scriptCode: $scriptCode) {\n      id\n      scriptCode\n      version\n    }\n  }\n": typeof types.UpdateOutcomePolicyEditionScriptDocument,
+    "\n  mutation CreateOutcomePolicy($input: CreateOutcomePolicyInput!) {\n    createOutcomePolicy(input: $input) {\n      id\n      name\n    }\n  }\n": typeof types.CreateOutcomePolicyDocument,
+    "\n  mutation CreateOutcomePolicyEdition($input: CreateOutcomePolicyEditionInput!) {\n    createOutcomePolicyEdition(input: $input) {\n      id\n      policyId\n      version\n    }\n  }\n": typeof types.CreateOutcomePolicyEditionDocument,
+    "\n    query GetOutcomePolicyDetail($id: ID!) {\n        outcomePolicy(id: $id) {\n            id\n            name\n            createdAt\n        }\n    }\n": typeof types.GetOutcomePolicyDetailDocument,
+    "\n    query GetOutcomePolicyEditionsByPolicy($policyId: ID!, $limit: Int) {\n        outcomePolicyEditionsByPolicyId(policyId: $policyId, limit: $limit) {\n            items {\n                id\n                policyId\n                version\n                scriptCode\n                status\n                calculationScope\n                createdAt\n            }\n        }\n    }\n": typeof types.GetOutcomePolicyEditionsByPolicyDocument,
     "\n  query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {\n      competitions(limit: $limit, cursor: $cursor, offset: $offset) {\n          items {\n              id\n              name\n              status\n              startedAt\n              plannedDates {\n                  start\n                  end\n              }\n              endedAt\n              holders\n              series {\n                  id\n                  name\n                  status\n              }\n          }\n      }\n      competitionCount\n  }\n": typeof types.GetDashboardCompetitionsDocument,
 };
 const documents: Documents = {
@@ -147,6 +153,7 @@ const documents: Documents = {
     "\n  mutation DevMarkCommissionReplicaMemberReady($id: ID!, $memberId: ID!) {\n    markCommissionReplicaMemberReady(id: $id, memberId: $memberId) {\n      id\n    }\n  }\n": types.DevMarkCommissionReplicaMemberReadyDocument,
     "\n  mutation DevSetCommissionReplicaCurrentPanel($id: ID!, $currentPanelId: ID!) {\n    setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $currentPanelId) { id }\n  }\n": types.DevSetCommissionReplicaCurrentPanelDocument,
     "\n  mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {\n    setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {\n      id\n    }\n  }\n": types.DevSetCommissionReplicaPanelCurrentCandidateDocument,
+    "\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n": types.DevCompleteCommissionReplicaPanelDocument,
     "\n  query DevGetCompetitionsList {\n    competitions {\n      items {\n        id\n        name\n      }\n    }\n  }\n": types.DevGetCompetitionsListDocument,
     "\n  query DevGetCommissionsByCompetition($competitionId: ID!, $limit: Int) {\n    commissionsByCompetition(competitionId: $competitionId, limit: $limit) {\n      items {\n        id\n        name\n      }\n    }\n  }\n": types.DevGetCommissionsByCompetitionDocument,
     "\n  query DevGetCommissionReplicasByCommission($commissionId: ID!) {\n    commissionReplicasByCommission(commissionId: $commissionId) {\n      id\n      name\n      type\n      members {\n        id\n        auid\n        role\n      }\n    }\n  }\n": types.DevGetCommissionReplicasByCommissionDocument,
@@ -155,6 +162,11 @@ const documents: Documents = {
     "\n  query GetMyBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput, $producer: [Int!]) {\n    beverages(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {\n      items {\n        id\n        name\n        status\n        typeId\n        attributes\n        producers {\n          id\n          auid\n          producerId\n          role\n        }\n        origin {\n          latitude\n          longitude\n        }\n      }\n    }\n    beverageCount(producer: $producer)\n  }\n": types.GetMyBeveragesDocument,
     "\n  query GetMyCompetitions($limit: Int, $cursor: ID, $offset: Int, $filter: CompetitionFilterInput, $holder: [Int!]) {\n    competitions(limit: $limit, cursor: $cursor, offset: $offset, filter: $filter) {\n      items {\n        id\n        name\n        status\n        startedAt\n        endedAt\n        plannedDates {\n          start\n          end\n        }\n        series {\n          id\n          name\n        }\n        holders\n      }\n    }\n    competitionCount(holder: $holder)\n  }\n": types.GetMyCompetitionsDocument,
     "\n  mutation ChangeEvaluationTemplateName($id: ID!, $newName: String!) {\n    changeEvaluationTemplateName(id: $id, newName: $newName) {\n      id\n      name\n    }\n  }\n": types.ChangeEvaluationTemplateNameDocument,
+    "\n  mutation UpdateOutcomePolicyEditionScript($id: ID!, $scriptCode: String!) {\n    updateOutcomePolicyEditionScript(id: $id, scriptCode: $scriptCode) {\n      id\n      scriptCode\n      version\n    }\n  }\n": types.UpdateOutcomePolicyEditionScriptDocument,
+    "\n  mutation CreateOutcomePolicy($input: CreateOutcomePolicyInput!) {\n    createOutcomePolicy(input: $input) {\n      id\n      name\n    }\n  }\n": types.CreateOutcomePolicyDocument,
+    "\n  mutation CreateOutcomePolicyEdition($input: CreateOutcomePolicyEditionInput!) {\n    createOutcomePolicyEdition(input: $input) {\n      id\n      policyId\n      version\n    }\n  }\n": types.CreateOutcomePolicyEditionDocument,
+    "\n    query GetOutcomePolicyDetail($id: ID!) {\n        outcomePolicy(id: $id) {\n            id\n            name\n            createdAt\n        }\n    }\n": types.GetOutcomePolicyDetailDocument,
+    "\n    query GetOutcomePolicyEditionsByPolicy($policyId: ID!, $limit: Int) {\n        outcomePolicyEditionsByPolicyId(policyId: $policyId, limit: $limit) {\n            items {\n                id\n                policyId\n                version\n                scriptCode\n                status\n                calculationScope\n                createdAt\n            }\n        }\n    }\n": types.GetOutcomePolicyEditionsByPolicyDocument,
     "\n  query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {\n      competitions(limit: $limit, cursor: $cursor, offset: $offset) {\n          items {\n              id\n              name\n              status\n              startedAt\n              plannedDates {\n                  start\n                  end\n              }\n              endedAt\n              holders\n              series {\n                  id\n                  name\n                  status\n              }\n          }\n      }\n      competitionCount\n  }\n": types.GetDashboardCompetitionsDocument,
 };
 
@@ -419,6 +431,10 @@ export function gql(source: "\n  mutation DevSetCommissionReplicaPanelCurrentCan
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function gql(source: "\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n"): (typeof documents)["\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function gql(source: "\n  query DevGetCompetitionsList {\n    competitions {\n      items {\n        id\n        name\n      }\n    }\n  }\n"): (typeof documents)["\n  query DevGetCompetitionsList {\n    competitions {\n      items {\n        id\n        name\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -448,6 +464,26 @@ export function gql(source: "\n  query GetMyCompetitions($limit: Int, $cursor: I
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  mutation ChangeEvaluationTemplateName($id: ID!, $newName: String!) {\n    changeEvaluationTemplateName(id: $id, newName: $newName) {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  mutation ChangeEvaluationTemplateName($id: ID!, $newName: String!) {\n    changeEvaluationTemplateName(id: $id, newName: $newName) {\n      id\n      name\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation UpdateOutcomePolicyEditionScript($id: ID!, $scriptCode: String!) {\n    updateOutcomePolicyEditionScript(id: $id, scriptCode: $scriptCode) {\n      id\n      scriptCode\n      version\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateOutcomePolicyEditionScript($id: ID!, $scriptCode: String!) {\n    updateOutcomePolicyEditionScript(id: $id, scriptCode: $scriptCode) {\n      id\n      scriptCode\n      version\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation CreateOutcomePolicy($input: CreateOutcomePolicyInput!) {\n    createOutcomePolicy(input: $input) {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  mutation CreateOutcomePolicy($input: CreateOutcomePolicyInput!) {\n    createOutcomePolicy(input: $input) {\n      id\n      name\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation CreateOutcomePolicyEdition($input: CreateOutcomePolicyEditionInput!) {\n    createOutcomePolicyEdition(input: $input) {\n      id\n      policyId\n      version\n    }\n  }\n"): (typeof documents)["\n  mutation CreateOutcomePolicyEdition($input: CreateOutcomePolicyEditionInput!) {\n    createOutcomePolicyEdition(input: $input) {\n      id\n      policyId\n      version\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n    query GetOutcomePolicyDetail($id: ID!) {\n        outcomePolicy(id: $id) {\n            id\n            name\n            createdAt\n        }\n    }\n"): (typeof documents)["\n    query GetOutcomePolicyDetail($id: ID!) {\n        outcomePolicy(id: $id) {\n            id\n            name\n            createdAt\n        }\n    }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n    query GetOutcomePolicyEditionsByPolicy($policyId: ID!, $limit: Int) {\n        outcomePolicyEditionsByPolicyId(policyId: $policyId, limit: $limit) {\n            items {\n                id\n                policyId\n                version\n                scriptCode\n                status\n                calculationScope\n                createdAt\n            }\n        }\n    }\n"): (typeof documents)["\n    query GetOutcomePolicyEditionsByPolicy($policyId: ID!, $limit: Int) {\n        outcomePolicyEditionsByPolicyId(policyId: $policyId, limit: $limit) {\n            items {\n                id\n                policyId\n                version\n                scriptCode\n                status\n                calculationScope\n                createdAt\n            }\n        }\n    }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
