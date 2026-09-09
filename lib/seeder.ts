@@ -23,6 +23,7 @@ export type CommissionConfig = {
 export type SeederFormData = {
   competitionName: string;
   seriesName: string;
+  templateEditionId?: string;
   commissions: CommissionConfig[];
 };
 
@@ -80,32 +81,67 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
       log(`🔎 Знайдено ${items.length} шаблонів у базі. Підбираємо активний шаблон для типу напою...`);
 
-      // Шукаємо активний або опублікований шаблон саме для цього beverageTypeId
-      let selectedTemplate = items.find((i: any) => 
-        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
-        i.template?.beverageType?.id === beverageTypeId
-      );
+      const DEFAULT_DEV_TOOLS_TEMPLATE_EDITION_ID = "14fa1fe7-139d-4c12-903d-80f65331f9d2";
+      const targetTemplateEditionId = (data.templateEditionId?.trim() || DEFAULT_DEV_TOOLS_TEMPLATE_EDITION_ID);
 
-      // Якщо для WINE шаблону немає, беремо будь-який активний шаблон і використовуємо його beverageTypeId
-      if (!selectedTemplate) {
+      let selectedTemplate: any = null;
+
+      // Якщо вказаний валідний UUID, спочатку пробуємо знайти його серед наявних шаблонів
+      if (isValidUuid(targetTemplateEditionId)) {
         selectedTemplate = items.find((i: any) => 
-          (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.template?.beverageType?.id
-        ) || items[0];
+          i.id === targetTemplateEditionId || i.template?.id === targetTemplateEditionId
+        );
 
-        if (selectedTemplate?.template?.beverageType?.id) {
-          beverageTypeId = selectedTemplate.template.beverageType.id;
-          log(`ℹ️ Використано тип напою з шаблону: ${beverageTypeId}`);
+        if (selectedTemplate) {
+          activeTemplateEditionId = selectedTemplate.id;
+          if (selectedTemplate.template?.beverageType?.id) {
+            beverageTypeId = selectedTemplate.template.beverageType.id;
+            log(`ℹ️ Використано тип напою з шаблону: ${beverageTypeId}`);
+          }
+        } else {
+          // Якщо в items немає (наприклад, інший статус), використовуємо цільовий ID безпосередньо
+          activeTemplateEditionId = targetTemplateEditionId;
         }
       }
 
-      if (selectedTemplate) {
-        activeTemplateEditionId = selectedTemplate.id;
-        const selectedName = selectedTemplate.template?.name || "Default Template";
+      // Якщо шаблон досі не вибрано (наприклад, цільовий UUID був невалідний)
+      if (!activeTemplateEditionId) {
+        // Шукаємо активний або опублікований шаблон саме для цього beverageTypeId
+        selectedTemplate = items.find((i: any) => 
+          (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
+          i.template?.beverageType?.id === beverageTypeId
+        );
+
+        // Якщо для WINE шаблону немає, беремо будь-який активний шаблон і використовуємо його beverageTypeId
+        if (!selectedTemplate) {
+          selectedTemplate = items.find((i: any) => 
+            (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.template?.beverageType?.id
+          ) || items[0];
+
+          if (selectedTemplate?.template?.beverageType?.id) {
+            beverageTypeId = selectedTemplate.template.beverageType.id;
+            log(`ℹ️ Використано тип напою з шаблону: ${beverageTypeId}`);
+          }
+        }
+
+        if (selectedTemplate) {
+          activeTemplateEditionId = selectedTemplate.id;
+        }
+      }
+
+      if (activeTemplateEditionId) {
+        const selectedName = selectedTemplate?.template?.name || (activeTemplateEditionId === DEFAULT_DEV_TOOLS_TEMPLATE_EDITION_ID ? "Default DevTools Template" : "Template");
         log(`📄 Вибрано шаблон оцінювання: "${selectedName}" (ID: ${activeTemplateEditionId})`);
 
         const query = `
           query GetTemplate($id: ID!) {
             evaluationTemplateEdition(id: $id) {
+              template {
+                name
+                beverageType {
+                  id
+                }
+              }
               categories {
                 properties {
                   __typename
@@ -130,7 +166,15 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
           body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
         });
         const tplData = await tplRes.json();
-        const categories = tplData?.data?.evaluationTemplateEdition?.categories || [];
+        const tplEdition = tplData?.data?.evaluationTemplateEdition;
+        if (tplEdition?.template?.beverageType?.id && (!selectedTemplate || !selectedTemplate.template?.beverageType?.id)) {
+          beverageTypeId = tplEdition.template.beverageType.id;
+          log(`ℹ️ Оновлено тип напою з шаблону: ${beverageTypeId}`);
+        }
+        if (tplEdition?.template?.name && selectedName === "Default DevTools Template") {
+          log(`📄 Оновлено назву шаблону: "${tplEdition.template.name}"`);
+        }
+        const categories = tplEdition?.categories || [];
         categories.forEach((cat: any) => {
           cat.properties?.forEach((prop: any) => {
             if (prop.__typename !== "SmartProperty") {
