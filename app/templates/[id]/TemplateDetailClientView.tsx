@@ -7,8 +7,8 @@ import {
     Pencil, AlertCircle, ChevronDown, ChevronUp, Tag, Hash
 } from "lucide-react"
 import Link from "next/link"
-import { getPropertyTypeLabel } from "../TemplateCreatorModal"
-import TemplateCreatorModal from "../TemplateCreatorModal"
+import { getPropertyTypeLabel } from "../../myTemplates/TemplateCreatorModal"
+import TemplateCreatorModal from "../../myTemplates/TemplateCreatorModal"
 
 interface Property {
     id: string

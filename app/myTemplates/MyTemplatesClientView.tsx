@@ -143,7 +143,7 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <Link
-                                                href={`/myTemplates/${template.id}`}
+                                                href={`/templates/${template.id}`}
                                                 onClick={(e) => e.stopPropagation()}
                                                 className="text-lg font-bold text-slate-800 tracking-tight hover:text-indigo-600 transition-colors truncate"
                                             >
