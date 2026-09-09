@@ -879,6 +879,7 @@ const uk: TranslationKey = {
     createFirst: "Створіть свій перший шаблон оцінювання за допомогою кнопки вище.",
     errorTitle: "Помилка завантаження",
     errorDescription: "Не вдалося завантажити шаблони. Спробуйте оновити сторінку.",
+    editionHistory: "Історія редакцій",
   },
   templateCreator: {
     modalTitleEdit: "Редагування темплейту оцінювання",

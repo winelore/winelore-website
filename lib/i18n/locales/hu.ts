@@ -877,6 +877,7 @@ const hu = {
         createFirst: "Hozza létre első értékelési sablonját a fenti gomb segítségével.",
         errorTitle: "Betöltési hiba",
         errorDescription: "Nem sikerült betölteni a sablonokat. Kérjük, frissítse az oldalt.",
+        editionHistory: "Kiadástörténet",
     },
     templateCreator: {
         modalTitleEdit: "Értékelési sablon szerkesztése",

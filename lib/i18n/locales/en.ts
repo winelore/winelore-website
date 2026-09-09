@@ -877,6 +877,7 @@ const en = {
     createFirst: "Create your first evaluation template using the button above.",
     errorTitle: "Loading Error",
     errorDescription: "Failed to load templates. Please try refreshing the page.",
+    editionHistory: "Edition History",
   },
   templateCreator: {
     modalTitleEdit: "Edit Evaluation Template",
