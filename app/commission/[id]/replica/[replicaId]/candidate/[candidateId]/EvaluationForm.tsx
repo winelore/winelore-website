@@ -10,7 +10,7 @@ import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
 import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
 import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
-import { Mic, Square, Trash2, Sparkles } from "lucide-react"
+import { Mic, Square, Trash2, Wand2 } from "lucide-react"
 import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
 interface EvaluationProperty {
@@ -648,8 +648,43 @@ export default function EvaluationForm({
         return true
     }, [categories, values, numericErrors])
 
+    const isAllScoringComplete = useMemo(() => {
+        // Must not have active numeric parsing or range errors
+        if (Object.values(numericErrors).some(Boolean)) return false
+        let numericPropsCount = 0
+        for (const category of categories) {
+            for (const prop of category.properties) {
+                // SmartProperty is formula-calculated by backend/frontend, skip it
+                if (prop.__typename === "SmartProperty") continue
+                const isNumeric =
+                    prop.__typename === "IntProperty" ||
+                    prop.__typename === "DoubleProperty" ||
+                    prop.__typename === "DiscreteNumbersProperty"
+                if (isNumeric) {
+                    numericPropsCount++
+                    const val = values[prop.code]
+                    if (val === undefined || val === null || val === "" || typeof val !== "number" || isNaN(val)) {
+                        return false
+                    }
+                    if (prop.__typename === "IntProperty") {
+                        if (prop.intMinLimit !== null && prop.intMinLimit !== undefined && val < prop.intMinLimit) return false
+                        if (prop.intMaxLimit !== null && prop.intMaxLimit !== undefined && val > prop.intMaxLimit) return false
+                    }
+                    if (prop.__typename === "DoubleProperty") {
+                        if (prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined && val < prop.doubleMinLimit) return false
+                        if (prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined && val > prop.doubleMaxLimit) return false
+                    }
+                } else if (prop.isRequired) {
+                    const val = values[prop.code]
+                    if (val === undefined || val === null || val === "") return false
+                }
+            }
+        }
+        return numericPropsCount > 0 ? true : isFormValid
+    }, [categories, values, numericErrors, isFormValid])
+
     const handleGenerateAIComment = async () => {
-        if (isGeneratingAI) return
+        if (isGeneratingAI || !isAllScoringComplete) return
         setIsGeneratingAI(true)
         try {
             const categoryScores: TastingCategoryScore[] = categories.map((cat) => {
@@ -660,7 +695,7 @@ export default function EvaluationForm({
                     if (prop.__typename === "SmartProperty") {
                         const smartVal = computedSmartValues[prop.code]
                         if (typeof smartVal === "number" && !isNaN(smartVal)) {
-                            propScores.push({name: prop.name, score: smartVal, maxScore: 100})
+                            propScores.push({ name: prop.name, score: smartVal, maxScore: 100 })
                         }
                         return
                     }
@@ -717,7 +752,7 @@ export default function EvaluationForm({
             }
             const response = await fetch("/api/generate-comment", {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             })
             if (!response.ok || !response.body) {
@@ -729,9 +764,9 @@ export default function EvaluationForm({
             const decoder = new TextDecoder()
             let accumulated = ""
             while (true) {
-                const {done, value} = await reader.read()
+                const { done, value } = await reader.read()
                 if (done) break
-                const chunk = decoder.decode(value, {stream: true})
+                const chunk = decoder.decode(value, { stream: true })
                 accumulated += chunk
                 setGeneralComment(accumulated)
             }
@@ -744,7 +779,7 @@ export default function EvaluationForm({
         }
     }
 
-                const handleSubmit = async () => {
+            const handleSubmit = async () => {
         setIsSubmitting(true)
         onSubmittingChange?.(true)
         setError(null)
@@ -1150,21 +1185,25 @@ export default function EvaluationForm({
                                 <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4">
                                     <div className="flex flex-col gap-1.5">
                                         <div className="flex items-center justify-between">
-                                            <h2 className="text-[13px] font-bold text-slate-700">
+                                            <label
+                                                htmlFor="general-comment-input"
+                                                className="text-[13px] font-bold text-slate-700 select-none"
+                                            >
                                                 {t("evaluation.generalCommentLabel")}
-                                            </h2>
+                                            </label>
                                             <button
                                                 type="button"
                                                 onClick={handleGenerateAIComment}
-                                                disabled={isGeneratingAI}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200/60 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
-                                                title={t("evaluation.aiGenerateDraft")}
+                                                disabled={isGeneratingAI || !isAllScoringComplete}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs cursor-pointer active:scale-[0.98]"
+                                                title={!isAllScoringComplete ? t("evaluation.aiScoreAllRequired") : t("evaluation.aiGenerateDraft")}
                                             >
-                                                <Sparkles className={`w-3.5 h-3.5 text-indigo-600 ${isGeneratingAI ? "animate-spin" : ""}`} />
+                                                <Wand2
+                                                    className={`w-3.5 h-3.5 text-indigo-600 shrink-0 ${isGeneratingAI ? "animate-spin" : ""}`}/>
                                                 <span>{isGeneratingAI ? t("evaluation.aiGenerating") : t("evaluation.aiGenerateDraft")}</span>
                                             </button>
                                         </div>
-                                        <div className="flex items-end gap-2">
+                                            <div className="flex items-end gap-2">
                                         <textarea
                                             rows={2}
                                             value={generalComment}
