@@ -269,6 +269,15 @@ export const DevSetCommissionReplicaPanelCurrentCandidateMutation = gql(`
   }
 `);
 
+export const DevCompleteCommissionReplicaPanelMutation = gql(`
+  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {
+    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {
+      id
+      currentPanelId
+    }
+  }
+`);
+
 export const DevGetCompetitionsListQuery = gql(`
   query DevGetCompetitionsList {
     competitions {

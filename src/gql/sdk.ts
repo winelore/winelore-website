@@ -786,6 +786,14 @@ export type DevSetCommissionReplicaPanelCurrentCandidateMutationVariables = Exac
 
 export type DevSetCommissionReplicaPanelCurrentCandidateMutation = { setCommissionReplicaPanelCurrentCandidate: { id: string } };
 
+export type DevCompleteCommissionReplicaPanelMutationVariables = Exact<{
+  id: string | number;
+  panelId: string | number;
+}>;
+
+
+export type DevCompleteCommissionReplicaPanelMutation = { completeCommissionReplicaPanel: { id: string, currentPanelId: string | null } };
+
 export type DevGetCompetitionsListQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2011,6 +2019,14 @@ export const DevSetCommissionReplicaPanelCurrentCandidateDocument = gql`
   }
 }
     `;
+export const DevCompleteCommissionReplicaPanelDocument = gql`
+    mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {
+  completeCommissionReplicaPanel(id: $id, panelId: $panelId) {
+    id
+    currentPanelId
+  }
+}
+    `;
 export const DevGetCompetitionsListDocument = gql`
     query DevGetCompetitionsList {
   competitions {
@@ -2399,6 +2415,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     DevSetCommissionReplicaPanelCurrentCandidate(variables: Types.DevSetCommissionReplicaPanelCurrentCandidateMutationVariables, options?: C): Promise<Types.DevSetCommissionReplicaPanelCurrentCandidateMutation> {
       return requester<Types.DevSetCommissionReplicaPanelCurrentCandidateMutation, Types.DevSetCommissionReplicaPanelCurrentCandidateMutationVariables>(DevSetCommissionReplicaPanelCurrentCandidateDocument, variables, options) as Promise<Types.DevSetCommissionReplicaPanelCurrentCandidateMutation>;
+    },
+    DevCompleteCommissionReplicaPanel(variables: Types.DevCompleteCommissionReplicaPanelMutationVariables, options?: C): Promise<Types.DevCompleteCommissionReplicaPanelMutation> {
+      return requester<Types.DevCompleteCommissionReplicaPanelMutation, Types.DevCompleteCommissionReplicaPanelMutationVariables>(DevCompleteCommissionReplicaPanelDocument, variables, options) as Promise<Types.DevCompleteCommissionReplicaPanelMutation>;
     },
     DevGetCompetitionsList(variables?: Types.DevGetCompetitionsListQueryVariables, options?: C): Promise<Types.DevGetCompetitionsListQuery> {
       return requester<Types.DevGetCompetitionsListQuery, Types.DevGetCompetitionsListQueryVariables>(DevGetCompetitionsListDocument, variables, options) as Promise<Types.DevGetCompetitionsListQuery>;

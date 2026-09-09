@@ -129,37 +129,6 @@ query DefaultVariation($auid: ID!) {
     }
 }
 
-query VariationName($variationId: ID!) {
-    name(variationId: $variationId) {
-        variationId
-        displayName
-        elements {
-            partType
-            value
-            separatorType
-        }
-    }
-}
-
-query VariationDescription($variationId: ID!) {
-    description(variationId: $variationId) {
-        variationId
-        text
-        updatedAt
-    }
-}
-
-query VariationStatus($variationId: ID!) {
-    status(variationId: $variationId) {
-        variationId
-        text
-        emoji
-        expiresAt
-        updatedAt
-        isExpired
-    }
-}
-
 mutation AddUsername($auid: ID!, $username: String!) {
     addUsername(auid: $auid, username: $username) {
         auid
