@@ -48,11 +48,11 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     const auid = cookieStore.get("auid")?.value;
 
     if (!auid) {
-        log(`⚠️ Увага: Кука 'auid' повністю відсутня. Організатор не авторизований.`);
-        throw new Error("Авторизація відсутня: будь ласка, увійдіть в акаунт!");
+      log(`⚠️ Увага: Кука 'auid' повністю відсутня`);
+      throw new Error("Авторизація відсутня: увійдіть під потрібним акаунтом перед генерацією");
     }
-    const auidInt = parseInt(auid, 10);
-    const headers = { "actor": auid, "x-actor": auid };
+    const auidInt: number = parseInt(auid, 10);
+    const headers = { "X-ACTOR": auidInt.toString() };
     
     log(`🔑 Авторизовано! Актор ID: ${auidInt}`);
     console.log(`🔑 [SEEDER SUCCESS] Актор ID: ${auidInt}`);
@@ -63,25 +63,96 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     const finalSeriesName = cleanString(`${baseSeriesName} ${uniqueSuffix}`);
     const finalCompetitionName = cleanString(`${baseCompetitionName} ${uniqueSuffix}`);
     
-    // Fetch default beverage type for candidates
+    // Fetch default beverage type and matching evaluation template
     let beverageTypeId = '';
+    let activeTemplateEditionId = '';
+    let evaluationProperties: { code: string, min: number, max: number }[] = [];
+
     try {
       const bevTypesRes = await sdk.DevGetBeverageTypes();
-      log(`📋 Дамп типів напоїв з бази: ${JSON.stringify(bevTypesRes.beverageTypes?.items)}`);
+      const bevItems = bevTypesRes.beverageTypes?.items || [];
+      log(`📋 Завантажено типів напоїв: ${bevItems.length}`);
       
-      const existingWine = bevTypesRes.beverageTypes?.items?.find(i => i.code === "WINE");
+      const existingWine = bevItems.find(i => i.code === "WINE");
+      beverageTypeId = existingWine?.id || "11111111-1111-4111-8111-111111111101";
 
-      if (existingWine) {
-          beverageTypeId = existingWine.id;
-          log(`📦 Використовуємо офіційний BeverageTypeId з бази: ${beverageTypeId}`);
-      } else {
-          beverageTypeId = "11111111-1111-4111-8111-111111111101"; // Фолбек обов'язково має бути у форматі UUID!
-          log(`⚠️ База типів порожня. Використовуємо дефолтний UUID напою: ${beverageTypeId}`);
+      const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
+      const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
+      log(`🔎 Знайдено ${items.length} шаблонів у базі. Підбираємо активний шаблон для типу напою...`);
+
+      // Шукаємо активний або опублікований шаблон саме для цього beverageTypeId
+      let selectedTemplate = items.find((i: any) => 
+        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
+        i.template?.beverageType?.id === beverageTypeId
+      );
+
+      // Якщо для WINE шаблону немає, беремо будь-який активний шаблон і використовуємо його beverageTypeId
+      if (!selectedTemplate) {
+        selectedTemplate = items.find((i: any) => 
+          (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.template?.beverageType?.id
+        ) || items[0];
+
+        if (selectedTemplate?.template?.beverageType?.id) {
+          beverageTypeId = selectedTemplate.template.beverageType.id;
+          log(`ℹ️ Використано тип напою з шаблону: ${beverageTypeId}`);
+        }
       }
-      console.log(`📦 [SEEDER SUCCESS] BeverageTypeId: ${beverageTypeId}`);
-    } catch (e) {
-      log(`⚠️ Помилка отримання або створення BeverageTypes: ${e instanceof Error ? e.message : 'Unknown Error'}`);
-      throw new Error("Не вдалося ініціалізувати типи напоїв на бекенді.");
+
+      if (selectedTemplate) {
+        activeTemplateEditionId = selectedTemplate.id;
+        const selectedName = selectedTemplate.template?.name || "Default Template";
+        log(`📄 Вибрано шаблон оцінювання: "${selectedName}" (ID: ${activeTemplateEditionId})`);
+
+        const query = `
+          query GetTemplate($id: ID!) {
+            evaluationTemplateEdition(id: $id) {
+              categories {
+                properties {
+                  __typename
+                  code
+                  isResult
+                  ... on DoubleProperty {
+                    doubleMin: minLimit
+                    doubleMax: maxLimit
+                  }
+                  ... on IntProperty {
+                    intMin: minLimit
+                    intMax: maxLimit
+                  }
+                }
+              }
+            }
+          }
+        `;
+        const tplRes = await fetch(getGraphQLEndpoint(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...headers },
+          body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
+        });
+        const tplData = await tplRes.json();
+        const categories = tplData?.data?.evaluationTemplateEdition?.categories || [];
+        categories.forEach((cat: any) => {
+          cat.properties?.forEach((prop: any) => {
+            if (prop.__typename !== "SmartProperty") {
+              let min = 0;
+              let max = 100;
+              if (prop.__typename === "DoubleProperty") {
+                min = prop.doubleMin ?? 0;
+                max = prop.doubleMax ?? 100;
+              } else if (prop.__typename === "IntProperty") {
+                min = prop.intMin ?? 0;
+                max = prop.intMax ?? 100;
+              }
+              evaluationProperties.push({ code: prop.code, min, max });
+            }
+          });
+        });
+        log(`📄 Отримано властивостей для оцінки: ${evaluationProperties.length}`);
+      } else {
+        log(`⚠️ Шаблони оцінювання не знайдені в базі!`);
+      }
+    } catch (e: any) {
+      log(`⚠️ Помилка отримання шаблонів: ${e.message}`);
     }
     
     // 0. Створення серії змагань
@@ -109,11 +180,6 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // -1 день (у минулому)
     const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 днів
     
-    console.log("SENDING DATES TO BACKEND:", JSON.stringify({
-      start: startDate.toISOString(),
-      end: endDate.toISOString()
-    }));
-
     const compRes = await sdk.DevCreateCompetition({
       input: {
         name: finalCompetitionName,
@@ -145,112 +211,11 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
     const resultCommissions: any[] = [];
 
-    // Отримуємо існуючий шаблон оцінювання для прив'язки
-    let activeTemplateEditionId = '';
-    let evaluationProperties: { code: string, min: number, max: number }[] = [];
-    try {
-      const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
-      const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
-      
-      log(`🔎 Знайдено ${items.length} шаблонів у базі. Аналізуємо...`);
-      items.forEach((item: any, index: number) => {
-        const catCount = item.categories?.length || 0;
-        const bevId = item.template?.beverageType?.id;
-        const name = item.template?.name || "Unknown";
-        log(`   [${index + 1}] ID: ${item.id} | Назва: "${name}" | Статус: ${item.status} | Категорій: ${catCount} | BevType: ${bevId}`);
-      });
-
-      // Шукаємо активний шаблон для нашого типу напою (WINE)
-      let selectedTemplate = items.find((i: any) => 
-        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
-        i.template?.beverageType?.id === beverageTypeId &&
-        i.categories && i.categories.length > 0
-      ) || items.find((i: any) => 
-        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
-        i.template?.beverageType?.id === beverageTypeId
-      );
-
-      // Якщо для цього типу напою немає шаблону, беремо будь-який активний і синхронізуємо beverageTypeId
-      if (!selectedTemplate) {
-        selectedTemplate = items.find((i: any) => 
-          (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
-          i.template?.beverageType?.id &&
-          i.categories && i.categories.length > 0
-        ) || items.find((i: any) => 
-          (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.template?.beverageType?.id
-        ) || items[0];
-
-        if (selectedTemplate?.template?.beverageType?.id) {
-          beverageTypeId = selectedTemplate.template.beverageType.id;
-          log(`ℹ️ Для вибраного шаблону оновлено тип напою: ${beverageTypeId}`);
-        }
-      }
-
-      activeTemplateEditionId = selectedTemplate?.id || '';
-      
-      if (activeTemplateEditionId) {
-         const selectedName = selectedTemplate?.template?.name || "Unknown";
-         log(`📄 Вибрано шаблон оцінювання: "${selectedName}" (ID: ${activeTemplateEditionId})`);
-         
-         const query = `
-           query GetTemplate($id: ID!) {
-             evaluationTemplateEdition(id: $id) {
-               categories {
-                 properties {
-                   __typename
-                   code
-                   isResult
-                   ... on DoubleProperty {
-                     doubleMin: minLimit
-                     doubleMax: maxLimit
-                   }
-                   ... on IntProperty {
-                     intMin: minLimit
-                     intMax: maxLimit
-                   }
-                 }
-               }
-             }
-           }
-         `;
-         const tplRes = await fetch(getGraphQLEndpoint(), {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', ...headers },
-           body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
-         });
-         const tplData = await tplRes.json();
-         const categories = tplData?.data?.evaluationTemplateEdition?.categories || [];
-          categories.forEach((cat: any) => {
-            cat.properties?.forEach((prop: any) => {
-              // SmartProperty values are calculated by backend, everything else must be submitted!
-              if (prop.__typename !== "SmartProperty") {
-                let min = 0;
-                let max = 100;
-                if (prop.__typename === "DoubleProperty") {
-                  min = prop.doubleMin ?? 0;
-                  max = prop.doubleMax ?? 100;
-                } else if (prop.__typename === "IntProperty") {
-                  min = prop.intMin ?? 0;
-                  max = prop.intMax ?? 100;
-                }
-                evaluationProperties.push({ code: prop.code, min, max });
-              }
-            });
-          });
-         log(`📄 Отримано властивостей для оцінки: ${evaluationProperties.length}`);
-      } else {
-         log(`⚠️ Шаблони оцінювання не знайдені в базі! Можливі помилки валідації.`);
-      }
-    } catch (e: any) {
-      log(`⚠️ Помилка отримання шаблонів: ${e.message}`);
-    }
-
     // Helper for creating commission and seeding data
     const seedCommission = async (
       name: string,
       config: CommissionConfig,
-      type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED',
-      cIdx: number
+      type: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED'
     ) => {
       // 2. Створення комісії
       const commCleanName = cleanString(name, 'Комісія');
@@ -273,7 +238,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
           beverageTypeId: beverageTypeId,
           templateEditionId: activeTemplateEditionId
         });
-        log(`🔗 Шаблон оцінювання (${activeTemplateEditionId}) успішно прив'язано до комісії`);
+        log(`🔗 Шаблон оцінювання (${activeTemplateEditionId}) успішно прив'язано до комісії для типу напою ${beverageTypeId}`);
         console.log(`🔗 [SEEDER SUCCESS] Template linked`);
       }
 
@@ -292,7 +257,8 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         const candidates = [];
         for (let i = 0; i < panelConfig.winesCount; i++) {
           const wineIndex = globalCandidateIndex++;
-          const bevName = cleanString(`Test Wine ${uniqueSuffix}-C${cIdx + 1}-P${pIdx + 1}-W${i + 1}-${Math.floor(Math.random() * 9000) + 1000}`);
+          const safeCommName = commCleanName.replace(/[^a-zA-Z0-9]/g, '');
+          const bevName = cleanString(`Test Wine ${uniqueSuffix} - Comm${safeCommName || '1'}-${wineIndex}`);
           const bevRes = await sdk.DevCreateBeverage({
             input: {
               name: bevName,
@@ -314,7 +280,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
           candidates.push({
             sampleId,
-            anonymizedCode: `WINE-${Math.floor(Math.random() * 1000)}`
+            anonymizedCode: `WINE-${wineIndex + 1}`
           });
         }
         
@@ -341,7 +307,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       const totalWinesCount = config.panels.reduce((sum: number, p: PanelConfig) => sum + p.winesCount, 0);
       let evalCount = 0;
       if (type === 'IN_PROGRESS') {
-        evalCount = Math.min(config.evaluatedWinesCount || 0, totalWinesCount);
+        evalCount = config.evaluatedWinesCount || 0;
       } else if (type === 'FINISHED') {
         evalCount = totalWinesCount;
       }
@@ -386,7 +352,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         }
         log(`   Додано ${replicaConfig.expertsCount} експертів`);
 
-        // Життєвий цикл репліки: планування
+        // Життєвий цикл репліки
         await sdk.DevPlanCommissionReplica({ id: replicaId });
         log(`📅 Репліка "${cleanReplicaName}" запланована (PLANNED)`);
 
@@ -401,17 +367,6 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         }
         log(`🤝 Усі члени репліки "${cleanReplicaName}" готові!`);
 
-        // Якщо комісія NOT_STARTED, репліка залишається у статусі PLANNED
-        if (type === 'NOT_STARTED') {
-          log(`⏸️ Репліка "${cleanReplicaName}" готова до старту (статус PLANNED)`);
-        } else {
-          await sdk.DevStartCommissionReplica(
-            { id: replicaId },
-            { headers: { 'actor': headAuid.toString(), 'x-actor': headAuid.toString() } }
-          );
-          log(`▶️ Репліка "${cleanReplicaName}" активована (STARTED)`);
-        }
-
         createdReplicas.push({ replicaId, replicaName: cleanReplicaName, headAuid, experts });
         
         commissionReplicasOutput.push({
@@ -422,29 +377,32 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         });
       }
 
-      // 6. Імітація оцінювання та життєвого циклу дегустації (для IN_PROGRESS та FINISHED)
-      if (type !== 'NOT_STARTED') {
+      // 6. Життєвий цикл репліки та оцінювання згідно зі статусом
+      if (type === 'NOT_STARTED') {
+        log(`⏸️ Комісія "${commCleanName}" готова, статус "Не розпочата" (репліки в статусі PLANNED, очікують старту головою).`);
+      } else {
+        // Для IN_PROGRESS або FINISHED
         for (const rep of createdReplicas) {
+          await sdk.DevStartCommissionReplica(
+            { id: rep.replicaId },
+            { headers: { 'X-ACTOR': rep.headAuid.toString() } }
+          );
+          log(`▶️ Репліка "${rep.replicaName}" активована (STARTED)`);
+
           const commissionData = await sdk.GetCommission({ id: commissionId });
           const activeReplica = commissionData.commission?.replicas.find(r => r.id === rep.replicaId);
           const replicaPanels = activeReplica?.replicaPanels || [];
 
-          log(`   Імітуємо процес для "${rep.replicaName}" (Оцінити: ${evalCount}/${totalWinesCount} вин)...`);
-          let evaluatedSoFar = 0;
-          let nextCandidateSet = false;
+          let winesEvaluated = 0;
+          let nextCandidateToSet: { replicaPanelId: string; candidateId: string } | null = null;
 
-          for (let pIdx = 0; pIdx < replicaPanels.length; pIdx++) {
-            const panel = replicaPanels[pIdx];
-            const candidates = panel.replicaCandidates || [];
-            if (candidates.length === 0) continue;
+          for (const panel of replicaPanels) {
+            const panelCandidates = panel.replicaCandidates || [];
+            let allPanelCandidatesEvaluated = true;
 
-            let panelEvaluatedCount = 0;
-
-            for (let cIdx = 0; cIdx < candidates.length; cIdx++) {
-              const wine = candidates[cIdx];
-
-              if (evaluatedSoFar < evalCount) {
-                // Встановлюємо поточну панель та зразок
+            for (const candidate of panelCandidates) {
+              if (winesEvaluated < evalCount) {
+                // Встановлюємо поточну панель та зразок перед оцінюванням
                 try {
                   await sdk.DevSetCommissionReplicaCurrentPanel({
                     id: rep.replicaId,
@@ -453,94 +411,100 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
                   await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
                     id: rep.replicaId,
                     panelId: panel.id,
-                    currentCandidateId: wine.id
+                    currentCandidateId: candidate.id
                   }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
                 } catch (e: any) {
-                  log(`   ⚠️ Не вдалося встановити кандидата: ${e.message}`);
+                  log(`   ⚠️ Помилка встановлення кандидата: ${e.message}`);
                 }
 
-                // Усі експерти (включно з головою) подають оцінки
-                const allMembersToEvaluate = [{ auid: rep.headAuid }, ...rep.experts];
-                for (const member of allMembersToEvaluate) {
+                // Оцінювання головою та всіма експертами
+                const allMembers = [{ auid: rep.headAuid, isHead: true }, ...rep.experts];
+                for (const member of allMembers) {
                   try {
                     const scores = evaluationProperties.length > 0 
                       ? evaluationProperties.map(prop => {
-                          const range = prop.max - prop.min;
+                          const range = Math.max(1, prop.max - prop.min);
                           const minAllowed = prop.min + Math.floor(range / 2);
                           const score = Math.floor(Math.random() * (prop.max - minAllowed + 1)) + minAllowed;
                           return { code: prop.code, value: score.toString() };
                         })
                       : [
-                          { code: "example", value: (Math.floor(Math.random() * 3) + 3).toString() }
+                          { code: "example", value: (Math.floor(Math.random() * 5) + 1).toString() }
                         ];
 
-                    await sdk.SubmitEvaluation({
+                    const evalRes = await sdk.SubmitEvaluation({
                       input: {
-                        candidateId: wine.id,
+                        candidateId: candidate.id,
                         scores,
-                        comments: [{ text: 'Тестова оцінка від генератора змагань', sortOrder: 1 }]
+                        comments: [{ text: 'Automated evaluation comment from seeder', sortOrder: 1 }]
                       }
-                    }, { headers: { 'actor': member.auid.toString(), 'x-actor': member.auid.toString() } });
+                    }, { headers: { 'X-ACTOR': member.auid.toString() } });
+
+                    if (!evalRes?.submitEvaluation) {
+                      log(`   ⚠️ Оцінка для зразка ${candidate.id} (${member.auid}) повернула порожній результат`);
+                    }
                   } catch (e: any) {
-                    log(`   ⚠️ Помилка оцінювання для вина ${wine.id} експертом ${member.auid}: ${e.message}`);
+                    log(`   ⚠️ Помилка оцінювання для зразка ${candidate.id} (${member.auid}): ${e.message}`);
                   }
                 }
 
-                // Підтверджуємо завершення оцінювання кандидата
+                // Фіксуємо оцінювання зразка
                 try {
                   await sdk.MarkCommissionReplicaCandidateAsEvaluated(
-                    { id: wine.id },
+                    { id: candidate.id },
                     { headers: { 'X-ACTOR': rep.headAuid.toString() } }
                   );
                 } catch (e: any) {
-                  log(`   ⚠️ Не вдалося завершити оцінювання кандидата ${wine.id}: ${e.message}`);
+                  log(`   ⚠️ Не вдалося позначити зразок оціненим: ${e.message}`);
                 }
 
-                evaluatedSoFar++;
-                panelEvaluatedCount++;
-              } else if (!nextCandidateSet) {
-                // Встановлюємо перший неоцінений зразок як активний для дегустації
-                try {
-                  await sdk.DevSetCommissionReplicaCurrentPanel({
-                    id: rep.replicaId,
-                    currentPanelId: panel.id,
-                  }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
-                  await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
-                    id: rep.replicaId,
-                    panelId: panel.id,
-                    currentCandidateId: wine.id
-                  }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
-                  nextCandidateSet = true;
-                  log(`   🎯 Встановлено активний зразок для дегустації: ${cIdx + 1}-е вино у панелі ${pIdx + 1}`);
-                } catch (e: any) {
-                  log(`   ⚠️ Не вдалося встановити наступного кандидата: ${e.message}`);
+                winesEvaluated++;
+              } else {
+                allPanelCandidatesEvaluated = false;
+                if (!nextCandidateToSet) {
+                  nextCandidateToSet = { replicaPanelId: panel.id, candidateId: candidate.id };
                 }
               }
             }
 
-            // Якщо всі кандидати в панелі оцінені, завершуємо панель!
-            if (panelEvaluatedCount === candidates.length) {
+            // Якщо всі кандидати цієї панелі оцінені, завершуємо панель
+            if (allPanelCandidatesEvaluated && panelCandidates.length > 0) {
               try {
                 await sdk.DevCompleteCommissionReplicaPanel({
                   id: rep.replicaId,
                   panelId: panel.id
                 }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
-                log(`   🏁 Панель "${panel.id}" успішно завершено!`);
+                log(`   ✅ Панель завершена у репліці "${rep.replicaName}"`);
               } catch (e: any) {
-                log(`   ⚠️ Не вдалося завершити панель ${panel.id}: ${e.message}`);
+                log(`   ⚠️ Не вдалося завершити панель: ${e.message}`);
               }
             }
           }
 
-          if (type === 'FINISHED') {
-            log(`   🎉 Репліку "${rep.replicaName}" повністю завершено (статус COMPLETED)`);
-          } else {
-            log(`   ✅ Оцінювання ${evaluatedSoFar} вин у "${rep.replicaName}" завершено, дегустація активна`);
+          if (type === 'IN_PROGRESS') {
+            log(`   ✅ Оцінено ${winesEvaluated} вин у "${rep.replicaName}"`);
+            if (nextCandidateToSet) {
+              try {
+                await sdk.DevSetCommissionReplicaCurrentPanel({
+                  id: rep.replicaId,
+                  currentPanelId: nextCandidateToSet.replicaPanelId,
+                }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+                await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
+                  id: rep.replicaId,
+                  panelId: nextCandidateToSet.replicaPanelId,
+                  currentCandidateId: nextCandidateToSet.candidateId
+                }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+                log(`   👉 Наступний активний зразок встановлено (${nextCandidateToSet.candidateId})`);
+              } catch (e: any) {
+                log(`   ⚠️ Не вдалося встановити наступного кандидата: ${e.message}`);
+              }
+            }
+          } else if (type === 'FINISHED') {
+            log(`   🎉 Усі зразки оцінено, панелі завершено, репліка "${rep.replicaName}" перейшла в статус COMPLETED`);
           }
         }
-      } else {
-        log(`   ⏸️ Комісія "${commCleanName}" створена, статус "Не розпочата"`);
       }
+
 
       resultCommissions.push({
         id: commissionId,
@@ -550,9 +514,8 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       });
     };
 
-    for (let cIdx = 0; cIdx < data.commissions.length; cIdx++) {
-      const config = data.commissions[cIdx];
-      await seedCommission(config.name, config, config.type, cIdx);
+    for (const config of data.commissions) {
+      await seedCommission(config.name, config, config.type);
     }
 
     log('🎉 Генерація сценарію успішно завершена!');
