@@ -75,6 +75,7 @@ type Documents = {
     "\n  mutation DevMarkCommissionReplicaMemberReady($id: ID!, $memberId: ID!) {\n    markCommissionReplicaMemberReady(id: $id, memberId: $memberId) {\n      id\n    }\n  }\n": typeof types.DevMarkCommissionReplicaMemberReadyDocument,
     "\n  mutation DevSetCommissionReplicaCurrentPanel($id: ID!, $currentPanelId: ID!) {\n    setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $currentPanelId) { id }\n  }\n": typeof types.DevSetCommissionReplicaCurrentPanelDocument,
     "\n  mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {\n    setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {\n      id\n    }\n  }\n": typeof types.DevSetCommissionReplicaPanelCurrentCandidateDocument,
+    "\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n": typeof types.DevCompleteCommissionReplicaPanelDocument,
     "\n  query DevGetCompetitionsList {\n    competitions {\n      items {\n        id\n        name\n      }\n    }\n  }\n": typeof types.DevGetCompetitionsListDocument,
     "\n  query DevGetCommissionsByCompetition($competitionId: ID!, $limit: Int) {\n    commissionsByCompetition(competitionId: $competitionId, limit: $limit) {\n      items {\n        id\n        name\n      }\n    }\n  }\n": typeof types.DevGetCommissionsByCompetitionDocument,
     "\n  query DevGetCommissionReplicasByCommission($commissionId: ID!) {\n    commissionReplicasByCommission(commissionId: $commissionId) {\n      id\n      name\n      type\n      members {\n        id\n        auid\n        role\n      }\n    }\n  }\n": typeof types.DevGetCommissionReplicasByCommissionDocument,
@@ -152,6 +153,7 @@ const documents: Documents = {
     "\n  mutation DevMarkCommissionReplicaMemberReady($id: ID!, $memberId: ID!) {\n    markCommissionReplicaMemberReady(id: $id, memberId: $memberId) {\n      id\n    }\n  }\n": types.DevMarkCommissionReplicaMemberReadyDocument,
     "\n  mutation DevSetCommissionReplicaCurrentPanel($id: ID!, $currentPanelId: ID!) {\n    setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $currentPanelId) { id }\n  }\n": types.DevSetCommissionReplicaCurrentPanelDocument,
     "\n  mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {\n    setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {\n      id\n    }\n  }\n": types.DevSetCommissionReplicaPanelCurrentCandidateDocument,
+    "\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n": types.DevCompleteCommissionReplicaPanelDocument,
     "\n  query DevGetCompetitionsList {\n    competitions {\n      items {\n        id\n        name\n      }\n    }\n  }\n": types.DevGetCompetitionsListDocument,
     "\n  query DevGetCommissionsByCompetition($competitionId: ID!, $limit: Int) {\n    commissionsByCompetition(competitionId: $competitionId, limit: $limit) {\n      items {\n        id\n        name\n      }\n    }\n  }\n": types.DevGetCommissionsByCompetitionDocument,
     "\n  query DevGetCommissionReplicasByCommission($commissionId: ID!) {\n    commissionReplicasByCommission(commissionId: $commissionId) {\n      id\n      name\n      type\n      members {\n        id\n        auid\n        role\n      }\n    }\n  }\n": types.DevGetCommissionReplicasByCommissionDocument,
@@ -426,6 +428,10 @@ export function gql(source: "\n  mutation DevSetCommissionReplicaCurrentPanel($i
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {\n    setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {\n      id\n    }\n  }\n"): (typeof documents)["\n  mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {\n    setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {\n      id\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n"): (typeof documents)["\n  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {\n    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {\n      id\n      currentPanelId\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

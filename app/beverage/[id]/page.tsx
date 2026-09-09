@@ -168,7 +168,37 @@ export default async function BeveragePage({ params }: PageProps) {
               }
             `
             const batchesData = await fetchGraphQLRaw<any, any>(batchesQuery, { beverageId })
-            batches = batchesData?.batches?.items || []
+            const rawBatches = batchesData?.batches?.items || []
+
+            batches = await Promise.all(
+                rawBatches.map(async (batch: any) => {
+                    try {
+                        const samplesQuery = `
+                          query GetBatchSamples($batchId: ID!) {
+                            samples(batchId: $batchId) {
+                              items {
+                                id
+                                volumeMl
+                                attributes
+                                createdAt
+                              }
+                            }
+                          }
+                        `;
+                        const samplesData = await fetchGraphQLRaw<any, any>(samplesQuery, { batchId: batch.id });
+                        return {
+                            ...batch,
+                            samples: samplesData?.samples?.items || [],
+                        };
+                    } catch (sampleErr) {
+                        console.error(`Failed to fetch samples for batch ${batch.id}:`, sampleErr);
+                        return {
+                            ...batch,
+                            samples: [],
+                        };
+                    }
+                })
+            );
         } catch (error) {
             console.error("Failed to fetch beverage batches:", error)
         }
