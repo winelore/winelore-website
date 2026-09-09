@@ -154,7 +154,7 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                                         <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3.5 h-3.5" />
-                                                {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString()}
+                                                {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString("en-CA")}
                                             </span>
                                             <span className="text-slate-300">|</span>
                                             <span>{t("myTemplates.type")}: <span className="text-slate-700 uppercase font-bold">{template.beverageType}</span></span>

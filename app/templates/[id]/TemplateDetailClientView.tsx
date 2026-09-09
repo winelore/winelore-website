@@ -149,7 +149,7 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
                             <div className="flex flex-wrap items-center gap-4 mt-3 text-xs font-semibold text-slate-500">
                                 <span className="flex items-center gap-1.5">
                                     <Calendar className="w-3.5 h-3.5" />
-                                    {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString()}
+                                    {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString("en-CA")}
                                 </span>
                                 <span className="text-slate-300">|</span>
                                 <span className="flex items-center gap-1.5">
