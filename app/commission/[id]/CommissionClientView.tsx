@@ -42,6 +42,7 @@ import {
     setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
     setCommissionTemplateAction,
 } from "../actions"
+import { setCommissionDiscussionsEnabledAction } from "../discussionActions"
 import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
@@ -204,6 +205,7 @@ interface InitialData {
     voiceCommentsEnabled?: boolean;
     propertyCommentsEnabled?: boolean;
     beverageOriginDuringEvaluationEnabled?: boolean;
+    discussionsEnabled?: boolean;
     competition: {
         id: string;
         name: string;
@@ -860,6 +862,25 @@ export default function CommissionClientView({
             setIsMutating(false);
         }
     };
+
+    const handleToggleDiscussions = async () => {
+        if (isMutating) return;
+        const nextState = localData.discussionsEnabled === false ? true : false;
+        setIsMutating(true);
+        try {
+            const res = await setCommissionDiscussionsEnabledAction(localData.id, nextState);
+            if (res.success) {
+                setLocalData(prev => ({ ...prev, discussionsEnabled: nextState }));
+            } else {
+                toast.error(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            toast.error(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
 
     const handleToggleChaoticCandidateChanges = async () => {
         if (!selectedReplica || isMutating) return;
@@ -1848,6 +1869,25 @@ export default function CommissionClientView({
                                         >
                                             <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
                                                 localData.beverageOriginDuringEvaluationEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                        </button>
+                                    </div>
+                                    {/* Discussions / Messenger Setting */}
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                        <div className="flex flex-col pr-4">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.discussionsSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.discussionsSettingDesc")}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleDiscussions}
+                                            disabled={isMutating}
+                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                localData.discussionsEnabled !== false ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                localData.discussionsEnabled !== false ? 'translate-x-5' : 'translate-x-0'
                                             }`} />
                                         </button>
                                     </div>
