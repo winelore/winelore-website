@@ -13,7 +13,7 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     if (!auid) {
         throw new Error('Unauthorized: Please sign in');
     }
-    return { actor: auid, 'x-actor': auid };
+    return { 'X-ACTOR': auid };
 }
 
 export interface BeverageSimpleInfo {

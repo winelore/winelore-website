@@ -74,9 +74,27 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
     variables?: TVariables,
     headers?: Record<string, string>
 ): Promise<TResult> {
+    const cleanHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+    if (headers) {
+        let actor: string | undefined;
+        for (const [k, v] of Object.entries(headers)) {
+            const lowerKey = k.toLowerCase();
+            if (lowerKey === 'x-actor' || lowerKey === 'actor') {
+                actor = v;
+            } else {
+                cleanHeaders[k] = v;
+            }
+        }
+        if (actor !== undefined) {
+            cleanHeaders['X-ACTOR'] = actor;
+        }
+    }
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...headers },
+        headers: cleanHeaders,
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 }
     });
