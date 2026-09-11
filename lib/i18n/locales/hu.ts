@@ -1,7 +1,7 @@
 const hu = {
     common: {
         required: "Kötelező",
-        save: "megment",
+        save: "Mentés",
         home: "Főoldal",
         competitions: "Versenyek",
         wines: "Borok",
@@ -455,6 +455,14 @@ const hu = {
             outOfDeltaTooltip: "A {{score}} pontszám {{diff}} ponttal eltér az átlagtól ({{avg}}) (delta küszöb: {{threshold}} pont)",
             noEvaluationsYet: "Részletes értékelések még nem érhetők el.",
             candidate: "Ital",
+            totalA: "Összesen (A)",
+            totalB: "Összesen (B)",
+            diffAB: "Különbség (A − B)",
+            categoryComparison: "Kategóriák szerinti bontás összehasonlítása",
+            repA: "Rep. A",
+            repB: "Rep. B",
+            notEnoughReplicas: "Nincs elég replika az összehasonlításhoz.",
+            selectTwoReplicas: "Válasszon két különböző replikát a fenti listából.",
             loadError: "Az eredmények betöltése sikertelen.",
             loadErrorDesc: "Ellenőrizze a kapcsolatot, vagy lépjen kapcsolatba a rendszergazdával.",
             accessDenied: "Hozzáférés korlátozva",
@@ -958,6 +966,7 @@ const hu = {
         createFirst: "Hozza létre első értékelési sablonját a fenti gomb segítségével.",
         errorTitle: "Betöltési hiba",
         errorDescription: "Nem sikerült betölteni a sablonokat. Kérjük, frissítse az oldalt.",
+        editionHistory: "Kiadástörténet",
     },
     templateCreator: {
         modalTitleEdit: "Értékelési sablon szerkesztése",

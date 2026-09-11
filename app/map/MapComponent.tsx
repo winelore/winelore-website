@@ -110,7 +110,7 @@ export default function MapComponent({ beverages, onSelectBeverage, onBoundsChan
                     <GeoJSON
                         key={backgroundRegionKey}
                         data={backgroundRegionCollection}
-                        onEachFeature={(feature, layer) => {
+                        onEachFeature={(feature: any, layer: any) => {
                             layer.bindTooltip(t("map.wineRegionTooltip", { name: feature.properties?.name || t("map.wineRegionFallback") }), {
                                 sticky: true,
                                 direction: "top",
@@ -134,7 +134,7 @@ export default function MapComponent({ beverages, onSelectBeverage, onBoundsChan
                             .map((feature) => feature.properties.id)
                             .join('-')}
                         data={selectedRegionGeoJson}
-                        onEachFeature={(feature, layer) => {
+                        onEachFeature={(feature: any, layer: any) => {
                             layer.bindTooltip(t("map.wineRegionTooltip", { name: feature.properties?.name || t("map.wineRegionFallback") }), {
                                 sticky: true,
                                 direction: "top",

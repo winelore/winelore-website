@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n/context"
 import { Plus, Calendar, Settings, Layers, CheckCircle2, Pencil, ChevronDown, ChevronUp } from "lucide-react"
 import Cookies from "js-cookie"
+import Link from "next/link"
 import TemplateCreatorModal, { getPropertyTypeLabel } from "./TemplateCreatorModal"
 import { useSearchParams } from "next/navigation"
 import { ListPageShell, ListPageHeader, StateCard } from "@/components/list"
@@ -141,15 +142,19 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                                     </div>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
+                                            <Link
+                                                href={`/templates/${template.id}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-lg font-bold text-slate-800 tracking-tight hover:text-indigo-600 transition-colors truncate"
+                                            >
                                                 {template.name}
-                                            </h3>
+                                            </Link>
                                         </div>
 
                                         <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3.5 h-3.5" />
-                                                {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString()}
+                                                {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString("en-CA")}
                                             </span>
                                             <span className="text-slate-300">|</span>
                                             <span>{t("myTemplates.type")}: <span className="text-slate-700 uppercase font-bold">{template.beverageType}</span></span>
