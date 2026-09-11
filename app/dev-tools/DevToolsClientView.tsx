@@ -37,6 +37,7 @@ export function DevToolsClientView() {
   const [formData, setFormData] = useState<SeederFormData>({
     competitionName: 'TEST 1',
     seriesName: 'Червоне вино 2026',
+    templateEditionId: '14fa1fe7-139d-4c12-903d-80f65331f9d2',
     commissions: [
       { 
         name: 'Комісія 1', type: 'NOT_STARTED', 
@@ -252,7 +253,7 @@ export function DevToolsClientView() {
               </CardHeader>
               <CardContent className="p-6 space-y-8">
                 {/* Competition Meta */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Назва змагання</label>
                     <Input 
@@ -267,6 +268,14 @@ export function DevToolsClientView() {
                       value={formData.seriesName}
                       onChange={e => setFormData({...formData, seriesName: e.target.value})}
                       placeholder="напр. Червоне вино 2026"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Шаблон оцінювання (ID)</label>
+                    <Input 
+                      value={formData.templateEditionId || ''}
+                      onChange={e => setFormData({...formData, templateEditionId: e.target.value})}
+                      placeholder="14fa1fe7-139d-4c12-903d-80f65331f9d2"
                     />
                   </div>
                 </div>

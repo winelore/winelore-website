@@ -101,13 +101,6 @@ export type VariationsQueryVariables = Exact<{
 
 export type VariationsQuery = { variations: Array<{ id: string, auid: string, locationId: string | null, icon: string | null, createdAt: string }> };
 
-export type DefaultVariationQueryVariables = Exact<{
-  auid: string | number;
-}>;
-
-
-export type DefaultVariationQuery = { defaultVariation: { auid: string, variationId: string } | null };
-
 export type VariationNameQueryVariables = Exact<{
   variationId: string | number;
 }>;
@@ -128,6 +121,13 @@ export type VariationStatusQueryVariables = Exact<{
 
 
 export type VariationStatusQuery = { status: { variationId: string, text: string | null, emoji: string | null, expiresAt: string | null, updatedAt: string, isExpired: boolean } | null };
+
+export type DefaultVariationQueryVariables = Exact<{
+  auid: string | number;
+}>;
+
+
+export type DefaultVariationQuery = { defaultVariation: { auid: string, variationId: string } | null };
 
 export type AddUsernameMutationVariables = Exact<{
   auid: string | number;
@@ -329,24 +329,16 @@ export const VariationsDocument = gql`
   }
 }
     `;
-export const DefaultVariationDocument = gql`
-    query DefaultVariation($auid: ID!) {
-  defaultVariation(auid: $auid) {
-    auid
-    variationId
-  }
-}
-    `;
 export const VariationNameDocument = gql`
     query VariationName($variationId: ID!) {
   name(variationId: $variationId) {
     variationId
-    displayName
     elements {
       partType
       value
       separatorType
     }
+    displayName
   }
 }
     `;
@@ -368,6 +360,14 @@ export const VariationStatusDocument = gql`
     expiresAt
     updatedAt
     isExpired
+  }
+}
+    `;
+export const DefaultVariationDocument = gql`
+    query DefaultVariation($auid: ID!) {
+  defaultVariation(auid: $auid) {
+    auid
+    variationId
   }
 }
     `;
@@ -549,9 +549,6 @@ export function getSdk<C>(requester: Requester<C>) {
     Variations(variables: VariationsQueryVariables, options?: C): Promise<VariationsQuery> {
       return requester<VariationsQuery, VariationsQueryVariables>(VariationsDocument, variables, options) as Promise<VariationsQuery>;
     },
-    DefaultVariation(variables: DefaultVariationQueryVariables, options?: C): Promise<DefaultVariationQuery> {
-      return requester<DefaultVariationQuery, DefaultVariationQueryVariables>(DefaultVariationDocument, variables, options) as Promise<DefaultVariationQuery>;
-    },
     VariationName(variables: VariationNameQueryVariables, options?: C): Promise<VariationNameQuery> {
       return requester<VariationNameQuery, VariationNameQueryVariables>(VariationNameDocument, variables, options) as Promise<VariationNameQuery>;
     },
@@ -560,6 +557,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     VariationStatus(variables: VariationStatusQueryVariables, options?: C): Promise<VariationStatusQuery> {
       return requester<VariationStatusQuery, VariationStatusQueryVariables>(VariationStatusDocument, variables, options) as Promise<VariationStatusQuery>;
+    },
+    DefaultVariation(variables: DefaultVariationQueryVariables, options?: C): Promise<DefaultVariationQuery> {
+      return requester<DefaultVariationQuery, DefaultVariationQueryVariables>(DefaultVariationDocument, variables, options) as Promise<DefaultVariationQuery>;
     },
     AddUsername(variables: AddUsernameMutationVariables, options?: C): Promise<AddUsernameMutation> {
       return requester<AddUsernameMutation, AddUsernameMutationVariables>(AddUsernameDocument, variables, options) as Promise<AddUsernameMutation>;

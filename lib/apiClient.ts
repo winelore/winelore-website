@@ -13,6 +13,7 @@ function isNotFoundError(err: any): boolean {
     const code = err.extensions?.code;
     const groupCode = err.extensions?.groupCode;
     const classification = err.extensions?.classification;
+    if (code === 'REPLICA_MEMBER_NOT_FOUND') return false;
     return (
         code === 'EVALUATION_NOT_FOUND' ||
         code === 'COMMISSION_NOT_FOUND' ||
@@ -73,9 +74,27 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
     variables?: TVariables,
     headers?: Record<string, string>
 ): Promise<TResult> {
+    const cleanHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+    if (headers) {
+        let actor: string | undefined;
+        for (const [k, v] of Object.entries(headers)) {
+            const lowerKey = k.toLowerCase();
+            if (lowerKey === 'x-actor' || lowerKey === 'actor') {
+                actor = v;
+            } else {
+                cleanHeaders[k] = v;
+            }
+        }
+        if (actor !== undefined) {
+            cleanHeaders['X-ACTOR'] = actor;
+        }
+    }
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...headers },
+        headers: cleanHeaders,
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 }
     });
@@ -147,13 +166,27 @@ const requester = async <R, V>(
     vars?: V,
     options?: RequesterOptions
 ): Promise<R> => {
+    let actor = DEFAULT_ACTOR;
+    const cleanHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (options?.headers) {
+        for (const [k, v] of Object.entries(options.headers)) {
+            const lowerKey = k.toLowerCase();
+            if (lowerKey === 'x-actor' || lowerKey === 'actor') {
+                actor = v;
+            } else {
+                cleanHeaders[k] = v;
+            }
+        }
+    }
+
+    cleanHeaders['X-ACTOR'] = actor;
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-ACTOR': DEFAULT_ACTOR,
-            ...options?.headers
-        },
+        headers: cleanHeaders,
         body: JSON.stringify({
             query: print(doc),
             variables: vars,

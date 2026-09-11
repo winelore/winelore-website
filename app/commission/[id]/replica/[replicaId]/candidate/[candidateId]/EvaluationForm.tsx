@@ -10,7 +10,8 @@ import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
 import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
 import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
-import { Mic, Square, Trash2 } from "lucide-react"
+import { Mic, Square, Trash2, Wand2 } from "lucide-react"
+import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
 interface EvaluationProperty {
     __typename: "BooleanProperty" | "IntProperty" | "DoubleProperty" | "EnumProperty" | "DiscreteNumbersProperty" | "SmartProperty"
@@ -137,6 +138,7 @@ function DiscreteNumbersInput({
         }
 
         checkFit()
+        if (typeof ResizeObserver === "undefined") return
         const targetElement = container.parentElement || container
         const observer = new ResizeObserver(checkFit)
         observer.observe(targetElement)
@@ -259,11 +261,43 @@ function VoiceCommentButton({
     )
 }
 
+function isVoiceRecordingSupported(): boolean {
+    if (typeof window === "undefined") return false
+    const hasGetUserMedia = Boolean(
+        navigator?.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function"
+    )
+    const hasMediaRecorder = typeof window.MediaRecorder !== "undefined"
+    return hasGetUserMedia && hasMediaRecorder
+}
+function getBestAudioMimeType(): string | undefined {
+    if (typeof window === "undefined" || typeof window.MediaRecorder === "undefined") return undefined
+    if (typeof MediaRecorder.isTypeSupported !== "function") return undefined
+    const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/aac",
+    ]
+    for (const candidate of candidates) {
+        try {
+            if (MediaRecorder.isTypeSupported(candidate)) {
+                return candidate
+            }
+        } catch {
+            // Ignore browsers that throw on unknown mime types
+        }
+    }
+    return undefined
+}
+
 export default function EvaluationForm({
     categories,
     candidateId,
     commissionId,
     replicaId,
+    candidateCode,
+    beverageName,
+    visibleAttributes,
     propertyCommentsEnabled,
     voiceCommentsEnabled,
     onSubmittingChange,
@@ -272,12 +306,15 @@ export default function EvaluationForm({
     candidateId: string
     commissionId: string
     replicaId: string
+    candidateCode?: string
+    beverageName?: string | null
+    visibleAttributes?: { label: string; value: string }[]
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
     onSubmittingChange?: (submitting: boolean) => void
 }) {
     const router = useRouter()
-    const {t, formatEnumLabel} = useTranslation()
+    const {t, formatEnumLabel, locale} = useTranslation()
     const [values, setValues] = useState<Record<string, any>>(() => {
         const initial: Record<string, any> = {}
         categories.forEach(category => {
@@ -317,6 +354,7 @@ export default function EvaluationForm({
     const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({})
     const [numericErrors, setNumericErrors] = useState<Record<string, NumericInputErrorReason | null>>({})
     const [generalComment, setGeneralComment] = useState("")
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
@@ -387,21 +425,28 @@ export default function EvaluationForm({
         if (activeRecordingKey) stopRecording()
         audioChunksRef.current = []
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({audio: true})
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
             streamRef.current = stream
-            const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4"
-            const mr = new MediaRecorder(stream, {mimeType})
+            const mimeType = getBestAudioMimeType()
+            let mr: MediaRecorder
+            try {
+                mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+            } catch {
+                // Fallback if browser constructor rejects mimeType options
+                mr = new MediaRecorder(stream)
+            }
             mediaRecorderRef.current = mr
             mr.ondataavailable = (e) => {
-                if (e.data.size > 0) audioChunksRef.current.push(e.data)
+                if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data)
             }
             mr.onstop = () => {
-                const blob = new Blob(audioChunksRef.current, {type: mimeType})
+                const recordedType = mr.mimeType || mimeType || "audio/mp4"
+                const blob = new Blob(audioChunksRef.current, { type: recordedType })
                 const url = URL.createObjectURL(blob)
-                setVoiceBlobs(prev => ({...prev, [key]: blob}))
+                setVoiceBlobs(prev => ({ ...prev, [key]: blob }))
                 setVoicePreviewUrls(prev => {
                     if (prev[key]) URL.revokeObjectURL(prev[key])
-                    return {...prev, [key]: url}
+                    return { ...prev, [key]: url }
                 })
                 stream.getTracks().forEach(t => t.stop())
                 streamRef.current = null
@@ -413,8 +458,16 @@ export default function EvaluationForm({
             timerRef.current = setInterval(() => {
                 setRecordingTime(Math.round((Date.now() - start) / 1000))
             }, 1000)
-        } catch {
-            toast.error(t("evaluation.voiceMicError"))
+        } catch (err: any) {
+            if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+                toast.error(t("evaluation.voiceMicError"))
+            } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+                toast.error(t("evaluation.voiceMicNotFound"))
+            } else if (err?.name === "NotSupportedError" || err instanceof TypeError) {
+                toast.error(t("evaluation.voiceNotSupported"))
+            } else {
+                toast.error(t("evaluation.voiceMicError"))
+            }
         }
     }
 
@@ -445,7 +498,7 @@ export default function EvaluationForm({
 
     const uploadVoice = async (blob: Blob, key: string): Promise<string | undefined> => {
         try {
-            const ext = blob.type.includes("mp4") ? "mp4" : "webm"
+            const ext = blob.type.includes("mp4") || blob.type.includes("aac") || blob.type.includes("m4a") ? "mp4" : "webm"
             const fileName = `evaluation_voice_${key}_${Date.now()}.${ext}`
             const result = await getVoiceUploadUrlAction(fileName, blob.type)
             if (!result) return undefined
@@ -596,7 +649,138 @@ export default function EvaluationForm({
         return true
     }, [categories, values, numericErrors])
 
-    const handleSubmit = async () => {
+    const isAllScoringComplete = useMemo(() => {
+        // Must not have active numeric parsing or range errors
+        if (Object.values(numericErrors).some(Boolean)) return false
+        let numericPropsCount = 0
+        for (const category of categories) {
+            for (const prop of category.properties) {
+                // SmartProperty is formula-calculated by backend/frontend, skip it
+                if (prop.__typename === "SmartProperty") continue
+                const isNumeric =
+                    prop.__typename === "IntProperty" ||
+                    prop.__typename === "DoubleProperty" ||
+                    prop.__typename === "DiscreteNumbersProperty"
+                if (isNumeric) {
+                    numericPropsCount++
+                    const val = values[prop.code]
+                    if (val === undefined || val === null || val === "" || typeof val !== "number" || isNaN(val)) {
+                        return false
+                    }
+                    if (prop.__typename === "IntProperty") {
+                        if (prop.intMinLimit !== null && prop.intMinLimit !== undefined && val < prop.intMinLimit) return false
+                        if (prop.intMaxLimit !== null && prop.intMaxLimit !== undefined && val > prop.intMaxLimit) return false
+                    }
+                    if (prop.__typename === "DoubleProperty") {
+                        if (prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined && val < prop.doubleMinLimit) return false
+                        if (prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined && val > prop.doubleMaxLimit) return false
+                    }
+                } else if (prop.isRequired) {
+                    const val = values[prop.code]
+                    if (val === undefined || val === null || val === "") return false
+                }
+            }
+        }
+        return numericPropsCount > 0 ? true : isFormValid
+    }, [categories, values, numericErrors, isFormValid])
+
+    const handleGenerateAIComment = async () => {
+        if (isGeneratingAI || !isAllScoringComplete) return
+        setIsGeneratingAI(true)
+        try {
+            const categoryScores: TastingCategoryScore[] = categories.map((cat) => {
+                let catScore = 0
+                let catMax = 0
+                const propScores: TastingPropertyScore[] = []
+                cat.properties.forEach((prop) => {
+                    if (prop.__typename === "SmartProperty") {
+                        const smartVal = computedSmartValues[prop.code]
+                        if (typeof smartVal === "number" && !isNaN(smartVal)) {
+                            propScores.push({ name: prop.name, score: smartVal, maxScore: 100 })
+                        }
+                        return
+                    }
+                    let maxVal = 0
+                    if (prop.__typename === "IntProperty" && prop.intMaxLimit != null) maxVal = prop.intMaxLimit
+                    else if (prop.__typename === "DoubleProperty" && prop.doubleMaxLimit != null) maxVal = prop.doubleMaxLimit
+                    else if (prop.__typename === "DiscreteNumbersProperty" && prop.discreteAllowedValues?.length) {
+                        maxVal = Math.max(...prop.discreteAllowedValues)
+                    }
+                    const rawVal = values[prop.code]
+                    const numVal = typeof rawVal === "number" ? rawVal : parseFloat(rawVal)
+                    if (!isNaN(numVal)) {
+                        catScore += numVal
+                        catMax += maxVal
+                        propScores.push({
+                            name: prop.name,
+                            score: numVal,
+                            maxScore: maxVal || numVal,
+                        })
+                    }
+                })
+                return {
+                    name: cat.name,
+                    score: catScore,
+                    maxScore: catMax,
+                    properties: propScores,
+                }
+            })
+            let totalScore: number | null = null
+            categories.forEach((cat) => {
+                cat.properties.forEach((p) => {
+                    if (p.isResult) {
+                        const val = computedSmartValues[p.code] ?? values[p.code]
+                        if (val != null && !isNaN(Number(val))) {
+                            totalScore = Number(val)
+                        }
+                    }
+                })
+            })
+            const attributesMap: Record<string, string> = {}
+            if (visibleAttributes && visibleAttributes.length > 0) {
+                visibleAttributes.forEach((attr) => {
+                    attributesMap[attr.label] = attr.value
+                })
+            }
+            const payload: TastingPayload = {
+                locale: (locale as "en" | "uk" | "hu") || "en",
+                beverageType: beverageName || "Wine",
+                candidateCode: candidateCode || undefined,
+                totalScore,
+                maxTotalScore: 100,
+                categories: categoryScores,
+                attributes: attributesMap,
+            }
+            const response = await fetch("/api/generate-comment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+            if (!response.ok || !response.body) {
+                const errJson = await response.json().catch(() => ({}))
+                throw new Error(errJson.error || "Failed to generate AI comment")
+            }
+            setGeneralComment("")
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let accumulated = ""
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                const chunk = decoder.decode(value, { stream: true })
+                accumulated += chunk
+                setGeneralComment(accumulated)
+            }
+            toast.success(t("evaluation.aiDraftGenerated"))
+        } catch (err: any) {
+            console.error("AI Comment Generation error:", err)
+            toast.error(err.message || t("evaluation.aiDraftFailed"))
+        } finally {
+            setIsGeneratingAI(false)
+        }
+    }
+
+            const handleSubmit = async () => {
         setIsSubmitting(true)
         onSubmittingChange?.(true)
         setError(null)
@@ -1001,10 +1185,26 @@ export default function EvaluationForm({
                             {isLastCategory && (
                                 <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4">
                                     <div className="flex flex-col gap-1.5">
-                                        <h2 className="text-[13px] font-bold text-slate-700">
-                                            {t("evaluation.generalCommentLabel")}
-                                        </h2>
-                                        <div className="flex items-end gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <label
+                                                htmlFor="general-comment-input"
+                                                className="text-[13px] font-bold text-slate-700 select-none"
+                                            >
+                                                {t("evaluation.generalCommentLabel")}
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={handleGenerateAIComment}
+                                                disabled={isGeneratingAI || !isAllScoringComplete}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs cursor-pointer active:scale-[0.98]"
+                                                title={!isAllScoringComplete ? t("evaluation.aiScoreAllRequired") : t("evaluation.aiGenerateDraft")}
+                                            >
+                                                <Wand2
+                                                    className={`w-3.5 h-3.5 text-indigo-600 shrink-0 ${isGeneratingAI ? "animate-spin" : ""}`}/>
+                                                <span>{isGeneratingAI ? t("evaluation.aiGenerating") : t("evaluation.aiGenerateDraft")}</span>
+                                            </button>
+                                        </div>
+                                            <div className="flex items-end gap-2">
                                         <textarea
                                             rows={2}
                                             value={generalComment}

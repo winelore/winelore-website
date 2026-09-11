@@ -64,7 +64,7 @@ export async function markMemberReadyAction(replicaId: string, memberId: string)
     if (!isValidUuid(replicaId) || !isValidUuid(memberId)) throw new Error("Invalid UUID parameter");
     try {
         const headers = await getActorHeaders();
-        return await sdk.MarkReplicaMemberReady({ replicaId, memberId }, headers);
+        return await sdk.MarkReplicaMemberReady({ replicaId, memberId }, { headers });
     } catch (err: any) {
         console.error("Server Action Error (markMemberReadyAction):", err);
         throw new Error(err.message || "Failed to mark member ready");
@@ -75,7 +75,7 @@ export async function markMemberNotReadyAction(replicaId: string, memberId: stri
     if (!isValidUuid(replicaId) || !isValidUuid(memberId)) throw new Error("Invalid UUID parameter");
     try {
         const headers = await getActorHeaders();
-        return await sdk.MarkReplicaMemberNotReady({ replicaId, memberId }, headers);
+        return await sdk.MarkReplicaMemberNotReady({ replicaId, memberId }, { headers });
     } catch (err: any) {
         console.error("Server Action Error (markMemberNotReadyAction):", err);
         throw new Error(err.message || "Failed to mark member not ready");
@@ -669,6 +669,11 @@ export async function getCommissionDataAction(commissionId: string) {
             plannedEndAt: commission.plannedDates?.end || null,
             startedAt: commission.startedAt || null,
             endedAt: commission.endedAt || null,
+            partialCandidateEvaluationEnabled: commission.partialCandidateEvaluationEnabled ?? false,
+            wineJumperMiniGameEnabled: commission.wineJumperMiniGameEnabled ?? false,
+            voiceCommentsEnabled: commission.voiceCommentsEnabled ?? false,
+            propertyCommentsEnabled: commission.propertyCommentsEnabled ?? false,
+            beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled ?? false,
             evaluationVisibleAttributes: commission.evaluationVisibleAttributes || {
                 beverage: [],
                 batch: [],
@@ -848,7 +853,7 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     if (!auid) {
         throw new Error("Unauthorized: Please sign in");
     }
-    return { actor: auid, "x-actor": auid };
+    return { "X-ACTOR": auid };
 }
 
 
@@ -1277,6 +1282,7 @@ export async function setCommissionReplicaChaoticCurrentPanelChangesEnabledActio
         `, { id: replicaId, enabled }, headers);
         return { success: true, replica: data?.setCommissionReplicaChaoticCurrentPanelChangesEnabled };
     } catch (err: any) {
+        console.error("Server Action Error (setCommissionReplicaChaoticCurrentPanelChangesEnabledAction):", err);
         return { success: false, error: err?.message || "Failed to update chaotic panel setting" };
     }
 }

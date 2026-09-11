@@ -47,6 +47,7 @@ import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
 import { BackLink } from "@/components/BackLink"
+import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -660,8 +661,8 @@ export default function CommissionClientView({
 
     const openEditDates = () => {
         setEditDatesData({
-            plannedStartAt: initialData.plannedStartAt ? initialData.plannedStartAt.substring(0, 16) : "",
-            plannedEndAt: initialData.plannedEndAt ? initialData.plannedEndAt.substring(0, 16) : ""
+            plannedStartAt: toLocalDatetimeInput(initialData.plannedStartAt),
+            plannedEndAt: toLocalDatetimeInput(initialData.plannedEndAt)
         })
         setIsEditingDates(true)
     }
@@ -725,8 +726,8 @@ export default function CommissionClientView({
         try {
             const res = await updateCommissionDatesAction(
                 initialData.id,
-                editDatesData.plannedStartAt || null,
-                editDatesData.plannedEndAt || null,
+                fromLocalDatetimeInputToIso(editDatesData.plannedStartAt),
+                fromLocalDatetimeInputToIso(editDatesData.plannedEndAt),
             )
             if (res.success) {
                 setIsEditingDates(false)
@@ -862,7 +863,7 @@ export default function CommissionClientView({
 
     const handleToggleChaoticCandidateChanges = async () => {
         if (!selectedReplica || isMutating) return;
-        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId);
+        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0];
         if (!activePanel) return;
         const nextState = !activePanel.chaoticCurrentCandidateChangesEnabled;
         setIsMutating(true);
@@ -889,7 +890,13 @@ export default function CommissionClientView({
         setIsMutating(true);
         try {
             const res = await setCommissionReplicaChaoticCurrentPanelChangesEnabledAction(selectedReplica.id, nextState);
-            if (res.success) setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: nextState } : r));
+            if (res.success) {
+                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: nextState } : r));
+            } else {
+                toast.error(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
@@ -1864,13 +1871,13 @@ export default function CommissionClientView({
                                     <button
                                         type="button"
                                         onClick={handleToggleChaoticCandidateChanges}
-                                        disabled={isMutating || !selectedReplica.currentPanelId}
+                                        disabled={isMutating || (!selectedReplica.currentPanelId && selectedReplica.replicaPanels.length === 0)}
                                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            (selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0])?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                         }`}
                                     >
                                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            (selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0])?.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
                                         }`} />
                                     </button>
                                 </div>

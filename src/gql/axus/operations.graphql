@@ -91,22 +91,15 @@ query Variations($auid: ID!) {
     }
 }
 
-query DefaultVariation($auid: ID!) {
-    defaultVariation(auid: $auid) {
-        auid
-        variationId
-    }
-}
-
 query VariationName($variationId: ID!) {
     name(variationId: $variationId) {
         variationId
-        displayName
         elements {
             partType
             value
             separatorType
         }
+        displayName
     }
 }
 
@@ -126,6 +119,13 @@ query VariationStatus($variationId: ID!) {
         expiresAt
         updatedAt
         isExpired
+    }
+}
+
+query DefaultVariation($auid: ID!) {
+    defaultVariation(auid: $auid) {
+        auid
+        variationId
     }
 }
 

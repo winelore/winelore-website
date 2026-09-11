@@ -23,6 +23,7 @@ export type CommissionConfig = {
 export type SeederFormData = {
   competitionName: string;
   seriesName: string;
+  templateEditionId?: string;
   commissions: CommissionConfig[];
 };
 
@@ -48,11 +49,11 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     const auid = cookieStore.get("auid")?.value;
 
     if (!auid) {
-        log(`⚠️ Увага: Кука 'auid' повністю відсутня. Організатор не авторизований.`);
-        throw new Error("Авторизація відсутня: будь ласка, увійдіть в акаунт!");
+      log(`⚠️ Увага: Кука 'auid' повністю відсутня`);
+      throw new Error("Авторизація відсутня: увійдіть під потрібним акаунтом перед генерацією");
     }
-    const auidInt = parseInt(auid, 10);
-    const headers = { "actor": auid, "x-actor": auid };
+    const auidInt: number = parseInt(auid, 10);
+    const headers = { "X-ACTOR": auidInt.toString() };
     
     log(`🔑 Авторизовано! Актор ID: ${auidInt}`);
     console.log(`🔑 [SEEDER SUCCESS] Актор ID: ${auidInt}`);
@@ -63,25 +64,139 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     const finalSeriesName = cleanString(`${baseSeriesName} ${uniqueSuffix}`);
     const finalCompetitionName = cleanString(`${baseCompetitionName} ${uniqueSuffix}`);
     
-    // Fetch default beverage type for candidates
+    // Fetch default beverage type and matching evaluation template
     let beverageTypeId = '';
+    let activeTemplateEditionId = '';
+    let evaluationProperties: { code: string, min: number, max: number }[] = [];
+
     try {
       const bevTypesRes = await sdk.DevGetBeverageTypes();
-      log(`📋 Дамп типів напоїв з бази: ${JSON.stringify(bevTypesRes.beverageTypes?.items)}`);
+      const bevItems = bevTypesRes.beverageTypes?.items || [];
+      log(`📋 Завантажено типів напоїв: ${bevItems.length}`);
       
-      const existingWine = bevTypesRes.beverageTypes?.items?.find(i => i.code === "WINE");
+      const existingWine = bevItems.find(i => i.code === "WINE");
+      beverageTypeId = existingWine?.id || "11111111-1111-4111-8111-111111111101";
 
-      if (existingWine) {
-          beverageTypeId = existingWine.id;
-          log(`📦 Використовуємо офіційний BeverageTypeId з бази: ${beverageTypeId}`);
-      } else {
-          beverageTypeId = "11111111-1111-4111-8111-111111111101"; // Фолбек обов'язково має бути у форматі UUID!
-          log(`⚠️ База типів порожня. Використовуємо дефолтний UUID напою: ${beverageTypeId}`);
+      const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
+      const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
+      log(`🔎 Знайдено ${items.length} шаблонів у базі. Підбираємо активний шаблон для типу напою...`);
+
+      const DEFAULT_DEV_TOOLS_TEMPLATE_EDITION_ID = "14fa1fe7-139d-4c12-903d-80f65331f9d2";
+      const targetTemplateEditionId = (data.templateEditionId?.trim() || DEFAULT_DEV_TOOLS_TEMPLATE_EDITION_ID);
+
+      let selectedTemplate: any = null;
+
+      // Якщо вказаний валідний UUID, спочатку пробуємо знайти його серед наявних шаблонів
+      if (isValidUuid(targetTemplateEditionId)) {
+        selectedTemplate = items.find((i: any) => 
+          i.id === targetTemplateEditionId || i.template?.id === targetTemplateEditionId
+        );
+
+        if (selectedTemplate) {
+          activeTemplateEditionId = selectedTemplate.id;
+          if (selectedTemplate.template?.beverageType?.id) {
+            beverageTypeId = selectedTemplate.template.beverageType.id;
+            log(`ℹ️ Використано тип напою з шаблону: ${beverageTypeId}`);
+          }
+        } else {
+          // Якщо в items немає (наприклад, інший статус), використовуємо цільовий ID безпосередньо
+          activeTemplateEditionId = targetTemplateEditionId;
+        }
       }
-      console.log(`📦 [SEEDER SUCCESS] BeverageTypeId: ${beverageTypeId}`);
-    } catch (e) {
-      log(`⚠️ Помилка отримання або створення BeverageTypes: ${e instanceof Error ? e.message : 'Unknown Error'}`);
-      throw new Error("Не вдалося ініціалізувати типи напоїв на бекенді.");
+
+      // Якщо шаблон досі не вибрано (наприклад, цільовий UUID був невалідний)
+      if (!activeTemplateEditionId) {
+        // Шукаємо активний або опублікований шаблон саме для цього beverageTypeId
+        selectedTemplate = items.find((i: any) => 
+          (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
+          i.template?.beverageType?.id === beverageTypeId
+        );
+
+        // Якщо для WINE шаблону немає, беремо будь-який активний шаблон і використовуємо його beverageTypeId
+        if (!selectedTemplate) {
+          selectedTemplate = items.find((i: any) => 
+            (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.template?.beverageType?.id
+          ) || items[0];
+
+          if (selectedTemplate?.template?.beverageType?.id) {
+            beverageTypeId = selectedTemplate.template.beverageType.id;
+            log(`ℹ️ Використано тип напою з шаблону: ${beverageTypeId}`);
+          }
+        }
+
+        if (selectedTemplate) {
+          activeTemplateEditionId = selectedTemplate.id;
+        }
+      }
+
+      if (activeTemplateEditionId) {
+        const selectedName = selectedTemplate?.template?.name || (activeTemplateEditionId === DEFAULT_DEV_TOOLS_TEMPLATE_EDITION_ID ? "Default DevTools Template" : "Template");
+        log(`📄 Вибрано шаблон оцінювання: "${selectedName}" (ID: ${activeTemplateEditionId})`);
+
+        const query = `
+          query GetTemplate($id: ID!) {
+            evaluationTemplateEdition(id: $id) {
+              template {
+                name
+                beverageType {
+                  id
+                }
+              }
+              categories {
+                properties {
+                  __typename
+                  code
+                  isResult
+                  ... on DoubleProperty {
+                    doubleMin: minLimit
+                    doubleMax: maxLimit
+                  }
+                  ... on IntProperty {
+                    intMin: minLimit
+                    intMax: maxLimit
+                  }
+                }
+              }
+            }
+          }
+        `;
+        const tplRes = await fetch(getGraphQLEndpoint(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...headers },
+          body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
+        });
+        const tplData = await tplRes.json();
+        const tplEdition = tplData?.data?.evaluationTemplateEdition;
+        if (tplEdition?.template?.beverageType?.id && (!selectedTemplate || !selectedTemplate.template?.beverageType?.id)) {
+          beverageTypeId = tplEdition.template.beverageType.id;
+          log(`ℹ️ Оновлено тип напою з шаблону: ${beverageTypeId}`);
+        }
+        if (tplEdition?.template?.name && selectedName === "Default DevTools Template") {
+          log(`📄 Оновлено назву шаблону: "${tplEdition.template.name}"`);
+        }
+        const categories = tplEdition?.categories || [];
+        categories.forEach((cat: any) => {
+          cat.properties?.forEach((prop: any) => {
+            if (prop.__typename !== "SmartProperty") {
+              let min = 0;
+              let max = 100;
+              if (prop.__typename === "DoubleProperty") {
+                min = prop.doubleMin ?? 0;
+                max = prop.doubleMax ?? 100;
+              } else if (prop.__typename === "IntProperty") {
+                min = prop.intMin ?? 0;
+                max = prop.intMax ?? 100;
+              }
+              evaluationProperties.push({ code: prop.code, min, max });
+            }
+          });
+        });
+        log(`📄 Отримано властивостей для оцінки: ${evaluationProperties.length}`);
+      } else {
+        log(`⚠️ Шаблони оцінювання не знайдені в базі!`);
+      }
+    } catch (e: any) {
+      log(`⚠️ Помилка отримання шаблонів: ${e.message}`);
     }
     
     // 0. Створення серії змагань
@@ -90,7 +205,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         name: finalSeriesName,
         countriesType: 'GLOBAL',
         countriesCodes: [],
-        owners: [[generateAuid()]]
+        owners: [[auidInt]]
       }
     });
     const seriesId = seriesRes.createCompetitionSeries.id;
@@ -109,16 +224,11 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // -1 день (у минулому)
     const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 днів
     
-    console.log("SENDING DATES TO BACKEND:", JSON.stringify({
-      start: startDate.toISOString(),
-      end: endDate.toISOString()
-    }));
-
     const compRes = await sdk.DevCreateCompetition({
       input: {
         name: finalCompetitionName,
         seriesId: seriesId,
-        holders: [[generateAuid()]],
+        holders: [[auidInt]],
         plannedDates: {
           start: startDate.toISOString(),
           end: endDate.toISOString()
@@ -145,85 +255,6 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
     const resultCommissions: any[] = [];
 
-    // Отримуємо існуючий шаблон оцінювання для прив'язки
-    let activeTemplateEditionId = '';
-    let evaluationProperties: { code: string, min: number, max: number }[] = [];
-    try {
-      const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
-      const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
-      
-      log(`🔎 Знайдено ${items.length} шаблонів у базі. Аналізуємо...`);
-      items.forEach((item: any, index: number) => {
-        const catCount = item.categories?.length || 0;
-        const bevId = item.template?.beverageType?.id;
-        const name = item.template?.name || "Unknown";
-        log(`   [${index + 1}] ID: ${item.id} | Назва: "${name}" | Статус: ${item.status} | Категорій: ${catCount} | BevType: ${bevId}`);
-      });
-
-      const firstActive = items.find((i: any) => 
-        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
-        i.categories && i.categories.length > 1 &&
-        (!i.template?.beverageType?.id || i.template.beverageType.id === beverageTypeId)
-      );
-      activeTemplateEditionId = firstActive?.id || items.find((i: any) => i.categories && i.categories.length > 1)?.id || items[0]?.id || '';
-      
-      if (activeTemplateEditionId) {
-         const selectedName = items.find((i: any) => i.id === activeTemplateEditionId)?.template?.name || "Unknown";
-         log(`📄 Вибрано шаблон оцінювання: "${selectedName}" (ID: ${activeTemplateEditionId})`);
-         
-         const query = `
-           query GetTemplate($id: ID!) {
-             evaluationTemplateEdition(id: $id) {
-               categories {
-                 properties {
-                   __typename
-                   code
-                   isResult
-                   ... on DoubleProperty {
-                     doubleMin: minLimit
-                     doubleMax: maxLimit
-                   }
-                   ... on IntProperty {
-                     intMin: minLimit
-                     intMax: maxLimit
-                   }
-                 }
-               }
-             }
-           }
-         `;
-         const tplRes = await fetch(getGraphQLEndpoint(), {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', ...headers },
-           body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
-         });
-         const tplData = await tplRes.json();
-         const categories = tplData?.data?.evaluationTemplateEdition?.categories || [];
-          categories.forEach((cat: any) => {
-            cat.properties.forEach((prop: any) => {
-              // SmartProperty values are calculated by backend, everything else must be submitted!
-              if (prop.__typename !== "SmartProperty") {
-                let min = 0;
-                let max = 100;
-                if (prop.__typename === "DoubleProperty") {
-                  min = prop.doubleMin ?? 0;
-                  max = prop.doubleMax ?? 100;
-                } else if (prop.__typename === "IntProperty") {
-                  min = prop.intMin ?? 0;
-                  max = prop.intMax ?? 100;
-                }
-                evaluationProperties.push({ code: prop.code, min, max });
-              }
-            });
-          });
-         log(`📄 Отримано властивостей для оцінки: ${evaluationProperties.length}`);
-      } else {
-         log(`⚠️ Шаблони оцінювання не знайдені в базі! Можливі помилки валідації.`);
-      }
-    } catch (e: any) {
-      log(`⚠️ Помилка отримання шаблонів: ${e.message}`);
-    }
-
     // Helper for creating commission and seeding data
     const seedCommission = async (
       name: string,
@@ -235,13 +266,14 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
       const commRes = await sdk.DevCreateCommission({
         input: {
           competitionId,
-          name: commCleanName
+          name: commCleanName,
+          partialCandidateEvaluationEnabled: true,
+          propertyCommentsEnabled: true,
+          voiceCommentsEnabled: true
         }
       });
       const commissionId = commRes.createCommission.id;
-      log(`🏆 Конкурс успішно створено! ID: ${commissionId}`);
-
-      log(`👥 Комісію успішно створено! ID: ${commissionId}`);
+      log(`👥 Комісію "${commCleanName}" успішно створено! ID: ${commissionId}`);
       console.log(`👥 [SEEDER SUCCESS] Commission ID: ${commissionId}`);
 
       if (activeTemplateEditionId) {
@@ -292,7 +324,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
 
           candidates.push({
             sampleId,
-            anonymizedCode: `WINE-${Math.floor(Math.random() * 1000)}`
+            anonymizedCode: `WINE-${wineIndex + 1}`
           });
         }
         
@@ -336,7 +368,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
             commissionId,
             name: cleanReplicaName,
             type: 'STANDARD',
-            chaoticCurrentPanelChangesEnabled: false,
+            chaoticCurrentPanelChangesEnabled: true,
             members: []
           }
         });
@@ -379,12 +411,6 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         }
         log(`🤝 Усі члени репліки "${cleanReplicaName}" готові!`);
 
-        await sdk.DevStartCommissionReplica(
-          { id: replicaId },
-          { headers: { 'actor': headAuid.toString(), 'x-actor': headAuid.toString() } }
-        );
-        log(`▶️ Репліка "${cleanReplicaName}" активована (STARTED)`);
-
         createdReplicas.push({ replicaId, replicaName: cleanReplicaName, headAuid, experts });
         
         commissionReplicasOutput.push({
@@ -395,90 +421,134 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         });
       }
 
-      // 7. Імітація оцінювання для всіх реплік
-      for (const rep of createdReplicas) {
-        const commissionData = await sdk.GetCommission({ id: commissionId });
-        const activeReplica = commissionData.commission?.replicas.find(r => r.id === rep.replicaId);
-        const replicaCandidates = (activeReplica?.replicaPanels || []).flatMap(panel =>
-          panel.replicaCandidates.map(candidate => ({ ...candidate, replicaPanelId: panel.id })),
-        );
+      // 6. Життєвий цикл репліки та оцінювання згідно зі статусом
+      if (type === 'NOT_STARTED') {
+        log(`⏸️ Комісія "${commCleanName}" готова, статус "Не розпочата" (репліки в статусі PLANNED, очікують старту головою).`);
+      } else {
+        // Для IN_PROGRESS або FINISHED
+        for (const rep of createdReplicas) {
+          await sdk.DevStartCommissionReplica(
+            { id: rep.replicaId },
+            { headers: { 'X-ACTOR': rep.headAuid.toString() } }
+          );
+          log(`▶️ Репліка "${rep.replicaName}" активована (STARTED)`);
 
-        if (evalCount > 0 && replicaCandidates.length > 0) {
-          log(`   Імітуємо оцінювання для ${evalCount} вин у "${rep.replicaName}"...`);
-          const winesToEvaluate = replicaCandidates.slice(0, evalCount);
-          
-          for (const wine of winesToEvaluate) {
-            try {
-              await sdk.DevSetCommissionReplicaCurrentPanel({
-                id: rep.replicaId,
-                currentPanelId: wine.replicaPanelId,
-              }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
-              await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
-                id: rep.replicaId,
-                panelId: wine.replicaPanelId,
-                currentCandidateId: wine.id
-              }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
-            } catch (e: any) {
-              log(`   ⚠️ Не вдалося встановити кандидата: ${e.message}`);
-            }
+          const commissionData = await sdk.GetCommission({ id: commissionId });
+          const activeReplica = commissionData.commission?.replicas.find(r => r.id === rep.replicaId);
+          const replicaPanels = activeReplica?.replicaPanels || [];
 
-            const allMembersToEvaluate = [{ auid: rep.headAuid, isHead: true }, ...rep.experts];
-            for (const expert of allMembersToEvaluate) {
-              try {
-                const scores = evaluationProperties.length > 0 
-                  ? evaluationProperties.map(prop => {
-                      const range = prop.max - prop.min;
-                      const minAllowed = prop.min + Math.floor(range / 2);
-                      const score = Math.floor(Math.random() * (prop.max - minAllowed + 1)) + minAllowed;
-                      return { code: prop.code, value: score.toString() };
-                    })
-                  : [
-                      { code: "appearance_clarity", value: (Math.floor(Math.random() * 5) + 5).toString() },
-                      { code: "appearance_color", value: (Math.floor(Math.random() * 5) + 5).toString() }
-                    ];
+          let winesEvaluated = 0;
+          let nextCandidateToSet: { replicaPanelId: string; candidateId: string } | null = null;
 
-                await sdk.SubmitEvaluation({
-                  input: {
-                    candidateId: wine.id,
-                    scores,
-                    comments: [{ text: 'Automated evaluation comment from seeder', sortOrder: 1 }]
+          for (const panel of replicaPanels) {
+            const panelCandidates = panel.replicaCandidates || [];
+            let allPanelCandidatesEvaluated = true;
+
+            for (const candidate of panelCandidates) {
+              if (winesEvaluated < evalCount) {
+                // Встановлюємо поточну панель та зразок перед оцінюванням
+                try {
+                  await sdk.DevSetCommissionReplicaCurrentPanel({
+                    id: rep.replicaId,
+                    currentPanelId: panel.id,
+                  }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+                  await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
+                    id: rep.replicaId,
+                    panelId: panel.id,
+                    currentCandidateId: candidate.id
+                  }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+                } catch (e: any) {
+                  log(`   ⚠️ Помилка встановлення кандидата: ${e.message}`);
+                }
+
+                // Оцінювання головою та всіма експертами
+                const allMembers = [{ auid: rep.headAuid, isHead: true }, ...rep.experts];
+                for (const member of allMembers) {
+                  try {
+                    const scores = evaluationProperties.length > 0 
+                      ? evaluationProperties.map(prop => {
+                          const range = Math.max(1, prop.max - prop.min);
+                          const minAllowed = prop.min + Math.floor(range / 2);
+                          const score = Math.floor(Math.random() * (prop.max - minAllowed + 1)) + minAllowed;
+                          return { code: prop.code, value: score.toString() };
+                        })
+                      : [
+                          { code: "example", value: (Math.floor(Math.random() * 5) + 1).toString() }
+                        ];
+
+                    const evalRes = await sdk.SubmitEvaluation({
+                      input: {
+                        candidateId: candidate.id,
+                        scores,
+                        comments: [{ text: 'Automated evaluation comment from seeder', sortOrder: 1 }]
+                      }
+                    }, { headers: { 'X-ACTOR': member.auid.toString() } });
+
+                    if (!evalRes?.submitEvaluation) {
+                      log(`   ⚠️ Оцінка для зразка ${candidate.id} (${member.auid}) повернула порожній результат`);
+                    }
+                  } catch (e: any) {
+                    log(`   ⚠️ Помилка оцінювання для зразка ${candidate.id} (${member.auid}): ${e.message}`);
                   }
-                }, { headers: { 'actor': expert.auid.toString(), 'x-actor': expert.auid.toString() } });
-              } catch (e: any) {
-                log(`   ⚠️ Помилка оцінювання для вина ${wine.id} експертом ${expert.auid}: ${e.message}`);
+                }
+
+                // Фіксуємо оцінювання зразка
+                try {
+                  await sdk.MarkCommissionReplicaCandidateAsEvaluated(
+                    { id: candidate.id },
+                    { headers: { 'X-ACTOR': rep.headAuid.toString() } }
+                  );
+                } catch (e: any) {
+                  log(`   ⚠️ Не вдалося позначити зразок оціненим: ${e.message}`);
+                }
+
+                winesEvaluated++;
+              } else {
+                allPanelCandidatesEvaluated = false;
+                if (!nextCandidateToSet) {
+                  nextCandidateToSet = { replicaPanelId: panel.id, candidateId: candidate.id };
+                }
               }
             }
-            try {
-              await sdk.MarkCommissionReplicaCandidateAsEvaluated(
-                { id: wine.id },
-                { headers: { 'X-ACTOR': rep.headAuid.toString() } }
-              );
-            } catch (e: any) {
-              if (!e.message || !e.message.includes('Replica is not started')) {
-                log(`   ⚠️ Не вдалося завершити оцінювання кандидата ${wine.id}: ${e.message}`);
+
+            // Якщо всі кандидати цієї панелі оцінені, завершуємо панель
+            if (allPanelCandidatesEvaluated && panelCandidates.length > 0) {
+              try {
+                await sdk.DevCompleteCommissionReplicaPanel({
+                  id: rep.replicaId,
+                  panelId: panel.id
+                }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+                log(`   ✅ Панель завершена у репліці "${rep.replicaName}"`);
+              } catch (e: any) {
+                log(`   ⚠️ Не вдалося завершити панель: ${e.message}`);
               }
             }
           }
-          log(`   ✅ Оцінювання у "${rep.replicaName}" завершено`);
-        }
 
-        if (evalCount < replicaCandidates.length) {
-          const nextWine = replicaCandidates[evalCount];
-          try {
-            await sdk.DevSetCommissionReplicaCurrentPanel({
-              id: rep.replicaId,
-              currentPanelId: nextWine.replicaPanelId,
-            }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
-            await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
-              id: rep.replicaId,
-              panelId: nextWine.replicaPanelId,
-              currentCandidateId: nextWine.id
-            }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
-          } catch (e: any) {
-            log(`   ⚠️ Не вдалося встановити наступного кандидата: ${e.message}`);
+          if (type === 'IN_PROGRESS') {
+            log(`   ✅ Оцінено ${winesEvaluated} вин у "${rep.replicaName}"`);
+            if (nextCandidateToSet) {
+              try {
+                await sdk.DevSetCommissionReplicaCurrentPanel({
+                  id: rep.replicaId,
+                  currentPanelId: nextCandidateToSet.replicaPanelId,
+                }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+                await sdk.DevSetCommissionReplicaPanelCurrentCandidate({
+                  id: rep.replicaId,
+                  panelId: nextCandidateToSet.replicaPanelId,
+                  currentCandidateId: nextCandidateToSet.candidateId
+                }, { headers: { 'X-ACTOR': rep.headAuid.toString() } });
+                log(`   👉 Наступний активний зразок встановлено (${nextCandidateToSet.candidateId})`);
+              } catch (e: any) {
+                log(`   ⚠️ Не вдалося встановити наступного кандидата: ${e.message}`);
+              }
+            }
+          } else if (type === 'FINISHED') {
+            log(`   🎉 Усі зразки оцінено, панелі завершено, репліка "${rep.replicaName}" перейшла в статус COMPLETED`);
           }
         }
       }
+
 
       resultCommissions.push({
         id: commissionId,

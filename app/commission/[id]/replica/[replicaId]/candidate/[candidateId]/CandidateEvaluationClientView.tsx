@@ -215,6 +215,9 @@ export default function CandidateEvaluationClientView({
           candidateId={candidateId}
           commissionId={commissionId}
           replicaId={replicaId}
+          candidateCode={candidateCode}
+          beverageName={beverageName}
+          visibleAttributes={visibleAttributes}
           propertyCommentsEnabled={propertyCommentsEnabled}
           voiceCommentsEnabled={voiceCommentsEnabled}
           onSubmittingChange={setIsFormSubmitting}

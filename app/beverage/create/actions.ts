@@ -10,7 +10,7 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     if (!auid) {
         throw new Error('Unauthorized: Please sign in');
     }
-    return { actor: auid, 'x-actor': auid };
+    return { 'X-ACTOR': auid };
 }
 
 const isUuid = (str: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);

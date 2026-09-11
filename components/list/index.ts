@@ -15,3 +15,4 @@ export {
     beverageStatusAppearance,
     type StatusAppearance,
 } from "./statusAppearance"
+export { StatusBadge, type StatusBadgeProps } from "./StatusBadge"
