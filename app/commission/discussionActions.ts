@@ -34,9 +34,10 @@ function isValidId(id: string | null | undefined): boolean {
     return trimmed.length > 0 && trimmed.length <= 128
 }
 
+export type DiscussionPolicy = "ALWAYS" | "AFTER_EVALUATION" | "DISABLED"
 // In-memory fallback stores for when upstream GraphQL is not yet deployed or available
 const mockMessagesStore = new Map<string, DiscussionMessage[]>()
-const mockDiscussionsEnabledStore = new Map<string, boolean>()
+const mockDiscussionPolicyStore = new Map<string, DiscussionPolicy>()
 
 async function getActorHeaders(): Promise<{ headers: Record<string, string>; auid: number }> {
     const cookieStore = await cookies()
@@ -62,12 +63,13 @@ async function getActorHeaders(): Promise<{ headers: Record<string, string>; aui
 }
 
 /**
- * Toggles whether discussions are enabled for a commission.
+ * * Sets the discussion policy for a commission.
+ *  * Uses the real backend mutation: setCommissionDiscussionPolicy(id: ID!, policy: DiscussionPolicy!): Commission!
  */
-export async function setCommissionDiscussionsEnabledAction(
+export async function setCommissionDiscussionPolicyAction(
     commissionId: string,
-    enabled: boolean,
-): Promise<{ success: boolean; enabled?: boolean; error?: string }> {
+    policy: DiscussionPolicy,
+): Promise<{ success: boolean; policy?: DiscussionPolicy; error?: string }> {
     const cleanCommissionId = typeof commissionId === "string" ? commissionId.trim() : ""
     if (!isValidId(cleanCommissionId)) {
         return { success: false, error: "Invalid commissionId parameter" }
@@ -75,73 +77,31 @@ export async function setCommissionDiscussionsEnabledAction(
 
     try {
         const { headers } = await getActorHeaders()
-        const data = await fetchGraphQLRaw<any, { id: string; enabled: boolean }>(
+        const data = await fetchGraphQLRaw<any, { id: string; policy: DiscussionPolicy }>(
             `
-        mutation SetCommissionDiscussionsEnabled($id: ID!, $enabled: Boolean!) {
-          setCommissionDiscussionsEnabled(id: $id, enabled: $enabled) {
+        mutation SetCommissionDiscussionPolicy($id: ID!, $policy: DiscussionPolicy!) {
+          setCommissionDiscussionPolicy(id: $id, policy: $policy) {
             id
-            discussionsEnabled
+            discussionPolicy
           }
         }
       `,
-            { id: cleanCommissionId, enabled },
+            { id: cleanCommissionId, policy },
             headers,
         )
 
-        if (data?.setCommissionDiscussionsEnabled?.discussionsEnabled !== undefined) {
-            mockDiscussionsEnabledStore.set(cleanCommissionId, data.setCommissionDiscussionsEnabled.discussionsEnabled)
-            return { success: true, enabled: data.setCommissionDiscussionsEnabled.discussionsEnabled }
+        if (data?.setCommissionDiscussionPolicy?.discussionPolicy !== undefined) {
+            const returnedPolicy = data.setCommissionDiscussionPolicy.discussionPolicy as DiscussionPolicy
+            mockDiscussionPolicyStore.set(cleanCommissionId, returnedPolicy)
+            return { success: true, policy: returnedPolicy }
         }
     } catch (err: any) {
-        console.warn("GraphQL SetCommissionDiscussionsEnabled fallback to memory store:", err?.message || err)
+        console.warn("GraphQL SetCommissionDiscussionPolicy fallback to memory store:", err?.message || err)
     }
 
     // Fallback to local memory store
-    mockDiscussionsEnabledStore.set(cleanCommissionId, enabled)
-    return { success: true, enabled }
-}
-
-/**
- * Checks whether discussions are enabled for a given commission.
- */
-export async function getCommissionDiscussionsEnabledAction(
-    commissionId: string,
-): Promise<{ success: boolean; enabled: boolean }> {
-    const cleanCommissionId = typeof commissionId === "string" ? commissionId.trim() : ""
-    if (!isValidId(cleanCommissionId)) {
-        return { success: false, enabled: false }
-    }
-
-    try {
-        const { headers } = await getActorHeaders()
-        const data = await fetchGraphQLRaw<any, { id: string }>(
-            `
-        query GetCommissionDiscussionsEnabled($id: ID!) {
-          commission(id: $id) {
-            id
-            discussionsEnabled
-          }
-        }
-      `,
-            { id: cleanCommissionId },
-            headers,
-        )
-
-        if (data?.commission?.discussionsEnabled !== undefined) {
-            const enabled = Boolean(data.commission.discussionsEnabled)
-            mockDiscussionsEnabledStore.set(commissionId, enabled)
-            return { success: true, enabled }
-        }
-    } catch (err: any) {
-        // Upstream GraphQL fallback
-    }
-
-    // Default to stored state or true if not explicitly disabled
-    const enabled = mockDiscussionsEnabledStore.has(cleanCommissionId)
-        ? (mockDiscussionsEnabledStore.get(cleanCommissionId) ?? true)
-        : true
-
-    return { success: true, enabled }
+    mockDiscussionPolicyStore.set(cleanCommissionId, policy)
+    return { success: true, policy }
 }
 
 /**

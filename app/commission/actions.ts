@@ -687,10 +687,9 @@ export async function getCommissionDataAction(commissionId: string) {
                 voiceCommentsEnabled: commission.voiceCommentsEnabled,
                 propertyCommentsEnabled: commission.propertyCommentsEnabled,
                 beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
-                discussionsEnabled: (commission as any)?.discussionsEnabled ?? true,
                 evaluationTemplateEdition: legacyTemplateEdition
             },
-            discussionsEnabled: (commission as any)?.discussionsEnabled ?? true,
+            discussionPolicy: ((commission as any)?.discussionPolicy ?? "ALWAYS") as "ALWAYS" | "AFTER_EVALUATION" | "DISABLED",
             templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
             candidateCount: candidatesOrder.length,
             panels: commission.panels || [],
@@ -869,7 +868,7 @@ function getCompetitionFeatureFlags(competition: {
         wineJumperMiniGameEnabled: competition?.wineJumperMiniGameEnabled ?? false,
         voiceCommentsEnabled: competition?.voiceCommentsEnabled ?? false,
         propertyCommentsEnabled: competition?.propertyCommentsEnabled ?? false,
-        discussionsEnabled: (competition as any)?.discussionsEnabled ?? true,
+        discussionsEnabled: ((competition as any)?.discussionPolicy ?? "ALWAYS") !== "DISABLED",
     };
 }
 
