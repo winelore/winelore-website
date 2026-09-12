@@ -689,6 +689,7 @@ export async function getCommissionDataAction(commissionId: string) {
                 beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
                 evaluationTemplateEdition: legacyTemplateEdition
             },
+            discussionPolicy: ((commission as any)?.discussionPolicy ?? "ALWAYS") as "ALWAYS" | "AFTER_EVALUATION" | "DISABLED",
             templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
             candidateCount: candidatesOrder.length,
             panels: commission.panels || [],
@@ -861,11 +862,13 @@ function getCompetitionFeatureFlags(competition: {
     wineJumperMiniGameEnabled?: boolean;
     voiceCommentsEnabled?: boolean;
     propertyCommentsEnabled?: boolean;
+    discussionsEnabled?: boolean;
 } | null | undefined) {
     return {
         wineJumperMiniGameEnabled: competition?.wineJumperMiniGameEnabled ?? false,
         voiceCommentsEnabled: competition?.voiceCommentsEnabled ?? false,
         propertyCommentsEnabled: competition?.propertyCommentsEnabled ?? false,
+        discussionsEnabled: ((competition as any)?.discussionPolicy ?? "ALWAYS") !== "DISABLED",
     };
 }
 

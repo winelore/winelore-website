@@ -203,6 +203,8 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             propertyCommentsEnabled={commission.competition.propertyCommentsEnabled}
             voiceCommentsEnabled={commission.competition.voiceCommentsEnabled}
             visibleAttributes={visibleAttributes}
+            discussionsEnabled={(commission.discussionPolicy ?? "ALWAYS") !== "DISABLED"}
+            members={currentReplica?.members || commission.members || []}
         />
     )
 }

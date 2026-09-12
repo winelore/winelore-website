@@ -42,6 +42,7 @@ import {
     setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
     setCommissionTemplateAction,
 } from "../actions"
+import { setCommissionDiscussionPolicyAction, type DiscussionPolicy } from "../discussionActions"
 import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
@@ -204,6 +205,7 @@ interface InitialData {
     voiceCommentsEnabled?: boolean;
     propertyCommentsEnabled?: boolean;
     beverageOriginDuringEvaluationEnabled?: boolean;
+    discussionPolicy?: "ALWAYS" | "AFTER_EVALUATION" | "DISABLED";
     competition: {
         id: string;
         name: string;
@@ -581,6 +583,7 @@ export default function CommissionClientView({
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
+    const isMutatingRef = useRef(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [hasRedirected, setHasRedirected] = useState(false)
@@ -861,6 +864,31 @@ export default function CommissionClientView({
         }
     };
 
+    const handleToggleDiscussions = async () => {
+        if (isMutating) return;
+        const previousPolicy = localData.discussionPolicy ?? "ALWAYS";
+        const isCurrentlyEnabled = previousPolicy !== "DISABLED";
+        const nextPolicy: DiscussionPolicy = isCurrentlyEnabled ? "DISABLED" : "ALWAYS";
+        // Optimistic update first — UI responds instantly
+        setLocalData(prev => ({ ...prev, discussionPolicy: nextPolicy }));
+        setIsMutating(true);
+        try {
+            const res = await setCommissionDiscussionPolicyAction(localData.id, nextPolicy);
+            if (!res.success) {
+                // Rollback to the captured pre-toggle value
+                setLocalData(prev => ({ ...prev, discussionPolicy: previousPolicy }));
+                toast.error(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            // Rollback on exception
+            setLocalData(prev => ({ ...prev, discussionPolicy: previousPolicy }));
+            toast.error(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+
     const handleToggleChaoticCandidateChanges = async () => {
         if (!selectedReplica || isMutating) return;
         const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0];
@@ -1044,7 +1072,12 @@ export default function CommissionClientView({
         return () => clearInterval(intervalId)
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
 
+    // Keep the ref in sync so the polling closure can check mutation state without going stale
     useEffect(() => {
+        isMutatingRef.current = isMutating
+    }, [isMutating])
+    useEffect(() => {
+
         let isMounted = true
         let isFetching = false
 
@@ -1054,7 +1087,11 @@ export default function CommissionClientView({
             try {
                 const updated = await getCommissionDataAction(localData.id)
                 if (isMounted && updated) {
-                    setLocalData(updated)
+                    setLocalData(prev => ({
+                        ...updated,
+                        // Don't overwrite optimistic discussionPolicy changes while a mutation is in flight
+                        discussionPolicy: isMutatingRef.current ? prev.discussionPolicy : updated.discussionPolicy,
+                    }))
                     if (updated.replicas) {
                         setLocalReplicas(updated.replicas)
                     }
@@ -1848,6 +1885,25 @@ export default function CommissionClientView({
                                         >
                                             <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
                                                 localData.beverageOriginDuringEvaluationEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                        </button>
+                                    </div>
+                                    {/* Discussions / Messenger Setting */}
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                        <div className="flex flex-col pr-4">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.discussionsSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{t("commission.discussionsSettingDesc")}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleDiscussions}
+                                            disabled={isMutating}
+                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                localData.discussionPolicy !== "DISABLED" ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                localData.discussionPolicy !== "DISABLED" ? 'translate-x-5' : 'translate-x-0'
                                             }`} />
                                         </button>
                                     </div>
