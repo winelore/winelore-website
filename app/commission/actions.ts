@@ -479,53 +479,78 @@ export async function submitEvaluationAction(
     try {
         console.log(`📤 Submitting evaluation for candidate ${candidateId}...`, scores);
 
-        const cookieStore = await cookies();
-        const auid = cookieStore.get("auid")?.value;
-        if (!auid) {
-            return { success: false, error: "Unauthorized: Please sign in" };
-        }
-        const headers: Record<string, string> = {
-            "actor": auid,
-            "x-actor": auid,
-        };
+        const headers = await getActorHeaders();
 
-        const response: any = await rawGraphQL(`
-            mutation SubmitEvaluation($input: SubmitEvaluationInput!) {
-                submitEvaluation(input: $input) {
-                    id
-                    isComplete
-                    scores {
-                        code
-                        value
-                    }
+        let submitResult: any = null;
+        let evalId: string | null = null;
+
+        try {
+            const data = await sdk.SubmitEvaluation({
+                input: {
+                    candidateId,
+                    scores,
+                    ...(comments && comments.length > 0 ? { comments } : {}),
                 }
+            }, { headers });
+            submitResult = data.submitEvaluation;
+            evalId = submitResult?.id ?? null;
+        } catch (submitErr: any) {
+            const msg = String(submitErr?.message || "");
+            if (
+                msg.includes("already submitted") ||
+                msg.includes("not pending") ||
+                msg.includes("REPLICA_CANDIDATE_EVALUATION_ENDED") ||
+                msg.includes("EVALUATION_ALREADY_EXISTS")
+            ) {
+                console.log("Evaluation already exists upon submit, attempting to retrieve and confirm it...");
+                const existingEval = await getMyEvaluationForCandidateAction(candidateId);
+                if (existingEval?.id) {
+                    evalId = existingEval.id;
+                    submitResult = existingEval;
+                } else {
+                    throw submitErr;
+                }
+            } else {
+                throw submitErr;
             }
-        `, {
-            input: {
-                candidateId,
-                scores,
-                ...(comments && comments.length > 0 ? { comments } : {}),
-            }
-        }, headers);
+        }
 
-        if (response?.submitEvaluation) {
-            const evalId = response.submitEvaluation.id;
+        if (evalId) {
+            let finalEvaluation: any = {
+                ...submitResult,
+                status: "CONFIRMED",
+                isComplete: true,
+            };
+
             try {
-                await rawGraphQL(`
-                    mutation ConfirmEvaluation($id: ID!) {
-                        confirmEvaluation(id: $id) {
-                            id
-                            status
+                let confirmData: any = null;
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        confirmData = await sdk.ConfirmEvaluation({ id: evalId }, { headers });
+                        if (confirmData?.confirmEvaluation) break;
+                    } catch (retryErr) {
+                        if (attempt === 0) {
+                            await new Promise((resolve) => setTimeout(resolve, 250));
+                        } else {
+                            throw retryErr;
                         }
                     }
-                `, { id: evalId }, headers);
+                }
+
+                if (confirmData?.confirmEvaluation) {
+                    finalEvaluation = {
+                        ...finalEvaluation,
+                        ...confirmData.confirmEvaluation,
+                    };
+                }
             } catch (confirmErr: any) {
-                console.warn("Auto-confirm evaluation info:", confirmErr?.message);
+                console.warn("Auto-confirm evaluation warning:", confirmErr?.message);
             }
-            return { success: true, evaluation: response.submitEvaluation };
+
+            return { success: true, evaluation: finalEvaluation };
         }
 
-        return { success: false, error: "" };
+        return { success: false, error: "Failed to submit evaluation" };
     } catch (err: any) {
         console.error("Server Action Error (submitEvaluationAction):", err);
         return { success: false, error: err?.message || "Failed to submit evaluation" };
@@ -536,22 +561,27 @@ export async function confirmEvaluationAction(evaluationId: string) {
     if (!isValidUuid(evaluationId)) return { success: false, error: "Invalid evaluationId parameter" };
     try {
         const headers = await getActorHeaders();
-        const response: any = await rawGraphQL(`
-            mutation ConfirmEvaluation($id: ID!) {
-                confirmEvaluation(id: $id) {
-                    id
-                    status
-                }
-            }
-        `, { id: evaluationId }, headers);
+        const data = await sdk.ConfirmEvaluation({ id: evaluationId }, { headers });
 
-        if (response?.confirmEvaluation) {
-            return { success: true, evaluation: response.confirmEvaluation };
+        if (data?.confirmEvaluation) {
+            return { success: true, evaluation: data.confirmEvaluation };
         }
 
-        return { success: false, error: "" };
+        return { success: false, error: "Failed to confirm evaluation" };
     } catch (err: any) {
         console.error("Server Action Error (confirmEvaluationAction):", err);
+        return { success: false, error: err?.message || "Failed to confirm evaluation" };
+    }
+}
+
+export async function confirmMyEvaluationForCandidateAction(candidateId: string) {
+    if (!isValidUuid(candidateId)) return { success: false, error: "Invalid candidateId parameter" };
+    try {
+        const myEval = await getMyEvaluationForCandidateAction(candidateId);
+        if (!myEval?.id) return { success: false, error: "Evaluation not found" };
+        return confirmEvaluationAction(myEval.id);
+    } catch (err: any) {
+        console.error("Server Action Error (confirmMyEvaluationForCandidateAction):", err);
         return { success: false, error: err?.message || "Failed to confirm evaluation" };
     }
 }

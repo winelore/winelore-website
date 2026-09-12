@@ -13,6 +13,7 @@ import { useUsernames } from "@/hooks/useUsernames"
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
+    confirmEvaluationAction,
 } from "../../../../actions"
 import { findEvaluationForMember, normalizeAuids } from "../../../../auidUtils"
 import {
@@ -205,6 +206,27 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     };
 
+    const handleConfirmEvaluation = async (evaluationId: string) => {
+        try {
+            const res = await confirmEvaluationAction(evaluationId);
+            if (res.success) {
+                toast.success(t("evaluation.confirmSuccess"));
+                setEvaluations((prev) =>
+                    prev.map((ev) =>
+                        ev.id === evaluationId ? { ...ev, status: "CONFIRMED", isComplete: true } : ev
+                    )
+                );
+                setMyEvaluation((prev: any) =>
+                    prev?.id === evaluationId ? { ...prev, status: "CONFIRMED", isComplete: true } : prev
+                );
+            } else {
+                toast.error(res.error || t("evaluation.submitError"));
+            }
+        } catch (err: any) {
+            toast.error(err?.message || t("evaluation.submitError"));
+        }
+    };
+
     if (role === "HEAD") {
         return (
             <div className="flex min-h-screen flex-col bg-slate-50/50">
@@ -317,6 +339,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     accent="indigo"
                                                     propertyCommentsEnabled={propertyCommentsEnabled}
                                                     voiceCommentsEnabled={voiceCommentsEnabled}
+                                                    onConfirmEvaluation={handleConfirmEvaluation}
                                                 />
                                             )}
                                         </div>
@@ -385,6 +408,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                     forceShowAll={!isCompleted}
                                                     propertyCommentsEnabled={propertyCommentsEnabled}
                                                     voiceCommentsEnabled={voiceCommentsEnabled}
+                                                    onConfirmEvaluation={handleConfirmEvaluation}
                                                 />
                                             )}
                                         </div>

@@ -497,6 +497,21 @@ export const SUBMIT_EVALUATION = gql(`
   mutation SubmitEvaluation($input: SubmitEvaluationInput!) {
     submitEvaluation(input: $input) {
       id
+      status
+      isComplete
+      scores {
+        code
+        value
+      }
+    }
+  }
+`);
+
+export const CONFIRM_EVALUATION = gql(`
+  mutation ConfirmEvaluation($id: ID!) {
+    confirmEvaluation(id: $id) {
+      id
+      status
       isComplete
       scores {
         code
@@ -518,6 +533,8 @@ export const MARK_CANDIDATE_EVALUATED = gql(`
 export const GET_MY_EVALUATION_FOR_CANDIDATE = gql(`
   query GetMyEvaluationForCandidate($replicaCandidateId: ID!) {
     evaluationByReplicaCandidateAndEvaluator(replicaCandidateId: $replicaCandidateId) {
+      id
+      status
       evaluatorAuid
       isComplete
       scores {
@@ -539,6 +556,7 @@ export const GET_EVALUATIONS_FOR_CANDIDATE = gql(`
     evaluationsByReplicaCandidate(replicaCandidateId: $replicaCandidateId, limit: $limit) {
       items {
         id
+        status
         evaluatorAuid
         isComplete
         templateEdition {

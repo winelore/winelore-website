@@ -526,7 +526,14 @@ export type SubmitEvaluationMutationVariables = Exact<{
 }>;
 
 
-export type SubmitEvaluationMutation = { submitEvaluation: { id: string, isComplete: boolean, scores: Array<{ code: string, value: string | null }> } };
+export type SubmitEvaluationMutation = { submitEvaluation: { id: string, status: string, isComplete: boolean, scores: Array<{ code: string, value: string | null }> } };
+
+export type ConfirmEvaluationMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type ConfirmEvaluationMutation = { confirmEvaluation: { id: string, status: string, isComplete: boolean, scores: Array<{ code: string, value: string | null }> } };
 
 export type MarkCommissionReplicaCandidateAsEvaluatedMutationVariables = Exact<{
   id: string | number;
@@ -540,7 +547,7 @@ export type GetMyEvaluationForCandidateQueryVariables = Exact<{
 }>;
 
 
-export type GetMyEvaluationForCandidateQuery = { evaluationByReplicaCandidateAndEvaluator: { evaluatorAuid: Array<number>, isComplete: boolean, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> } | null };
+export type GetMyEvaluationForCandidateQuery = { evaluationByReplicaCandidateAndEvaluator: { id: string, status: string, evaluatorAuid: Array<number>, isComplete: boolean, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> } | null };
 
 export type GetEvaluationsForCandidateQueryVariables = Exact<{
   replicaCandidateId: string | number;
@@ -548,7 +555,7 @@ export type GetEvaluationsForCandidateQueryVariables = Exact<{
 }>;
 
 
-export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ id: string, evaluatorAuid: Array<number>, isComplete: boolean, templateEdition: { id: string }, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
+export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ id: string, status: string, evaluatorAuid: Array<number>, isComplete: boolean, templateEdition: { id: string }, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
 
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
@@ -1661,6 +1668,20 @@ export const SubmitEvaluationDocument = gql`
     mutation SubmitEvaluation($input: SubmitEvaluationInput!) {
   submitEvaluation(input: $input) {
     id
+    status
+    isComplete
+    scores {
+      code
+      value
+    }
+  }
+}
+    `;
+export const ConfirmEvaluationDocument = gql`
+    mutation ConfirmEvaluation($id: ID!) {
+  confirmEvaluation(id: $id) {
+    id
+    status
     isComplete
     scores {
       code
@@ -1682,6 +1703,8 @@ export const GetMyEvaluationForCandidateDocument = gql`
   evaluationByReplicaCandidateAndEvaluator(
     replicaCandidateId: $replicaCandidateId
   ) {
+    id
+    status
     evaluatorAuid
     isComplete
     scores {
@@ -1705,6 +1728,7 @@ export const GetEvaluationsForCandidateDocument = gql`
   ) {
     items {
       id
+      status
       evaluatorAuid
       isComplete
       templateEdition {
@@ -2307,6 +2331,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     SubmitEvaluation(variables: Types.SubmitEvaluationMutationVariables, options?: C): Promise<Types.SubmitEvaluationMutation> {
       return requester<Types.SubmitEvaluationMutation, Types.SubmitEvaluationMutationVariables>(SubmitEvaluationDocument, variables, options) as Promise<Types.SubmitEvaluationMutation>;
+    },
+    ConfirmEvaluation(variables: Types.ConfirmEvaluationMutationVariables, options?: C): Promise<Types.ConfirmEvaluationMutation> {
+      return requester<Types.ConfirmEvaluationMutation, Types.ConfirmEvaluationMutationVariables>(ConfirmEvaluationDocument, variables, options) as Promise<Types.ConfirmEvaluationMutation>;
     },
     MarkCommissionReplicaCandidateAsEvaluated(variables: Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables, options?: C): Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation> {
       return requester<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation, Types.MarkCommissionReplicaCandidateAsEvaluatedMutationVariables>(MarkCommissionReplicaCandidateAsEvaluatedDocument, variables, options) as Promise<Types.MarkCommissionReplicaCandidateAsEvaluatedMutation>;

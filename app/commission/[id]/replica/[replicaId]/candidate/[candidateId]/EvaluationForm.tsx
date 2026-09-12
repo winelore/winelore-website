@@ -5,7 +5,12 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
-import { submitEvaluationAction, getVoiceUploadUrlAction } from "../../../../../actions"
+import {
+    submitEvaluationAction,
+    getVoiceUploadUrlAction,
+    confirmEvaluationAction,
+    confirmMyEvaluationForCandidateAction,
+} from "../../../../../actions"
 import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
 import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
@@ -845,6 +850,11 @@ export default function EvaluationForm({
                     msg.includes("Replica is not started") ||
                     msg.includes("REPLICA_NOT_STARTED")
                 ) {
+                    try {
+                        await confirmMyEvaluationForCandidateAction(candidateId);
+                    } catch (confirmErr) {
+                        console.warn("Auto-confirm existing evaluation error:", confirmErr);
+                    }
                     writeCachedWaitEvaluation(commissionId, replicaId, {
                         candidateId,
                         isComplete: true,
@@ -867,9 +877,17 @@ export default function EvaluationForm({
             }
 
             const submitted = result.evaluation
+            if (submitted?.id && (submitted?.status !== "CONFIRMED" || !submitted?.isComplete)) {
+                try {
+                    await confirmEvaluationAction(submitted.id);
+                } catch (confirmErr) {
+                    console.warn("Client fallback auto-confirm error:", confirmErr);
+                }
+            }
+
             writeCachedWaitEvaluation(commissionId, replicaId, {
                 candidateId,
-                isComplete: submitted?.isComplete ?? true,
+                isComplete: true,
                 scores: submitted?.scores ?? scores,
                 comments: comments.map((comment, index) => ({
                     id: `local-${index}`,
