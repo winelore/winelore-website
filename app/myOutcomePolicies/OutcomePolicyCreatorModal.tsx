@@ -123,8 +123,8 @@ export default function OutcomePolicyCreatorModal({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col overflow-hidden">
-            <div className="shrink-0 flex items-center justify-between px-8 py-5 border-b border-slate-100 bg-white shadow-sm">
+        <div className="fixed inset-0 z-50 bg-white flex flex-col overflow-hidden max-md:animate-cover-up md:animate-fade-in">
+            <div className="shrink-0 flex items-center justify-between gap-3 px-4 pb-4 pt-[calc(var(--safe-top)+1rem)] sm:px-8 sm:py-5 border-b border-slate-100 bg-white shadow-sm">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
                         {initialPolicyId ? t("outcomePolicyModal.editTitle") : t("outcomePolicyModal.createTitle")}
@@ -150,7 +150,7 @@ export default function OutcomePolicyCreatorModal({
                 </div>
             )}
 
-            <div className="flex-1 overflow-hidden px-8 py-6 flex flex-col gap-4 min-h-0">
+            <div className="flex-1 overflow-hidden px-4 py-5 sm:px-8 sm:py-6 flex flex-col gap-4 min-h-0">
                 <div className="flex flex-col gap-1.5 max-w-lg shrink-0">
                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                         {t("outcomePolicyModal.nameLabel")}
@@ -203,7 +203,7 @@ export default function OutcomePolicyCreatorModal({
                 </div>
             </div>
 
-            <div className="shrink-0 p-8 border-t border-slate-100 bg-white flex justify-end gap-3">
+            <div className="shrink-0 px-4 pt-4 pb-safe-4 sm:p-8 border-t border-slate-100 bg-white flex justify-end gap-3">
                 <button
                     type="button"
                     onClick={onClose}

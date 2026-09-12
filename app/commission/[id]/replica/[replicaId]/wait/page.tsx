@@ -229,9 +229,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
     if (role === "HEAD") {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50/50">
+            <div className="flex min-h-app flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
-                <main className="flex-1 p-6 md:p-10">
+                <main className="flex-1 px-4 pt-1 pb-6 md:p-10">
                     <div className="max-w-7xl mx-auto space-y-8">
                     <div>
                         <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
@@ -434,7 +434,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     // EXPERT VIEW
     // ==========================================
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50/50">
+        <div className="flex min-h-app flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
             <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-full max-w-2xl flex justify-start mb-6">
@@ -462,7 +462,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 </div>
 
                 {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
-                <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
+                <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-sm sm:shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
                     {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && (
                         <div className="p-5">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">

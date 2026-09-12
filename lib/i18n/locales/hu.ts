@@ -58,6 +58,9 @@ const hu = {
       close: "Bezárás",
       cancel: "Mégse",
       status: "Státusz",
+      back: "Vissza",
+      language: "Nyelv",
+      signInPrompt: "Jelentkezz be AXUS ID-val a bírálathoz, versenyek szervezéséhez és italaid kezeléséhez.",
     },
     landing: {
         heroPrefix: "Kezelje italversenyeit ",
@@ -637,6 +640,7 @@ const hu = {
         waitingDependencies: "Várakozás a függőségekre...",
         submit: "Értékelés beküldése",
         fillRequired: "Kérjük, töltsön ki minden kötelező mezőt megfelelően",
+        ratedProgress: "{{done}} / {{total}} értékelve",
         submitError: "Valami hiba történt az értékelés beküldése során.",
         alreadySubmitted: "Már beküldte az értékelést ehhez a jelölthöz.",
         onlyCurrentCandidate: "Az értékelés csak a jelenlegi aktív jelölthöz engedélyezett. A bizottság elnökének továbblépnie kell a következő italra.",

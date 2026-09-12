@@ -44,7 +44,7 @@ function BeverageSummaryCard({
     const booleanLabels = { yesLabel: t("common.yes"), noLabel: t("common.no") }
 
     return (
-        <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-[2rem] shadow-sm sm:shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
             <div className="px-5 py-4 bg-slate-50/60 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -232,14 +232,14 @@ export function MyTastingSummary({
             </header>
 
             {entries === null ? (
-                <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                <div className="bg-white rounded-[2rem] shadow-sm sm:shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
                     <div className="flex items-center justify-center gap-3 py-16 text-slate-500">
                         <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
                         <span>{t("common.loading")}</span>
                     </div>
                 </div>
             ) : entries.length === 0 ? (
-                <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                <div className="bg-white rounded-[2rem] shadow-sm sm:shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
                     <p className="py-16 text-center text-slate-500">{t("commission.myRankingEmpty")}</p>
                 </div>
             ) : (

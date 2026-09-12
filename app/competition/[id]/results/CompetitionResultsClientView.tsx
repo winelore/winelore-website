@@ -30,6 +30,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTranslation } from "@/lib/i18n/context"
+import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import { MemberEvaluationSection } from "@/app/commission/EvaluationCommentsDisplay"
 import { formatPropertyScoreValue } from "@/lib/formatPropertyScore"
@@ -371,13 +372,15 @@ export default function CompetitionResultsClientView({
         )
     }
 
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(t("commission.results.pageTitle", { name: resultsScopeName }))
+
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50/50">
+        <div className="flex min-h-app flex-col bg-slate-50/50">
             <div className="print:hidden">
                 <AppHeader activeTab="competitions" />
             </div>
 
-            <main className="flex-1 p-4 md:p-8 lg:p-12">
+            <main className="flex-1 px-4 pt-1 pb-6 md:p-8 lg:p-12">
                 <div className="max-w-7xl mx-auto flex flex-col gap-6">
                     <div className="flex flex-col gap-4 print:hidden">
                         <BackLink
@@ -389,7 +392,7 @@ export default function CompetitionResultsClientView({
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-center gap-3 flex-wrap">
-                                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
+                                <h1 ref={navTitleRef} className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
                                     {t("commission.results.pageTitle", { name: resultsScopeName })}
                                 </h1>
                                 <span className={`text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${
@@ -502,7 +505,7 @@ export default function CompetitionResultsClientView({
 
                     {/* Stats Metrics Bar */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4">
                             <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
                                 <Wine className="w-6 h-6" />
                             </div>
@@ -516,7 +519,7 @@ export default function CompetitionResultsClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4">
                             <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
                                 <Layers className="w-6 h-6" />
                             </div>
@@ -530,7 +533,7 @@ export default function CompetitionResultsClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4">
                             <div className="h-12 w-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100">
                                 <Users className="w-6 h-6" />
                             </div>
@@ -544,7 +547,7 @@ export default function CompetitionResultsClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4">
                             <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
                                 <Award className="w-6 h-6" />
                             </div>
@@ -560,7 +563,7 @@ export default function CompetitionResultsClientView({
                     </div>
 
                     {/* Main Results Table & View Container */}
-                    <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 space-y-6">
+                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 md:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 space-y-6">
                         {/* Filters & Tabs Header */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                             {/* View Switcher Tabs */}
@@ -723,7 +726,7 @@ export default function CompetitionResultsClientView({
                                                                 {isExpanded && (
                                                                     <tr className="bg-slate-50/80">
                                                                         <td colSpan={8 + resultsContext.outcomePropertyCodes.length} className="p-0 border-b border-slate-200 shadow-inner">
-                                                                            <div className="p-6">
+                                                                            <div className="animate-expand-in p-6">
                                                                                 <h4 className="text-sm font-bold text-slate-700 mb-4">
                                                                                     {t("commission.results.expertBreakdown")}
                                                                                 </h4>

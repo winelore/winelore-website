@@ -7,6 +7,7 @@ import { javascript } from "@codemirror/lang-javascript"
 import { ScrollText, Loader2, ArrowLeft } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { AppHeader } from "@/components/AppHeader"
+import { useMobileNavBack } from "@/lib/mobileNav"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { CREATE_OUTCOME_POLICY, CREATE_OUTCOME_POLICY_EDITION } from "./mutations"
 
@@ -58,20 +59,22 @@ export default function NewOutcomePolicyView({ currentAuid }: NewOutcomePolicyPr
         }
     }
 
-    return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab="none" />
+    useMobileNavBack("/myOutcomePolicies", t("newOutcomePolicy.back"))
 
-            <main className="flex-1 overflow-auto p-6 flex flex-col gap-6">
+    return (
+        <div className="app-screen bg-slate-50/50">
+            <AppHeader activeTab="none" showMobileTabBar={false} />
+
+            <main className="app-main px-4 pt-2 pb-6 md:p-6 flex flex-col gap-4 md:gap-6">
                 <button
                     onClick={() => router.push("/myOutcomePolicies")}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
+                    className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
                 >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     {t("newOutcomePolicy.back")}
                 </button>
 
-                <div className="bg-white border border-slate-100 rounded-[32px] p-7 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-7 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
                         <ScrollText className="h-7 w-7" />
                     </div>
@@ -87,7 +90,7 @@ export default function NewOutcomePolicyView({ currentAuid }: NewOutcomePolicyPr
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50 flex-1 flex flex-col overflow-hidden">
+                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] shadow-sm sm:shadow-xl shadow-slate-200/50 flex-1 flex flex-col overflow-hidden">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
                             {t("newOutcomePolicy.scriptTitle")}

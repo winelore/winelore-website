@@ -58,6 +58,9 @@ const en = {
     close: "Close",
     cancel: "Cancel",
     status: "Status",
+    back: "Back",
+    language: "Language",
+    signInPrompt: "Sign in with AXUS ID to judge, run competitions and manage your beverages.",
   },
   landing: {
     heroPrefix: "Manage your beverage ",
@@ -637,6 +640,7 @@ const en = {
     waitingDependencies: "Waiting for dependencies...",
     submit: "Submit Evaluation",
     fillRequired: "Please fill all required fields correctly",
+    ratedProgress: "{{done}} of {{total}} rated",
     submitError: "Something went wrong while submitting evaluation.",
     alreadySubmitted: "You have already submitted an evaluation for this candidate.",
     onlyCurrentCandidate: "Evaluation is only allowed for the current active candidate. The commission head needs to advance to the next beverage.",

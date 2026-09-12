@@ -60,6 +60,9 @@ const uk: TranslationKey = {
     close: "Закрити",
     cancel: "Скасувати",
     status: "Статус",
+    back: "Назад",
+    language: "Мова",
+    signInPrompt: "Увійдіть через AXUS ID, щоб оцінювати, проводити конкурси та керувати своїми напоями.",
   },
   landing: {
     heroPrefix: "Проводьте ",
@@ -639,6 +642,7 @@ const uk: TranslationKey = {
     waitingDependencies: "Очікування залежностей...",
     submit: "Надіслати оцінку",
     fillRequired: "Будь ласка, заповніть усі обов'язкові поля коректно",
+    ratedProgress: "Оцінено {{done}} з {{total}}",
     submitError: "Під час надсилання оцінки сталося щось не так.",
     alreadySubmitted: "Ви вже надіслали оцінку для цього кандидата.",
     onlyCurrentCandidate: "Оцінювання можливе лише для поточного активного кандидата. Голова комісії має переключити напій.",

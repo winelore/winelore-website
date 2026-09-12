@@ -11,6 +11,7 @@ import {
     unregisterBeverageProducerAction,
 } from "../actions"
 import { searchUserByUsernameAction } from "@/app/commission/actions"
+import { usePresence } from "@/hooks/usePresence"
 
 interface ProducerDetails {
     id: string
@@ -112,7 +113,9 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
         return () => clearTimeout(timer)
     }, [usernameInput, t])
 
-    if (!isOpen) return null
+    // Stays mounted briefly after closing so the sheet/dialog can animate out.
+    const { mounted, closing } = usePresence(isOpen)
+    if (!mounted) return null
 
     const nameChanged = name.trim() !== beverage.name
     const latChanged = latitude !== (beverage.origin?.latitude != null ? String(beverage.origin.latitude) : "")
@@ -190,8 +193,8 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-lg overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
+        <div data-closing={closing || undefined} className="sheet-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="sheet-panel relative w-full max-w-lg overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50 shrink-0">
                     <div className="flex items-center gap-3">

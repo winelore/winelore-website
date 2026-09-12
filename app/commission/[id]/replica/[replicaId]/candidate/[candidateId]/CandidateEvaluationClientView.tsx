@@ -11,6 +11,7 @@ import { MapPin, LayoutList, Tag, Wine } from "lucide-react"
 import { getWaitDataAction } from "../../../../../actions"
 import { readCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { BackLink } from "@/components/BackLink"
+import { useMobileNavTitle } from "@/lib/mobileNav"
 
 interface EvaluationCategory {
   id: string
@@ -58,6 +59,8 @@ export default function CandidateEvaluationClientView({
   const router = useRouter()
   const { t, tCount } = useTranslation()
   const displayReplicaName = replicaName || t("common.standard")
+  const candidateTitle = t("evaluation.candidate", { code: candidateCode })
+  const titleRef = useMobileNavTitle<HTMLHeadingElement>(candidateTitle)
 
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isFormSubmitting, setIsFormSubmitting] = useState(false)
@@ -142,12 +145,12 @@ export default function CandidateEvaluationClientView({
   }, [commissionId, replicaId, candidateId, isRedirecting, isFormSubmitting, router])
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50/50">
-      <AppHeader activeTab="competitions" />
+    <div className="flex min-h-app flex-col bg-slate-50/50">
+      <AppHeader activeTab="competitions" showMobileTabBar={false} />
 
-        <main className="flex-1 overflow-auto pt-4 pb-8 px-4 flex justify-center">
-            <div className="w-full max-w-[95vw] bg-white rounded-[32px] pt-4 pb-2 px-6 md:pt-5 md:pb-8 md:px-8 shadow-xl shadow-slate-200/50">
-                <header className="border-b border-slate-100 pb-3 mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <main className="app-main pt-1 pb-0 md:pt-4 md:pb-8 px-4 flex justify-center">
+            <div className="w-full max-w-[95vw] md:bg-white md:rounded-[32px] md:pt-5 md:pb-8 md:px-8 md:shadow-xl md:shadow-slate-200/50">
+                <header className="border-b border-slate-100 pb-3 mb-3 md:mb-2 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         <BackLink
                             href={`/commission/${commissionId}`}
@@ -156,8 +159,8 @@ export default function CandidateEvaluationClientView({
                         />
                         <div>
                             <div className="flex items-center gap-3 flex-wrap">
-                                <h1 className="text-xl font-extrabold text-slate-800">
-                                    {t("evaluation.candidate", { code: candidateCode })}
+                                <h1 ref={titleRef} className="text-2xl md:text-xl font-extrabold text-slate-800">
+                                    {candidateTitle}
                                 </h1>
                                 {beverageName && (
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
@@ -171,20 +174,20 @@ export default function CandidateEvaluationClientView({
                                     <span className="font-medium text-slate-700">{t("evaluation.commission")}:</span> {commissionName}
                                 </p>
                                 {panelName && (
-                                    <div className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                    <div className="flex items-center gap-1.5 sm:border-l-2 border-slate-100 sm:pl-4 sm:px-2 py-0.5">
                                         <LayoutList className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
                                         <span className="font-medium text-slate-800">Panel:</span>
                                         <span className="font-normal text-slate-600">{panelName}</span>
                                     </div>
                                 )}
                                 {originParts.length > 0 && (
-                                    <div className="flex items-center gap-1.5 text-slate-600 border-l-2 border-slate-100 pl-4">
+                                    <div className="flex items-center gap-1.5 text-slate-600 sm:border-l-2 border-slate-100 sm:pl-4">
                                         <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                                         <span>{originParts.join(", ")}</span>
                                     </div>
                                 )}
                                 {visibleAttributes.length > 0 && visibleAttributes.map((attr, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                <div key={idx} className="flex items-center gap-1.5 sm:border-l-2 border-slate-100 sm:pl-4 sm:px-2 py-0.5">
                                     <Tag className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
                                     <span className="font-medium text-slate-800 capitalize">
                                         {attr.label}:
@@ -196,7 +199,7 @@ export default function CandidateEvaluationClientView({
                         </div>
                     </div>
                     {currentIndex !== -1 && (
-                        <div className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-500 flex items-center gap-3">
+                        <div className="self-start md:self-auto px-3 py-1.5 bg-white md:bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-500 flex items-center gap-3">
               <span>
                 {t("evaluation.candidateProgress", { current: currentIndex + 1, total: totalCandidates })}
               </span>

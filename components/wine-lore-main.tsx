@@ -1,15 +1,26 @@
 "use client"
 
+import type { LucideIcon } from "lucide-react"
 import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Activity, ScrollText } from "lucide-react"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useTranslation } from "@/lib/i18n/context"
+import type { MessageKey } from "@/lib/i18n"
 import { BadgeCheck } from "lucide-react"
 
 // These five are the only routes in the menu with no dedicated tab in
-// AppHeader, so this menu is the one place that can show which of them is
-// current.
-function isMenuLinkActive(pathname: string | null, href: string): boolean {
+// AppHeader, so this menu (and its mobile counterpart, the profile sheet) is
+// the one place that can show which of them is current.
+export const PERSONAL_LINKS: { href: string; labelKey: MessageKey; icon: LucideIcon }[] = [
+  { href: "/myCommissions", labelKey: "common.myCommissions", icon: Activity },
+  { href: "/myCompetitions", labelKey: "common.myCompetitions", icon: Trophy },
+  { href: "/myBeverages", labelKey: "common.myBeverages", icon: Wine },
+  { href: "/myTemplates", labelKey: "common.myTemplates", icon: ListTodo },
+  { href: "/myOutcomePolicies", labelKey: "common.myOutcomePolicies", icon: ScrollText },
+]
+
+export function isMenuLinkActive(pathname: string | null, href: string): boolean {
   return pathname === href || (pathname?.startsWith(`${href}/`) ?? false)
 }
 
@@ -23,7 +34,7 @@ function menuIconClass(active: boolean): string {
   return `h-5 w-5 stroke-[1.5] ${active ? "text-indigo-600" : "text-slate-500"}`
 }
 
-function AvatarPlaceholder({ className }: { className?: string }) {
+export function AvatarPlaceholder({ className }: { className?: string }) {
   return (
     <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-200 via-purple-100 to-pink-100 ${className}`}>
       <User className="h-1/2 w-1/2 text-indigo-300" />
@@ -31,7 +42,7 @@ function AvatarPlaceholder({ className }: { className?: string }) {
   )
 }
 
-function AxusLogo({ className }: { className?: string }) {
+export function AxusLogo({ className }: { className?: string }) {
   return (
     <img
       src="/axus-logo.png"
@@ -45,7 +56,7 @@ interface ProfileMenuProps {
   username: string
 }
 
-const AXUS_ACCOUNT_URL = `${process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app"}/account`
+export const AXUS_ACCOUNT_URL = `${process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app"}/account`
 
 export function ProfileMenu({ username }: ProfileMenuProps) {
   const { t } = useTranslation()
@@ -84,26 +95,15 @@ export function ProfileMenu({ username }: ProfileMenuProps) {
 
         {/* Group 2: Navigation Links (personal scopes) */}
         <div className="px-2 py-1.5">
-          <a href="/myCommissions" className={menuLinkClass(isMenuLinkActive(pathname, "/myCommissions"))}>
-            <Activity className={menuIconClass(isMenuLinkActive(pathname, "/myCommissions"))} />
-            <span>{t("common.myCommissions")}</span>
-          </a>
-          <a href="/myCompetitions" className={menuLinkClass(isMenuLinkActive(pathname, "/myCompetitions"))}>
-            <Trophy className={menuIconClass(isMenuLinkActive(pathname, "/myCompetitions"))} />
-            <span>{t("common.myCompetitions")}</span>
-          </a>
-          <a href="/myBeverages" className={menuLinkClass(isMenuLinkActive(pathname, "/myBeverages"))}>
-            <Wine className={menuIconClass(isMenuLinkActive(pathname, "/myBeverages"))} />
-            <span>{t("common.myBeverages")}</span>
-          </a>
-          <a href="/myTemplates" className={menuLinkClass(isMenuLinkActive(pathname, "/myTemplates"))}>
-            <ListTodo className={menuIconClass(isMenuLinkActive(pathname, "/myTemplates"))} />
-            <span>{t("common.myTemplates")}</span>
-          </a>
-          <a href="/myOutcomePolicies" className={menuLinkClass(isMenuLinkActive(pathname, "/myOutcomePolicies"))}>
-            <ScrollText className={menuIconClass(isMenuLinkActive(pathname, "/myOutcomePolicies"))} />
-            <span>{t("common.myOutcomePolicies")}</span>
-          </a>
+          {PERSONAL_LINKS.map(({ href, labelKey, icon: Icon }) => {
+            const active = isMenuLinkActive(pathname, href)
+            return (
+              <Link key={href} href={href} className={menuLinkClass(active)}>
+                <Icon className={menuIconClass(active)} />
+                <span>{t(labelKey)}</span>
+              </Link>
+            )
+          })}
         </div>
 
         <div className="px-5">

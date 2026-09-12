@@ -4,9 +4,11 @@ import { useState } from "react"
 import { useTranslation } from "@/lib/i18n/context"
 import {
     Layers, ArrowLeft, Calendar, Settings, CheckCircle2,
-    Pencil, AlertCircle, ChevronDown, ChevronUp, Tag, Hash
+    Pencil, AlertCircle, ChevronDown, Tag, Hash
 } from "lucide-react"
 import Link from "next/link"
+import { AppHeader } from "@/components/AppHeader"
+import { useMobileNavAction, useMobileNavBack, useMobileNavTitle } from "@/lib/mobileNav"
 import { getPropertyTypeLabel } from "../../myTemplates/TemplateCreatorModal"
 import TemplateCreatorModal from "../../myTemplates/TemplateCreatorModal"
 
@@ -70,9 +72,18 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
         setExpandedCategoryId(prev => prev === id ? null : id)
     }
 
+    // Phones get the app's native shell here; the page's own sub-header is desktop-only.
+    useMobileNavBack("/myTemplates", t("myTemplates.title"))
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(template?.name)
+    useMobileNavAction(
+        template && isOwner
+            ? { label: t("myTemplates.editTemplate"), icon: Pencil, onClick: () => setIsEditModalOpen(true) }
+            : null
+    )
+
     if (hasError) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+            <div className="min-h-app bg-slate-50 flex items-center justify-center px-4">
                 <div className="bg-white border border-red-100 rounded-3xl p-10 max-w-md w-full shadow-xl text-center">
                     <div className="p-4 bg-red-50 rounded-2xl inline-flex mb-5">
                         <AlertCircle className="w-8 h-8 text-red-500" />
@@ -93,7 +104,7 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
 
     if (!template) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+            <div className="min-h-app bg-slate-50 flex items-center justify-center px-4">
                 <div className="bg-white border border-slate-100 rounded-3xl p-10 max-w-md w-full shadow-xl text-center">
                     <div className="p-4 bg-slate-50 rounded-2xl inline-flex mb-5">
                         <Layers className="w-8 h-8 text-slate-400" />
@@ -114,9 +125,14 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
     const editions = template.editions ?? (template.latestEdition ? [template.latestEdition] : [])
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-app bg-slate-50">
+            {/* Phones only: nav bar + tab bar. `contents` keeps the sticky nav bar relative to the page. */}
+            <div className="contents md:hidden">
+                <AppHeader activeTab="none" />
+            </div>
+
             {/* Header */}
-            <div className="bg-white border-b border-slate-100 sticky top-0 z-10 shadow-sm">
+            <div className="hidden md:block bg-white border-b border-slate-100 sticky top-0 z-10 shadow-sm">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
                     <Link
                         href="/myTemplates"
@@ -137,27 +153,27 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-2 pb-6 md:py-8 flex flex-col gap-4 md:gap-6">
 
                 {/* Template info card */}
-                <div className="bg-white border border-slate-100 rounded-[28px] shadow-xl shadow-slate-200/45 p-7">
+                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[28px] shadow-sm sm:shadow-xl shadow-slate-200/45 p-5 sm:p-7">
                     <div className="flex items-start gap-5">
                         <div className="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl shrink-0">
                             <Layers className="w-7 h-7" />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{template.name}</h1>
-                            <div className="flex flex-wrap items-center gap-4 mt-3 text-xs font-semibold text-slate-500">
+                            <h1 ref={navTitleRef} className="text-2xl font-bold text-slate-800 tracking-tight">{template.name}</h1>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:gap-4 mt-3 text-xs font-semibold text-slate-500">
                                 <span className="flex items-center gap-1.5">
                                     <Calendar className="w-3.5 h-3.5" />
                                     {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString("en-CA")}
                                 </span>
-                                <span className="text-slate-300">|</span>
+                                <span className="hidden sm:inline text-slate-300">|</span>
                                 <span className="flex items-center gap-1.5">
                                     <Tag className="w-3.5 h-3.5" />
                                     {t("myTemplates.type")}: <span className="text-slate-700 uppercase font-bold ml-1">{template.beverageType}</span>
                                 </span>
-                                <span className="text-slate-300">|</span>
+                                <span className="hidden sm:inline text-slate-300">|</span>
                                 <span className="flex items-center gap-1.5">
                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                     <span className="text-emerald-700 font-bold uppercase">{t("myTemplates.active")}</span>
@@ -169,7 +185,7 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
 
                 {/* Edition selector (if multiple) */}
                 {editions.length > 1 && (
-                    <div className="bg-white border border-slate-100 rounded-[28px] shadow-xl shadow-slate-200/45 p-6">
+                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[28px] shadow-sm sm:shadow-xl shadow-slate-200/45 p-5 sm:p-6">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                             <Hash className="w-4 h-4 text-indigo-500" />
                             {t("myTemplates.editionHistory")}
@@ -200,7 +216,7 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
 
                 {/* Structure */}
                 {selectedEdition ? (
-                    <div className="bg-white border border-slate-100 rounded-[28px] shadow-xl shadow-slate-200/45 p-6">
+                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[28px] shadow-sm sm:shadow-xl shadow-slate-200/45 p-5 sm:p-6">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5 flex items-center gap-1.5">
                             <Settings className="w-4 h-4 text-indigo-500" />
                             {t("myTemplates.evaluationStructure")}
@@ -231,15 +247,12 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
                                                     {cat.properties.length} {t("myTemplates.totalScores").toLowerCase()}
                                                 </span>
                                             </div>
-                                            {isExpanded
-                                                ? <ChevronUp className="w-4 h-4 text-slate-400" />
-                                                : <ChevronDown className="w-4 h-4 text-slate-400" />
-                                            }
+                                            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
                                         </button>
 
                                         {/* Properties */}
                                         {isExpanded && (
-                                            <div className="divide-y divide-slate-50">
+                                            <div className="animate-expand-in divide-y divide-slate-50">
                                                 {cat.properties.map((prop) => (
                                                     <div
                                                         key={prop.id}

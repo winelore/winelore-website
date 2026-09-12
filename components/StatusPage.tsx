@@ -31,7 +31,7 @@ export function StatusPage({ activeTab, icon: Icon, title, description, action }
     const actionClassName = "inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-indigo-700 cursor-pointer"
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50/50">
+        <div className="flex min-h-app flex-col bg-slate-50/50">
             <AppHeader activeTab={activeTab} />
             <main className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
                 {Icon && (

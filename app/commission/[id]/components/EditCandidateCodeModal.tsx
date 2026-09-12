@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import { X, Tag, Check, AlertCircle, Loader2 } from "lucide-react"
 import { changeCommissionCandidateCodeAction } from "../../actions"
 import { useTranslation } from "@/lib/i18n/context"
+import { usePresence } from "@/hooks/usePresence"
 
 interface EditCandidateCodeModalProps {
     isOpen: boolean
@@ -34,7 +35,9 @@ export function EditCandidateCodeModal({
         }
     }, [isOpen, currentCode])
 
-    if (!isOpen) return null
+    // Stays mounted briefly after closing so the sheet/dialog can animate out.
+    const { mounted, closing } = usePresence(isOpen)
+    if (!mounted) return null
 
     const handleSave = async () => {
         setIsSubmitting(true)
@@ -55,8 +58,8 @@ export function EditCandidateCodeModal({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up">
+        <div data-closing={closing || undefined} className="sheet-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="sheet-panel relative w-full max-w-md overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up">
                 <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-2.5">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/60">

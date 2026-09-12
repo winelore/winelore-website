@@ -447,7 +447,7 @@ export function PanelsSection({
     }
 
     return (
-        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
+        <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 flex flex-col gap-4">
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3 min-w-0">
@@ -787,7 +787,7 @@ export function PanelsSection({
                                             setDraggedItem(null)
                                             reorderPanel(panel.id, items, draggedIdx, index > draggedIdx ? index - 1 : index)
                                         }}
-                                        className="border-t border-slate-100 bg-slate-50/50 p-3 flex flex-col gap-2"
+                                        className="animate-expand-in border-t border-slate-100 bg-slate-50/50 p-3 flex flex-col gap-2"
                                     >
                                         {items.length === 0 ? (
                                             canManage ? (

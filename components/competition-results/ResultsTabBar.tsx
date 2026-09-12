@@ -22,7 +22,7 @@ export function ResultsTabBar({ activeTab, onTabChange, counts }: ResultsTabBarP
     ]
 
     return (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             {tabs.map((tab) => (
                 <button
                     key={tab.id}
