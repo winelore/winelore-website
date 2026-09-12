@@ -4,10 +4,9 @@ import React, {useState, useEffect, useRef, useMemo, useCallback} from "react"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import {
-    FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
-    Save, Search, ChevronRight, Sliders, Trash2, Loader2, UserPlus, Settings, ExternalLink, Send
+    Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
+    Save, Sliders, Trash2, UserPlus, Settings, Send
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
@@ -40,12 +39,11 @@ import {
     setCommissionBeverageOriginDuringEvaluationEnabledAction,
     setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction,
     setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
-    setCommissionTemplateAction,
 } from "../actions"
-import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
+import { EvaluationTemplatesBlock, type BeverageType, type TemplateEditionLink } from "./components/EvaluationTemplatesBlock"
 import { BackLink } from "@/components/BackLink"
 import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
 
@@ -143,18 +141,6 @@ function StatusSteps({ status }: { status: string }) {
     )
 }
 
-interface BeverageType {
-    id: string;
-    code: string;
-    name: string;
-}
-
-interface TemplateEditionLink {
-    id: string;
-    beverageType: BeverageType;
-    templateEdition: any;
-}
-
 interface Member {
     id: string;
     auid: number[];
@@ -175,6 +161,7 @@ interface Replica {
         currentCandidateId?: string | null;
         chaoticCurrentCandidateChangesEnabled: boolean;
         panel?: { id: string; name: string };
+        replicaCandidates?: { id: string; status: string; candidate?: { id: string } | null }[];
     }[];
     members: Member[];
     candidateCount: number;
@@ -215,355 +202,6 @@ interface InitialData {
     members: Member[];
     panels?: CommissionPanel[];
     candidates?: Candidate[];
-}
-
-function EvaluationTemplatesBlock({
-                                      commissionId,
-                                      templateEditions,
-                                      beverageTypesInCommission,
-                                      isCompetitionHolder,
-                                      canEdit,
-                                      onRefresh
-                                  }: {
-    commissionId: string,
-    templateEditions: TemplateEditionLink[],
-    beverageTypesInCommission: BeverageType[],
-    isCompetitionHolder: boolean,
-    canEdit: boolean,
-    onRefresh: () => void
-}) {
-    const { t, tCount, formatStatus } = useTranslation()
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [selectedBeverageType, setSelectedBeverageType] = useState<BeverageType | null>(null)
-
-    const [catalogTemplates, setCatalogTemplates] = useState<any[]>([])
-    const [isCatalogLoading, setIsCatalogLoading] = useState(false)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [isAssigning, setIsAssigning] = useState(false)
-    const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
-
-    const ITEMS_PER_PAGE = 50;
-    const [currentPage, setCurrentPage] = useState(1);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, selectedBeverageType]);
-
-    const handleOpenCatalog = async (bevType?: BeverageType) => {
-        setSelectedBeverageType(bevType || null)
-        setSearchQuery("")
-        setCurrentPage(1)
-        setIsModalOpen(true)
-        setIsCatalogLoading(true)
-        try {
-            const data = await getEvaluationTemplatesAction()
-            const filtered = bevType
-                ? data.templates.filter((t: any) => t.beverageTypeId === bevType.id)
-                : data.templates;
-            setCatalogTemplates(filtered)
-        } catch (e) {
-            console.error("Failed to load templates catalog", e)
-        } finally {
-            setIsCatalogLoading(false)
-        }
-    }
-
-    const handleAssignTemplate = async (templateEditionId: string, templateBevTypeId: string) => {
-        setIsAssigning(true)
-        try {
-            const res = await setCommissionTemplateAction(commissionId, templateBevTypeId, templateEditionId)
-            if (res.success) {
-                setIsModalOpen(false)
-                onRefresh()
-            } else {
-                toast.error(t("commission.templateAssignError") || res.error)
-            }
-        } catch (e) {
-            toast.error(t("commission.templateAssignError"))
-        } finally {
-            setIsAssigning(false)
-        }
-    }
-
-    const filteredCatalog = catalogTemplates.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    const totalPages = Math.ceil(filteredCatalog.length / ITEMS_PER_PAGE);
-    const paginatedCatalog = filteredCatalog.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-    return (
-        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/50 shadow-xs">
-                        <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold tracking-tight text-slate-800">
-                            {t("commission.evaluationTemplates")}
-                        </h3>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                            {t("commission.evaluationTemplatesSubtitle")}
-                        </p>
-                    </div>
-                </div>
-
-                {isCompetitionHolder && canEdit && (
-                    <button
-                        onClick={() => handleOpenCatalog()}
-                        className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>{t("commission.assignTemplate")}</span>
-                    </button>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {beverageTypesInCommission.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-8 text-slate-400 text-sm bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl gap-3">
-                        <FileText className="w-8 h-8 opacity-50" />
-                        <p className="font-medium text-slate-500">Немає налаштованих шаблонів або доданих напоїв.</p>
-                        <p className="text-xs">Натисніть кнопку вище, щоб обрати перший шаблон з каталогу.</p>
-                    </div>
-                ) : (
-                    beverageTypesInCommission.map((bevType) => {
-                        const assignedLink = templateEditions.find(te => te.beverageType?.id === bevType.id);
-                        const isAssigned = !!assignedLink;
-                        const te = assignedLink?.templateEdition;
-
-                        return (
-                            <div key={bevType.id} className={`flex flex-col border rounded-2xl p-4 transition-all duration-300 ${isAssigned ? 'bg-slate-50/50 border-slate-200' : 'bg-rose-50/30 border-rose-200 border-dashed'}`}>
-                                <div className="flex justify-between items-start mb-3">
-                                    <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
-                                        {bevType.name || bevType.code}
-                                    </span>
-                                    {isCompetitionHolder && canEdit && (
-                                        <button
-                                            onClick={() => handleOpenCatalog(bevType)}
-                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                                        >
-                                            {isAssigned ? (t("commission.changeTemplate")) : (t("commission.assignTemplate"))}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isAssigned && te ? (
-                                    <div className="flex flex-col gap-2">
-                                        <Link
-                                            href={`/myTemplates?templateId=${te.template?.id}-${te.version}`}
-                                            target="_blank"
-                                            className="group/link flex items-center gap-1.5 w-fit outline-none"
-                                            title={t("commission.openTemplateInNewTab")}
-                                        >
-                                            <span className="text-sm font-extrabold text-slate-800 group-hover/link:text-indigo-600 transition-colors">
-                                                {te.template?.name || t("commission.standardTemplate")}
-                                            </span>
-                                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover/link:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-1 group-hover/link:translate-x-0" />
-                                        </Link>
-
-                                        <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-                                            <span className="bg-white border border-slate-200 shadow-sm px-1.5 py-0.5 rounded-md">v{te.version}</span>
-                                            <span className="text-slate-300">•</span>
-                                            <span className="uppercase text-emerald-600">{te.status ? formatStatus(te.status) : ""}</span>
-                                            <span className="text-slate-300">•</span>
-                                            <span>{tCount("commission.categoriesCount", te.categories?.length || 0)}</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
-                                        <AlertCircle className="w-5 h-5 mb-1 opacity-75" />
-                                        <span className="text-xs font-bold">{t("commission.noTemplateForType")}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })
-                )}
-            </div>
-
-            {/* Modal Catalog */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-                    <div className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col">
-
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                            <div>
-                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog")}</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    {selectedBeverageType
-                                        ? t("commission.selectingTemplateFor", { type: selectedBeverageType.name })
-                                        : t("commission.selectFromCatalog")
-                                    }
-                                </p>
-                            </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors cursor-pointer">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl flex-1 border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white transition-colors">
-                                <Search className="w-4 h-4 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder={t("commission.searchTemplates")}
-                                    className="bg-transparent border-none outline-none text-sm w-full text-slate-700"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
-                            {isCatalogLoading ? (
-                                <div className="flex flex-col items-center justify-center h-40 gap-3 text-indigo-500">
-                                    <Loader2 className="w-8 h-8 animate-spin" />
-                                    <span className="text-sm font-bold">{t("commission.loadingCatalog")}</span>
-                                </div>
-                            ) : paginatedCatalog.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                                    <FileText className="w-10 h-10 mb-2 opacity-50" />
-                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound")}</span>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-4">
-                                    {paginatedCatalog.map(template => {
-                                        const ed = template.latestEdition;
-                                        const isExpanded = expandedTemplateId === template.id;
-
-                                        return (
-                                            <div key={template.id} className="border border-slate-200 rounded-2xl bg-white shadow-sm hover:border-indigo-300 transition-all overflow-hidden">
-                                                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase tracking-widest border border-slate-200">
-                                                                {template.beverageType}
-                                                            </span>
-                                                        </div>
-                                                        <h4 className="text-sm font-bold text-slate-800">{template.name}</h4>
-                                                        <div className="flex items-center gap-2 mt-1.5 text-[10px] font-semibold text-slate-500">
-                                                            <span className="bg-slate-50 border px-1.5 py-0.5 rounded-md">v{ed.version}</span>
-                                                            <span>•</span>
-                                                            <span>{tCount("commission.categoriesCount", ed.categories?.length || 0)}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <button
-                                                            onClick={() => setExpandedTemplateId(isExpanded ? null : template.id)}
-                                                            className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
-                                                        >
-                                                            {t("common.preview")} <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleAssignTemplate(ed.id, template.beverageTypeId)}
-                                                            disabled={isAssigning}
-                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-                                                        >
-                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate"))}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {/* ДИЗАЙН ПРЕВ'Ю ЯК НА СТОРІНЦІ /TEMPLATES + ПАРАМЕТРИ */}
-                                                {isExpanded && ed.categories && (
-                                                    <div className="px-6 pb-6 pt-4 border-t border-slate-50 bg-slate-50/15 max-h-[350px] overflow-y-auto">
-                                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                                                            <Settings className="w-4 h-4 text-indigo-500" />
-                                                            {t("commission.templatePreview")}
-                                                        </h4>
-
-                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                            {ed.categories.map((cat: any) => (
-                                                                <div
-                                                                    key={cat.id}
-                                                                    className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs flex flex-col gap-3.5"
-                                                                >
-                                                                    <h5 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
-                                                                        {cat.name}
-                                                                    </h5>
-                                                                    <div className="flex flex-col gap-2">
-                                                                        {cat.properties?.map((prop: any) => (
-                                                                            <div
-                                                                                key={prop.id || prop.code}
-                                                                                className="flex flex-col bg-slate-50/30 hover:bg-slate-50/70 border border-slate-100/80 rounded-xl px-3 py-2 text-xs transition-colors"
-                                                                            >
-                                                                                <div className="flex justify-between items-start">
-                                                                                    <div className="flex flex-col min-w-0 flex-1 pr-3">
-                                                                                        <span className="font-bold text-slate-700 truncate flex items-center gap-1.5">
-                                                                                            {prop.name}
-                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title={t("common.required")}>*</span>}
-                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">{t("commission.resultBadge")}</span>}
-                                                                                        </span>
-                                                                                        {prop.description && (
-                                                                                            <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                                                        <span className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60 uppercase">
-                                                                                            {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <div className="flex flex-wrap gap-2 mt-2 text-[9px] text-slate-500 font-medium">
-                                                                                    {(prop.minLimit !== undefined || prop.maxLimit !== undefined) && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                                                                            Range: {prop.minLimit ?? '-∞'} ... {prop.maxLimit ?? '∞'}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {prop.allowedValues && prop.allowedValues.length > 0 && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200 truncate max-w-[150px]" title={prop.allowedValues.join(', ')}>
-                                                                                            Options: {prop.allowedValues.join(', ')}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {prop.defaultValue !== undefined && prop.defaultValue !== null && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                                                                            Default: {String(prop.defaultValue)}
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {totalPages > 1 && (
-                            <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
-                                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                                    {t("common.pageOf", { current: currentPage, total: totalPages })} <span className="text-slate-300 mx-1">|</span> {t("common.itemsTotal", { count: filteredCatalog.length })}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                    >
-                                        {t("common.previous")}
-                                    </button>
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                    >
-                                        {t("common.next")}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    )
 }
 
 export default function CommissionClientView({
@@ -611,7 +249,15 @@ export default function CommissionClientView({
             })
         }
 
-        // 2. Беремо типи з доданих напоїв (якщо вони є)
+        // 2. Беремо типи з доданих напоїв (якщо вони є).
+        // До старту комісії репліки ще не мають кандидатів, тому читаємо також кандидатів з панелей.
+        localData.panels?.forEach(panel => {
+            panel.candidates?.forEach(candidate => {
+                if (candidate.beverageType) {
+                    typesMap.set(candidate.beverageType.id, candidate.beverageType)
+                }
+            })
+        })
         localData.replicas.forEach(r => {
             r.replicaCandidates.forEach(rc => {
                 if (rc.candidate?.beverageType) {
@@ -620,7 +266,7 @@ export default function CommissionClientView({
             })
         })
         return Array.from(typesMap.values())
-    }, [localData.replicas, initialData.templateEditions])
+    }, [localData.panels, localData.replicas, initialData.templateEditions])
 
     const refreshCommissionData = async () => {
         try {
@@ -1610,6 +1256,7 @@ export default function CommissionClientView({
                                 isDraft={isCommissionDraft}
                                 isEnded={isCommissionCompleted}
                                 usernames={usernames}
+                                progressReplica={selectedReplica}
                                 onRefresh={refreshCommissionData}
                             />
                         </div>

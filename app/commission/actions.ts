@@ -611,6 +611,29 @@ export async function setCommissionTemplateAction(
     }
 }
 
+export async function removeCommissionTemplateAction(commissionId: string, beverageTypeId: string) {
+    if (!isValidUuid(commissionId) || !isValidUuid(beverageTypeId)) {
+        return { success: false, error: "Invalid parameters" };
+    }
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RemoveCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!) {
+                removeCommissionTemplateEdition(id: $id, beverageTypeId: $beverageTypeId) {
+                    id
+                }
+            }
+        `, { id: commissionId, beverageTypeId }, headers);
+
+        templatesCache.delete(commissionId);
+
+        return { success: true, id: data.removeCommissionTemplateEdition?.id };
+    } catch (err: any) {
+        console.error("Server Action Error (removeCommissionTemplateAction):", err);
+        return { success: false, error: err.message || "Failed to remove template" };
+    }
+}
+
 export async function getCommissionDataAction(commissionId: string) {
     if (!isValidUuid(commissionId)) return null;
     try {

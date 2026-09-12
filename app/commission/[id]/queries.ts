@@ -29,6 +29,11 @@ export const GET_COMMISSION = gql(`
         candidates {
           id
           anonymizedCode
+          beverageType {
+            id
+            code
+            name
+          }
           sample {
             id
             volumeMl

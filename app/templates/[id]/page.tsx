@@ -9,11 +9,15 @@ interface PageProps {
     params: Promise<{
         id: string
     }>
+    searchParams: Promise<{
+        version?: string
+    }>
 }
 
-export default async function TemplateDetailPage({ params }: PageProps) {
+export default async function TemplateDetailPage({ params, searchParams }: PageProps) {
     const resolvedParams = await params
     const templateId = resolvedParams.id
+    const requestedVersion = Number((await searchParams).version)
 
     const cookieStore = await cookies()
     const auidStr = cookieStore.get("auid")?.value
@@ -38,6 +42,7 @@ export default async function TemplateDetailPage({ params }: PageProps) {
             template={template}
             currentAuid={currentAuid}
             hasError={hasError}
+            initialVersion={Number.isInteger(requestedVersion) ? requestedVersion : undefined}
         />
     )
 }

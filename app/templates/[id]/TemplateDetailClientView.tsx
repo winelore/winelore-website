@@ -53,12 +53,13 @@ interface Props {
     template: Template | null
     currentAuid: number
     hasError?: boolean
+    initialVersion?: number
 }
 
-export default function TemplateDetailClientView({ template, currentAuid, hasError = false }: Props) {
+export default function TemplateDetailClientView({ template, currentAuid, hasError = false, initialVersion }: Props) {
     const { t } = useTranslation()
     const [selectedEdition, setSelectedEdition] = useState<TemplateEdition | null>(
-        template?.latestEdition ?? null
+        template?.editions?.find((edition) => edition.version === initialVersion) ?? template?.latestEdition ?? null
     )
     const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
