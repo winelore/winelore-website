@@ -11,6 +11,7 @@ import {
     isReplicaCandidateFinished,
     resolveEvaluationDestination,
     resolveEvaluationEntry,
+    resolvePanelSummaryDestination,
     type EvaluationRoutingState,
 } from "../src/evaluation"
 
@@ -196,5 +197,76 @@ test("entry honours the session-ending conditions first", () => {
     assert.deepEqual(
         resolveEvaluationEntry({ ...entryBase, panelStatus: "COMPLETED" }),
         { kind: "panelSummary" },
+    )
+})
+
+// --- panel summary --------------------------------------------------------
+
+const summaryBase = {
+    replicaStatus: "IN_PROGRESS",
+    currentPanelId: "panel-1",
+    isPanelFinished: true,
+    currentCandidateId: null,
+    shownPanelId: null as string | null,
+}
+
+test("a finished panel shows its summary and reports which panel", () => {
+    assert.deepEqual(resolvePanelSummaryDestination(summaryBase), {
+        kind: "stay",
+        panelId: "panel-1",
+    })
+})
+
+test("opening a summary for a panel that is still scoring goes back to it", () => {
+    assert.deepEqual(
+        resolvePanelSummaryDestination({
+            ...summaryBase,
+            isPanelFinished: false,
+            currentCandidateId: "cand-3",
+        }),
+        { kind: "candidate", candidateId: "cand-3" },
+    )
+    // Scoring resumed but between candidates.
+    assert.deepEqual(
+        resolvePanelSummaryDestination({ ...summaryBase, isPanelFinished: false }),
+        { kind: "wait" },
+    )
+})
+
+test("a summary does not silently become another panel's summary", () => {
+    // Pinned to panel-1; the chair has moved the replica to panel-2.
+    assert.deepEqual(
+        resolvePanelSummaryDestination({
+            ...summaryBase,
+            shownPanelId: "panel-1",
+            currentPanelId: "panel-2",
+            currentCandidateId: "cand-7",
+        }),
+        { kind: "candidate", candidateId: "cand-7" },
+    )
+})
+
+test("a pinned summary stays while its own panel is still the current one", () => {
+    assert.deepEqual(
+        resolvePanelSummaryDestination({ ...summaryBase, shownPanelId: "panel-1" }),
+        { kind: "stay", panelId: "panel-1" },
+    )
+})
+
+test("the replica ending outranks the summary", () => {
+    assert.deepEqual(
+        resolvePanelSummaryDestination({
+            ...summaryBase,
+            shownPanelId: "panel-1",
+            replicaStatus: "COMPLETED",
+        }),
+        { kind: "results" },
+    )
+})
+
+test("no running panel sends the judge back to the commission", () => {
+    assert.deepEqual(
+        resolvePanelSummaryDestination({ ...summaryBase, currentPanelId: null }),
+        { kind: "commission" },
     )
 })

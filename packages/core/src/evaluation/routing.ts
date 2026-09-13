@@ -119,3 +119,57 @@ export function resolveEvaluationEntry(
 
     return { kind: "wait" }
 }
+
+export type PanelSummaryDestination =
+    /** Stay on the summary. */
+    | { kind: "stay"; panelId: string }
+    /** The replica finished — go to the shared results. */
+    | { kind: "results" }
+    /** No panel is running; there is nothing to summarise. */
+    | { kind: "commission" }
+    /** Scoring resumed — go back to the active candidate. */
+    | { kind: "candidate"; candidateId: string }
+    /** Scoring resumed but no candidate is active yet. */
+    | { kind: "wait" }
+
+export interface PanelSummaryState {
+    replicaStatus: string | null | undefined
+    /** The panel the replica is running right now. */
+    currentPanelId: string | null | undefined
+    isPanelFinished: boolean
+    currentCandidateId: string | null | undefined
+    /**
+     * The panel this summary was opened for, or null on the first poll.
+     *
+     * A summary is about one specific panel. Once shown it must not silently
+     * become a different panel's summary when the chair advances — it navigates
+     * instead. Callers keep this across polls and take it from a "stay".
+     */
+    shownPanelId: string | null
+}
+
+/**
+ * Where a judge looking at a panel summary belongs.
+ *
+ * The summary is only valid while its own panel is finished and still current.
+ * Anything else means scoring has resumed or the session has ended, and the
+ * judge should not be left reading a stale summary.
+ */
+export function resolvePanelSummaryDestination(
+    state: PanelSummaryState,
+): PanelSummaryDestination {
+    if (state.replicaStatus === "COMPLETED") return { kind: "results" }
+    if (!state.currentPanelId) return { kind: "commission" }
+
+    const isStillThisPanel =
+        state.shownPanelId === null || state.shownPanelId === state.currentPanelId
+
+    if (isStillThisPanel && state.isPanelFinished) {
+        return { kind: "stay", panelId: state.currentPanelId }
+    }
+
+    // Either the chair moved to another panel, or this one is scoring again.
+    return state.currentCandidateId
+        ? { kind: "candidate", candidateId: state.currentCandidateId }
+        : { kind: "wait" }
+}
