@@ -11,6 +11,7 @@
     "check:bundle": "expo export:embed --platform ios --dev true --entry-file ../../node_modules/expo-router/entry.js --bundle-output /tmp/winelore-dev-bundle.js --assets-dest /tmp/winelore-dev-assets"
   },
   "dependencies": {
+    "@babel/runtime": "^7.29.7",
     "@expo/metro-runtime": "~57.0.15",
     "@react-native-masked-view/masked-view": "0.3.2",
     "@winelore/core": "*",
