@@ -40,9 +40,9 @@ export default function TastingSummaryPage({
     }, [replicaId, router])
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50/50">
+        <div className="flex min-h-app flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
-            <main className="flex-1 p-6 md:p-10">
+            <main className="flex-1 px-4 pt-1 pb-6 md:p-10">
                 <div className="max-w-4xl mx-auto space-y-6">
                     <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
                     <MyTastingSummary

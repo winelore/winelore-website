@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
     Calendar,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/i18n/context';
+import { usePresence } from '@/hooks/usePresence';
 
 export interface BatchSampleItem {
     id: string;
@@ -41,10 +42,16 @@ interface SamplesListModalProps {
 export function SamplesListModal({
     isOpen,
     onClose,
-    batch,
+    batch: batchProp,
     beverageId,
 }: SamplesListModalProps) {
     const { t, formatDateTime } = useTranslation();
+    // The parent clears the batch as it closes the modal; keep showing the last
+    // one while the sheet animates out.
+    const lastBatchRef = useRef(batchProp);
+    if (batchProp) lastBatchRef.current = batchProp;
+    const batch = batchProp ?? lastBatchRef.current;
+    const { mounted, closing } = usePresence(isOpen && !!batchProp);
     const [searchQuery, setSearchQuery] = useState('');
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -78,14 +85,14 @@ export function SamplesListModal({
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    if (!isOpen || !batch) return null;
+    if (!mounted || !batch) return null;
 
     const lotDisplay = batch.lotNumber || `ID: ${batch.id.slice(-6).toUpperCase()}`;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div data-closing={closing || undefined} className="sheet-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-                className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                className="sheet-panel relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Modal Header */}

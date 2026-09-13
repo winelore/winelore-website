@@ -7,6 +7,7 @@ import { EntityCardLink, BeverageCard, CompetitionCard, CommissionCard } from "@
 import { useTranslation } from "@/lib/i18n/context"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useMobileNavTitle } from "@/lib/mobileNav"
 
 function TemplateCard({ template }: { template: any }) {
     return (
@@ -35,6 +36,32 @@ function TemplateCard({ template }: { template: any }) {
         </EntityCardLink>
     )
 }
+
+/**
+ * Section heading of a dashboard block. On phones it also carries the
+ * "View all" link (iOS "See All" style), since the block's footer button is
+ * hidden there to keep the stack compact.
+ */
+function SectionTitle({ icon: Icon, title, href, viewAllLabel }: { icon: React.ElementType; title: string; href: string; viewAllLabel: string }) {
+    return (
+        <div className="flex items-center gap-2 px-1 sm:px-2">
+            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
+                <Icon className="w-5 h-5" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 min-w-0 truncate">{title}</h2>
+            <Link href={href} className="sm:hidden ml-auto flex shrink-0 items-center gap-0.5 py-1 pl-2 text-[15px] font-semibold text-indigo-600 active:opacity-50">
+                {viewAllLabel}
+                <ChevronRight className="w-4 h-4" />
+            </Link>
+        </div>
+    )
+}
+
+// Phones drop the white container around each block: the cards inside are
+// already cards, and a card-in-card eats a third of a narrow screen in padding.
+const SECTION_PANEL = "sm:bg-white sm:border sm:border-slate-100 sm:rounded-[32px] sm:shadow-sm h-full flex flex-col"
+const SECTION_FOOTER = "mt-5 hidden sm:flex justify-center border-t border-slate-50 pt-5"
+const SECTION_EMPTY = "bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-8 text-center shadow-sm flex flex-col items-center justify-center h-full min-h-[160px] sm:min-h-[200px]"
 
 export default function HomeClientView({ recentCompetitions, myCommissions, recentBeverages, myTemplates, beverageTypesMap, nextCursor, currentPage, totalPages, totalCompetitionsCount, totalBeveragesCount }: {
     recentCompetitions: any[];
@@ -66,19 +93,30 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
 
     const { usernames } = useUsernames(auidsToFetch)
     const { t } = useTranslation()
+    const titleRef = useMobileNavTitle<HTMLHeadingElement>(t("common.home"))
+    const viewAll = t("dashboard.viewAll")
+
+    const footerLink = (href: string) => (
+        <div className={SECTION_FOOTER}>
+            <Link href={href} className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+                {viewAll}
+                <ChevronRight className="w-4 h-4" />
+            </Link>
+        </div>
+    )
 
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="app-screen bg-slate-50/50">
             <AppHeader activeTab="home" />
 
-            <main className="flex-1 overflow-auto p-4 lg:p-8">
+            <main className="app-main px-4 pt-1 pb-6 sm:p-4 lg:p-8">
                 <div className="max-w-7xl mx-auto flex flex-col gap-6">
                     
                     {/* Welcome Banner */}
-                    <div className="relative overflow-hidden rounded-[32px] bg-white border border-slate-100 p-8 shadow-sm">
+                    <div className="relative overflow-hidden rounded-[28px] sm:rounded-[32px] bg-white border border-slate-100 p-5 sm:p-8 shadow-sm">
                         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mb-1">{t("dashboard.welcomeTitle")}</h1>
+                                <h1 ref={titleRef} className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mb-1">{t("dashboard.welcomeTitle")}</h1>
                                 <p className="text-slate-500 font-medium">{t("dashboard.welcomeSubtitle")}</p>
                             </div>
                         </div>
@@ -88,33 +126,23 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                     </div>
 
                     {/* Bento Box Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 sm:gap-6">
                         
                         {/* Active Commissions (Priority - spans 2 columns on desktop) */}
-                        <div className="lg:col-span-2 flex flex-col gap-4">
-                            <div className="flex items-center gap-2 px-2">
-                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
-                                    <Activity className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.activeCommissions")}</h2>
-                            </div>
+                        <div className="lg:col-span-2 flex flex-col gap-3 sm:gap-4">
+                            <SectionTitle icon={Activity} title={t("dashboard.activeCommissions")} href="/myCommissions" viewAllLabel={viewAll} />
                             
                             {myCommissions.length > 0 ? (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-4 shadow-sm h-full flex flex-col">
+                                <div className={`${SECTION_PANEL} sm:p-4`}>
                                     <div className="grid gap-3 sm:grid-cols-2 content-start flex-1">
                                         {myCommissions.slice(0, 8).map(comm => (
                                             <CommissionCard key={comm.id} commission={comm} density="dashboard" />
                                         ))}
                                     </div>
-                                    <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myCommissions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
-                                            {t("dashboard.viewAll")}
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Link>
-                                    </div>
+                                    {footerLink("/myCommissions")}
                                 </div>
                             ) : (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-8 text-center shadow-sm flex flex-col items-center justify-center h-full min-h-[200px]">
+                                <div className={SECTION_EMPTY}>
                                     <CheckCircle className="w-10 h-10 text-slate-200 mb-3" />
                                     <p className="text-sm font-medium text-slate-500">{t("dashboard.noActiveCommissions")}</p>
                                 </div>
@@ -122,30 +150,20 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                         </div>
 
                         {/* Templates (Utility - spans 1 column) */}
-                        <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-2 px-2">
-                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
-                                    <ClipboardList className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.myTemplates")}</h2>
-                            </div>
+                        <div className="flex flex-col gap-3 sm:gap-4">
+                            <SectionTitle icon={ClipboardList} title={t("dashboard.myTemplates")} href="/myTemplates" viewAllLabel={viewAll} />
                             
                             {myTemplates.length > 0 ? (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-4 shadow-sm h-full flex flex-col">
+                                <div className={`${SECTION_PANEL} sm:p-4`}>
                                     <div className="flex flex-col gap-3 flex-1">
                                         {myTemplates.slice(0, 8).map((template, idx) => (
                                             <TemplateCard key={`${template.id}-${idx}`} template={template} />
                                         ))}
                                     </div>
-                                    <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myTemplates" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
-                                            {t("dashboard.viewAll")}
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Link>
-                                    </div>
+                                    {footerLink("/myTemplates")}
                                 </div>
                             ) : (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-8 text-center shadow-sm flex flex-col items-center justify-center h-full min-h-[200px]">
+                                <div className={SECTION_EMPTY}>
                                     <FileText className="w-10 h-10 text-slate-200 mb-3" />
                                     <p className="text-sm font-medium text-slate-500">{t("dashboard.noTemplates")}</p>
                                 </div>
@@ -153,30 +171,20 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                         </div>
 
                         {/* Competitions (Spans 2 columns on desktop) */}
-                        <div className="lg:col-span-2 flex flex-col gap-4">
-                            <div className="flex items-center gap-2 px-2">
-                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
-                                    <Trophy className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.myCompetitions")}</h2>
-                            </div>
+                        <div className="lg:col-span-2 flex flex-col gap-3 sm:gap-4">
+                            <SectionTitle icon={Trophy} title={t("dashboard.myCompetitions")} href="/myCompetitions" viewAllLabel={viewAll} />
                             
                             {recentCompetitions.length > 0 ? (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-sm h-full flex flex-col">
-                                    <div className="grid gap-4 sm:grid-cols-2 content-start flex-1">
+                                <div className={`${SECTION_PANEL} sm:p-5`}>
+                                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 content-start flex-1">
                                         {recentCompetitions.slice(0, 8).map(comp => (
                                             <CompetitionCard key={comp.id} competition={comp} usernames={usernames} density="dashboard" />
                                         ))}
                                     </div>
-                                    <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myCompetitions" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
-                                            {t("dashboard.viewAll")}
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Link>
-                                    </div>
+                                    {footerLink("/myCompetitions")}
                                 </div>
                             ) : (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-8 text-center shadow-sm flex flex-col items-center justify-center h-full min-h-[200px]">
+                                <div className={SECTION_EMPTY}>
                                     <Trophy className="w-10 h-10 text-slate-200 mb-3" />
                                     <p className="text-sm font-medium text-slate-500">{t("dashboard.noRecentCompetitions")}</p>
                                 </div>
@@ -184,30 +192,20 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
                         </div>
 
                         {/* Beverages */}
-                        <div className="lg:col-span-1 flex flex-col gap-4">
-                            <div className="flex items-center gap-2 px-2">
-                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
-                                    <Wine className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-bold text-slate-800">{t("dashboard.myBeverages")}</h2>
-                            </div>
+                        <div className="lg:col-span-1 flex flex-col gap-3 sm:gap-4">
+                            <SectionTitle icon={Wine} title={t("dashboard.myBeverages")} href="/myBeverages" viewAllLabel={viewAll} />
                             
                             {recentBeverages.length > 0 ? (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-sm h-full flex flex-col">
-                                    <div className="flex flex-col gap-4 flex-1">
+                                <div className={`${SECTION_PANEL} sm:p-5`}>
+                                    <div className="flex flex-col gap-3 sm:gap-4 flex-1">
                                         {recentBeverages.slice(0, 8).map(bev => (
                                             <BeverageCard key={bev.id} beverage={bev} typeMap={beverageTypesMap} usernames={usernames} density="dashboard" />
                                         ))}
                                     </div>
-                                    <div className="mt-5 flex justify-center border-t border-slate-50 pt-5">
-                                        <Link href="/myBeverages" className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
-                                            {t("dashboard.viewAll")}
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Link>
-                                    </div>
+                                    {footerLink("/myBeverages")}
                                 </div>
                             ) : (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-8 text-center shadow-sm flex flex-col items-center justify-center h-full min-h-[200px]">
+                                <div className={SECTION_EMPTY}>
                                     <Wine className="w-10 h-10 text-slate-200 mb-3" />
                                     <p className="text-sm font-medium text-slate-500">{t("dashboard.noRecentBeverages")}</p>
                                 </div>

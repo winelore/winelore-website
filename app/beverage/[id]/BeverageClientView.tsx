@@ -8,6 +8,7 @@ import {
     Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send, Pencil, FlaskConical, Plus, ExternalLink
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
+import { useMobileNavTitle } from "@/lib/mobileNav"
 import { AppHeader } from "@/components/AppHeader"
 import { submitBeverageForReviewAction } from "../actions"
 import { BackLink } from "@/components/BackLink"
@@ -327,12 +328,14 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     }>({})
     const { formatStatus, formatBeverageType, formatDateTime, t } = useTranslation()
 
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(beverageEdits.name ?? initialData?.beverage?.name)
+
     if (isNotFound) {
         return (
-            <div className="flex h-screen flex-col bg-slate-50/50">
+            <div className="app-screen bg-slate-50/50">
                 <AppHeader activeTab="beverages" />
                 <main className="flex-1 flex items-center justify-center p-4">
-                    <div className="bg-white border border-slate-100 rounded-[32px] p-12 text-center shadow-xl shadow-slate-200/50 max-w-md w-full">
+                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-12 text-center shadow-sm sm:shadow-xl shadow-slate-200/50 max-w-md w-full">
                         <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-2xl bg-slate-50 text-slate-400 border border-slate-100 mb-6">
                             <Wine className="w-10 h-10" />
                         </div>
@@ -353,10 +356,10 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
 
     if (isError || !initialData) {
         return (
-            <div className="flex h-screen flex-col bg-slate-50/50">
+            <div className="app-screen bg-slate-50/50">
                 <AppHeader activeTab="beverages" />
                 <main className="flex-1 flex items-center justify-center p-4">
-                    <div className="bg-white border border-slate-100 rounded-[32px] p-12 text-center shadow-xl shadow-slate-200/50 max-w-md w-full">
+                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-12 text-center shadow-sm sm:shadow-xl shadow-slate-200/50 max-w-md w-full">
                         <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-2xl bg-rose-50 text-rose-500 border border-rose-100 mb-6">
                             <AlertCircle className="w-10 h-10" />
                         </div>
@@ -474,17 +477,17 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     }
 
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="app-screen bg-slate-50/50">
             <AppHeader activeTab="beverages" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+            <main className="app-main px-4 pt-1 pb-6 md:p-8 flex flex-col items-center">
                 <div className="w-full max-w-6xl space-y-6">
 
                     {/* Back Button */}
                     <BackLink href="/myBeverages" label={t("beverage.backToMyBeverages")} />
 
                     {/* Main Premium Card Header (Includes Overview Meta now) */}
-                    <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/40 relative overflow-hidden group/header">
+                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 md:p-8 shadow-xl shadow-slate-200/40 relative overflow-hidden group/header">
                         {/* Decorative background shape */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-indigo-50/30 to-transparent rounded-full -mr-16 -mt-16 pointer-events-none" />
 
@@ -516,7 +519,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                     ID: {beverage.id.slice(-6)}
                                                 </span>
                                             </div>
-                                            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 mt-3 mb-2 tracking-tight group-hover/header:text-indigo-950 transition-colors flex items-center justify-center md:justify-start gap-2">
+                                            <h1 ref={navTitleRef} className="text-2xl md:text-3xl font-extrabold text-slate-800 mt-3 mb-2 tracking-tight group-hover/header:text-indigo-950 transition-colors flex items-center justify-center md:justify-start gap-2">
                                                 {beverage.name}
                                                 {isProducer && (
                                                     <button
@@ -847,7 +850,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="bg-white border border-slate-100 rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">
+                                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">
                                         <div className="bg-slate-50 border border-slate-100 p-5 rounded-[24px] mb-4 text-slate-400">
                                             <Barcode className="w-12 h-12" />
                                         </div>
@@ -913,7 +916,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="bg-white border border-slate-100 rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">
+                                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">
                                         <div className="bg-slate-50 border border-slate-100 p-5 rounded-[24px] mb-4 text-slate-300">
                                             <Trophy className="w-12 h-12" />
                                         </div>
@@ -961,7 +964,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                         </table>
                                     </div>
                                 ) : (
-                                    <div className="bg-white border border-slate-100 rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">
+                                    <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">
                                         <div className="bg-slate-50 border border-slate-100 p-5 rounded-[24px] mb-4 text-slate-400">
                                             <Layers className="w-12 h-12" />
                                         </div>

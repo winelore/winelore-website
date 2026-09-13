@@ -410,7 +410,7 @@ export default function WaitPanelResults({
         return <TranslatedText text={label} />;
     }
     return (
-        <section className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
+        <section className="bg-white border border-slate-100 rounded-2xl shadow-sm sm:shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <h2 className="text-lg font-bold text-slate-800">

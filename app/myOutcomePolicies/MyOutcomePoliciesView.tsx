@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { getDateLocale } from "@/lib/i18n"
 import { AppHeader } from "@/components/AppHeader"
+import { ListPageHeader } from "@/components/list"
 import OutcomePolicyCreatorModal from "./OutcomePolicyCreatorModal"
 
 // ====================================================================
@@ -63,7 +64,7 @@ function OutcomePolicyRow({ policy, onEdit }: { policy: OutcomePolicy; onEdit: (
                         <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
                             {policy.name}
                         </h3>
-                        <span className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-slate-500">
+                        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-2 text-xs font-semibold text-slate-500">
                             <Calendar className="w-3.5 h-3.5" />
                             {t("myOutcomePolicies.createdAt")}: {formattedDate}
                             {policy.latestEdition && (
@@ -145,33 +146,25 @@ export default function MyOutcomePoliciesClientView({ initialData, nextCursor, n
     }, [initialData])
 
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="app-screen bg-slate-50/50">
             <AppHeader activeTab="none" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center relative">
+            <main className="app-main px-4 pt-1 pb-6 md:p-8 flex flex-col items-center relative">
                 {isLoading && (
                     <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-3xl">
                         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
                     </div>
                 )}
 
-                <div className="w-full max-w-7xl flex flex-col gap-8">
+                <div className="w-full max-w-7xl flex flex-col gap-4 md:gap-8">
 
                     {/* Page Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                                <ScrollText className="w-8 h-8 text-indigo-600" />
-                                {t("myOutcomePolicies.title")}
-                            </h2>
-                            <p className="text-sm text-slate-500 mt-1">
-                                {t("myOutcomePolicies.subtitle")}
-                            </p>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center gap-4">
-                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {tCount("common.outcomePoliciesCount", totalCount)}
-                            </span>
+                    <ListPageHeader
+                        titleIcon={<ScrollText className="w-8 h-8 text-indigo-600" />}
+                        title={t("myOutcomePolicies.title")}
+                        subtitle={t("myOutcomePolicies.subtitle")}
+                        countLabel={tCount("common.outcomePoliciesCount", totalCount)}
+                        actions={
                             <button
                                 onClick={handleOpenCreateModal}
                                 className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95 shrink-0"
@@ -179,8 +172,8 @@ export default function MyOutcomePoliciesClientView({ initialData, nextCursor, n
                                 <Plus className="w-4 h-4" />
                                 <span>{t("myOutcomePolicies.createButton")}</span>
                             </button>
-                        </div>
-                    </div>
+                        }
+                    />
 
                     {/* Policy list */}
                     <div className="flex flex-col gap-4">

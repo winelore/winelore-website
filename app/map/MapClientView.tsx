@@ -218,10 +218,12 @@ export default function MapClientView() {
     }, [isResizing]);
 
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        // The map always fills exactly the space between the nav bar and the tab
+        // bar — it never scrolls the document, on phones or desktop.
+        <div className="flex h-[calc(100dvh-var(--app-bottom-inset))] md:h-dvh flex-col bg-slate-50/50">
             <AppHeader activeTab="map" />
 
-            <main className="flex-1 relative flex overflow-hidden">
+            <main className="flex-1 min-h-0 relative flex overflow-hidden">
                 <div className="flex-1 relative z-0">
                     <MapComponent
                         beverages={beverages}
@@ -233,16 +235,19 @@ export default function MapClientView() {
                 </div>
 
                 {/* Бокова панель */}
+                {/* Desktop: resizable right sidebar. Phones: a bottom sheet over the map (Apple Maps style). */}
                 <div
-                    className={`absolute top-0 right-0 h-full bg-slate-50/80 backdrop-blur-3xl shadow-2xl z-10 flex flex-col border-l border-slate-200/60
-                        ${selectedBev ? 'translate-x-0' : 'translate-x-full'} 
+                    className={`absolute z-10 flex flex-col bg-slate-50/80 backdrop-blur-3xl shadow-2xl border-slate-200/60
+                        inset-x-0 bottom-0 h-[72%] overflow-hidden rounded-t-[28px] border-t
+                        md:inset-x-auto md:top-0 md:right-0 md:h-full md:w-[var(--sidebar-width)] md:rounded-none md:border-t-0 md:border-l
+                        ${selectedBev ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'} 
                         ${isResizing ? 'transition-none' : 'transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]'}
                     `}
-                    style={{ width: `${sidebarWidth}px` }}
+                    style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
                 >
                     {/* Зона для ресайзу */}
                     <div
-                        className="absolute top-0 bottom-0 left-0 w-2 hover:bg-indigo-500/20 active:bg-indigo-500/40 cursor-col-resize z-50 transition-colors duration-200 group/resizer"
+                        className="hidden md:block absolute top-0 bottom-0 left-0 w-2 hover:bg-indigo-500/20 active:bg-indigo-500/40 cursor-col-resize z-50 transition-colors duration-200 group/resizer"
                         onMouseDown={startResizing}
                     >
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-12 bg-slate-300 rounded-full group-hover/resizer:bg-indigo-400 transition-colors" />
@@ -252,7 +257,8 @@ export default function MapClientView() {
                         <div className="flex flex-col h-full w-full">
 
                             {/* "Липка" шапка (Sticky Header) - завжди зверху */}
-                            <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/60 px-6 py-5 flex items-start justify-between gap-4 group/header transition-colors">
+                            <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/60 px-5 pt-6 pb-4 md:px-6 md:py-5 flex items-start justify-between gap-4 group/header transition-colors">
+                                <div className="md:hidden absolute top-2 left-1/2 -translate-x-1/2 h-[5px] w-9 rounded-full bg-slate-300" />
                                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-transparent opacity-0 group-hover/header:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                                 <div className="flex items-start gap-4 relative z-10 flex-1 min-w-0">
@@ -293,7 +299,7 @@ export default function MapClientView() {
                             </div>
 
                             {/* Контент, що скролиться (з вирівняними відступами p-6) */}
-                            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                            <div className="flex-1 overflow-y-auto overscroll-contain p-5 md:p-6 bg-slate-50/50">
                                 {isLoadingDetails ? (
                                     <div className="flex flex-col items-center justify-center h-48 space-y-4">
                                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />

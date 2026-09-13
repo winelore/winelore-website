@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n/context"
-import { Plus, Calendar, Settings, Layers, CheckCircle2, Pencil, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Calendar, Settings, Layers, CheckCircle2, Pencil, ChevronDown } from "lucide-react"
 import Cookies from "js-cookie"
 import Link from "next/link"
 import TemplateCreatorModal, { getPropertyTypeLabel } from "./TemplateCreatorModal"
@@ -129,12 +129,12 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                     return (
                         <div
                             key={uniqueKey}
-                            className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-xl shadow-slate-200/45 transition-all hover:shadow-2xl hover:shadow-slate-350/50"
+                            className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[28px] overflow-hidden shadow-sm sm:shadow-xl shadow-slate-200/45 transition-all hover:shadow-2xl hover:shadow-slate-350/50"
                         >
                             {/* Main Row */}
                             <div
                                 onClick={() => toggleExpandTemplate(uniqueKey)}
-                                className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
+                                className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl shrink-0 mt-1">
@@ -151,16 +151,16 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                                             </Link>
                                         </div>
 
-                                        <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
+                                        <div className="flex items-center gap-x-3 gap-y-1 sm:gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3.5 h-3.5" />
                                                 {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString("en-CA")}
                                             </span>
-                                            <span className="text-slate-300">|</span>
+                                            <span className="hidden sm:inline text-slate-300">|</span>
                                             <span>{t("myTemplates.type")}: <span className="text-slate-700 uppercase font-bold">{template.beverageType}</span></span>
-                                            <span className="text-slate-300">|</span>
+                                            <span className="hidden sm:inline text-slate-300">|</span>
                                             <span>{t("myTemplates.categories")}: <span className="text-indigo-600 font-bold">{edition?.categories.length || 0}</span></span>
-                                            <span className="text-slate-300">|</span>
+                                            <span className="hidden sm:inline text-slate-300">|</span>
                                             <span>{t("myTemplates.totalScores")}: <span className="text-indigo-600 font-bold">{propertiesCount}</span></span>
                                         </div>
                                     </div>
@@ -190,14 +190,14 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                                     </button>
 
                                     <div className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-colors">
-                                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                        <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Expanded Structure */}
                             {isExpanded && edition && (
-                                <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/15">
+                                <div className="animate-expand-in px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/15">
                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
                                         <Settings className="w-4 h-4 text-indigo-500" />
                                         {t("myTemplates.evaluationStructure")}

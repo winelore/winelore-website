@@ -14,7 +14,7 @@ export default function GlobalError({
     return (
         <html lang="en">
             <body className="font-sans antialiased">
-                <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50/50 p-6 text-center">
+                <div className="flex min-h-app flex-col items-center justify-center gap-4 bg-slate-50/50 p-6 text-center">
                     <h2 className="text-2xl font-extrabold text-slate-800">Something went wrong</h2>
                     <p className="max-w-md text-sm text-slate-500">
                         The application hit an unexpected error and couldn&apos;t recover on its own. You can try again, or reload the page.

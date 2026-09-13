@@ -19,6 +19,7 @@ import {
 
 import { AppHeader } from '@/components/AppHeader';
 import { BackLink } from '@/components/BackLink';
+import { useMobileNavTitle } from '@/lib/mobileNav';
 import { useTranslation } from '@/lib/i18n/context';
 import {
     createSampleAction,
@@ -101,7 +102,7 @@ function CustomSelect({
             </button>
 
             {isOpen && !disabled && !loading && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl shadow-slate-200/80 backdrop-blur-md transition-all duration-200">
+                <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl shadow-slate-200/80 backdrop-blur-md transition-all duration-200 origin-top animate-scale-up">
                     {options.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-5 text-center">
                             <Layers className="h-6 w-6 text-slate-300" />
@@ -426,11 +427,13 @@ function CreateSampleContent() {
                 : 'border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20'
         }`;
 
-    return (
-        <div className="flex h-screen flex-col bg-slate-50/50 text-slate-800">
-            <AppHeader activeTab="beverages" />
+    const titleRef = useMobileNavTitle<HTMLHeadingElement>(t('sample.createTitle', { defaultValue: 'Створити зразок (Sample)' }));
 
-            <main className="flex-1 overflow-auto px-4 py-6 sm:px-6 sm:py-8">
+    return (
+        <div className="app-screen bg-slate-50/50 text-slate-800">
+            <AppHeader activeTab="beverages" showMobileTabBar={false} />
+
+            <main className="app-main px-4 pt-2 pb-safe-4 sm:px-6 sm:py-8">
                 <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
                     <BackLink
                         href={targetBeverageId ? `/beverage/${targetBeverageId}?tab=batches` : '/myBeverages'}
@@ -446,7 +449,7 @@ function CreateSampleContent() {
                             <FlaskConical className="h-7 w-7" />
                         </div>
                         <div className="min-w-0">
-                            <h1 className="truncate text-2xl font-extrabold tracking-tight text-slate-800 sm:text-3xl">
+                            <h1 ref={titleRef} className="truncate text-2xl font-extrabold tracking-tight text-slate-800 sm:text-3xl">
                                 {t('sample.createTitle', { defaultValue: 'Створити зразок (Sample)' })}
                             </h1>
                             <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
@@ -469,7 +472,7 @@ function CreateSampleContent() {
                             className="overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-xl shadow-slate-200/50"
                         >
                             {/* 1 — Beverage & Batch Association */}
-                            <section className="flex flex-col gap-5 p-6 sm:p-8">
+                            <section className="flex flex-col gap-5 p-5 sm:p-8">
                                 <SectionHeader
                                     step={1}
                                     title={t('sample.sectionAssociation', { defaultValue: 'Прив\'язка до партії та напою' })}
@@ -594,7 +597,7 @@ function CreateSampleContent() {
                             <div className="h-px bg-slate-100" />
 
                             {/* 2 — Sample Volume */}
-                            <section className="flex flex-col gap-5 p-6 sm:p-8">
+                            <section className="flex flex-col gap-5 p-5 sm:p-8">
                                 <SectionHeader
                                     step={2}
                                     title={t('sample.sectionVolume', { defaultValue: 'Об\'єм зразка' })}
@@ -734,7 +737,7 @@ function CreateSampleContent() {
                                 <>
                                     <div className="h-px bg-slate-100" />
 
-                                    <section className="flex flex-col gap-5 p-6 sm:p-8">
+                                    <section className="flex flex-col gap-5 p-5 sm:p-8">
                                         <SectionHeader
                                             step={3}
                                             title={t('sample.sectionCharacteristics', { defaultValue: 'Характеристики зразка' })}
@@ -912,7 +915,7 @@ function CreateSampleContent() {
 export default function CreateSamplePage() {
     return (
         <Suspense fallback={
-            <div className="flex h-screen items-center justify-center bg-slate-50/50">
+            <div className="flex min-h-dvh items-center justify-center bg-slate-50/50">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
             </div>
         }>

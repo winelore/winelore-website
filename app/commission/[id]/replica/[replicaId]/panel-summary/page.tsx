@@ -7,6 +7,7 @@ import Cookies from "js-cookie"
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { useMobileNavTitle } from "@/lib/mobileNav"
 import {
     completeCommissionReplicaAction,
     getWaitDataAction,
@@ -120,9 +121,11 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
         }
     }
 
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(data ? `${t("commission.panelSummaryTitle")}: ${data.currentPanelName}` : null)
+
     if (isLoading) {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50/50">
+            <div className="flex min-h-app flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex flex-1 items-center justify-center p-6">
                     <div className="flex items-center gap-3 font-medium text-slate-500">
@@ -136,7 +139,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
 
     if (!data || !data.currentPanelId) {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50/50">
+            <div className="flex min-h-app flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex flex-1 items-center justify-center p-6 text-center text-slate-500">
                     {loadError ? t("commission.panelSummaryLoadError") : t("common.loading")}
@@ -148,9 +151,9 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
     const hasNextPanel = Boolean(data.nextPanelId && data.nextPanelFirstCandidateId)
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50/50">
+        <div className="flex min-h-app flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
-            <main className="flex-1 p-6 md:p-10">
+            <main className="flex-1 px-4 pt-1 pb-6 md:p-10">
                 <div className="mx-auto max-w-7xl space-y-8">
                     <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
 
@@ -160,7 +163,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
                                 <CheckCircle2 className="h-6 w-6 text-emerald-600" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-800">
+                                <h1 ref={navTitleRef} className="text-2xl font-bold text-slate-800">
                                     {t("commission.panelSummaryTitle")}: {data.currentPanelName}
                                 </h1>
                                 <p className="mt-1 text-sm text-slate-500">

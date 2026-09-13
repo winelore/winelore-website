@@ -5,8 +5,10 @@ import CodeMirror from "@uiw/react-codemirror"
 import { javascript } from "@codemirror/lang-javascript"
 import { ScrollText, Calendar, Save, Loader2, CheckCircle } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
+import { useMobileNavTitle } from "@/lib/mobileNav"
 import { getDateLocale } from "@/lib/i18n"
 import { AppHeader } from "@/components/AppHeader"
+import { useMobileNavBack } from "@/lib/mobileNav"
 import { useRouter } from "next/navigation"
 import { updateOutcomePolicyAction } from "@/app/myOutcomePolicies/actions"
 
@@ -63,17 +65,22 @@ export default function OutcomePolicyDetailView({ policy, edition }: OutcomePoli
 
 
 
+    // No back control on desktop here; on phones the nav bar still needs one.
+    useMobileNavBack("/myOutcomePolicies", t("common.myOutcomePolicies"))
+
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(policy.name)
+
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="app-screen bg-slate-50/50">
             <AppHeader activeTab="none" />
 
-            <main className="flex-1 overflow-auto p-6 flex flex-col gap-6">
-                <div className="bg-white border border-slate-100 rounded-[32px] p-7 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+            <main className="app-main px-4 pt-2 pb-6 md:p-6 flex flex-col gap-4 md:gap-6">
+                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-7 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
                         <ScrollText className="h-7 w-7" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h2 className="text-2xl font-bold text-slate-800 truncate">{policy.name}</h2>
+                        <h2 ref={navTitleRef} className="text-2xl font-bold text-slate-800 truncate">{policy.name}</h2>
                         <span className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 font-semibold">
                             <Calendar className="w-3.5 h-3.5" />
                             {formattedDate}
@@ -86,7 +93,7 @@ export default function OutcomePolicyDetailView({ policy, edition }: OutcomePoli
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50 flex-1 flex flex-col overflow-hidden">
+                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] shadow-sm sm:shadow-xl shadow-slate-200/50 flex-1 flex flex-col overflow-hidden">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
                             {t("outcomePolicyDetail.scriptTitle")}

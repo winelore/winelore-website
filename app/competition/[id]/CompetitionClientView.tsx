@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, Send, Download } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { useMobileNavAction, useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import { getDateLocale } from "@/lib/i18n"
 import Link from "next/link"
@@ -77,7 +78,7 @@ function StatusSteps({ status }: { status: string }) {
     }
 
     return (
-        <div className="w-full bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+        <div className="w-full bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {steps.map((step, idx) => {
                     const isCompleted = idx < currentStepIdx
@@ -483,12 +484,16 @@ export default function CompetitionClientView({
 
     const isHolder = currentAuid !== null && initialData.holders.includes(currentAuid)
 
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(initialData.name)
+    // Phones: the header row with the results button is hidden; the button lives in the nav bar.
+    useMobileNavAction({ href: `/competition/${initialData.id}/results`, label: t("competition.resultsButton"), icon: Trophy })
+
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="app-screen bg-slate-50/50">
             <AppHeader activeTab="competitions" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex items-center justify-between">
+            <main className="app-main px-4 pt-1 pb-6 md:p-8 flex flex-col items-center">
+                <div className="w-full max-w-7xl mb-4 hidden md:flex items-center justify-between">
                     <BackLink href="/myCompetitions" label={t("commission.backToCompetitions")} />
 
                     <Link
@@ -509,7 +514,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {/* Series Details */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex items-center gap-4 order-3 lg:order-none">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4 order-3 lg:order-none">
                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-inner">
                                     <Layers className="h-6 w-6" />
                                 </div>
@@ -524,7 +529,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {/* Timeline and Dates */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-4 lg:order-none">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 order-4 lg:order-none">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-indigo-500" />
@@ -660,7 +665,7 @@ export default function CompetitionClientView({
                         {/* Right Column: Info & Commissions List */}
                         <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
                             {/* Competition Header Card */}
-                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
+                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                                 <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                                 <div className="flex items-start justify-between gap-4 mb-6">
@@ -710,7 +715,7 @@ export default function CompetitionClientView({
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
+                                                    <h2 ref={navTitleRef} className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
                                                         {initialData.name}
                                                     </h2>
                                                     {isHolder && (
@@ -774,7 +779,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {initialData.status === "DRAFT" && isHolder && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
+                                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 md:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                         {t("competition.actionsControls")}
                                     </h3>
@@ -804,7 +809,7 @@ export default function CompetitionClientView({
                             )}
 
                             {initialData.status === "PLANNED" && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
+                                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 md:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                         {t("competition.actionsControls")}
                                     </h3>
@@ -850,8 +855,8 @@ export default function CompetitionClientView({
                             )}
 
                             {/* Commissions list */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-6 lg:order-none">
-                                <div className="flex items-center justify-between mb-6">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-6 lg:order-none">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                             <Wine className="w-5 h-5 text-indigo-500" />
@@ -861,7 +866,7 @@ export default function CompetitionClientView({
                                             {t("competition.commissionsSubtitle")}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
                                             {t("common.total")}: {initialData.commissions.length}
                                         </span>
