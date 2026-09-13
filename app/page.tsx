@@ -3,7 +3,8 @@ import HomeClientView from './HomeClientView';
 import { getBeverageTypesAction, getEvaluationTemplatesAction } from '@/app/myTemplates/actions';
 import { cookies } from "next/headers";
 import { GET_MY_COMPETITIONS } from "@/app/myCompetitions/queries";
-import { GET_COMMISSIONS } from "@/app/queries";
+import { fetchGraphQLRaw } from '@/lib/apiClient';
+import { GET_DASHBOARD_COMMISSIONS, selectActiveCommissions } from "@winelore/core/dashboard";
 import LandingClientView from '@/app/LandingClientView';
 
 export const dynamic = "force-dynamic"
@@ -66,7 +67,10 @@ export default async function HomePage() {
         let hasMore = true;
 
         while (hasMore) {
-            const commData: any = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
+            const commData: any = await fetchGraphQLRaw(GET_DASHBOARD_COMMISSIONS, {
+                limit: 100,
+                offset: currentOffset,
+            });
             const items = commData.commissions?.items || [];
             allCommissions = allCommissions.concat(items);
 
@@ -76,13 +80,9 @@ export default async function HomePage() {
                 currentOffset += 100;
             }
         }
-        myCommissions = allCommissions.filter((comm: any) => {
-            const isMember = comm.replicas?.some((r: any) =>
-                r.members?.some((m: any) => m.auid?.includes(currentAuid))
-            );
-            const isStatusValid = ["PLANNED", "APPROVED", "STARTED", "IN_PROGRESS"].includes(comm.status);
-            return isMember && isStatusValid;
-        }).slice(0, 8);
+        // Membership and status filtering is shared with the mobile app, and
+        // matches nested auid arrays that a plain `includes` would miss.
+        myCommissions = selectActiveCommissions(allCommissions, String(currentAuid));
     } catch (error) {
         console.error("Failed to load commissions:", error);
     }

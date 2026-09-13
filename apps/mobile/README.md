@@ -26,12 +26,22 @@ property, filters and an expert drill-down; on a phone that becomes a ranked
 list with a per-candidate detail sheet. The *numbers* are identical because
 there is one implementation of them; the presentation is not, deliberately.
 
+The home screen lists the commissions the signed-in judge is on. Tapping one
+enters through the waiting room rather than guessing a candidate: panel
+sequencing then routes to whatever the chair currently has open, which is the
+same path a judge takes mid-session. `selectActiveCommissions` in
+`@winelore/core/dashboard` does the membership and status filtering for both
+apps.
+
 Not yet ported:
 
 - **Comments** — per-property and general, including voice notes. Voice needs
   `expo-audio`, replacing the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
+- **The dashboard's other three sections** — templates, competitions and
+  beverages. The web home page shows these alongside commissions; mobile shows
+  commissions only, since the screens those cards open do not exist yet.
 - **Results filters and expert drill-down.** The mobile list shows final
   standings and each candidate's outcomes; filtering by commission, per-expert
   score breakdowns, outlier highlighting and export are web-only.
