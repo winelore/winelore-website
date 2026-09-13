@@ -23,6 +23,7 @@ export const GET_COMMISSION = gql(`
       propertyCommentsEnabled
       beverageOriginDuringEvaluationEnabled
       partialCandidateEvaluationEnabled
+      discussionPolicy
       panels {
         id
         name
@@ -581,3 +582,13 @@ export const GET_EVALUATIONS_FOR_CANDIDATE = gql(`
     }
   }
 `);
+
+export const SET_COMMISSION_DISCUSSION_POLICY = gql(`
+  mutation SetCommissionDiscussionPolicy($id: ID!, $policy: DiscussionPolicy!) {
+    setCommissionDiscussionPolicy(id: $id, policy: $policy) {
+      id
+      discussionPolicy
+    }
+  }
+`);
+
