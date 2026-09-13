@@ -36,26 +36,33 @@ export type ActiveCommission = DashboardCommission & {
     isHead: boolean
 }
 
+export interface SelectCommissionsOptions {
+    /** Keep only these statuses. Omit to keep every status. */
+    statuses?: readonly string[]
+    /** Stop after this many. Omit for all of them. */
+    limit?: number
+}
+
 /**
- * The commissions a judge should see on their dashboard: ones they are a member
- * of, still in a state they can act on.
+ * The commissions a user is a member of.
  *
  * Membership is matched through `normalizeAuids`, which flattens nested arrays.
  * The backend returns `auid` as an array and sometimes nests it, so a plain
- * `includes` misses those members and silently hides the commission from
- * someone who is in fact on it.
+ * `includes` misses those members and silently hides a commission from someone
+ * who is in fact on it.
  */
-export function selectActiveCommissions(
+export function selectCommissionsForUser(
     commissions: DashboardCommission[] | null | undefined,
     auid: string | null | undefined,
-    limit = 8,
+    options: SelectCommissionsOptions = {},
 ): ActiveCommission[] {
     if (!auid) return []
 
+    const { statuses, limit } = options
     const active: ActiveCommission[] = []
 
     for (const commission of commissions ?? []) {
-        if (!ACTIVE_COMMISSION_STATUSES.includes(commission.status as never)) continue
+        if (statuses && !statuses.includes(commission.status as string)) continue
 
         const replica = commission.replicas?.find((r) =>
             r.members?.some((m) => normalizeAuids(m.auid).includes(auid)),
@@ -72,8 +79,23 @@ export function selectActiveCommissions(
             ),
         })
 
-        if (active.length >= limit) break
+        if (limit !== undefined && active.length >= limit) break
     }
 
     return active
+}
+
+/**
+ * The subset for a dashboard: member commissions still in a state the user can
+ * act on, capped at what fits a summary panel.
+ */
+export function selectActiveCommissions(
+    commissions: DashboardCommission[] | null | undefined,
+    auid: string | null | undefined,
+    limit = 8,
+): ActiveCommission[] {
+    return selectCommissionsForUser(commissions, auid, {
+        statuses: ACTIVE_COMMISSION_STATUSES,
+        limit,
+    })
 }

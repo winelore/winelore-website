@@ -29,9 +29,15 @@ there is one implementation of them; the presentation is not, deliberately.
 The home screen lists the commissions the signed-in judge is on. Tapping one
 enters through the waiting room rather than guessing a candidate: panel
 sequencing then routes to whatever the chair currently has open, which is the
-same path a judge takes mid-session. `selectActiveCommissions` in
-`@winelore/core/dashboard` does the membership and status filtering for both
-apps.
+same path a judge takes mid-session. `selectCommissionsForUser` in `@winelore/core/dashboard` does the membership
+filtering for the home screen, the full commissions list, and both of the web's
+equivalents — four callers, one implementation.
+
+"View all" opens `/commissions`: every commission the judge is on, whatever its
+status. Finished ones are shown but inert, since entering one would drop a judge
+into a session that no longer exists. There is no pagination — the web pages
+that list, but it already fetches all of it and slices client-side, so paging is
+a desktop affordance rather than a data constraint.
 
 Not yet ported:
 

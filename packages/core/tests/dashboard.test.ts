@@ -6,7 +6,11 @@
  */
 import test from "node:test"
 import assert from "node:assert/strict"
-import { selectActiveCommissions, type DashboardCommission } from "../src/dashboard"
+import {
+    selectActiveCommissions,
+    selectCommissionsForUser,
+    type DashboardCommission,
+} from "../src/dashboard"
 
 const commission = (over: Partial<DashboardCommission> = {}): DashboardCommission => ({
     id: "comm-1",
@@ -106,4 +110,19 @@ test("every source field survives selection", () => {
     assert.equal(result.startedAt, "2026-04-01T09:00:00Z")
     assert.equal(result.endedAt, null)
     assert.equal(result.competition?.id, "compt-1")
+})
+
+test("selectCommissionsForUser keeps every status when none are named", () => {
+    const all = ["COMPLETED", "DRAFT", "CANCELLED", "IN_PROGRESS"].map((status, i) =>
+        commission({ id: `c-${i}`, status }),
+    )
+    // The my-commissions list shows a judge's whole history, not just live work.
+    assert.equal(selectCommissionsForUser(all, "7").length, 4)
+    assert.equal(selectCommissionsForUser(all, "7", { statuses: ["COMPLETED"] }).length, 1)
+})
+
+test("selectCommissionsForUser returns everything when no limit is given", () => {
+    const many = Array.from({ length: 30 }, (_, i) => commission({ id: `c-${i}` }))
+    assert.equal(selectCommissionsForUser(many, "7").length, 30)
+    assert.equal(selectCommissionsForUser(many, "7", { limit: 5 }).length, 5)
 })

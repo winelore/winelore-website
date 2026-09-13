@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import {
     GET_DASHBOARD_COMMISSIONS,
-    selectActiveCommissions,
+    selectCommissionsForUser,
+    ACTIVE_COMMISSION_STATUSES,
     type ActiveCommission,
+    type SelectCommissionsOptions,
 } from "@winelore/core/dashboard"
 import { fetchGraphQLRaw } from "../api/client"
 import { getStoredSession } from "../auth/session"
@@ -15,13 +17,16 @@ type State =
     | { status: "ready"; commissions: ActiveCommission[] }
 
 /**
- * The signed-in judge's active commissions.
+ * The commissions the signed-in user is a member of.
  *
- * The backend has no "commissions I am on" query, so the web page pages through
- * all of them and filters client-side; this does the same, and shares the
- * filter itself with the web through `selectActiveCommissions`.
+ * The backend has no "commissions I am on" query, so the web pages through all
+ * of them and filters client-side; this does the same, and shares the filter
+ * with the web through `selectCommissionsForUser`.
+ *
+ * Pass no options for the full history, as the my-commissions list wants;
+ * `dashboardOptions` narrows it to live work for the home screen.
  */
-export function useDashboard() {
+export function useCommissions(options: SelectCommissionsOptions = {}) {
     const [state, setState] = useState<State>({ status: "loading" })
 
     const load = useCallback(async () => {
@@ -49,16 +54,23 @@ export function useDashboard() {
 
             setState({
                 status: "ready",
-                commissions: selectActiveCommissions(all as never, session.auid),
+                commissions: selectCommissionsForUser(all as never, session.auid, options),
             })
         } catch {
             setState({ status: "error" })
         }
-    }, [])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options.limit, options.statuses])
 
     useEffect(() => {
         load()
     }, [load])
 
     return { state, reload: load }
+}
+
+/** What the home screen shows: live work only, capped to a summary panel. */
+export const dashboardOptions: SelectCommissionsOptions = {
+    statuses: ACTIVE_COMMISSION_STATUSES,
+    limit: 8,
 }

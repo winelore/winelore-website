@@ -14,7 +14,7 @@ import { LOCALES, LOCALE_LABELS } from "@winelore/core/i18n"
 import type { ActiveCommission } from "@winelore/core/dashboard"
 import { useAuth } from "../src/auth/AuthProvider"
 import { describeAuthConfig } from "../src/auth/config"
-import { useDashboard } from "../src/dashboard/useDashboard"
+import { dashboardOptions, useCommissions } from "../src/dashboard/useDashboard"
 import { useTranslation } from "../src/i18n/LocaleProvider"
 import { MONOSPACE, elevation, palette, radius, spacing, type } from "../src/theme"
 
@@ -64,7 +64,7 @@ function Dashboard({
     onSignOut: () => Promise<void>
 }) {
     const { t } = useTranslation()
-    const { state, reload } = useDashboard()
+    const { state, reload } = useCommissions(dashboardOptions)
     const [isRefreshing, setIsRefreshing] = useState(false)
 
     const refresh = async () => {
@@ -85,7 +85,14 @@ function Dashboard({
                 <Text style={styles.displayName}>{displayName}</Text>
             </View>
 
-            <Text style={styles.sectionTitle}>{t("dashboard.activeCommissions")}</Text>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t("dashboard.activeCommissions")}</Text>
+                <Link href="/commissions" asChild>
+                    <Pressable accessibilityRole="button" hitSlop={8}>
+                        <Text style={styles.viewAll}>{t("dashboard.viewAll")}</Text>
+                    </Pressable>
+                </Link>
+            </View>
 
             {state.status === "loading" ? (
                 <ActivityIndicator style={styles.sectionLoading} />
@@ -249,7 +256,14 @@ const styles = StyleSheet.create({
     error: { ...type.caption, color: palette.danger, textAlign: "center" },
     welcome: { ...type.body, color: palette.textMuted },
     displayName: { ...type.largeTitle, color: palette.text },
-    sectionTitle: { ...type.title, color: palette.text, marginTop: spacing.sm },
+    sectionHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginTop: spacing.sm,
+    },
+    sectionTitle: { ...type.title, color: palette.text },
+    viewAll: { ...type.body, color: palette.accentText, fontWeight: "600" },
     sectionLoading: { marginVertical: spacing.lg },
     empty: { ...type.body, color: palette.textFaint, paddingVertical: spacing.md },
     card: {
