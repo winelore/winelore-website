@@ -7,17 +7,27 @@ The iOS app. Shares all domain logic with the web app through `@winelore/core`.
 Sign-in is implemented end to end. The evaluation scorecard is ported and
 renders real data: `app/evaluation/[candidateId].tsx`.
 
-Not yet ported, and needed before a judge can use this in a session:
+Panel sequencing follows the chair: `usePanelSequencing` polls and navigates
+when the active candidate changes, `useWaitForNextCandidate` picks a waiting
+judge back up. The decision itself is `resolveEvaluationDestination` in
+`@winelore/core/evaluation`, shared with the web poll, so a judge on a phone
+and a judge on the web are never sent to different places by the same server
+state.
 
-- **Panel sequencing.** The web sends a judge to the right candidate and to the
-  waiting room when the panel moves on — guard clauses in the route plus a
-  3-second poll. `useCandidateEvaluation` fetches and submits only.
+Localisation runs off the same en/uk/hu tables as the web. `LocaleProvider`
+detects the device language through `Intl` (Hermes ships it, so no extra
+native module) and persists a choice in SecureStore. `npm run check-i18n`
+now scans `apps/mobile` too, so a mistyped key fails there.
+
+Not yet ported:
+
 - **Comments** — per-property and general, including voice notes. Voice needs
   `expo-audio`, replacing the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **Localisation.** Strings are hardcoded English placeholders in the route;
-  the real en/uk/hu tables are already in `@winelore/core/i18n`.
+- **Results and panel-summary screens.** Sequencing routes to `/results/...`
+  and `/panel-summary/...`; those routes do not exist yet, so those two
+  transitions dead-end.
 
 **Nothing here has run on a device or simulator.** It was developed on Linux, where
 the JavaScript can be typechecked and bundled but not built or launched. What is

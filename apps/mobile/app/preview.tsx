@@ -1,19 +1,8 @@
 import { Stack } from "expo-router"
-import { EvaluationScreen, type EvaluationScreenLabels } from "../src/evaluation/EvaluationScreen"
+import { EvaluationScreen } from "../src/evaluation/EvaluationScreen"
+import { buildEvaluationLabels } from "../src/evaluation/labels"
 import { sampleAttributes, sampleCategories } from "../src/evaluation/sampleScorecard"
-
-const labels: EvaluationScreenLabels = {
-    yes: "Yes",
-    no: "No",
-    selectPlaceholder: "—",
-    submit: "Submit",
-    fillRequired: "Fill required fields",
-    progress: (done, total) => `${done}/${total} rated`,
-    numericError: (reason) =>
-        reason === "not_whole_number" ? "Whole numbers only" : "Invalid number",
-    noTemplate: "No evaluation template is configured.",
-    submitFailed: "Could not submit.",
-}
+import { useTranslation } from "../src/i18n/LocaleProvider"
 
 /**
  * The scorecard running on sample data, with no sign-in and no backend.
@@ -24,9 +13,12 @@ const labels: EvaluationScreenLabels = {
  * checked anywhere else.
  *
  * The formulas here run through the real evaluator in @winelore/core, so the
- * subtotals and total are genuinely computed, not faked.
+ * subtotals and total are genuinely computed, not faked — and the copy comes
+ * from the same translation tables as the live screen.
  */
 export default function PreviewRoute() {
+    const translation = useTranslation()
+
     return (
         <>
             <Stack.Screen options={{ title: "Sample 0417" }} />
@@ -35,7 +27,7 @@ export default function PreviewRoute() {
                 candidateId="preview"
                 beverageName="Riesling Reserve"
                 visibleAttributes={sampleAttributes}
-                labels={labels}
+                labels={buildEvaluationLabels(translation)}
                 onSubmit={async (scores) => {
                     // No backend in preview: pause so the submitting state and
                     // the success haptic are both observable.

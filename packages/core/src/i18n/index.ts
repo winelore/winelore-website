@@ -4,6 +4,10 @@ import hu from "./locales/hu" // 💡 ДОДАНО: імпорт угорськ�
 import type { TranslationKey } from "./locales/en"
 import type { Locale } from "./types"
 
+// Locale, LOCALES, LOCALE_LABELS, DEFAULT_LOCALE and LOCALE_COOKIE are part of
+// this module's public surface; consumers should not reach into ./types.
+export * from "./types"
+
 export const messages: Record<Locale, TranslationKey> = {
   en,
   uk,

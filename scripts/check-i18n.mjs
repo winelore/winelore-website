@@ -29,7 +29,7 @@ function keysOf(file) {
 }
 
 const sets = {};
-for (const l of LOCALES) sets[l] = keysOf(`lib/i18n/locales/${l}.ts`);
+for (const l of LOCALES) sets[l] = keysOf(`packages/core/src/i18n/locales/${l}.ts`);
 
 let ok = true;
 console.log('key counts:', Object.fromEntries(LOCALES.map(l => [l, sets[l].size])));
@@ -50,10 +50,12 @@ for (const l of LOCALES.slice(1)) {
 }
 
 const used = new Set();
-const files = execSync(`grep -rl "" --include=*.tsx --include=*.ts app components lib hooks`)
+// apps/mobile is included so a mistyped key in the iOS app fails here too —
+// it consumes the same tables from @winelore/core/i18n.
+const files = execSync(`grep -rl "" --include=*.tsx --include=*.ts app components lib hooks packages/core/src apps/mobile/src apps/mobile/app`)
     .toString().trim().split('\n').filter(Boolean);
 for (const f of files) {
-    if (f.includes('lib/i18n/locales')) continue;
+    if (f.includes('packages/core/src/i18n/locales')) continue;
     const src = fs.readFileSync(f, 'utf8');
     for (const m of src.matchAll(/\bt\(\s*["'`]([A-Za-z0-9_.]+)["'`]/g)) used.add(m[1]);
     for (const m of src.matchAll(/\btCount\(\s*["'`]([A-Za-z0-9_.]+)["'`]/g)) used.add(m[1]);

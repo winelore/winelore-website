@@ -2,41 +2,41 @@ import { useCallback } from "react"
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native"
 import { Stack, useLocalSearchParams } from "expo-router"
 import type { EvaluationScoreInput } from "@winelore/core/evaluation"
-import { EvaluationScreen, type EvaluationScreenLabels } from "../../src/evaluation/EvaluationScreen"
+import { EvaluationScreen } from "../../src/evaluation/EvaluationScreen"
+import { buildEvaluationLabels } from "../../src/evaluation/labels"
 import { useCandidateEvaluation } from "../../src/evaluation/useCandidateEvaluation"
+import { recordSubmission, usePanelSequencing } from "../../src/evaluation/usePanelSequencing"
+import { useTranslation } from "../../src/i18n/LocaleProvider"
 import { palette } from "../../src/theme"
-
-/**
- * Placeholder copy.
- *
- * The real strings live in @winelore/core/i18n alongside the web app's, in en,
- * uk and hu. Wiring a locale provider into the native app is its own task;
- * until then these keep the screen legible without pretending to be
- * translated.
- */
-const labels: EvaluationScreenLabels = {
-    yes: "Yes",
-    no: "No",
-    selectPlaceholder: "—",
-    submit: "Submit",
-    fillRequired: "Fill required fields",
-    progress: (done, total) => `${done}/${total} rated`,
-    numericError: (reason) =>
-        reason === "not_whole_number" ? "Whole numbers only" : "Invalid number",
-    noTemplate: "No evaluation template is configured for this competition.",
-    submitFailed: "Could not submit. Please try again.",
-}
 
 export default function CandidateEvaluationRoute() {
     const { candidateId } = useLocalSearchParams<{ candidateId: string }>()
+    const translation = useTranslation()
     const { state, submit } = useCandidateEvaluation(candidateId)
 
+    const ready = state.status === "ready" ? state : null
+
+    // Follows the panel: the chair advances the active candidate and this
+    // navigates to match. Held back until the scorecard has loaded, so a slow
+    // first fetch is not mistaken for the panel having moved on.
+    const { isLeaving } = usePanelSequencing({
+        commissionId: ready?.commissionId,
+        replicaId: ready?.replicaId,
+        candidateId,
+        enabled: Boolean(ready),
+    })
+
     const handleSubmit = useCallback(
-        (scores: EvaluationScoreInput[]) => submit(scores),
-        [submit],
+        async (scores: EvaluationScoreInput[]) => {
+            await submit(scores)
+            // Tells the sequencer this judge is done before the server agrees,
+            // so the next poll routes to the waiting room rather than back here.
+            recordSubmission(candidateId)
+        },
+        [submit, candidateId],
     )
 
-    if (state.status === "loading") {
+    if (state.status === "loading" || isLeaving) {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator />
@@ -60,7 +60,7 @@ export default function CandidateEvaluationRoute() {
                 candidateId={candidateId}
                 beverageName={state.beverageName}
                 visibleAttributes={state.visibleAttributes}
-                labels={labels}
+                labels={buildEvaluationLabels(translation)}
                 onSubmit={handleSubmit}
             />
         </>

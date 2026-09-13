@@ -3,6 +3,8 @@ import * as Haptics from "expo-haptics"
 import { Link } from "expo-router"
 import { useAuth } from "../src/auth/AuthProvider"
 import { describeAuthConfig } from "../src/auth/config"
+import { useTranslation } from "../src/i18n/LocaleProvider"
+import { LOCALES, LOCALE_LABELS } from "@winelore/core/i18n"
 
 export default function Index() {
     const { session, signIn, signOut, error } = useAuth()
@@ -33,6 +35,7 @@ export default function Index() {
                 </Pressable>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <PreviewLink />
+                <LocalePicker />
                 <AuthDiagnostics />
             </View>
         )
@@ -53,6 +56,7 @@ export default function Index() {
                 <Text style={styles.secondaryLabel}>Sign out</Text>
             </Pressable>
             <PreviewLink />
+            <LocalePicker />
         </View>
     )
 }
@@ -71,6 +75,32 @@ function AuthDiagnostics() {
             <Text style={styles.diagnosticsLine}>client {config.clientId}</Text>
             <Text style={styles.diagnosticsLine}>{config.redirectUri}</Text>
             <Text style={styles.diagnosticsLine}>{config.issuer}</Text>
+        </View>
+    )
+}
+
+/** Switches between the three locales the product ships. */
+function LocalePicker() {
+    const { locale, setLocale } = useTranslation()
+    return (
+        <View style={styles.locales}>
+            {LOCALES.map((option) => (
+                <Pressable
+                    key={option}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: locale === option }}
+                    onPress={() => setLocale(option)}
+                    style={({ pressed }) => [
+                        styles.localeChip,
+                        locale === option && styles.localeChipSelected,
+                        pressed && styles.buttonPressed,
+                    ]}
+                >
+                    <Text style={[styles.localeLabel, locale === option && styles.localeLabelSelected]}>
+                        {LOCALE_LABELS[option]}
+                    </Text>
+                </Pressable>
+            ))}
         </View>
     )
 }
@@ -105,6 +135,17 @@ const styles = StyleSheet.create({
     buttonLabel: { color: "white", fontSize: 16, fontWeight: "600" },
     secondaryButton: { marginTop: 16, paddingVertical: 12, paddingHorizontal: 24 },
     secondaryLabel: { fontSize: 16, opacity: 0.7 },
+    locales: { flexDirection: "row", gap: 8, marginTop: 8 },
+    localeChip: {
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "#d8d8dd",
+    },
+    localeChipSelected: { backgroundColor: "#7b1d3a", borderColor: "#7b1d3a" },
+    localeLabel: { fontSize: 13, opacity: 0.7 },
+    localeLabelSelected: { color: "white", opacity: 1, fontWeight: "600" },
     diagnostics: { marginTop: 20, alignItems: "center", gap: 2 },
     diagnosticsLine: { fontSize: 11, opacity: 0.4, fontFamily: "Menlo" },
     error: { marginTop: 12, fontSize: 14, color: "#b3261e", textAlign: "center" },

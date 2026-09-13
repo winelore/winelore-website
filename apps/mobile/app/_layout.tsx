@@ -1,6 +1,7 @@
 import { Stack } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { AuthProvider } from "../src/auth/AuthProvider"
+import { LocaleProvider } from "../src/i18n/LocaleProvider"
 
 /**
  * expo-router's Stack is backed by react-native-screens, so this is a real
@@ -11,17 +12,19 @@ import { AuthProvider } from "../src/auth/AuthProvider"
  */
 export default function RootLayout() {
     return (
-        <AuthProvider>
-            <StatusBar style="auto" />
-            <Stack
-                screenOptions={{
-                    headerLargeTitle: true,
-                    headerTransparent: true,
-                    headerBlurEffect: "systemChromeMaterial",
-                }}
-            >
-                <Stack.Screen name="index" options={{ title: "Winelore" }} />
-            </Stack>
-        </AuthProvider>
+        <LocaleProvider>
+            <AuthProvider>
+                <StatusBar style="auto" />
+                <Stack
+                    screenOptions={{
+                        headerLargeTitle: true,
+                        headerTransparent: true,
+                        headerBlurEffect: "systemChromeMaterial",
+                    }}
+                >
+                    <Stack.Screen name="index" options={{ title: "Winelore" }} />
+                </Stack>
+            </AuthProvider>
+        </LocaleProvider>
     )
 }

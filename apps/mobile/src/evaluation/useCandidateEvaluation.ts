@@ -18,6 +18,8 @@ export type CandidateEvaluationState =
     | { status: "error"; message: string }
     | {
           status: "ready"
+          commissionId: string
+          replicaId: string
           candidateCode: string
           beverageName: string | null
           categories: EvaluationCategory[]
@@ -70,6 +72,8 @@ export function useCandidateEvaluation(candidateId: string) {
 
                 setState({
                     status: "ready",
+                    commissionId,
+                    replicaId: commissionReplicaCandidate.replicaPanel.replica.id,
                     candidateCode: candidate?.anonymizedCode?.trim() || candidateId,
                     beverageName: beverage?.name ?? null,
                     categories: selectEvaluationCategories(
