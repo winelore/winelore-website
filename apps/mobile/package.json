@@ -6,7 +6,8 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import jiti/register --test tests/*.test.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",

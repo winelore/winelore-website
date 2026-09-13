@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
 import * as Haptics from "expo-haptics"
+import { Link } from "expo-router"
 import { useAuth } from "../src/auth/AuthProvider"
 
 export default function Index() {
@@ -30,6 +31,7 @@ export default function Index() {
                     <Text style={styles.buttonLabel}>Sign in with AXUS ID</Text>
                 </Pressable>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
+                <PreviewLink />
             </View>
         )
     }
@@ -48,7 +50,22 @@ export default function Index() {
             >
                 <Text style={styles.secondaryLabel}>Sign out</Text>
             </Pressable>
+            <PreviewLink />
         </View>
+    )
+}
+
+/** Opens the scorecard on sample data — no sign-in, no backend. */
+function PreviewLink() {
+    return (
+        <Link href="/preview" asChild>
+            <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+            >
+                <Text style={styles.secondaryLabel}>Open sample scorecard</Text>
+            </Pressable>
+        </Link>
     )
 }
 

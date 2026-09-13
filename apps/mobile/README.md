@@ -23,17 +23,32 @@ Not yet ported, and needed before a judge can use this in a session:
 the JavaScript can be typechecked and bundled but not built or launched. What is
 verified, and what is not, is spelled out under *Verification* below.
 
-## Setup
+## Running on a device
+
+Requires macOS with Xcode. Expo Go will not work — expo-secure-store,
+expo-glass-effect, expo-crypto, expo-haptics and expo-web-browser are native
+modules, so this needs a development build.
 
 ```bash
-npm install                 # from the repo root — this is a workspace
-cp apps/mobile/.env.example apps/mobile/.env
-# fill in EXPO_PUBLIC_AXUS_ID_CLIENT_ID
-npm run ios -w @winelore/mobile
+npm install                       # from the repo root — this is a workspace
+cd apps/mobile
+npx expo run:ios --device         # prebuilds ios/, then builds and installs
 ```
 
-Requires macOS with Xcode. iOS 26 or newer for Liquid Glass; the app runs on
-older versions, where `expo-glass-effect` falls back to a plain view.
+`expo run:ios` generates the `ios/` directory on first run; it is gitignored
+and safe to delete and regenerate. Pick your iPhone when prompted, and set a
+signing team in Xcode if the build stops on provisioning (a free Apple ID
+works for on-device development).
+
+**No AXUS ID credentials are needed to see the scorecard.** Tap *Open sample
+scorecard* on the home screen for the preview route: the real evaluator
+running on sample data, with no sign-in and no backend. That is the fastest
+way to judge the two things that cannot be checked anywhere else — haptics,
+which a simulator cannot produce, and Liquid Glass, which needs iOS 26
+hardware.
+
+Sign-in additionally requires `EXPO_PUBLIC_AXUS_ID_CLIENT_ID` (see below);
+without it the app still launches, and only the sign-in button errors.
 
 ### A separate AXUS ID client is required
 
