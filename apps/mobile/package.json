@@ -7,7 +7,8 @@
     "start": "expo start",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "test": "node --import jiti/register --test tests/*.test.ts"
+    "test": "node --import jiti/register --test tests/*.test.ts",
+    "check:bundle": "expo export:embed --platform ios --dev true --entry-file ../../node_modules/expo-router/entry.js --bundle-output /tmp/winelore-dev-bundle.js --assets-dest /tmp/winelore-dev-assets"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",

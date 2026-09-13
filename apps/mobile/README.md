@@ -196,6 +196,20 @@ across the monorepo is worth more than a patch version on the web.
 reasons — without it npm leaves it under `node_modules/expo/`, where Metro's
 transformer cannot resolve it.
 
+## Verifying a change: use the dev bundle, not `expo export`
+
+```bash
+npm run check:bundle -w @winelore/mobile
+```
+
+`expo export` produces a **production** bundle, which omits dev-only modules —
+React Native pulls in `react-devtools-core` (and with it `@babel/runtime/regenerator`)
+only when `dev` is true. A broken dev bundle therefore passes `expo export`
+cleanly and then fails on the device with a blank screen.
+
+`check:bundle` runs `expo export:embed --dev true`, the same command Xcode
+invokes, so it exercises the module graph the device actually loads.
+
 ## Dependency versions
 
 Every version here comes from Expo SDK 57's own `bundledNativeModules.json`,
