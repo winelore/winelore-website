@@ -148,6 +148,54 @@ npm versions, which it did not. The flag is the deterministic fix.
 
 The cost is that `href` values are plain strings rather than a generated union.
 
+## After any dependency change, regenerate the native project
+
+`ios/` is generated and gitignored. It hardcodes absolute paths to every
+native module, so when npm moves a package between the root and
+`apps/mobile/node_modules`, the Pods project still points at the old location
+and the build fails with:
+
+```
+error: Build input file cannot be found: '.../apps/mobile/node_modules/react-native-reanimated/...'
+```
+
+That is stale generated state, not a missing package. Fix:
+
+```bash
+rm -rf apps/mobile/ios
+npx expo run:ios --device        # prebuilds and re-runs pod install
+```
+
+If the tree itself looks wrong, reset it fully from the repo root:
+
+```bash
+rm -rf node_modules apps/mobile/node_modules apps/mobile/ios
+npm install
+cd apps/mobile && npx expo run:ios --device
+```
+
+## One copy of every native module
+
+The root `package.json` carries an `overrides` block pinning React, React
+Native and every native module to the versions Expo SDK 57 pairs with. **Do
+not remove it.**
+
+Every `expo-*` package declares `react-native` as a loose peer dependency, and
+npm auto-installs peers. Without the overrides npm satisfies those loose ranges
+with the newest release at the repo root (React Native 0.87.1, screens 4.27.0,
+reanimated 4.6.0) while `apps/mobile`'s SDK-pinned ranges get their own nested
+copies — two builds of every native module in one tree. CocoaPods then emits
+duplicate targets and the build fails in ways that look unrelated to
+dependencies.
+
+This is also why the web app sits on React 19.2.3 rather than 19.2.4: npm
+refuses an override that conflicts with a direct dependency, and one React
+across the monorepo is worth more than a patch version on the web.
+
+`babel-preset-expo` is an explicit devDependency for the same family of
+reasons — without it npm leaves it under `node_modules/expo/`, where Metro's
+transformer cannot resolve it.
+
 ## Dependency versions
 
 Every version here comes from Expo SDK 57's own `bundledNativeModules.json`,
