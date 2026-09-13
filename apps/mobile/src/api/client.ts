@@ -52,3 +52,38 @@ const requester = async <R, V>(
 }
 
 export const sdk = getSdk<RequesterOptions>(requester)
+
+/**
+ * Send a query that is not in the generated SDK.
+ *
+ * Needed for the deep template query in @winelore/core, which is a hand-built
+ * string: it unrolls recursive formula expressions, which GraphQL's schema
+ * language cannot express, so codegen cannot produce it.
+ */
+export async function fetchGraphQLRaw<TResult>(
+    query: string,
+    variables?: Record<string, unknown>,
+): Promise<TResult> {
+    const accessToken = await getValidAccessToken()
+
+    const response = await fetch(getEndpoint(), {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ query, variables }),
+    })
+
+    const text = await response.text()
+    let json: { data?: TResult; errors?: Array<{ message?: string }> }
+    try {
+        json = JSON.parse(text)
+    } catch {
+        throw new Error(`GraphQL server error (${response.status})`)
+    }
+    if (json.errors?.length && !json.data) {
+        throw new Error(json.errors[0]?.message || "GraphQL query failed")
+    }
+    return json.data as TResult
+}

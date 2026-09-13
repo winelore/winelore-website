@@ -4,8 +4,20 @@ The iOS app. Shares all domain logic with the web app through `@winelore/core`.
 
 ## Status
 
-Sign-in is implemented end to end; no product screens are ported yet. `app/index.tsx`
-is a placeholder that exercises the auth flow and nothing more.
+Sign-in is implemented end to end. The evaluation scorecard is ported and
+renders real data: `app/evaluation/[candidateId].tsx`.
+
+Not yet ported, and needed before a judge can use this in a session:
+
+- **Panel sequencing.** The web sends a judge to the right candidate and to the
+  waiting room when the panel moves on — guard clauses in the route plus a
+  3-second poll. `useCandidateEvaluation` fetches and submits only.
+- **Comments** — per-property and general, including voice notes. Voice needs
+  `expo-audio`, replacing the web's `MediaRecorder`.
+- **The AI tasting draft**, which posts to a Next API route the native app has
+  no equivalent of yet.
+- **Localisation.** Strings are hardcoded English placeholders in the route;
+  the real en/uk/hu tables are already in `@winelore/core/i18n`.
 
 **Nothing here has run on a device or simulator.** It was developed on Linux, where
 the JavaScript can be typechecked and bundled but not built or launched. What is
@@ -51,6 +63,11 @@ only what differs by platform:
 `src/api/client.ts` drives the same generated GraphQL SDK the web app uses,
 attaching a bearer token where the web goes through `/api/graphql`.
 
+The scorecard follows the same pattern. Every rule about what a judge may
+submit and what a score is worth lives in `@winelore/core/evaluation`;
+`useEvaluationForm` only holds React state around it. Nothing about scoring is
+reimplemented here, so the two platforms cannot disagree.
+
 One deliberate improvement over web: concurrent refreshes are deduplicated
 through a shared in-flight promise, so a screen firing several queries at once
 performs one refresh. The web app cannot do this across separate requests and
@@ -77,8 +94,16 @@ Verified here:
 3. **SecureStore's ~2048-byte advisory limit per value.** Fields are stored
    separately partly for this reason, but if AXUS ID access tokens run large,
    this is where it will surface. Check an actual token's length early.
-4. Liquid Glass rendering — requires an iOS 26 device or simulator.
+4. Liquid Glass rendering — requires an iOS 26 device or simulator. The
+   scorecard's submit bar is the first surface using it (`SubmitBar.tsx`),
+   falling back to an opaque bar below iOS 26.
 5. Native builds (`expo prebuild` / `expo run:ios`) have never been executed.
+6. Haptics. Every score selection fires `Haptics.selectionAsync()` and submit
+   fires a notification tap. These cannot be felt in a simulator — check them
+   on a device, since getting the weight wrong is worse than having none.
+7. The evaluation screen has never rendered against a real commission. Its
+   queries typecheck against the schema and bundle, but the shape of a live
+   template — especially a SmartProperty formula tree — has not been seen.
 
 ## Dependency versions
 

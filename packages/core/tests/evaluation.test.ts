@@ -20,6 +20,7 @@ import {
     isScoringComplete,
     orderPropertiesForDisplay,
     parseAttributes,
+    selectEvaluationTemplateEdition,
     selectVisibleAttributes,
     type EvaluationCategory,
     type EvaluationProperty,
@@ -281,4 +282,45 @@ test("isAlreadySubmittedError recognises a recorded evaluation", () => {
     assert.equal(isAlreadySubmittedError("REPLICA_NOT_STARTED"), true)
     assert.equal(isAlreadySubmittedError("Network request failed"), false)
     assert.equal(isAlreadySubmittedError(null), false)
+})
+
+test("selectEvaluationTemplateEdition prefers wine among usable editions", () => {
+    const fullCategory = { id: "c", name: "c", properties: [{ id: "p", code: "p", name: "p" }] }
+    const links = [
+        { beverageType: { code: "CIDER" }, templateEdition: { id: "cider", categories: [fullCategory] } },
+        { beverageType: { code: "WINE" }, templateEdition: { id: "wine", categories: [fullCategory] } },
+    ]
+    assert.equal(selectEvaluationTemplateEdition(links)?.id, "wine")
+})
+
+test("selectEvaluationTemplateEdition falls back to the first usable edition", () => {
+    const fullCategory = { id: "c", name: "c", properties: [{ id: "p", code: "p", name: "p" }] }
+    const links = [
+        { beverageType: { code: "CIDER" }, templateEdition: { id: "cider", categories: [fullCategory] } },
+    ]
+    assert.equal(selectEvaluationTemplateEdition(links)?.id, "cider")
+})
+
+test("selectEvaluationTemplateEdition rejects half-built templates", () => {
+    // A commission still in setup: categories present, properties not.
+    const emptyCategory = { id: "c", name: "c", properties: [] }
+    const missingCode = { id: "c", name: "c", properties: [{ id: "p", name: "p" }] }
+
+    assert.equal(selectEvaluationTemplateEdition([
+        { beverageType: { code: "WINE" }, templateEdition: { id: "w", categories: [emptyCategory] } },
+    ]), null)
+    assert.equal(selectEvaluationTemplateEdition([
+        { beverageType: { code: "WINE" }, templateEdition: { id: "w", categories: [missingCode] } },
+    ]), null)
+    assert.equal(selectEvaluationTemplateEdition([]), null)
+    assert.equal(selectEvaluationTemplateEdition(null), null)
+})
+
+test("selectEvaluationTemplateEdition skips an unusable wine edition for a usable one", () => {
+    const fullCategory = { id: "c", name: "c", properties: [{ id: "p", code: "p", name: "p" }] }
+    const links = [
+        { beverageType: { code: "WINE" }, templateEdition: { id: "wine", categories: [] } },
+        { beverageType: { code: "CIDER" }, templateEdition: { id: "cider", categories: [fullCategory] } },
+    ]
+    assert.equal(selectEvaluationTemplateEdition(links)?.id, "cider")
 })
