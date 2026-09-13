@@ -206,23 +206,49 @@ across the monorepo is worth more than a patch version on the web.
 reasons — without it npm leaves it under `node_modules/expo/`, where Metro's
 transformer cannot resolve it.
 
-## iOS only
+## iOS and Android, one codebase
 
-`app.config.ts` sets `platforms: ["ios"]`. The dev server otherwise also
-serves a web bundle, which needs `react-native-web`:
+`app.config.ts` sets `platforms: ["ios", "android"]`. Web is deliberately
+absent: the dev server would otherwise serve a web bundle needing
+`react-native-web`, and a browser tab left open on the Metro port is enough to
+trigger and fail it. The web product is the Next.js app in this same repo.
 
+```bash
+npx expo run:ios --device
+npx expo run:android
 ```
-Unable to resolve "react-native-web/dist/index" from "expo-router/build/ExpoRoot.js"
-```
 
-A browser tab left open on the Metro port is enough to trigger it. There is no
-reason to install `react-native-web` here — the web product is the Next.js app
-in this same repo. Add `"android"` to the list when an Android build is wanted.
+Almost nothing forks. Of ~2,250 lines in this app, three are platform-specific:
+the Liquid Glass availability check, keyboard-avoidance behaviour, and the
+submit bar's non-glass background. Everything below that — `@winelore/core` —
+is shared with the web app too.
+
+### What is genuinely per-platform
+
+- **Liquid Glass is iOS 26 only.** Android has no equivalent material; its
+  language is Material 3 elevation and tonal surfaces. `SubmitBar` uses
+  `GlassView` where available and a raised opaque surface otherwise, so the bar
+  reads as deliberately Android rather than as a glass effect that failed.
+- **Header options are split in `_layout.tsx`.** The iOS ones are not merely
+  ignored on Android: `headerTransparent` there puts content under an unblurred
+  header and makes it unreadable.
+- **Fonts.** iOS ships Menlo; Android has no such family and silently falls
+  back to sans, which looks broken rather than obviously wrong. Use the
+  `MONOSPACE` token in `theme.ts`.
+- **Haptics land differently.** Android's vibration API is coarser than the
+  Taptic Engine, so weights tuned on iOS will not transfer directly — retune on
+  a device.
+- **`keychainAccessible` in `storage.ts` is iOS-only** and harmlessly ignored on
+  Android, which stores through the Keystore instead.
+
+Write-once does not mean test-once: Android needs its own device pass, and the
+non-glass surfaces need an Android design review before shipping.
 
 ## Verifying a change: use the dev bundle, not `expo export`
 
 ```bash
-npm run check:bundle -w @winelore/mobile
+npm run check:bundle -w @winelore/mobile          # iOS
+npm run check:bundle:android -w @winelore/mobile  # Android
 ```
 
 `expo export` produces a **production** bundle, which omits dev-only modules —

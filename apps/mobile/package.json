@@ -8,7 +8,9 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "test": "node --import jiti/register --test tests/*.test.ts",
-    "check:bundle": "expo export:embed --platform ios --dev true --entry-file ../../node_modules/expo-router/entry.js --bundle-output /tmp/winelore-dev-bundle.js --assets-dest /tmp/winelore-dev-assets"
+    "check:bundle": "expo export:embed --platform ios --dev true --entry-file ../../node_modules/expo-router/entry.js --bundle-output /tmp/winelore-ios.js --assets-dest /tmp/winelore-ios",
+    "check:bundle:android": "expo export:embed --platform android --dev true --entry-file ../../node_modules/expo-router/entry.js --bundle-output /tmp/winelore-android.js --assets-dest /tmp/winelore-android",
+    "android": "expo run:android"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.7",

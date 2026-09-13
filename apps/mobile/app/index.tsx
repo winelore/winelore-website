@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics"
 import { Link } from "expo-router"
 import { useAuth } from "../src/auth/AuthProvider"
 import { describeAuthConfig } from "../src/auth/config"
+import { MONOSPACE } from "../src/theme"
 import { useTranslation } from "../src/i18n/LocaleProvider"
 import { LOCALES, LOCALE_LABELS } from "@winelore/core/i18n"
 
@@ -147,6 +148,6 @@ const styles = StyleSheet.create({
     localeLabel: { fontSize: 13, opacity: 0.7 },
     localeLabelSelected: { color: "white", opacity: 1, fontWeight: "600" },
     diagnostics: { marginTop: 20, alignItems: "center", gap: 2 },
-    diagnosticsLine: { fontSize: 11, opacity: 0.4, fontFamily: "Menlo" },
+    diagnosticsLine: { fontSize: 11, opacity: 0.4, fontFamily: MONOSPACE },
     error: { marginTop: 12, fontSize: 14, color: "#b3261e", textAlign: "center" },
 })

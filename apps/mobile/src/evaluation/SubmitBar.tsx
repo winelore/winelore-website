@@ -1,7 +1,7 @@
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { palette, radius, spacing, type } from "../theme"
+import { elevation, palette, radius, spacing, type } from "../theme"
 
 interface SubmitBarProps {
     rated: number
@@ -44,7 +44,14 @@ export function SubmitBar({
     return (
         <Container
             // GlassView ignores backgroundColor; the fallback needs one.
-            style={[styles.bar, !glass && styles.barFallback, { paddingBottom: insets.bottom + spacing.sm }]}
+            style={[
+                styles.bar,
+                !glass && styles.barFallback,
+                // Android separates a floating bar by lifting it, not by
+                // blurring what is behind it.
+                !glass && elevation(8),
+                { paddingBottom: insets.bottom + spacing.sm },
+            ]}
             {...(glass ? { glassEffectStyle: "regular" as const } : {})}
         >
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -94,6 +101,8 @@ const styles = StyleSheet.create({
         borderTopColor: palette.border,
     },
     barFallback: {
+        // Translucent on iOS below 26, opaque on Android where a bar is a
+        // raised surface rather than a see-through one.
         backgroundColor: Platform.select({ ios: "rgba(255,255,255,0.96)", default: palette.surface }),
     },
     content: { flexDirection: "row", alignItems: "center", gap: spacing.md },
