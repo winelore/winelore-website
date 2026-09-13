@@ -40,26 +40,28 @@ and safe to delete and regenerate. Pick your iPhone when prompted, and set a
 signing team in Xcode if the build stops on provisioning (a free Apple ID
 works for on-device development).
 
-**No AXUS ID credentials are needed to see the scorecard.** Tap *Open sample
-scorecard* on the home screen for the preview route: the real evaluator
-running on sample data, with no sign-in and no backend. That is the fastest
-way to judge the two things that cannot be checked anywhere else — haptics,
-which a simulator cannot produce, and Liquid Glass, which needs iOS 26
-hardware.
+No configuration step: `app.config.ts` reads the repo-root `.env` the web app
+already uses, so the client id and endpoints come across automatically.
 
-Sign-in additionally requires `EXPO_PUBLIC_AXUS_ID_CLIENT_ID` (see below);
-without it the app still launches, and only the sign-in button errors.
+Tap *Open sample scorecard* for the preview route — the real evaluator on
+sample data, no sign-in and no backend. That is the fastest way to judge the
+two things that cannot be checked anywhere else: haptics, which a simulator
+cannot produce, and Liquid Glass, which needs iOS 26 hardware.
 
-### A separate AXUS ID client is required
+The sign-in screen prints the client id, redirect URI and issuer it will
+actually use. A failed sign-in is nearly always a redirect URI outside the
+allowlist, and that value is derived at runtime rather than configured, so it
+is shown rather than left to guess at.
 
-The app cannot reuse the web client id. Native OAuth clients are **public** —
-they ship no secret, which is why PKCE is mandatory — and their redirect URIs
-are custom schemes rather than https URLs. Register a new client with:
+### One AXUS ID client, shared with the web
 
-- `winelore://callback` — release builds
-- the Expo development proxy URL printed by `npx expo start` — development
+AXUS ID issues no client secrets — every client is public and authenticates
+with PKCE — so the web app and this one use the same client id. It needs
+`winelore://callback` in its allowed redirect URIs alongside the web's https
+callback.
 
-`getRedirectUri()` in `src/auth/config.ts` resolves whichever applies.
+Expo Go would need an `exp://` proxy URL allowed too, but Expo Go cannot run
+this app (native modules), so the scheme form is the only one that matters.
 
 ## Architecture
 

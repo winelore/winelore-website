@@ -28,12 +28,25 @@ export function getAxusConfig(): AxusConfig {
 /**
  * Where AXUS ID sends the user back after sign-in.
  *
- * This resolves to `winelore://callback` in a release build and to an Expo Go
- * proxy URL in development, so both must be registered as allowed redirect URIs
- * on the AXUS ID client.
+ * In a development or release build this is the app's own scheme,
+ * `winelore://callback`. Expo Go would instead produce an `exp://` proxy URL,
+ * but Expo Go cannot run this app anyway — it depends on native modules — so
+ * the scheme form is what AXUS ID needs to allow.
+ *
+ * Shown on the sign-in screen so it can be checked against the allowlist
+ * without reading a log.
  */
 export function getRedirectUri(): string {
     return Linking.createURL("callback")
+}
+
+/** Non-secret configuration summary, for the sign-in screen's diagnostics. */
+export function describeAuthConfig(): { clientId: string; issuer: string; redirectUri: string } {
+    return {
+        clientId: env("EXPO_PUBLIC_AXUS_ID_CLIENT_ID", "(unset)"),
+        issuer: env("EXPO_PUBLIC_AXUS_ID_ISSUER", DEFAULT_AXUS_ISSUER),
+        redirectUri: getRedirectUri(),
+    }
 }
 
 /**

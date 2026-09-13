@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import * as Haptics from "expo-haptics"
 import { Link } from "expo-router"
 import { useAuth } from "../src/auth/AuthProvider"
+import { describeAuthConfig } from "../src/auth/config"
 
 export default function Index() {
     const { session, signIn, signOut, error } = useAuth()
@@ -32,6 +33,7 @@ export default function Index() {
                 </Pressable>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <PreviewLink />
+                <AuthDiagnostics />
             </View>
         )
     }
@@ -51,6 +53,24 @@ export default function Index() {
                 <Text style={styles.secondaryLabel}>Sign out</Text>
             </Pressable>
             <PreviewLink />
+        </View>
+    )
+}
+
+/**
+ * The values the OAuth request will actually use.
+ *
+ * Sign-in failures are almost always a redirect URI that does not match the
+ * allowlist, and the redirect is derived at runtime rather than configured —
+ * so it is shown rather than left to be guessed at.
+ */
+function AuthDiagnostics() {
+    const config = describeAuthConfig()
+    return (
+        <View style={styles.diagnostics}>
+            <Text style={styles.diagnosticsLine}>client {config.clientId}</Text>
+            <Text style={styles.diagnosticsLine}>{config.redirectUri}</Text>
+            <Text style={styles.diagnosticsLine}>{config.issuer}</Text>
         </View>
     )
 }
@@ -85,5 +105,7 @@ const styles = StyleSheet.create({
     buttonLabel: { color: "white", fontSize: 16, fontWeight: "600" },
     secondaryButton: { marginTop: 16, paddingVertical: 12, paddingHorizontal: 24 },
     secondaryLabel: { fontSize: 16, opacity: 0.7 },
+    diagnostics: { marginTop: 20, alignItems: "center", gap: 2 },
+    diagnosticsLine: { fontSize: 11, opacity: 0.4, fontFamily: "Menlo" },
     error: { marginTop: 12, fontSize: 14, color: "#b3261e", textAlign: "center" },
 })
