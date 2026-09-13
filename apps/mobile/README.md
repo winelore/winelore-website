@@ -196,6 +196,19 @@ across the monorepo is worth more than a patch version on the web.
 reasons — without it npm leaves it under `node_modules/expo/`, where Metro's
 transformer cannot resolve it.
 
+## iOS only
+
+`app.config.ts` sets `platforms: ["ios"]`. The dev server otherwise also
+serves a web bundle, which needs `react-native-web`:
+
+```
+Unable to resolve "react-native-web/dist/index" from "expo-router/build/ExpoRoot.js"
+```
+
+A browser tab left open on the Metro port is enough to trigger it. There is no
+reason to install `react-native-web` here — the web product is the Next.js app
+in this same repo. Add `"android"` to the list when an Android build is wanted.
+
 ## Verifying a change: use the dev bundle, not `expo export`
 
 ```bash

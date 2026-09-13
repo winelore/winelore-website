@@ -41,6 +41,11 @@ const config: ExpoConfig = {
     version: "0.1.0",
     orientation: "portrait",
     userInterfaceStyle: "automatic",
+    // iOS only. Without this the dev server also serves a web bundle, which
+    // needs react-native-web — a dependency this app has no use for, since the
+    // web product is the Next.js app in this same repo. A browser tab left open
+    // on the Metro port is enough to trigger that bundle and fail it.
+    platforms: ["ios"],
     ios: {
         supportsTablet: true,
         bundleIdentifier: "com.thewinelore.winelore",
