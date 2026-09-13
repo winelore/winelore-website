@@ -1,135 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { parseJwt } from "@/lib/pkce";
-import { deriveRefreshTokenTtl } from "@/lib/tokenTtl";
-import { axusSdk } from "@/lib/axusClient";
+import {
+  exchangeAuthorizationCode,
+  sessionFromTokenResponse,
+  validateCallbackParams,
+} from "@winelore/core/auth";
+import { getAxusConfig } from "@/lib/axusConfig";
+import { writeSessionCookies } from "@/lib/authCookies";
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const error = params.get("error");
-  if (error) {
-    console.error("OAuth callback error:", error);
-    return NextResponse.redirect(new URL(`/?error=${error}`, request.url));
-  }
-
-  const code = params.get("code");
-  const state = params.get("state");
   const cookieStore = await cookies();
-  const expectedState = cookieStore.get("axus_oauth_state")?.value;
-  const codeVerifier = cookieStore.get("axus_code_verifier")?.value;
 
-  if (!code || !state) {
-    // Missing OAuth parameters, likely a direct navigation to this route
-    return NextResponse.redirect(new URL("/?error=missing_oauth_params", request.url));
+  const validation = validateCallbackParams(
+    {
+      code: params.get("code"),
+      state: params.get("state"),
+      error: params.get("error"),
+    },
+    {
+      state: cookieStore.get("axus_oauth_state")?.value,
+      codeVerifier: cookieStore.get("axus_code_verifier")?.value,
+    },
+  );
+
+  if (!validation.ok) {
+    console.error("OAuth callback rejected:", validation.reason);
+    return NextResponse.redirect(new URL(`/?error=${validation.reason}`, request.url));
   }
 
-  if (!expectedState || state !== expectedState || !codeVerifier) {
-    console.error("Invalid state or verifier", { code, state, expectedState, codeVerifier });
-    return NextResponse.redirect(new URL("/?error=invalid_state", request.url));
-  }
-
-  const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";
+  const config = getAxusConfig();
   const redirectUri = new URL("/callback", request.url).toString();
 
   try {
-    const tokenResponse = await fetch(`${issuer}/oauth/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        client_id: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
-        code_verifier: codeVerifier,
-      }),
+    const tokens = await exchangeAuthorizationCode(config, {
+      code: validation.code,
+      redirectUri,
+      codeVerifier: validation.codeVerifier,
     });
+    const session = await sessionFromTokenResponse(config, tokens);
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error("Token exchange failed:", errorText);
-      return NextResponse.redirect(new URL("/?error=token_exchange", request.url));
-    }
+    writeSessionCookies(cookieStore, session);
 
-    const tokens = await tokenResponse.json();
-    const idTokenPayload = parseJwt(tokens.id_token);
-    
-    if (!idTokenPayload || !idTokenPayload.sub) {
-      console.error("Invalid ID Token payload", idTokenPayload);
-      return NextResponse.redirect(new URL("/?error=invalid_id_token", request.url));
-    }
-
-    const auid = idTokenPayload.sub;
-    const username = idTokenPayload.preferred_username || "axus_user";
-
-    // Fetch display name from AXUS GraphQL API
-    let displayName = `@${username}`;
-    try {
-      const res = await axusSdk.UserDetails({ auid: String(auid) });
-      const defaultUsername = res?.usernames?.defaultUsername || username;
-      let varId = res?.defaultVariation?.variationId;
-      if (!varId && res?.variations && res.variations.length > 0) {
-        varId = res.variations[0].id;
-      }
-
-      if (varId) {
-        const nameRes = await axusSdk.VariationName({ variationId: varId });
-        const nameText = nameRes?.name?.displayName?.trim();
-        if (nameText && nameText !== "Default Variation") {
-          displayName = nameText;
-        } else {
-          displayName = `@${defaultUsername}`;
-        }
-      } else {
-        displayName = `@${defaultUsername}`;
-      }
-    } catch (err) {
-      console.error("Failed to fetch user details during callback:", err);
-    }
-
-    // Set cookies (secure: false as requested by user)
-    cookieStore.set("auid", String(auid), {
-      httpOnly: false, // accessible client-side (e.g. by js-cookie)
-      sameSite: "lax",
-      secure: false,
-      path: "/",
-      maxAge: tokens.expires_in || 43200
-    });
-
-    cookieStore.set("username", String(username), {
-      httpOnly: false, // accessible client-side
-      sameSite: "lax",
-      secure: false,
-      path: "/",
-      maxAge: tokens.expires_in || 43200
-    });
-
-    cookieStore.set("displayName", String(displayName), {
-      httpOnly: false, // accessible client-side
-      sameSite: "lax",
-      secure: false,
-      path: "/",
-      maxAge: tokens.expires_in || 43200
-    });
-
-    cookieStore.set("axus_access_token", tokens.access_token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      path: "/",
-      maxAge: tokens.expires_in || 43200
-    });
-
-    if (tokens.refresh_token) {
-      cookieStore.set("axus_refresh_token", tokens.refresh_token, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: false,
-        path: "/",
-        maxAge: deriveRefreshTokenTtl(tokens, tokens.refresh_token),
-      });
-    }
-
-    // Clean up temporary OAuth cookies
+    // The PKCE handshake is finished; these must not outlive it.
     cookieStore.delete("axus_oauth_state");
     cookieStore.delete("axus_code_verifier");
 

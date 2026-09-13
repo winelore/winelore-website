@@ -12,7 +12,8 @@
     "codegen": "graphql-codegen",
     "codegen:watch": "graphql-codegen --watch",
     "typecheck": "tsc --noEmit",
-    "check:core": "node scripts/check-core-portability.mjs"
+    "check:core": "node scripts/check-core-portability.mjs",
+    "test:core": "node --import jiti/register --test packages/core/tests/*.test.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.64",

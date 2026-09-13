@@ -12,7 +12,8 @@
     "./gql/sdk": "./src/gql/sdk.ts",
     "./gql/axus/sdk": "./src/gql/axus/sdk.ts",
     "./i18n": "./src/i18n/index.ts",
-    "./i18n/types": "./src/i18n/types.ts"
+    "./i18n/types": "./src/i18n/types.ts",
+    "./auth": "./src/auth/index.ts"
   },
   "dependencies": {
     "graphql": "^16.14.1"

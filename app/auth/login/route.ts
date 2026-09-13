@@ -1,40 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createPkcePair } from "@/lib/pkce";
+import { buildAuthorizeUrl, createPkcePair } from "@winelore/core/auth";
+import { getAxusConfig, webCrypto } from "@/lib/axusConfig";
 
 export async function GET(request: NextRequest) {
-  const { codeVerifier, codeChallenge } = await createPkcePair();
-  const state = crypto.randomUUID();
+  const config = getAxusConfig();
+  const { codeVerifier, codeChallenge } = await createPkcePair(webCrypto);
+  const state = webCrypto.randomUuid();
 
   const cookieStore = await cookies();
-  cookieStore.set("axus_oauth_state", state, { 
-    httpOnly: true, 
-    sameSite: "lax", 
-    path: "/",
-    secure: false
-  });
-  cookieStore.set("axus_code_verifier", codeVerifier, { 
-    httpOnly: true, 
-    sameSite: "lax", 
-    path: "/",
-    secure: false
-  });
+  const tempCookie = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: false };
+  cookieStore.set("axus_oauth_state", state, tempCookie);
+  cookieStore.set("axus_code_verifier", codeVerifier, tempCookie);
 
   const redirectUri = new URL("/callback", request.url).toString();
 
-  const params = new URLSearchParams({
-    response_type: "code",
-    client_id: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
-    redirect_uri: redirectUri,
-    scope: "openid profile offline_access",
-    state,
-    code_challenge: codeChallenge,
-    code_challenge_method: "S256",
-    prompt: "consent select_account",
-  });
-
-  const issuer = process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "https://axusid-website.vercel.app";
   return NextResponse.redirect(
-    `${issuer}/authorize?${params}`,
+    buildAuthorizeUrl(config, { redirectUri, state, codeChallenge }),
   );
 }
