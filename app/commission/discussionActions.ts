@@ -63,48 +63,6 @@ async function getActorHeaders(): Promise<{ headers: Record<string, string>; aui
 }
 
 /**
- * * Sets the discussion policy for a commission.
- *  * Uses the real backend mutation: setCommissionDiscussionPolicy(id: ID!, policy: DiscussionPolicy!): Commission!
- */
-export async function setCommissionDiscussionPolicyAction(
-    commissionId: string,
-    policy: DiscussionPolicy,
-): Promise<{ success: boolean; policy?: DiscussionPolicy; error?: string }> {
-    const cleanCommissionId = typeof commissionId === "string" ? commissionId.trim() : ""
-    if (!isValidId(cleanCommissionId)) {
-        return { success: false, error: "Invalid commissionId parameter" }
-    }
-
-    try {
-        const { headers } = await getActorHeaders()
-        const data = await fetchGraphQLRaw<any, { id: string; policy: DiscussionPolicy }>(
-            `
-        mutation SetCommissionDiscussionPolicy($id: ID!, $policy: DiscussionPolicy!) {
-          setCommissionDiscussionPolicy(id: $id, policy: $policy) {
-            id
-            discussionPolicy
-          }
-        }
-      `,
-            { id: cleanCommissionId, policy },
-            headers,
-        )
-
-        if (data?.setCommissionDiscussionPolicy?.discussionPolicy !== undefined) {
-            const returnedPolicy = data.setCommissionDiscussionPolicy.discussionPolicy as DiscussionPolicy
-            mockDiscussionPolicyStore.set(cleanCommissionId, returnedPolicy)
-            return { success: true, policy: returnedPolicy }
-        }
-    } catch (err: any) {
-        console.warn("GraphQL SetCommissionDiscussionPolicy fallback to memory store:", err?.message || err)
-    }
-
-    // Fallback to local memory store
-    mockDiscussionPolicyStore.set(cleanCommissionId, policy)
-    return { success: true, policy }
-}
-
-/**
  * Fetches discussion messages for a specific ReplicaCandidate.
  * Ordered chronologically by createdAt ascending.
  */
@@ -121,13 +79,18 @@ export async function getDiscussionMessagesAction(
         const data = await fetchGraphQLRaw<any, { replicaCandidateId: string }>(
             `
         query GetDiscussionMessages($replicaCandidateId: ID!) {
-          discussionMessages(replicaCandidateId: $replicaCandidateId) {
-            id
-            replicaCandidateId
-            authorAuid
-            text
-            createdAt
-            replyToMessageId
+          discussionMessagesByReplicaCandidate(replicaCandidateId: $replicaCandidateId) {
+            items {
+              id
+              replicaCandidateId
+              authorAuid
+              text
+              replyToId
+              quoteStartIndex
+              quoteEndIndex
+              createdAt
+              editedAt
+            }
           }
         }
       `,
@@ -135,20 +98,21 @@ export async function getDiscussionMessagesAction(
             headers,
         )
 
-        if (Array.isArray(data?.discussionMessages)) {
-            const messages: DiscussionMessage[] = data.discussionMessages.map((m: any) => ({
+        const rawItems = data?.discussionMessagesByReplicaCandidate?.items
+        if (Array.isArray(rawItems)) {
+            const messages: DiscussionMessage[] = rawItems.map((m: any) => ({
                 id: String(m.id),
                 replicaCandidateId: String(m.replicaCandidateId),
                 authorAuid: Array.isArray(m.authorAuid) ? m.authorAuid.flat() : [Number(m.authorAuid)],
                 text: String(m.text || ""),
                 createdAt: m.createdAt || new Date().toISOString(),
-                replyToMessageId: m.replyToMessageId ? String(m.replyToMessageId) : null,
+                replyToMessageId: m.replyToId ? String(m.replyToId) : null,
             }))
             mockMessagesStore.set(cleanId, messages)
             return { success: true, messages }
         }
     } catch (err: any) {
-        // Upstream GraphQL not yet implemented or error -> fallback to mock store
+        // Upstream GraphQL error -> fallback to mock store
     }
 
     const messages = mockMessagesStore.get(cleanId) || []
@@ -183,36 +147,39 @@ export async function sendDiscussionMessageAction(
     try {
         const data = await fetchGraphQLRaw<any, { input: any }>(
             `
-        mutation SendDiscussionMessage($input: SendDiscussionMessageInput!) {
-          sendDiscussionMessage(input: $input) {
+        mutation PostDiscussionMessage($input: PostDiscussionMessageInput!) {
+          postDiscussionMessage(input: $input) {
             id
             replicaCandidateId
             authorAuid
             text
+            replyToId
+            quoteStartIndex
+            quoteEndIndex
             createdAt
-            replyToMessageId
+            editedAt
           }
         }
       `,
             {
                 input: {
-                    replicaCandidateId,
+                    replicaCandidateId: cleanId,
                     text: trimmedText,
-                    replyToMessageId: replyToMessageId || null,
+                    replyToId: replyToMessageId || null,
                 },
             },
             actorInfo.headers,
         )
 
-        if (data?.sendDiscussionMessage) {
-            const raw = data.sendDiscussionMessage
+        if (data?.postDiscussionMessage) {
+            const raw = data.postDiscussionMessage
             const message: DiscussionMessage = {
                 id: String(raw.id),
                 replicaCandidateId: String(raw.replicaCandidateId),
                 authorAuid: Array.isArray(raw.authorAuid) ? raw.authorAuid.flat() : [Number(raw.authorAuid)],
                 text: String(raw.text || trimmedText),
                 createdAt: raw.createdAt || new Date().toISOString(),
-                replyToMessageId: raw.replyToMessageId ? String(raw.replyToMessageId) : null,
+                replyToMessageId: raw.replyToId ? String(raw.replyToId) : null,
             }
 
             // Sync mock store as well
@@ -222,7 +189,7 @@ export async function sendDiscussionMessageAction(
             return { success: true, message }
         }
     } catch (err: any) {
-        console.warn("GraphQL SendDiscussionMessage fallback to memory store:", err?.message || err)
+        console.warn("GraphQL PostDiscussionMessage fallback to memory store:", err?.message || err)
     }
 
     // Fallback creation for local testing and when backend GraphQL is not yet deployed

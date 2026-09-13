@@ -27,6 +27,7 @@ import {
 import { annotateEvaluationsWithDelta, formatSignedDiff } from "@/lib/deltaOutliers"
 import type { PropertyMeta } from "../../../../propertyMap"
 import { BackLink } from "@/components/BackLink"
+import { DiscussionDrawer } from "@/components/discussion/DiscussionDrawer"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -47,6 +48,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [wineJumperMiniGameEnabled, setWineJumperMiniGameEnabled] = useState(false);
     const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
     const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
+    const [discussionsEnabled, setDiscussionsEnabled] = useState(false);
+    const [commissionName, setCommissionName] = useState<string>("");
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [currentPanelName, setCurrentPanelName] = useState<string>("");
 
@@ -87,7 +90,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             if (!isMounted || isRedirecting || isFetching) return;
             isFetching = true;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, replicaStatus: newReplicaStatus } =
+                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, discussionsEnabled: newDiscussionsEnabled, commissionName: newCommissionName, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, replicaStatus: newReplicaStatus } =
                     await getWaitDataAction(commissionId, replicaId);
 
                 if (!isMounted || isRedirecting) return;
@@ -104,6 +107,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 setWineJumperMiniGameEnabled(newWineJumperEnabled);
                 setVoiceCommentsEnabled(newVoiceCommentsEnabled);
                 setPropertyCommentsEnabled(newPropertyCommentsEnabled);
+                setDiscussionsEnabled(Boolean(newDiscussionsEnabled));
+                if (newCommissionName) setCommissionName(newCommissionName);
                 setCurrentPanelName(newPanelName || "");
                 const commentFlags = {
                     propertyCommentsEnabled: newPropertyCommentsEnabled,
@@ -499,6 +504,17 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     {t("commission.waitingOtherExperts")}
                 </div>
             </main>
+
+            {discussionsEnabled && currentCandidateId && (
+                <DiscussionDrawer
+                    replicaCandidateId={currentCandidateId}
+                    candidateCode={currentCandidateCode || ""}
+                    beverageName={currentCandidateBeverageName}
+                    commissionName={commissionName}
+                    members={members}
+                    discussionsEnabled={discussionsEnabled}
+                />
+            )}
         </div>
     );
 }

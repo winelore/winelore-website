@@ -3,7 +3,7 @@
 import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
 import { axusSdk } from '../../lib/axusClient';
 import { getAxusEndpoint } from '../../lib/graphqlEndpoint';
-import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
+import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument, type DiscussionPolicy } from '../../src/gql/graphql';
 import {
     GET_COMMISSION_TEMPLATES_DEEP_QUERY,
     type GetCommissionTemplatesDeepResult,
@@ -23,6 +23,7 @@ import {
 import type { PropertyMeta } from "./propertyMap";
 
 export type { MyTastingSummaryData } from "./expertRanking";
+export type { DiscussionPolicy } from "../../src/gql/graphql";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -742,7 +743,7 @@ export async function getCommissionDataAction(commissionId: string) {
                 beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
                 evaluationTemplateEdition: legacyTemplateEdition
             },
-            discussionPolicy: ((commission as any)?.discussionPolicy ?? "ALWAYS") as "ALWAYS" | "AFTER_EVALUATION" | "DISABLED",
+            discussionPolicy: (commission.discussionPolicy ?? "ALWAYS") as "ALWAYS" | "AFTER_EVALUATION" | "DISABLED",
             templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
             candidateCount: candidatesOrder.length,
             panels: commission.panels || [],
@@ -911,17 +912,20 @@ async function getActorHeaders(): Promise<Record<string, string>> {
 }
 
 
-function getCompetitionFeatureFlags(competition: {
+function getCompetitionFeatureFlags(commission: {
     wineJumperMiniGameEnabled?: boolean;
     voiceCommentsEnabled?: boolean;
     propertyCommentsEnabled?: boolean;
+    discussionPolicy?: "ALWAYS" | "AFTER_EVALUATION" | "DISABLED";
     discussionsEnabled?: boolean;
 } | null | undefined) {
+    const policy = commission?.discussionPolicy ?? "ALWAYS";
     return {
-        wineJumperMiniGameEnabled: competition?.wineJumperMiniGameEnabled ?? false,
-        voiceCommentsEnabled: competition?.voiceCommentsEnabled ?? false,
-        propertyCommentsEnabled: competition?.propertyCommentsEnabled ?? false,
-        discussionsEnabled: ((competition as any)?.discussionPolicy ?? "ALWAYS") !== "DISABLED",
+        wineJumperMiniGameEnabled: commission?.wineJumperMiniGameEnabled ?? false,
+        voiceCommentsEnabled: commission?.voiceCommentsEnabled ?? false,
+        propertyCommentsEnabled: commission?.propertyCommentsEnabled ?? false,
+        discussionsEnabled: policy !== "DISABLED",
+        discussionPolicy: policy,
     };
 }
 
@@ -949,6 +953,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         currentReplicaPanelId: null as string | null,
         nextPanelId: null as string | null,
         nextPanelFirstCandidateId: null as string | null,
+        commissionName: "",
         ...emptyFeatureFlags,
     };
 
@@ -1081,6 +1086,7 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             currentReplicaPanelId: currentPanel?.id || null,
             nextPanelId: nextPanel?.id || null,
             nextPanelFirstCandidateId: nextPanel?.replicaCandidates?.[0]?.id || null,
+            commissionName: commission.name || "",
             ...featureFlags,
         };
     } catch (err: any) {
@@ -1276,6 +1282,25 @@ export async function setCommissionBeverageOriginDuringEvaluationEnabledAction(c
     } catch (err: any) {
         console.error("Server Action Error (setCommissionBeverageOriginDuringEvaluationEnabledAction):", err);
         return { success: false, error: err?.message || "Failed to update beverage origin setting" };
+    }
+}
+
+export async function setCommissionDiscussionPolicyAction(commissionId: string, policy: DiscussionPolicy) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionDiscussionPolicy($id: ID!, $policy: DiscussionPolicy!) {
+                setCommissionDiscussionPolicy(id: $id, policy: $policy) {
+                    id
+                    discussionPolicy
+                }
+            }
+        `, { id: commissionId, policy }, headers);
+        return { success: true, policy: data?.setCommissionDiscussionPolicy?.discussionPolicy };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionDiscussionPolicyAction):", err);
+        return { success: false, error: err?.message || "Failed to update discussion policy setting" };
     }
 }
 
