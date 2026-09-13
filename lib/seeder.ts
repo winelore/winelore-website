@@ -40,6 +40,91 @@ function cleanString(str?: string | null, fallback = ''): string {
 const isValidUuid = (id?: string | null) => 
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id || '');
 
+interface SeedEvaluationProperty {
+  code: string;
+  typename: string;
+  name?: string;
+  isRequired?: boolean;
+  isResult?: boolean;
+  intMinLimit?: number | null;
+  intMaxLimit?: number | null;
+  intDefaultValue?: number | null;
+  doubleMinLimit?: number | null;
+  doubleMaxLimit?: number | null;
+  doubleDefaultValue?: number | null;
+  discreteAllowedValues?: number[] | null;
+  discreteDefaultValue?: number | null;
+  enumAllowedValues?: string[] | null;
+  enumDefaultValue?: string | null;
+  boolDefaultValue?: boolean | null;
+}
+
+function generatePropertyValue(prop: SeedEvaluationProperty): string {
+  switch (prop.typename) {
+    case 'DiscreteNumbersProperty': {
+      const allowed = (prop.discreteAllowedValues || []).filter((v): v is number => typeof v === 'number');
+      if (allowed.length > 0) {
+        const sorted = [...allowed].sort((a, b) => a - b);
+        // Wine judges typically rate in the upper tier (good to excellent),
+        // with occasional lower rating (15% chance).
+        const pool = Math.random() < 0.15 || sorted.length <= 2
+          ? sorted
+          : sorted.slice(Math.floor(sorted.length / 2));
+        const chosen = pool[Math.floor(Math.random() * pool.length)] ?? sorted[sorted.length - 1];
+        return chosen.toString();
+      }
+      if (prop.discreteDefaultValue != null) return prop.discreteDefaultValue.toString();
+      return '1';
+    }
+
+    case 'EnumProperty': {
+      const allowed = (prop.enumAllowedValues || []).filter((v): v is string => typeof v === 'string' && v.length > 0);
+      if (allowed.length > 0) {
+        const pool = Math.random() < 0.15 || allowed.length <= 2
+          ? allowed
+          : allowed.slice(Math.floor(allowed.length / 2));
+        const chosen = pool[Math.floor(Math.random() * pool.length)] ?? allowed[0];
+        return chosen;
+      }
+      if (prop.enumDefaultValue) return prop.enumDefaultValue;
+      return 'DEFAULT';
+    }
+
+    case 'BooleanProperty': {
+      if (prop.boolDefaultValue != null) {
+        return prop.boolDefaultValue.toString();
+      }
+      return Math.random() < 0.9 ? 'true' : 'false';
+    }
+
+    case 'IntProperty': {
+      const min = prop.intMinLimit ?? 0;
+      const max = prop.intMaxLimit != null ? prop.intMaxLimit : (min > 50 ? min + 50 : 100);
+      const effectiveMin = Math.min(min, max);
+      const effectiveMax = Math.max(min, max);
+      const range = Math.max(1, effectiveMax - effectiveMin);
+      const minAllowed = effectiveMin + Math.floor(range / 2);
+      const score = Math.floor(Math.random() * (effectiveMax - minAllowed + 1)) + minAllowed;
+      return score.toString();
+    }
+
+    case 'DoubleProperty': {
+      const min = prop.doubleMinLimit ?? 0;
+      const max = prop.doubleMaxLimit != null ? prop.doubleMaxLimit : 100;
+      const effectiveMin = Math.min(min, max);
+      const effectiveMax = Math.max(min, max);
+      const range = Math.max(0.1, effectiveMax - effectiveMin);
+      const minAllowed = effectiveMin + range / 2;
+      const score = Math.random() * (effectiveMax - minAllowed) + minAllowed;
+      return (Math.round(score * 100) / 100).toFixed(2);
+    }
+
+    default: {
+      return (Math.floor(Math.random() * 5) + 1).toString();
+    }
+  }
+}
+
 export async function seedCompetitionScenarioAction(data: SeederFormData, log: (msg: string) => void) {
   try {
     log('🚀 Початок генерації сценарію Data Seeder (New State Machine)...');
@@ -67,7 +152,7 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
     // Fetch default beverage type and matching evaluation template
     let beverageTypeId = '';
     let activeTemplateEditionId = '';
-    let evaluationProperties: { code: string, min: number, max: number }[] = [];
+    let evaluationProperties: SeedEvaluationProperty[] = [];
 
     try {
       const bevTypesRes = await sdk.DevGetBeverageTypes();
@@ -146,14 +231,29 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
                 properties {
                   __typename
                   code
+                  name
+                  isRequired
                   isResult
-                  ... on DoubleProperty {
-                    doubleMin: minLimit
-                    doubleMax: maxLimit
+                  ... on BooleanProperty {
+                    boolDefaultValue: defaultValue
                   }
                   ... on IntProperty {
-                    intMin: minLimit
-                    intMax: maxLimit
+                    intMinLimit: minLimit
+                    intMaxLimit: maxLimit
+                    intDefaultValue: defaultValue
+                  }
+                  ... on DoubleProperty {
+                    doubleMinLimit: minLimit
+                    doubleMaxLimit: maxLimit
+                    doubleDefaultValue: defaultValue
+                  }
+                  ... on EnumProperty {
+                    enumAllowedValues: allowedValues
+                    enumDefaultValue: defaultValue
+                  }
+                  ... on DiscreteNumbersProperty {
+                    discreteAllowedValues: allowedValues
+                    discreteDefaultValue: defaultValue
                   }
                 }
               }
@@ -166,6 +266,9 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
           body: JSON.stringify({ query, variables: { id: activeTemplateEditionId } })
         });
         const tplData = await tplRes.json();
+        if (tplData?.errors?.length) {
+          log(`⚠️ Помилка завантаження шаблону з GraphQL: ${tplData.errors.map((e: any) => e.message).join('; ')}`);
+        }
         const tplEdition = tplData?.data?.evaluationTemplateEdition;
         if (tplEdition?.template?.beverageType?.id && (!selectedTemplate || !selectedTemplate.template?.beverageType?.id)) {
           beverageTypeId = tplEdition.template.beverageType.id;
@@ -178,16 +281,24 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         categories.forEach((cat: any) => {
           cat.properties?.forEach((prop: any) => {
             if (prop.__typename !== "SmartProperty") {
-              let min = 0;
-              let max = 100;
-              if (prop.__typename === "DoubleProperty") {
-                min = prop.doubleMin ?? 0;
-                max = prop.doubleMax ?? 100;
-              } else if (prop.__typename === "IntProperty") {
-                min = prop.intMin ?? 0;
-                max = prop.intMax ?? 100;
-              }
-              evaluationProperties.push({ code: prop.code, min, max });
+              evaluationProperties.push({
+                code: prop.code,
+                typename: prop.__typename,
+                name: prop.name,
+                isRequired: prop.isRequired,
+                isResult: prop.isResult,
+                intMinLimit: prop.intMinLimit,
+                intMaxLimit: prop.intMaxLimit,
+                intDefaultValue: prop.intDefaultValue,
+                doubleMinLimit: prop.doubleMinLimit,
+                doubleMaxLimit: prop.doubleMaxLimit,
+                doubleDefaultValue: prop.doubleDefaultValue,
+                discreteAllowedValues: prop.discreteAllowedValues,
+                discreteDefaultValue: prop.discreteDefaultValue,
+                enumAllowedValues: prop.enumAllowedValues,
+                enumDefaultValue: prop.enumDefaultValue,
+                boolDefaultValue: prop.boolDefaultValue,
+              });
             }
           });
         });
@@ -466,12 +577,10 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
                 for (const member of allMembers) {
                   try {
                     const scores = evaluationProperties.length > 0 
-                      ? evaluationProperties.map(prop => {
-                          const range = Math.max(1, prop.max - prop.min);
-                          const minAllowed = prop.min + Math.floor(range / 2);
-                          const score = Math.floor(Math.random() * (prop.max - minAllowed + 1)) + minAllowed;
-                          return { code: prop.code, value: score.toString() };
-                        })
+                      ? evaluationProperties.map(prop => ({
+                          code: prop.code,
+                          value: generatePropertyValue(prop)
+                        }))
                       : [
                           { code: "example", value: (Math.floor(Math.random() * 5) + 1).toString() }
                         ];
