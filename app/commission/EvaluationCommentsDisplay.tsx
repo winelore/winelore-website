@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
-import type { PropertyMeta } from "./propertyMap";
-import { formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore";
+import { formatPropertyScoreValue, hasStoredScoreValue } from '@winelore/core';
+import type { PropertyMeta } from '@winelore/core';
 
 export type CompetitionFeatureFlags = {
     propertyCommentsEnabled: boolean;

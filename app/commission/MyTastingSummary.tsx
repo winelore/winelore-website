@@ -10,7 +10,7 @@ import {
     MemberEvaluationSection,
 } from "./EvaluationCommentsDisplay"
 import type { ExpertBeverageSummaryEntry, MyTastingSummaryData } from "./expertRanking"
-import { formatPropertyScoreValue } from "@/lib/formatPropertyScore"
+import { formatPropertyScoreValue } from '@winelore/core'
 import {
     DropdownMenu,
     DropdownMenuContent,

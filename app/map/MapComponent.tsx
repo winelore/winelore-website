@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import type {
     WineRegionFeatureCollection,
     WineRegionLayer,
-} from '@/lib/wineRegionTypes';
+} from '@winelore/core';
 import { useTranslation } from '@/lib/i18n/context';
 
 // Кастомна іконка без тіні

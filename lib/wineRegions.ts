@@ -6,7 +6,7 @@ import type {
     WineRegionFeatureCollection,
     WineRegionLayer,
     WineRegionPosition,
-} from "@/lib/wineRegionTypes"
+} from '@winelore/core'
 
 interface WineRegionDataset extends WineRegionFeatureCollection {
     metadata?: Record<string, unknown>

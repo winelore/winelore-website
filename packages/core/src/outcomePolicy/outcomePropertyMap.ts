@@ -65,7 +65,7 @@ export function buildOutcomePropertyMap(
     return map
 }
 
-import { parseStoredBoolean } from "@/lib/formatPropertyScore"
+import { parseStoredBoolean } from "../formatPropertyScore"
 
 function parseBooleanOutcomeValue(value: unknown): boolean | null {
     if (typeof value === "boolean") return value

@@ -6,7 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useTranslation } from "@/lib/i18n/context"
-import type { MessageKey } from "@/lib/i18n"
+import type { MessageKey } from '@winelore/core/i18n'
 import { BadgeCheck } from "lucide-react"
 
 // These five are the only routes in the menu with no dedicated tab in

@@ -1,5 +1,5 @@
-import { messages } from "./index"
-import type { Locale } from "./types"
+import { messages } from '@winelore/core/i18n'
+import type { Locale } from '@winelore/core/i18n/types'
 
 const memoryCache = new Map<string, string>()
 

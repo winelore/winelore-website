@@ -2,7 +2,7 @@
 import { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
-import { getSdk } from '../src/gql/sdk';
+import { getSdk } from '@winelore/core/gql/sdk';
 import { getGraphQLEndpoint } from './graphqlEndpoint';
 
 const GRAPHQL_ENDPOINT = getGraphQLEndpoint();

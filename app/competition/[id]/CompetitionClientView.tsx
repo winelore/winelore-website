@@ -9,7 +9,7 @@ import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavAction, useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
-import { getDateLocale } from "@/lib/i18n"
+import { getDateLocale } from '@winelore/core/i18n'
 import Link from "next/link"
 import {
     startCompetitionAction,
@@ -20,7 +20,7 @@ import {
     createCommission
 } from "../actions"
 import { BackLink } from "@/components/BackLink"
-import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
+import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from '@winelore/core';
 
 function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)

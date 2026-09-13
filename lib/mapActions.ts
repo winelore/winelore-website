@@ -8,7 +8,7 @@ import {
 import type {
     WineRegionBounds,
     WineRegionFeatureCollection,
-} from "@/lib/wineRegionTypes"
+} from '@winelore/core'
 
 const globalForMapCache = globalThis as typeof globalThis & {
     reverseGeocodeCache?: Map<string, {

@@ -32,7 +32,7 @@ import { isReplicaCandidateFinished } from "../../replicaUtils"
 import { CandidateWizardModal } from "./CandidateWizardModal"
 import { EditCandidateCodeModal } from "./EditCandidateCodeModal"
 import { useTranslation } from "@/lib/i18n/context"
-import type { MessageKey } from "@/lib/i18n"
+import type { MessageKey } from '@winelore/core/i18n'
 import {
     AlertDialog,
     AlertDialogAction,

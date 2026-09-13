@@ -15,7 +15,8 @@ import {
     markCandidateEvaluatedAction,
     confirmEvaluationAction,
 } from "../../../../actions"
-import { findEvaluationForMember, normalizeAuids } from "../../../../auidUtils"
+import { findEvaluationForMember, normalizeAuids, annotateEvaluationsWithDelta, formatSignedDiff } from '@winelore/core';
+import type { PropertyMeta } from '@winelore/core';
 import {
     clearCachedWaitEvaluation,
     readCachedWaitEvaluation,
@@ -24,8 +25,6 @@ import {
     hasEvaluationData,
     MemberEvaluationSection,
 } from "../../../../EvaluationCommentsDisplay"
-import { annotateEvaluationsWithDelta, formatSignedDiff } from "@/lib/deltaOutliers"
-import type { PropertyMeta } from "../../../../propertyMap"
 import { BackLink } from "@/components/BackLink"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {

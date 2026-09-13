@@ -1,0 +1,20 @@
+{
+  "name": "@winelore/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Platform-agnostic domain logic shared by the web app and the Expo/React Native app. No DOM, Node or Next.js APIs may be imported here.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./gql": "./src/gql/index.ts",
+    "./gql/graphql": "./src/gql/graphql.ts",
+    "./gql/sdk": "./src/gql/sdk.ts",
+    "./gql/axus/sdk": "./src/gql/axus/sdk.ts",
+    "./i18n": "./src/i18n/index.ts",
+    "./i18n/types": "./src/i18n/types.ts"
+  },
+  "dependencies": {
+    "graphql": "^16.14.1"
+  }
+}

@@ -46,7 +46,7 @@ import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
 import { EvaluationTemplatesBlock, type BeverageType, type TemplateEditionLink } from "./components/EvaluationTemplatesBlock"
 import { BackLink } from "@/components/BackLink"
-import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
+import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from '@winelore/core';
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)

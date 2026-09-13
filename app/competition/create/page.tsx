@@ -19,7 +19,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { BackLink } from '@/components/BackLink';
 import { useMobileNavTitle } from '@/lib/mobileNav';
 import { useTranslation } from '@/lib/i18n/context';
-import { getDateLocale, type MessageKey } from '@/lib/i18n';
+import { getDateLocale, type MessageKey } from '@winelore/core/i18n';
 import {
     createCompetitionInfrastructure,
     createCompetitionSeriesAction,

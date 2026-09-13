@@ -1,9 +1,9 @@
-import { normalizeAuids } from "@/app/commission/auidUtils"
+import { normalizeAuids } from "../auidUtils"
 import {
     computeEvaluationFullScores,
     type RawEvaluation,
     type TemplateEdition,
-} from "@/lib/evaluationScores"
+} from "../evaluationScores"
 import {
     adaptCandidate,
     adaptEvaluation,

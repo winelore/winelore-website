@@ -25,6 +25,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@winelore/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@winelore/core/*": [
+        "./packages/core/src/*"
       ]
     }
   },

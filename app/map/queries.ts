@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql"
+import { gql } from '@winelore/core/gql'
 
 // Запит для швидкого пошуку маркерів у радіусі екрану карти
 export const SEARCH_MAP_BEVERAGES = gql(`

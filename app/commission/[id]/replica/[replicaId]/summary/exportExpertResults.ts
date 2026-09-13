@@ -1,6 +1,6 @@
 import { commentHasVisibleContent } from "../../../../EvaluationCommentsDisplay"
-import type { PropertyMeta } from "../../../../propertyMap"
-import { formatPropertyScoreValue, type BooleanScoreLabels, hasStoredScoreValue } from "@/lib/formatPropertyScore"
+import { formatPropertyScoreValue, hasStoredScoreValue } from '@winelore/core';
+import type { PropertyMeta, BooleanScoreLabels } from '@winelore/core';
 import { getGeographicInfo } from "@/lib/geocoding"
 import type { ExpertBeverageSummaryEntry, MyTastingSummaryData } from "../../../../expertRanking"
 

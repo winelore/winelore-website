@@ -1,8 +1,6 @@
-import { normalizeAuids } from "./auidUtils"
-import { hasEvaluationTotalScore } from "@/lib/evaluationTotals"
-import { hasStoredScoreValue } from "@/lib/formatPropertyScore"
+import { normalizeAuids, hasEvaluationTotalScore, hasStoredScoreValue } from '@winelore/core';
+import type { PropertyMeta } from '@winelore/core';
 
-import type { PropertyMeta } from "./propertyMap";
 
 export interface ExpertBeverageSummaryEntry {
     order: number

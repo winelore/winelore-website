@@ -1,4 +1,4 @@
-import type { TemplateEdition } from "@/lib/evaluationScores"
+import type { TemplateEdition } from "../evaluationScores"
 import { buildReplicaScriptContext, type CommissionForScriptContext } from "./buildScriptContext"
 import { evaluateOutcomePolicy } from "./evaluateOutcomePolicy"
 import {

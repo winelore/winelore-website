@@ -3,24 +3,24 @@
 import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
 import { axusSdk } from '../../lib/axusClient';
 import { getAxusEndpoint } from '../../lib/graphqlEndpoint';
-import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '../../src/gql/graphql';
+import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '@winelore/core/gql/graphql';
 import {
     GET_COMMISSION_TEMPLATES_DEEP_QUERY,
     type GetCommissionTemplatesDeepResult,
     type GetCommissionTemplatesDeepVariables,
-} from '../../lib/commissionTemplatesQuery';
+} from '@winelore/core';
 import { cookies } from "next/headers";
 import {
     findEvaluationForMember,
     memberMatchesActor,
-} from "./auidUtils";
+} from '@winelore/core';
 import { isReplicaCandidateFinished } from "./replicaUtils";
-import { buildPropertyMapFromCommissionTemplates } from "./propertyMap";
+import { buildPropertyMapFromCommissionTemplates } from '@winelore/core';
+import type { PropertyMeta } from '@winelore/core';
 import {
     buildExpertBeverageSummary,
     type MyTastingSummaryData,
 } from "./expertRanking";
-import type { PropertyMeta } from "./propertyMap";
 
 export type { MyTastingSummaryData } from "./expertRanking";
 

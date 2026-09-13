@@ -33,13 +33,12 @@ import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import { MemberEvaluationSection } from "@/app/commission/EvaluationCommentsDisplay"
-import { formatPropertyScoreValue } from "@/lib/formatPropertyScore"
+import { formatPropertyScoreValue, parseEvaluationTotal } from '@winelore/core';
 import {
     calculateDeltaOutliers,
     formatSignedDiff,
     type DeltaOutlierInfo,
-} from "@/lib/deltaOutliers"
-import { parseEvaluationTotal } from "@/lib/evaluationTotals"
+} from '@winelore/core'
 import { getCompetitionExportDataAction } from "../export/actions"
 import {
     downloadCompetitionResultsXlsx,

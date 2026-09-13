@@ -9,7 +9,7 @@ import { fetchGraphQL } from "@/lib/apiClient"
 import { SEARCH_MAP_BEVERAGES, GET_BEVERAGE_DETAILS_MAP } from "./queries"
 import { getRegionInfo, getVisiblePolygons } from "@/lib/mapActions"
 import { getUsernamesAction } from "@/app/userActions"
-import type { WineRegionLayer } from "@/lib/wineRegionTypes"
+import type { WineRegionLayer } from '@winelore/core'
 
 const MapComponent = dynamic(() => import('./MapComponent'), {
     ssr: false,

@@ -5,24 +5,20 @@ import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
 import { useUsernames } from "@/hooks/useUsernames";
-import { normalizeAuids } from "../../../../auidUtils";
+import { normalizeAuids, aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue, calculateDeltaOutliers, formatSignedDiff, buildOutcomePropertyMap } from '@winelore/core';
+import type { PropertyMeta, TemplateEdition } from '@winelore/core';
 import { MemberEvaluationSection } from "../../../../EvaluationCommentsDisplay";
-import { aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore";
-import { calculateDeltaOutliers, formatSignedDiff } from "@/lib/deltaOutliers";
 import {
     getReplicaBeverageOutcome,
     resolveReplicaBeverageOutcomes,
     type OverallOutcomeByProperty,
     aggregateOverallFromReplicas,
-} from "@/lib/outcomePolicy/resolveBeverageOutcomes";
-import { buildOutcomePropertyMap } from "@/lib/outcomePolicy/outcomePropertyMap";
+} from '@winelore/core';
 import { isReplicaCandidateFinished } from "../../../../replicaUtils";
 import {
     hasEvaluationTotalScore,
     parseEvaluationTotal,
-} from "@/lib/evaluationTotals";
-import type { PropertyMeta } from "../../../../propertyMap";
-import type { TemplateEdition } from "@/lib/evaluationScores";
+} from '@winelore/core';
 import { getPanelResultsAction } from "./actions";
 interface WaitPanelResultsProps {
     commissionId: string;

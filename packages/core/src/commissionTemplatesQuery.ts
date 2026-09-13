@@ -1,4 +1,4 @@
-import type { GetCommissionTemplatesQuery } from "../src/gql/graphql";
+import type { GetCommissionTemplatesQuery } from "./gql/graphql";
 
 /**
  * SmartProperty expressions are recursive binary trees. GraphQL cannot express recursion,

@@ -1,4 +1,4 @@
-import type { PropertyMeta, PropertyValueKind } from "@/app/commission/propertyMap";
+import type { PropertyMeta, PropertyValueKind } from "./propertyMap";
 
 export interface BooleanScoreLabels {
     yesLabel: string;

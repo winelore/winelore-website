@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Plus, Trash2, AlertCircle, X, Star, GripVertical } from "lucide-react"
 import { createGlobalTemplateAction, updateGlobalTemplateAction, getBeverageTypesAction, getTemplateByIdAction } from "./actions"
 import { useTranslation } from "@/lib/i18n/context"
-import type { MessageKey } from "@/lib/i18n"
+import type { MessageKey } from '@winelore/core/i18n'
 
 interface TemplateCreatorModalProps {
     isOpen: boolean

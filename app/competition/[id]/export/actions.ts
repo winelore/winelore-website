@@ -7,13 +7,13 @@ import {
     getCommissionTemplatesWithResultMarkers,
     getEvaluationsForCandidateAction,
 } from "@/app/commission/actions"
-import { buildPropertyMapFromCommissionTemplates, type PropertyMeta } from "@/app/commission/propertyMap"
+import { buildPropertyMapFromCommissionTemplates, buildTemplateEditionById } from '@winelore/core';
+import type { PropertyMeta } from '@winelore/core';
 import { isReplicaCandidateFinished } from "@/app/commission/replicaUtils"
-import { buildTemplateEditionById } from "@/lib/templateEditionMap"
 import {
     aggregateOverallFromReplicas,
     resolveReplicaBeverageOutcomes,
-} from "@/lib/outcomePolicy/resolveBeverageOutcomes"
+} from '@winelore/core'
 import type {
     CompetitionExportContext,
     CompetitionOverviewRow,

@@ -10,7 +10,9 @@
     "check-i18n": "node scripts/check-i18n.mjs",
     "test:ai": "node ./node_modules/.bin/jiti scripts/test-ai-generation.ts",
     "codegen": "graphql-codegen",
-    "codegen:watch": "graphql-codegen --watch"
+    "codegen:watch": "graphql-codegen --watch",
+    "typecheck": "tsc --noEmit",
+    "check:core": "node scripts/check-core-portability.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.64",
@@ -72,7 +74,8 @@
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
     "xlsx": "^0.18.5",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "@winelore/core": "*"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^7.1.2",
@@ -99,5 +102,8 @@
     "Safari >= 14",
     "iOS >= 14",
     "not dead"
+  ],
+  "workspaces": [
+    "packages/*"
   ]
 }

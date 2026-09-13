@@ -1,4 +1,4 @@
-import type { PropertyMeta } from "@/app/commission/propertyMap"
+import type { PropertyMeta } from '@winelore/core'
 import { downloadCsv, sanitizeFilename } from "@/app/commission/[id]/results/exportResults"
 
 function escapeCsvCell(value: string): string {

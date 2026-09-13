@@ -1,4 +1,4 @@
-import type { GetCommissionTemplatesDeepResult } from "@/lib/commissionTemplatesQuery";
+import type { GetCommissionTemplatesDeepResult } from "./commissionTemplatesQuery";
 
 export type PropertyValueKind = "boolean" | "numeric" | "enum" | "discrete" | "text" | "smart";
 

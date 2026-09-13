@@ -6,7 +6,7 @@ import { javascript } from "@codemirror/lang-javascript"
 import { ScrollText, Calendar, Save, Loader2, CheckCircle } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
-import { getDateLocale } from "@/lib/i18n"
+import { getDateLocale } from '@winelore/core/i18n'
 import { AppHeader } from "@/components/AppHeader"
 import { useMobileNavBack } from "@/lib/mobileNav"
 import { useRouter } from "next/navigation"

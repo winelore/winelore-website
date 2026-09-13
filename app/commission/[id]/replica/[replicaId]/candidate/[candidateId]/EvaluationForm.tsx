@@ -13,8 +13,8 @@ import {
 } from "../../../../../actions"
 import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
-import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
-import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
+import { roundScoreToTwoDecimals, parseEvaluationNumericInput, evaluateAST } from '@winelore/core';
+import type { NumericInputErrorReason } from '@winelore/core';
 import { Mic, Square, Trash2, Wand2 } from "lucide-react"
 import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
@@ -83,7 +83,6 @@ function isBooleanSmartProperty(
     return false
 }
 
-import { evaluateAST } from "@/lib/evaluationExpression"
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
     const backendTranslated = useBackendTranslation(translatedLabel)
