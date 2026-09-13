@@ -122,28 +122,31 @@ Verified here:
    queries typecheck against the schema and bundle, but the shape of a live
    template — especially a SmartProperty formula tree — has not been seen.
 
-## Why expo-router is a root devDependency
+## Typed routes are off, deliberately
 
-`expo-router` is declared in the **repo-root** `package.json`, which looks
-wrong in a Next.js project. It is load-bearing: do not remove it.
-
-npm nests `expo-router` under `apps/mobile/node_modules` because it pulls a
-Metro version that conflicts with the hoisted one. But `@expo/router-server`,
-which generates typed routes, runs from `node_modules/expo/node_modules/@expo/cli/`
-and resolves upward from there — it never looks inside `apps/mobile`, so it
-fails with:
+`app.config.ts` does not set `experiments.typedRoutes`. Turning it on makes the
+Expo CLI load `@expo/router-server`, which lives at
+`node_modules/expo/node_modules/@expo/cli/node_modules/` and resolves
+`expo-router` by walking up from there. npm nests `expo-router` under
+`apps/mobile/node_modules` (it pulls a Metro version that conflicts with the
+hoisted one), so that lookup fails and `expo run:ios` dies **after** building,
+signing and installing the app:
 
 ```
 Error: Cannot find module 'expo-router/_ctx-shared'
 ```
 
-This happens *after* the native build succeeds and the app installs, which
-makes it look like a runtime problem when it is really the CLI's type
-generation. Declaring the package at the root forces npm to hoist it, and the
-resolution succeeds.
+Because it happens post-install, it reads like a runtime fault when it is the
+CLI's type generation. The gate is one condition in
+`startTypescriptTypeGeneration.js` — with the flag unset, `setupTypedRoutes` is
+never called and the module is never required. No other part of a native build
+touches it; the remaining references are web, HTML and RSC paths.
 
-The alternative is turning off `experiments.typedRoutes` in `app.config.ts`,
-which skips the code path entirely at the cost of typed `href` values.
+Forcing the hoist by declaring `expo-router` at the repo root also works
+locally but depends on npm's hoisting staying stable across lockfile states and
+npm versions, which it did not. The flag is the deterministic fix.
+
+The cost is that `href` values are plain strings rather than a generated union.
 
 ## Dependency versions
 

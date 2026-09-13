@@ -46,7 +46,13 @@ const config: ExpoConfig = {
         bundleIdentifier: "com.thewinelore.winelore",
     },
     plugins: ["expo-router", "expo-secure-store", "expo-web-browser"],
-    experiments: { typedRoutes: true },
+    // experiments.typedRoutes is deliberately off. Turning it on makes the CLI
+    // load @expo/router-server, which resolves expo-router from its own nested
+    // location under node_modules/expo/ and cannot see a workspace-nested copy,
+    // so `expo run:ios` dies after installing the app with:
+    //   Error: Cannot find module 'expo-router/_ctx-shared'
+    // Nothing else in a native build needs that module. The cost is that `href`
+    // values are plain strings rather than a generated union.
     extra: {
         EXPO_PUBLIC_AXUS_ID_CLIENT_ID: pick(
             "EXPO_PUBLIC_AXUS_ID_CLIENT_ID",
