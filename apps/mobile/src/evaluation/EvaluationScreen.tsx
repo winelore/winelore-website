@@ -34,7 +34,6 @@ export interface EvaluationScreenLabels {
 interface EvaluationScreenProps {
     categories: EvaluationCategory[]
     candidateId: string
-    candidateCode: string
     beverageName?: string | null
     visibleAttributes?: Array<{ label: string; value: string }>
     labels: EvaluationScreenLabels
@@ -45,7 +44,6 @@ interface EvaluationScreenProps {
 export function EvaluationScreen({
     categories,
     candidateId,
-    candidateCode,
     beverageName,
     visibleAttributes = [],
     labels,
@@ -93,11 +91,7 @@ export function EvaluationScreen({
                 keyboardShouldPersistTaps="handled"
                 contentInsetAdjustmentBehavior="automatic"
             >
-                <Header
-                    candidateCode={candidateCode}
-                    beverageName={beverageName}
-                    visibleAttributes={visibleAttributes}
-                />
+                <Header beverageName={beverageName} visibleAttributes={visibleAttributes} />
 
                 {categories.map((category) => (
                     <View key={category.id} style={styles.category}>
@@ -143,18 +137,20 @@ export function EvaluationScreen({
     )
 }
 
+/**
+ * The candidate code is the navigation bar's large title, so it is not repeated
+ * here — only what the title cannot carry.
+ */
 function Header({
-    candidateCode,
     beverageName,
     visibleAttributes,
 }: {
-    candidateCode: string
     beverageName?: string | null
     visibleAttributes: Array<{ label: string; value: string }>
 }) {
+    if (!beverageName && visibleAttributes.length === 0) return null
     return (
         <View style={styles.header}>
-            <Text style={styles.candidateCode}>{candidateCode}</Text>
             {beverageName ? <Text style={styles.beverage}>{beverageName}</Text> : null}
             {visibleAttributes.length > 0 ? (
                 <View style={styles.attributes}>
@@ -174,9 +170,8 @@ const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: palette.background },
     content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
     header: { gap: spacing.xs },
-    candidateCode: { ...type.largeTitle, color: palette.text },
-    beverage: { ...type.body, color: palette.textMuted },
-    attributes: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: spacing.xs },
+    beverage: { ...type.title, color: palette.text },
+    attributes: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
     attribute: {
         flexDirection: "row",
         gap: 4,

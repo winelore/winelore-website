@@ -82,8 +82,8 @@ function BooleanControl({ value, onChange, yesLabel, noLabel }: PropertyInputPro
     }
     return (
         <View style={styles.segmented}>
-            <Segment label={yesLabel} selected={value === true} tone="positive" onPress={() => choose(true)} />
-            <Segment label={noLabel} selected={value === false} tone="negative" onPress={() => choose(false)} />
+            <Segment label={yesLabel} selected={value === true} onPress={() => choose(true)} />
+            <Segment label={noLabel} selected={value === false} onPress={() => choose(false)} />
         </View>
     )
 }
@@ -229,12 +229,10 @@ function formatSmart(value: number): string {
 function Segment({
     label,
     selected,
-    tone,
     onPress,
 }: {
     label: string
     selected: boolean
-    tone: "positive" | "negative"
     onPress: () => void
 }) {
     return (
@@ -244,7 +242,7 @@ function Segment({
             onPress={onPress}
             style={({ pressed }) => [
                 styles.segment,
-                selected && (tone === "positive" ? styles.segmentYes : styles.segmentNo),
+                selected && styles.segmentSelected,
                 pressed && styles.pressed,
             ]}
         >
@@ -267,8 +265,11 @@ const styles = StyleSheet.create({
         borderColor: palette.border,
     },
     resultRow: { backgroundColor: palette.accentSoft, borderColor: palette.accentBorder },
-    labelColumn: { flex: 1, gap: 2 },
-    controlColumn: { alignItems: "flex-end", gap: 4 },
+    // React Native defaults flexShrink to 0. Without shrink on the control
+    // column, a wide row of enum chips squeezes the label to zero width and the
+    // property renders unlabelled.
+    labelColumn: { flex: 1, minWidth: 104, gap: 2 },
+    controlColumn: { flexShrink: 1, alignItems: "flex-end", gap: 4 },
     name: { ...type.body, fontWeight: "600", color: palette.text },
     resultName: { color: palette.accentText },
     required: { color: palette.danger },
@@ -285,8 +286,10 @@ const styles = StyleSheet.create({
         backgroundColor: palette.surface,
         alignItems: "center",
     },
-    segmentYes: { backgroundColor: palette.positive, borderColor: palette.positive },
-    segmentNo: { backgroundColor: palette.danger, borderColor: palette.danger },
+    // One selected colour for both answers: yes/no polarity depends on the
+    // property. "Fault detected: No" is the good outcome, so green-for-yes and
+    // red-for-no would invert the meaning.
+    segmentSelected: { backgroundColor: palette.accent, borderColor: palette.accent },
     segmentLabel: { ...type.body, fontWeight: "600", color: palette.textMuted },
     segmentLabelSelected: { color: palette.onAccent },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, justifyContent: "flex-end" },

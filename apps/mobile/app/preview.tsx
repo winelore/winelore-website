@@ -33,7 +33,6 @@ export default function PreviewRoute() {
             <EvaluationScreen
                 categories={sampleCategories}
                 candidateId="preview"
-                candidateCode="Sample 0417"
                 beverageName="Riesling Reserve"
                 visibleAttributes={sampleAttributes}
                 labels={labels}

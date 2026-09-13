@@ -58,7 +58,6 @@ export default function CandidateEvaluationRoute() {
             <EvaluationScreen
                 categories={state.categories}
                 candidateId={candidateId}
-                candidateCode={state.candidateCode}
                 beverageName={state.beverageName}
                 visibleAttributes={state.visibleAttributes}
                 labels={labels}
