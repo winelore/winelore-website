@@ -122,6 +122,29 @@ Verified here:
    queries typecheck against the schema and bundle, but the shape of a live
    template — especially a SmartProperty formula tree — has not been seen.
 
+## Why expo-router is a root devDependency
+
+`expo-router` is declared in the **repo-root** `package.json`, which looks
+wrong in a Next.js project. It is load-bearing: do not remove it.
+
+npm nests `expo-router` under `apps/mobile/node_modules` because it pulls a
+Metro version that conflicts with the hoisted one. But `@expo/router-server`,
+which generates typed routes, runs from `node_modules/expo/node_modules/@expo/cli/`
+and resolves upward from there — it never looks inside `apps/mobile`, so it
+fails with:
+
+```
+Error: Cannot find module 'expo-router/_ctx-shared'
+```
+
+This happens *after* the native build succeeds and the app installs, which
+makes it look like a runtime problem when it is really the CLI's type
+generation. Declaring the package at the root forces npm to hoist it, and the
+resolution succeeds.
+
+The alternative is turning off `experiments.typedRoutes` in `app.config.ts`,
+which skips the code path entirely at the cost of typed `href` values.
+
 ## Dependency versions
 
 Every version here comes from Expo SDK 57's own `bundledNativeModules.json`,
