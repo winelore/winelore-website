@@ -8,92 +8,29 @@ function escapeCsvCell(value: string): string {
     return value
 }
 
-export interface CompetitionOverviewRow {
-    commissionId: string
-    commissionName: string
-    candidateId: string
-    code: string
-    beverage: string
-    producer: string
-    outcomes: Record<string, string>
-    awards: string
-    beverageType?: string
-    wineType?: string
-    vintage?: string
-    volume?: string
-    origin?: string
+/**
+ * Row shapes now live in @winelore/core/results so the mobile app builds the
+ * same rows. Imported for use below and re-exported to keep existing imports
+ * working.
+ */
+import type {
+    CompetitionOverviewRow,
+    CommissionSummaryRow,
+    CompetitionExpertScoreRow,
+    CompetitionCommentRow,
+    CompetitionAwardRow,
+    CompetitionExportContext,
+} from "@winelore/core/results"
+
+export type {
+    CompetitionOverviewRow,
+    CommissionSummaryRow,
+    CompetitionExpertScoreRow,
+    CompetitionCommentRow,
+    CompetitionAwardRow,
+    CompetitionExportContext,
 }
 
-export interface CommissionSummaryRow {
-    commissionId: string
-    commissionName: string
-    status: string
-    candidateCount: number
-    replicaCount: number
-    awardsCount: number
-}
-
-export interface CompetitionExpertScoreRow {
-    commissionId: string
-    commissionName: string
-    replicaId: string
-    evaluationId: string
-    code: string
-    beverage: string
-    producer: string
-    replicaName: string
-    replicaType: string
-    evaluator: string
-    scores: Record<string, string>
-    beverageType?: string
-    wineType?: string
-    vintage?: string
-    volume?: string
-    origin?: string
-}
-
-export interface CompetitionCommentRow {
-    commissionId: string
-    commissionName: string
-    replicaId: string
-    evaluationId: string
-    commentId: string
-    code: string
-    beverage: string
-    producer: string
-    replicaName: string
-    evaluator: string
-    property: string
-    commentText: string
-    voiceUrl: string
-    beverageType?: string
-    wineType?: string
-    vintage?: string
-    volume?: string
-    origin?: string
-}
-
-export interface CompetitionAwardRow {
-    commissionId: string
-    commissionName: string
-    code: string
-    beverage: string
-    producer: string
-    awardName: string
-    awardCode: string
-}
-
-export interface CompetitionExportContext {
-    competitionName: string
-    overviewRows: CompetitionOverviewRow[]
-    commissionSummaryRows: CommissionSummaryRow[]
-    expertScoreRows: CompetitionExpertScoreRow[]
-    commentRows: CompetitionCommentRow[]
-    awardRows: CompetitionAwardRow[]
-    outcomePropertyCodes: string[]
-    outcomePropertyNames: Record<string, string>
-    propertyMap: Record<string, PropertyMeta>
-}
 
 function getPropertyLabel(code: string, propertyMap: Record<string, PropertyMeta>): string {
     return propertyMap[code]?.name ?? code

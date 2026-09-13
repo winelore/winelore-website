@@ -1,3 +1,10 @@
+/**
+ * Result queries, sent as raw strings.
+ *
+ * Kept out of the generated SDK deliberately: both the web app and the Expo app
+ * send these, and the deep nesting here is easier to read and adjust as a
+ * string than as a generated document.
+ */
 export const GET_COMMISSION_RESULTS = `
   query GetCommissionResults($id: ID!) {
     commission(id: $id) {

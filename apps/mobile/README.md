@@ -19,15 +19,22 @@ detects the device language through `Intl` (Hermes ships it, so no extra
 native module) and persists a choice in SecureStore. `npm run check-i18n`
 now scans `apps/mobile` too, so a mistyped key fails there.
 
+Results are ranked standings, built by `buildCommissionResultRows` in
+`@winelore/core/results` — the same function the web table and the spreadsheet
+export now call. The desktop view is a wide grid with a column per outcome
+property, filters and an expert drill-down; on a phone that becomes a ranked
+list with a per-candidate detail sheet. The *numbers* are identical because
+there is one implementation of them; the presentation is not, deliberately.
+
 Not yet ported:
 
 - **Comments** — per-property and general, including voice notes. Voice needs
   `expo-audio`, replacing the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **Results and panel-summary screens.** Sequencing routes to `/results/...`
-  and `/panel-summary/...`; those routes do not exist yet, so those two
-  transitions dead-end.
+- **Results filters and expert drill-down.** The mobile list shows final
+  standings and each candidate's outcomes; filtering by commission, per-expert
+  score breakdowns, outlier highlighting and export are web-only.
 
 **Nothing here has run on a device or simulator.** It was developed on Linux, where
 the JavaScript can be typechecked and bundled but not built or launched. What is
