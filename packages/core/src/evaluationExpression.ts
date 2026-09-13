@@ -3,7 +3,13 @@
  */
 export function evaluateAST(
     ast: any,
-    currentValues: Record<string, number | boolean>,
+    /**
+     * Judge-entered values by property code. Deliberately `unknown`: an enum
+     * answer is a string and a boolean answer is a boolean, and variable
+     * lookup below coerces and rejects anything non-numeric, so callers need
+     * not pre-filter.
+     */
+    currentValues: Record<string, unknown>,
 ): number | null {
     if (!ast) return null
 
