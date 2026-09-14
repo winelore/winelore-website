@@ -82,14 +82,13 @@ export default function CommissionsRoute() {
 /**
  * A commission row.
  *
- * Only live commissions lead anywhere: entering a finished one would drop a
- * judge into a session that no longer exists, so those are shown but inert
- * until a commission detail screen exists to open them in.
+ * All of them open the lobby, which then routes on by status: a running
+ * session goes to the waiting room, a finished one to its results.
  */
 function CommissionRow({ commission }: { commission: ActiveCommission }) {
     const router = useRouter()
     const { t, formatStatus } = useTranslation()
-    const canEnter = Boolean(commission.replicaId) && commission.status !== "COMPLETED"
+    const canEnter = Boolean(commission.replicaId)
 
     return (
         <Pressable
@@ -97,7 +96,7 @@ function CommissionRow({ commission }: { commission: ActiveCommission }) {
             disabled={!canEnter}
             onPress={async () => {
                 await Haptics.selectionAsync()
-                router.push(`/wait/${commission.id}/${commission.replicaId}`)
+                router.push(`/commission/${commission.id}/${commission.replicaId}`)
             }}
             style={({ pressed }) => [
                 styles.card,

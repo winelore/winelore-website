@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { resolveLobbyState } from '@winelore/core/commission';
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import {
@@ -759,11 +760,17 @@ export default function CommissionClientView({
     const candidateCount = (localData.candidates?.length ?? localData.candidateCount ?? 0)
     const hasCandidates = candidateCount > 0
     const hasMembers = localMembers.length > 0
-    const isEveryoneReady = hasMembers && localMembers.every(m => m.isReady)
-    const myStatus = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
-    const amIReady = myStatus?.isReady || false
-    const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
-    const nonReadyCount = localMembers.filter(m => !m.isReady).length
+    // Shared with the mobile lobby. Membership matches through normalizeAuids,
+    // which flattens the nested auid arrays a plain `includes` would miss.
+    const lobby = resolveLobbyState(
+        selectedReplica ? { ...selectedReplica, members: localMembers } : null,
+        currentAuid === null ? null : String(currentAuid),
+        candidateCount,
+    )
+    const isEveryoneReady = lobby.isEveryoneReady
+    const amIReady = lobby.amIReady
+    const isPreStart = lobby.isPreStart
+    const nonReadyCount = lobby.notReadyCount
 
     const handleStartCommission = async () => {
         if (!selectedReplica || isMutating) return

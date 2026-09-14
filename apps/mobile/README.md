@@ -34,10 +34,19 @@ filtering for the home screen, the full commissions list, and both of the web's
 equivalents — four callers, one implementation.
 
 "View all" opens `/commissions`: every commission the judge is on, whatever its
-status. Finished ones are shown but inert, since entering one would drop a judge
-into a session that no longer exists. There is no pagination — the web pages
-that list, but it already fetches all of it and slices client-side, so paging is
-a desktop affordance rather than a data constraint.
+status. There is no pagination — the web pages that list, but it already
+fetches all of it and slices client-side, so paging is a desktop affordance
+rather than a data constraint.
+
+Tapping any commission opens the lobby, which routes on by status: a running
+session to the waiting room, a finished one to its results, and otherwise the
+lobby itself — who is here, who is ready, and the chair's control to begin.
+`resolveLobbyState` in `@winelore/core/commission` decides all of that and is
+shared with the web commission page.
+
+The web's commission screen does much more than the lobby: panel and candidate
+management, template assignment, replica setup and session settings. Those are
+organiser desk work and are not ported; the lobby is the judge-facing half.
 
 Not yet ported:
 

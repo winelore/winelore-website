@@ -135,7 +135,7 @@ function CommissionCard({ commission }: { commission: ActiveCommission }) {
     const enter = async () => {
         if (!commission.replicaId) return
         await Haptics.selectionAsync()
-        router.push(`/wait/${commission.id}/${commission.replicaId}`)
+        router.push(`/commission/${commission.id}/${commission.replicaId}`)
     }
 
     return (
