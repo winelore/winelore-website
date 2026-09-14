@@ -86,7 +86,7 @@ export default async function HomePage() {
             filter: { producers: [[currentAuid]] },
             producer: [currentAuid]
         });
-        recentBeverages = (bevData.beverages?.items || []).map(withBeverageType);
+        recentBeverages = (bevData.beverages?.items || []).map((beverage) => withBeverageType(beverage));
     } catch (error) {
         console.error("Failed to load beverages:", error);
     }

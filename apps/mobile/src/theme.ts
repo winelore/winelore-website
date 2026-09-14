@@ -38,6 +38,8 @@ export const palette = {
     textGhost: "#cad5e2",
     /** text-slate-200 — empty-state glyphs, the · between kicker parts. */
     textSubtle: "#e2e8f0",
+    /** text-slate-700 — a state card's title. */
+    textStrong: "#314158",
     /** indigo-600 — primary actions, links, selected state. */
     accent: "#4f39f6",
     /** indigo-600 — accent as text. */
@@ -65,6 +67,10 @@ export const palette = {
     dangerSoft: "#fff1f2",
     /** rose-100 */
     dangerBorder: "#ffe4e6",
+    /** rose-400 — the error state card's glyph. */
+    dangerMuted: "#ff637e",
+    /** rose-800 — the error state card's title. */
+    dangerStrong: "#a50036",
     /** blue-500 — the verified badge. */
     verified: "#2b7fff",
 } as const

@@ -33,8 +33,10 @@ function useNow(active: boolean, intervalMs: number) {
     return now
 }
 
+type Density = "dashboard" | "list"
+
 /** The web's `CommissionCard`: status, live timer, competition. */
-export function CommissionCard({ commission }: { commission: ActiveCommission }) {
+export function CommissionCard({ commission, density }: { commission: ActiveCommission; density?: Density }) {
     const { t, formatStatus } = useTranslation()
     const open = useOpenDestination()
     const status = commission.status ?? ""
@@ -52,6 +54,7 @@ export function CommissionCard({ commission }: { commission: ActiveCommission })
             title={commission.name ?? ""}
             meta={meta}
             status={{ label: formatStatus(status), ...look, trailing: timing || undefined }}
+            density={density}
         />
     )
 }
@@ -60,9 +63,11 @@ export function CommissionCard({ commission }: { commission: ActiveCommission })
 export function CompetitionCard({
     competition,
     usernames,
+    density,
 }: {
     competition: DashboardCompetition
     usernames: Record<string, string>
+    density?: Density
 }) {
     const { t, formatStatus } = useTranslation()
     const open = useOpenDestination()
@@ -93,19 +98,25 @@ export function CompetitionCard({
             title={competition.name}
             meta={meta}
             status={{ label: formatStatus(competition.status), ...look, trailing: timing || undefined }}
+            density={density}
         />
     )
 }
 
-/** The web's `BeverageCard`: status, type, producers. */
+/** The web's `BeverageCard`: status, type, origin, producers. */
 export function BeverageCard({
     beverage,
     typeMap,
     usernames,
+    originParts,
+    density,
 }: {
     beverage: DashboardBeverage
     typeMap: Record<string, string>
     usernames: Record<string, string>
+    /** Reverse-geocoded origin, where the list resolves one (My Beverages does). */
+    originParts?: string[]
+    density?: Density
 }) {
     const { t, formatStatus, formatBeverageType } = useTranslation()
     const open = useOpenDestination()
@@ -113,6 +124,10 @@ export function BeverageCard({
     const producers = beverageProducerLabels(beverage.producers, usernames)
 
     const meta: EntityCardMeta[] = []
+    const origin = originParts?.filter(Boolean).join(", ")
+    if (origin) {
+        meta.push({ icon: "location", label: t("beverages.origin"), value: origin })
+    }
     if (producers.length > 0) {
         meta.push({ icon: "person", label: t("beverages.producer"), value: producers.join(", ") })
     }
@@ -129,6 +144,7 @@ export function BeverageCard({
                     ? { label: formatStatus(beverage.status), ...beverageStatusLook(beverage.status) }
                     : undefined
             }
+            density={density}
         />
     )
 }

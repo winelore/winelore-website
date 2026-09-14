@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
     DASHBOARD_PANEL_LIMIT,
-    GET_BEVERAGE_TYPES,
     GET_DASHBOARD_TEMPLATE_EDITIONS,
-    buildBeverageTypeCodeMap,
     isTemplateOwnedBy,
     selectLatestTemplateEditions,
     toDashboardCompetition,
@@ -16,6 +14,7 @@ import {
 } from "@winelore/core/dashboard"
 import { fetchGraphQLRaw, sdk } from "../api/client"
 import { getStoredSession } from "../auth/session"
+import { loadBeverageTypes } from "./beverageTypes"
 import { dashboardOptions, fetchMemberCommissions } from "./useDashboard"
 
 /** A beverage as the home screen's card renders it. */
@@ -27,6 +26,8 @@ export interface DashboardBeverage {
     /** Colour code from `attributes`, used when `typeId` maps to nothing. */
     type?: string
     producers?: BeverageProducerRef[] | null
+    /** Where it was made, for the lists that reverse-geocode an origin. */
+    origin?: { latitude: number; longitude: number } | null
 }
 
 /**
@@ -70,7 +71,7 @@ async function loadBeverages(auid: string): Promise<DashboardBeverage[]> {
         filter: { producers: [[Number(auid)]] },
         producer: [Number(auid)],
     })
-    return (response.beverages?.items ?? []).map(withBeverageType)
+    return (response.beverages?.items ?? []).map((beverage) => withBeverageType(beverage))
 }
 
 async function loadTemplates(auid: string): Promise<DashboardTemplate[]> {
@@ -82,13 +83,6 @@ async function loadTemplates(auid: string): Promise<DashboardTemplate[]> {
     return selectLatestTemplateEditions(response?.evaluationTemplateEditions?.items)
         .filter((template) => isTemplateOwnedBy(template, auid))
         .slice(0, DASHBOARD_PANEL_LIMIT)
-}
-
-async function loadBeverageTypes(): Promise<Record<string, string>> {
-    const response = await fetchGraphQLRaw<{
-        beverageTypes?: { items?: Array<{ id: string; code: string; status?: string | null }> } | null
-    }>(GET_BEVERAGE_TYPES)
-    return buildBeverageTypeCodeMap(response?.beverageTypes?.items)
 }
 
 const settle = <T,>(result: PromiseSettledResult<T[]>): Panel<T> =>

@@ -1,9 +1,9 @@
-import { useEffect, useRef, type ReactNode } from "react"
-import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from "react-native"
+import type { ReactNode } from "react"
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { cardShadow, continuous, palette, radius } from "../theme"
 import { Icon, type IconName } from "../ui/Icon"
-import { cardSurface } from "../ui/EntityCard"
+import { SkeletonCard } from "../ui/Skeleton"
 import type { Panel } from "./useHome"
 
 interface DashboardPanelProps<T> {
@@ -61,8 +61,8 @@ export function DashboardPanel<T>({
 
             {panel.status === "loading" ? (
                 <View style={styles.list}>
-                    <Skeleton variant={skeleton} />
-                    <Skeleton variant={skeleton} />
+                    <SkeletonCard variant={skeleton} />
+                    <SkeletonCard variant={skeleton} />
                 </View>
             ) : panel.status === "error" ? (
                 <View style={styles.state}>
@@ -86,38 +86,6 @@ export function DashboardPanel<T>({
                 <View style={styles.list}>{panel.items.map(renderItem)}</View>
             )}
         </View>
-    )
-}
-
-/** A card-shaped placeholder that pulses like the web's `animate-pulse`. */
-function Skeleton({ variant }: { variant: "card" | "row" }) {
-    const opacity = useRef(new Animated.Value(1)).current
-
-    useEffect(() => {
-        // animate-pulse: 2s, opacity 1 → 0.5 → 1, cubic-bezier(0.4, 0, 0.6, 1).
-        const half = (toValue: number) =>
-            Animated.timing(opacity, {
-                toValue,
-                duration: 1000,
-                easing: Easing.bezier(0.4, 0, 0.6, 1),
-                useNativeDriver: true,
-            })
-        const loop = Animated.loop(Animated.sequence([half(0.5), half(1)]))
-        loop.start()
-        return () => loop.stop()
-    }, [opacity])
-
-    return (
-        <Animated.View style={[styles.skeletonCard, { opacity }]}>
-            <View style={styles.skeletonHead}>
-                <View style={[styles.skeletonBlock, variant === "row" ? styles.skeletonTileLarge : styles.skeletonTile]} />
-                <View style={styles.skeletonLines}>
-                    <View style={[styles.skeletonBlock, styles.skeletonKicker]} />
-                    <View style={[styles.skeletonBlock, styles.skeletonTitle]} />
-                </View>
-            </View>
-            {variant === "card" ? <View style={[styles.skeletonBlock, styles.skeletonMeta]} /> : null}
-        </Animated.View>
     )
 }
 
@@ -166,13 +134,4 @@ const styles = StyleSheet.create({
         backgroundColor: palette.background,
     },
     retryLabel: { fontSize: 14, fontWeight: "700", color: palette.accentText },
-    skeletonCard: cardSurface,
-    skeletonHead: { flexDirection: "row", alignItems: "center", gap: 12 },
-    skeletonBlock: { backgroundColor: palette.borderSoft, borderRadius: 6 },
-    skeletonTile: { width: 40, height: 40, borderRadius: radius.tile },
-    skeletonTileLarge: { width: 48, height: 48, borderRadius: radius.tile },
-    skeletonLines: { flex: 1, gap: 6 },
-    skeletonKicker: { width: "35%", height: 10 },
-    skeletonTitle: { width: "70%", height: 14 },
-    skeletonMeta: { width: "55%", height: 10, marginTop: 16 },
 })

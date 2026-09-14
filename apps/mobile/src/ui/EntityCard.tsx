@@ -29,15 +29,20 @@ interface EntityCardProps {
     title: string
     meta?: EntityCardMeta[]
     status?: EntityCardStatus
+    /**
+     * "dashboard" is the tighter home-screen card; "list" the roomier one the
+     * web's list pages render on a phone — a bigger tile and title.
+     */
+    density?: "dashboard" | "list"
 }
 
 /**
- * The dashboard card, as the web's `EntityCard` at `density="dashboard"`: an
- * indigo glyph tile, a status/kicker line in small caps, the title, then meta
- * lines. Same anatomy, same colours, so a commission or a wine looks like the
- * same thing on a phone as on a desk.
+ * The web's `EntityCard`: an indigo glyph tile, a status/kicker line in small
+ * caps, the title, then meta lines. Same anatomy, same colours, so a
+ * commission or a wine looks like the same thing on a phone as on a desk.
  */
-export function EntityCard({ onPress, icon, kicker, title, meta = [], status }: EntityCardProps) {
+export function EntityCard({ onPress, icon, kicker, title, meta = [], status, density = "dashboard" }: EntityCardProps) {
+    const list = density === "list"
     const headParts: React.ReactNode[] = []
     if (status) {
         const color = toneColor[status.tone]
@@ -67,11 +72,11 @@ export function EntityCard({ onPress, icon, kicker, title, meta = [], status }: 
         <PressableSurface
             onPress={onPress}
             accessibilityLabel={[status?.label, kicker, title].filter(Boolean).join(", ")}
-            style={styles.card}
+            style={[styles.card, list && styles.listCard]}
         >
             <View style={styles.head}>
-                <View style={styles.tile}>
-                    <Icon name={icon} size={20} color={palette.accent} />
+                <View style={[styles.tile, list && styles.listTile]}>
+                    <Icon name={icon} size={list ? 24 : 20} color={palette.accent} />
                 </View>
                 <View style={styles.headText}>
                     {headParts.length > 0 ? (
@@ -84,7 +89,7 @@ export function EntityCard({ onPress, icon, kicker, title, meta = [], status }: 
                             ))}
                         </View>
                     ) : null}
-                    <Text style={styles.title} numberOfLines={1}>
+                    <Text style={[styles.title, list && styles.listTitle]} numberOfLines={1}>
                         {title}
                     </Text>
                 </View>
@@ -141,6 +146,11 @@ const styles = StyleSheet.create({
     trailing: { fontSize: 10, lineHeight: 14, fontWeight: "600", color: palette.textFaint, flexShrink: 1 },
     dot: { fontSize: 10, lineHeight: 14, color: palette.textSubtle },
     title: { fontSize: 15, lineHeight: 20, fontWeight: "700", color: palette.heading, marginTop: 2 },
+    // The web's compact and comfortable cards, as a phone draws them: p-5,
+    // rounded-[24px], a 48pt tile and text-lg title.
+    listCard: { padding: 20, borderRadius: radius.panel },
+    listTile: { width: 48, height: 48 },
+    listTitle: { fontSize: 18, lineHeight: 24 },
     meta: { gap: 6, paddingTop: 14 },
     metaLine: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
     metaIcon: { marginTop: 1 },

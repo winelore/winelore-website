@@ -1,22 +1,18 @@
-export interface GeographicInfo {
-    country?: string;
-    region?: string;
-    district?: string;
-    districtDetail?: string;
-    regionDetail?: string;
-    cityDetail?: string;
-}
+import { nominatimReverseUrl, parseNominatimAddress, type GeographicInfo } from '@winelore/core';
+
+export type { GeographicInfo };
 
 /**
  * Reverse geocodes coordinates to retrieve country, region, and district information.
- * Uses OpenStreetMap's Nominatim reverse geocoding API.
+ * Uses OpenStreetMap's Nominatim reverse geocoding API; reading its answer is
+ * shared with the mobile app through `parseNominatimAddress`.
  * 
  * @param latitude Latitude coordinate
  * @param longitude Longitude coordinate
  * @returns GeographicInfo object containing country, region, and district (if available)
  */
 export async function getGeographicInfo(latitude: number, longitude: number): Promise<GeographicInfo | null> {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&addressdetails=1`;
+    const url = nominatimReverseUrl(latitude, longitude);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2-second timeout to avoid page rendering delays
@@ -38,34 +34,7 @@ export async function getGeographicInfo(latitude: number, longitude: number): Pr
         }
 
         const data = await response.json();
-        const address = data?.address;
-
-        if (!address) {
-            return null;
-        }
-
-        const country = address.country;
-        const region = address.state || address.region || address.province || address.state_district || address.territory;
-        
-        // Find the best candidate for the district/local municipality
-        const district = address.city_district || address.district || address.municipality || address.suburb || address.local_administrative_area || address.subdistrict || address.county || address.city;
-
-        // Clean up duplicates (e.g. if city and district are the same)
-        const result: GeographicInfo = {};
-        if (country) result.country = country;
-        if (region && region !== country) result.region = region;
-        if (district && district !== region && district !== country) result.district = district;
-
-        // Specific fields for detailed address (country, district, region, city/village)
-        const detailedDistrict = address.county || address.district || address.state_district;
-        const detailedRegion = address.state || address.region || address.province || address.territory;
-        const detailedCity = address.city || address.town || address.village || address.hamlet || address.isolated_dwelling;
-
-        if (detailedDistrict && detailedDistrict !== country) result.districtDetail = detailedDistrict;
-        if (detailedRegion && detailedRegion !== country) result.regionDetail = detailedRegion;
-        if (detailedCity && detailedCity !== detailedRegion && detailedCity !== detailedDistrict) result.cityDetail = detailedCity;
-
-        return result;
+        return parseNominatimAddress(data?.address);
     } catch (error: any) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {

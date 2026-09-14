@@ -33,6 +33,7 @@ const GLYPHS = {
     language: { ios: "globe", android: "language" }, // Globe
     arrow: { ios: "arrow.right", android: "arrow_forward" }, // ArrowRight
     retry: { ios: "arrow.clockwise", android: "refresh" },
+    plus: { ios: "plus", android: "add" }, // Plus
     web: { ios: "safari", android: "public" },
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle

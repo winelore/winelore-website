@@ -9,6 +9,12 @@ import { normalizeAuids } from "../auidUtils"
 /** How many of each the dashboard panels show. */
 export const DASHBOARD_PANEL_LIMIT = 5
 
+/**
+ * How many a list screen fetches at a time: the web's page size, so a phone
+ * scrolling a list loads the same slices the web pages through.
+ */
+export const LIST_PAGE_SIZE = 16
+
 // --- Competitions -----------------------------------------------------------
 
 export interface RawDashboardCompetition {
@@ -38,16 +44,19 @@ export interface DashboardCompetition {
 /**
  * Flatten a competition as the backend returns it into the card's shape.
  *
- * A competition with no holders recorded is attributed to the viewer: it came
- * back from a holders-filtered query, so they are one.
+ * Pass `viewerAuid` when the competition came back from a holders-filtered
+ * query: one with no holders recorded is then attributed to the viewer, since
+ * they are one. Without it — the global list — no holders means none.
  */
 export function toDashboardCompetition(
     raw: RawDashboardCompetition,
-    viewerAuid: number | string,
+    viewerAuid?: number | string,
 ): DashboardCompetition {
     const holders = Array.isArray(raw.holders)
         ? (raw.holders as unknown[]).flat() as number[]
-        : [Number(viewerAuid)]
+        : viewerAuid !== undefined
+          ? [Number(viewerAuid)]
+          : []
     return {
         id: raw.id,
         name: raw.name,
@@ -95,9 +104,18 @@ export function beverageColorFromAttributes(attributes: unknown): string | undef
     return undefined
 }
 
-/** The beverage with its colour lifted out of `attributes` as `type`. */
-export function withBeverageType<T extends { attributes?: unknown }>(beverage: T): T & { type?: string } {
-    return { ...beverage, type: beverageColorFromAttributes(beverage.attributes) }
+/**
+ * The beverage with its colour lifted out of `attributes` as `type`.
+ *
+ * `fallbackType` fills in a beverage with no colour: the web's My Beverages
+ * list reads those as "WINE", while the dashboard and global list leave them
+ * untyped.
+ */
+export function withBeverageType<T extends { attributes?: unknown }>(
+    beverage: T,
+    fallbackType?: string,
+): T & { type?: string } {
+    return { ...beverage, type: beverageColorFromAttributes(beverage.attributes) ?? fallbackType }
 }
 
 /** Beverage type id -> code ("RED"), from the published beverage types. */

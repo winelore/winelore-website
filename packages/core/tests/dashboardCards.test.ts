@@ -18,6 +18,7 @@ import {
     isTemplateOwnedBy,
     selectLatestTemplateEditions,
     toDashboardCompetition,
+    withBeverageType,
     type RawTemplateEdition,
 } from "../src/dashboard"
 import { translate } from "../src/i18n"
@@ -46,6 +47,18 @@ test("a competition with no holders is attributed to the viewer", () => {
     // It came back from a holders-filtered query, so the viewer is one.
     const result = toDashboardCompetition({ id: "c1", name: "Open", status: "PLANNED", holders: null }, "7")
     assert.deepEqual(result.holder, [7])
+})
+
+test("a competition on the global list with no holders has none", () => {
+    // No holders filter, so nobody can be assumed to hold it.
+    const result = toDashboardCompetition({ id: "c1", name: "Open", status: "PLANNED", holders: null })
+    assert.deepEqual(result.holder, [])
+})
+
+test("My Beverages reads an uncoloured beverage as wine; other lists leave it untyped", () => {
+    assert.equal(withBeverageType({ attributes: '{"sugar":"DRY"}' }, "WINE").type, "WINE")
+    assert.equal(withBeverageType({ attributes: '{"sugar":"DRY"}' }).type, undefined)
+    assert.equal(withBeverageType({ attributes: { color: "RED" } }, "WINE").type, "RED")
 })
 
 test("beverage colour is read from every attribute shape the backend has sent", () => {

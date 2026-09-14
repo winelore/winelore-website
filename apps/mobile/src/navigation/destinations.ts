@@ -22,7 +22,7 @@ const app = (href: string): Destination => ({ kind: "app", href })
 const web = (path: string): Destination => ({ kind: "web", path })
 
 /**
- * Every place the home screen links to, and whether the app can show it yet.
+ * Every place the app links to, and whether it can show it natively yet.
  *
  * The paths are the web's own, so the web entries open exactly the page a
  * desktop user would reach from the same card. Porting a screen means flipping
@@ -37,14 +37,18 @@ export const destinations = {
         web(`/myTemplates?templateId=${id}-${version || 0}`),
 
     myCommissions: app("/commissions"),
-    myCompetitions: web("/myCompetitions"),
-    myBeverages: web("/myBeverages"),
+    myCompetitions: app("/myCompetitions"),
+    myBeverages: app("/myBeverages"),
     myTemplates: web("/myTemplates"),
     myOutcomePolicies: web("/myOutcomePolicies"),
 
-    competitions: web("/competitions"),
-    beverages: web("/beverages"),
+    competitions: app("/competitions"),
+    beverages: app("/beverages"),
     map: web("/map"),
+
+    // Create forms are organiser desk work and stay on the web for now.
+    createCompetition: web("/competition/create"),
+    createBeverage: web("/beverage/create"),
 } as const
 
 /**

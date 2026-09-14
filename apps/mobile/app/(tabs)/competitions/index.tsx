@@ -1,9 +1,16 @@
 import { useTranslation } from "../../../src/i18n/LocaleProvider"
-import { destinations } from "../../../src/navigation/destinations"
-import { NotPortedScreen } from "../../../src/navigation/NotPortedScreen"
+import { CompetitionList } from "../../../src/lists/CompetitionList"
+import { fetchCompetitionsPage } from "../../../src/lists/sources"
 
-/** The web's /competitions. Not ported yet — see NotPortedScreen. */
+/** The web's /competitions: every competition, newest pages first. */
 export default function CompetitionsTab() {
     const { t } = useTranslation()
-    return <NotPortedScreen title={t("common.competitions")} icon="competition" destination={destinations.competitions} />
+    return (
+        <CompetitionList
+            title={t("common.competitions")}
+            source={fetchCompetitionsPage}
+            empty={{ title: t("competitions.emptyTitle"), description: t("competitions.emptyDescription") }}
+            error={{ title: t("competitions.errorTitle"), description: t("competitions.errorDescription") }}
+        />
+    )
 }

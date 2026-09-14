@@ -2,6 +2,7 @@ import { fetchGraphQL } from '@/lib/apiClient';
 import BeveragesClientView from './BeveragesClientView';
 import { getBeverageTypesAction } from '@/app/myTemplates/actions';
 import { GET_BEVERAGES } from './queries';
+import { withBeverageType } from '@winelore/core/dashboard';
 
 
 export const dynamic = "force-dynamic"
@@ -25,27 +26,7 @@ export default async function DashboardPage({
         const rawBeverages = bevData?.beverages?.items || [];
         totalCount = bevData?.beverageCount || 0;
 
-        allBeverages = rawBeverages.map((bev: any) => {
-            let beverageType = undefined;
-            if (bev.attributes) {
-                if (typeof bev.attributes === "object" && bev.attributes !== null) {
-                    beverageType = (bev.attributes as any).color || undefined;
-                } else if (typeof bev.attributes === "string") {
-                    try {
-                        const parsed = JSON.parse(bev.attributes);
-                        if (parsed && parsed.color) {
-                            beverageType = parsed.color; // E.g.: "RED", "WHITE"
-                        }
-                    } catch (e) {
-                        const match = bev.attributes.match(/color=([^,\}]+)/);
-                        if (match) {
-                            beverageType = match[1].trim().replace(/^["']|["']$/g, "");
-                        }
-                    }
-                }
-            }
-            return { ...bev, type: beverageType };
-        });
+        allBeverages = rawBeverages.map((bev: any) => withBeverageType(bev));
     } catch (error) {
         console.error("Failed to load beverages:", error);
         hasError = true;

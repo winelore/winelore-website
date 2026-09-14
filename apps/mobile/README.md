@@ -56,19 +56,29 @@ shaping, template edition selection, status tones, and the live commission
 timer. `selectCommissionsForUser` does the membership filtering for the home
 screen, the full commissions list, and both of the web's equivalents.
 
-Where a card or link goes is one table, `src/navigation/destinations.ts`. A
-commission opens the lobby natively; anything whose screen is not ported yet —
-competitions, beverages, templates, the personal lists, the three other tabs —
-opens the same page of the website in the in-app browser. Porting a screen is
-flipping its entry from `web` to `app`. The unported tabs say so plainly and
-offer the website, rather than showing an empty list.
+Where a card or link goes is one table, `src/navigation/destinations.ts`.
+Commissions, the Competitions and Beverages tabs and the personal commission,
+competition and beverage lists are native; anything not ported yet —
+competition and beverage pages, templates, outcome policies, the map, create
+forms — opens the same page of the website in the in-app browser. Porting a
+screen is flipping its entry from `web` to `app`. The Map tab says so plainly
+and offers the website, rather than showing an empty page.
+
+The list screens (`src/lists/`) are the web's list pages as a phone draws them:
+title and subtitle, the count chip and the gradient create button, one column
+of the roomier list cards, and the web's empty and error state cards. The
+web's numbered pages become scrolling — `usePagedList` fetches the web's
+16-item pages by offset as the end comes into view, with the same queries and
+the same `@winelore/core` mappers. My Beverages reverse-geocodes each origin
+through Nominatim like the web does, but through a paced queue: Nominatim
+allows one request a second per client, and each phone is one.
 
 Tapping a commission enters through the waiting room rather than guessing a
 candidate: panel sequencing then routes to whatever the chair currently has
 open, which is the same path a judge takes mid-session.
 
 "View all" opens `/commissions`: every commission the judge is on, whatever its
-status. There is no pagination — the web pages that list, but it already
+status. It is handed to the list whole — the web pages it, but it already
 fetches all of it and slices client-side, so paging is a desktop affordance
 rather than a data constraint.
 
@@ -88,17 +98,18 @@ Not yet ported:
   `expo-audio`, replacing the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **Competitions, beverages, map, templates, outcome policies** — the lists and
-  the detail pages. Their tabs and links exist and open the website for now;
-  see `destinations.ts`. The web session is separate from the app's, so the
-  first visit asks for an AXUS ID sign-in in the in-app browser.
+- **Competition and beverage pages, templates, outcome policies, the map and
+  the create forms.** Their links exist and open the website for now; see
+  `destinations.ts`. The web session is separate from the app's, so the first
+  visit asks for an AXUS ID sign-in in the in-app browser.
 - **Results filters and expert drill-down.** The mobile list shows final
   standings and each candidate's outcomes; filtering by commission, per-expert
   score breakdowns, outlier highlighting and export are web-only.
 
-**Nothing here has run on a device or simulator.** It was developed on Linux, where
-the JavaScript can be typechecked and bundled but not built or launched. What is
-verified, and what is not, is spelled out under *Verification* below.
+The app was first written on Linux, where it could only be typechecked and
+bundled; it has since run on an iPhone 15 Pro on iOS 26.6. What is verified,
+and what is not, is spelled out under *Verification* below. Android has still
+never been launched.
 
 ## Running on a device
 
@@ -178,26 +189,26 @@ Verified here:
 - The shared OAuth strings are present in the built iOS bundle, so core really
   is compiled in rather than merely typechecking.
 
-**Not verified — needs a Mac:**
+Verified on an iPhone 15 Pro, iOS 26.6, against the dev backend:
 
-1. The flow against real AXUS ID: sheet presentation, the redirect back through
-   `winelore://callback`, code exchange, and what AXUS ID returns for a native
-   client. Only the request shapes are shared with web; the redirect leg is new.
-2. Keychain read/write, including behaviour on a locked device
-   (`AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`).
-3. **SecureStore's ~2048-byte advisory limit per value.** Fields are stored
-   separately partly for this reason, but if AXUS ID access tokens run large,
-   this is where it will surface. Check an actual token's length early.
-4. Liquid Glass rendering — requires an iOS 26 device or simulator. The
-   scorecard's submit bar is the first surface using it (`SubmitBar.tsx`),
-   falling back to an opaque bar below iOS 26.
-5. Native builds (`expo prebuild` / `expo run:ios`) have never been executed.
-6. Haptics. Every score selection fires `Haptics.selectionAsync()` and submit
-   fires a notification tap. These cannot be felt in a simulator — check them
-   on a device, since getting the weight wrong is worse than having none.
-7. The evaluation screen has never rendered against a real commission. Its
-   queries typecheck against the schema and bundle, but the shape of a live
-   template — especially a SmartProperty formula tree — has not been seen.
+- Release builds through `xcodebuild`, installed with `devicectl`.
+- A signed-in session in the Keychain surviving relaunches.
+- Liquid Glass: the tab bar, the headers and the profile sheet.
+- Home, the four list screens (paging to the end of a 136-item list, a
+  resolved origin), the lobby, results and the scorecard's routing.
+
+**Not verified yet:**
+
+1. Keychain behaviour on a locked device (`AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`).
+2. **SecureStore's ~2048-byte advisory limit per value.** Fields are stored
+   separately partly for this reason; the tokens seen so far fit.
+3. Haptics. Every score selection fires `Haptics.selectionAsync()` and submit
+   fires a notification tap — check the weight by hand, since getting it wrong
+   is worse than having none.
+4. The scorecard against a live candidate. Its queries typecheck against the
+   schema and bundle, but the shape of a live template — especially a
+   SmartProperty formula tree — has not been seen.
+5. Anything on Android.
 
 ## Typed routes are off, deliberately
 
