@@ -9,10 +9,10 @@ import {
 } from "react-native"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import * as Haptics from "expo-haptics"
-import { useTranslation } from "../../../src/i18n/LocaleProvider"
-import { usePanelSummary } from "../../../src/commission/usePanelSummary"
-import { completeReplica, startNextPanel } from "../../../src/commission/mutations"
-import { elevation, palette, radius, spacing, type } from "../../../src/theme"
+import { useTranslation } from "../../../../../src/i18n/LocaleProvider"
+import { usePanelSummary } from "../../../../../src/commission/usePanelSummary"
+import { completeReplica, startNextPanel } from "../../../../../src/commission/mutations"
+import { elevation, palette, radius, spacing, type } from "../../../../../src/theme"
 
 /**
  * Shown when a panel finishes: what the panel scored, and — for the chair —

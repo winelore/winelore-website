@@ -1,8 +1,8 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native"
 import { Stack, useLocalSearchParams } from "expo-router"
-import { useTranslation } from "../../../src/i18n/LocaleProvider"
-import { useWaitForNextCandidate } from "../../../src/evaluation/useWaitForNextCandidate"
-import { palette, spacing, type } from "../../../src/theme"
+import { useTranslation } from "../../../../../src/i18n/LocaleProvider"
+import { useWaitForNextCandidate } from "../../../../../src/evaluation/useWaitForNextCandidate"
+import { palette, spacing, type } from "../../../../../src/theme"
 
 /**
  * Between candidates.

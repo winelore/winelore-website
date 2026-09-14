@@ -8,6 +8,7 @@ import { useTranslation } from "@/lib/i18n/context"
 import Link from "next/link"
 import { useUsernames } from "@/hooks/useUsernames"
 import { useMobileNavTitle } from "@/lib/mobileNav"
+import { dashboardUsernameAuids } from "@winelore/core/dashboard"
 
 function TemplateCard({ template }: { template: any }) {
     return (
@@ -76,20 +77,10 @@ export default function HomeClientView({ recentCompetitions, myCommissions, rece
     totalBeveragesCount?: number;
 }) {
     // Collect AUIDs for username fetching
-    const auidsToFetch = React.useMemo(() => {
-        const ids = new Set<string>()
-        recentCompetitions.forEach(c => {
-            if (c.holder) {
-                c.holder.forEach((id: number) => ids.add(String(id)))
-            }
-        })
-        recentBeverages.forEach(bev => {
-            (bev.producers || []).forEach((producer: any) => {
-                (producer.auid || []).forEach((id: number) => ids.add(String(id)))
-            })
-        })
-        return Array.from(ids)
-    }, [recentCompetitions, recentBeverages])
+    const auidsToFetch = React.useMemo(
+        () => dashboardUsernameAuids(recentCompetitions, recentBeverages),
+        [recentCompetitions, recentBeverages],
+    )
 
     const { usernames } = useUsernames(auidsToFetch)
     const { t } = useTranslation()

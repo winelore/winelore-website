@@ -1123,6 +1123,11 @@ const en = {
     serverDesc: "An unexpected error occurred while loading this page. You can try again, or head back home.",
     retry: "Try again",
   },
+  nativeApp: {
+    notPortedTitle: "Not in the app yet",
+    notPortedBody: "This page is still being brought to the app. Until then, you can open it on the website.",
+    openOnWeb: "Open on the website",
+  },
 } as const
 
 type DeepStringValues<T> = {

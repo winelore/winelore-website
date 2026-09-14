@@ -17,11 +17,35 @@ type State =
     | { status: "ready"; commissions: ActiveCommission[] }
 
 /**
- * The commissions the signed-in user is a member of.
+ * The commissions a user is a member of.
  *
  * The backend has no "commissions I am on" query, so the web pages through all
  * of them and filters client-side; this does the same, and shares the filter
  * with the web through `selectCommissionsForUser`.
+ */
+export async function fetchMemberCommissions(
+    auid: string,
+    options: SelectCommissionsOptions = {},
+): Promise<ActiveCommission[]> {
+    const all: unknown[] = []
+    let offset = 0
+    // Paged rather than one large request: the list grows with every
+    // competition the instance has ever run.
+    for (;;) {
+        const response = await fetchGraphQLRaw<any>(GET_DASHBOARD_COMMISSIONS, {
+            limit: PAGE_SIZE,
+            offset,
+        })
+        const items = response?.commissions?.items ?? []
+        all.push(...items)
+        if (items.length < PAGE_SIZE) break
+        offset += PAGE_SIZE
+    }
+    return selectCommissionsForUser(all as never, auid, options)
+}
+
+/**
+ * The signed-in user's commissions, as screen state.
  *
  * Pass no options for the full history, as the my-commissions list wants;
  * `dashboardOptions` narrows it to live work for the home screen.
@@ -36,25 +60,9 @@ export function useCommissions(options: SelectCommissionsOptions = {}) {
                 setState({ status: "ready", commissions: [] })
                 return
             }
-
-            const all: unknown[] = []
-            let offset = 0
-            // Paged rather than one large request: the list grows with every
-            // competition the instance has ever run.
-            for (;;) {
-                const response = await fetchGraphQLRaw<any>(GET_DASHBOARD_COMMISSIONS, {
-                    limit: PAGE_SIZE,
-                    offset,
-                })
-                const items = response?.commissions?.items ?? []
-                all.push(...items)
-                if (items.length < PAGE_SIZE) break
-                offset += PAGE_SIZE
-            }
-
             setState({
                 status: "ready",
-                commissions: selectCommissionsForUser(all as never, session.auid, options),
+                commissions: await fetchMemberCommissions(session.auid, options),
             })
         } catch {
             setState({ status: "error" })

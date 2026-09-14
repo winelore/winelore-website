@@ -2,12 +2,12 @@ import { useCallback } from "react"
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native"
 import { Stack, useLocalSearchParams } from "expo-router"
 import type { EvaluationScoreInput } from "@winelore/core/evaluation"
-import { EvaluationScreen } from "../../src/evaluation/EvaluationScreen"
-import { buildEvaluationLabels } from "../../src/evaluation/labels"
-import { useCandidateEvaluation } from "../../src/evaluation/useCandidateEvaluation"
-import { recordSubmission, usePanelSequencing } from "../../src/evaluation/usePanelSequencing"
-import { useTranslation } from "../../src/i18n/LocaleProvider"
-import { palette } from "../../src/theme"
+import { EvaluationScreen } from "../../../../src/evaluation/EvaluationScreen"
+import { buildEvaluationLabels } from "../../../../src/evaluation/labels"
+import { useCandidateEvaluation } from "../../../../src/evaluation/useCandidateEvaluation"
+import { recordSubmission, usePanelSequencing } from "../../../../src/evaluation/usePanelSequencing"
+import { useTranslation } from "../../../../src/i18n/LocaleProvider"
+import { palette } from "../../../../src/theme"
 
 export default function CandidateEvaluationRoute() {
     const { candidateId } = useLocalSearchParams<{ candidateId: string }>()

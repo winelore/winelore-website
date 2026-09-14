@@ -34,13 +34,30 @@ const rootEnv = readRootEnv()
 const pick = (expoKey: string, webKey: string) =>
     process.env[expoKey] || rootEnv[webKey] || undefined
 
+/**
+ * The website's origin, for pages the app has not ported yet. Derived from the
+ * web's OAuth redirect URI — the one root .env value that names the site
+ * itself rather than an API.
+ */
+function webOrigin(): string | undefined {
+    if (process.env.EXPO_PUBLIC_WEB_ORIGIN) return process.env.EXPO_PUBLIC_WEB_ORIGIN
+    const redirect = rootEnv.NEXT_PUBLIC_AXUS_ID_REDIRECT_URI
+    try {
+        return redirect ? new URL(redirect).origin : undefined
+    } catch {
+        return undefined
+    }
+}
+
 const config: ExpoConfig = {
     name: "Winelore",
     slug: "winelore",
     scheme: "winelore",
     version: "0.1.0",
     orientation: "portrait",
-    userInterfaceStyle: "automatic",
+    // Light only, as the web is: with "automatic", dark mode turns the native
+    // nav and tab bars dark around content that stays light.
+    userInterfaceStyle: "light",
     // Web is deliberately absent: the dev server would otherwise serve a web
     // bundle needing react-native-web, which this app has no use for since the
     // web product is the Next.js app in this same repo. A browser tab left open
@@ -78,6 +95,7 @@ const config: ExpoConfig = {
             "EXPO_PUBLIC_GRAPHQL_ENDPOINT",
             "NEXT_PUBLIC_GRAPHQL_ENDPOINT",
         ),
+        EXPO_PUBLIC_WEB_ORIGIN: webOrigin(),
     },
 }
 

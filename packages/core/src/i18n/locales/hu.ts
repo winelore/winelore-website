@@ -1123,6 +1123,11 @@ const hu = {
         serverDesc: "Váratlan hiba történt az oldal betöltése közben. Próbálja újra, vagy térjen vissza a főoldalra.",
         retry: "Próbálja újra",
     },
+    nativeApp: {
+        notPortedTitle: "Még nincs az alkalmazásban",
+        notPortedBody: "Ez az oldal még készül az alkalmazásba. Addig a weboldalon nyithatod meg.",
+        openOnWeb: "Megnyitás a weboldalon",
+    },
 } as const
 
 export default hu

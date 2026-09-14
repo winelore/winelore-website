@@ -8,9 +8,9 @@ import {
 } from "react-native"
 import { Stack, useLocalSearchParams } from "expo-router"
 import * as Haptics from "expo-haptics"
-import { useLobby } from "../../../src/commission/useLobby"
-import { useTranslation } from "../../../src/i18n/LocaleProvider"
-import { elevation, palette, radius, spacing, type } from "../../../src/theme"
+import { useLobby } from "../../../../../src/commission/useLobby"
+import { useTranslation } from "../../../../../src/i18n/LocaleProvider"
+import { elevation, palette, radius, spacing, type } from "../../../../../src/theme"
 
 /**
  * The lobby: who is here, who is ready, and — for the chair — the control to

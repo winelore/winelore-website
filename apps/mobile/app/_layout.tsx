@@ -1,9 +1,17 @@
-import { Platform } from "react-native"
+import { Platform, View } from "react-native"
 import { Stack } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { AuthProvider } from "../src/auth/AuthProvider"
+import { AuthProvider, useAuth } from "../src/auth/AuthProvider"
 import { LocaleProvider } from "../src/i18n/LocaleProvider"
-import { palette } from "../src/theme"
+import { headerOptions } from "../src/navigation/headerOptions"
+import { palette, supportsLiquidGlass } from "../src/theme"
+
+/**
+ * A deep link straight to the profile sheet still lands with the tabs beneath
+ * it. Signed out, the tabs are not in the navigator and the first available
+ * screen — the landing page — is used instead.
+ */
+export const unstable_settings = { anchor: "(tabs)" }
 
 /**
  * expo-router's Stack is backed by react-native-screens, so this is a real
@@ -12,31 +20,56 @@ import { palette } from "../src/theme"
  * Liquid Glass on iOS 26 all come from the platform rather than being
  * reimplemented, which is what the web app has to do in CSS.
  *
- * Header options are split because the iOS ones are not merely ignored on
- * Android — `headerTransparent` there puts content under an unblurred header
- * and makes it unreadable, since Android has no equivalent of the iOS blur.
+ * Signed in, the root is the tab bar — Home, Competitions, Beverages, Map, as
+ * in the web's header. Screens are pushed inside the tabs, so the bar stays;
+ * only the profile sheet and the sample scorecard sit above it here.
+ * Signed out, the root is the landing page, as on the web.
  */
-const headerOptions = Platform.select({
-    ios: {
-        headerLargeTitle: true,
-        headerTransparent: true,
-        headerBlurEffect: "systemChromeMaterial" as const,
-    },
-    default: {
-        headerStyle: { backgroundColor: palette.surface },
-        headerTintColor: palette.text,
-    },
-})
-
 export default function RootLayout() {
     return (
         <LocaleProvider>
             <AuthProvider>
-                <StatusBar style="auto" />
-                <Stack screenOptions={headerOptions}>
-                    <Stack.Screen name="index" options={{ title: "Winelore" }} />
-                </Stack>
+                <StatusBar style="dark" />
+                <RootStack />
             </AuthProvider>
         </LocaleProvider>
+    )
+}
+
+function RootStack() {
+    const { session } = useAuth()
+
+    // Cold start: the Keychain read has not resolved, so it is not yet known
+    // which root to show. A blank page colour, not a spinner — it lasts a frame.
+    if (session === undefined) {
+        return <View style={{ flex: 1, backgroundColor: palette.background }} />
+    }
+
+    const signedIn = Boolean(session)
+
+    return (
+        <Stack screenOptions={{ ...headerOptions, contentStyle: { backgroundColor: palette.background } }}>
+            <Stack.Protected guard={signedIn}>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                    name="profile"
+                    options={{
+                        presentation: "formSheet",
+                        headerShown: false,
+                        sheetGrabberVisible: true,
+                        sheetAllowedDetents: "fitToContents",
+                        // iOS 26 draws the sheet in glass; an opaque content
+                        // background would paint over it.
+                        contentStyle: {
+                            backgroundColor: supportsLiquidGlass ? "transparent" : palette.background,
+                        },
+                        ...(Platform.OS === "android" ? { sheetCornerRadius: 28 } : {}),
+                    }}
+                />
+            </Stack.Protected>
+            <Stack.Protected guard={!signedIn}>
+                <Stack.Screen name="welcome" options={{ headerShown: false }} />
+            </Stack.Protected>
+        </Stack>
     )
 }

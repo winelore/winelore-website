@@ -11,9 +11,9 @@ import {
 import { Stack, useLocalSearchParams } from "expo-router"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { CompetitionOverviewRow } from "@winelore/core/results"
-import { useCommissionResults } from "../../src/results/useCommissionResults"
-import { useTranslation } from "../../src/i18n/LocaleProvider"
-import { elevation, palette, radius, spacing, type } from "../../src/theme"
+import { useCommissionResults } from "../../../../src/results/useCommissionResults"
+import { useTranslation } from "../../../../src/i18n/LocaleProvider"
+import { elevation, palette, radius, spacing, type } from "../../../../src/theme"
 
 /**
  * Final standings, ranked by the leading outcome.

@@ -26,12 +26,46 @@ property, filters and an expert drill-down; on a phone that becomes a ranked
 list with a per-candidate detail sheet. The *numbers* are identical because
 there is one implementation of them; the presentation is not, deliberately.
 
-The home screen lists the commissions the signed-in judge is on. Tapping one
-enters through the waiting room rather than guessing a candidate: panel
-sequencing then routes to whatever the chair currently has open, which is the
-same path a judge takes mid-session. `selectCommissionsForUser` in `@winelore/core/dashboard` does the membership
-filtering for the home screen, the full commissions list, and both of the web's
-equivalents — four callers, one implementation.
+The home screen is the web's dashboard, section for section: the welcome
+banner, then active commissions, templates, competitions and beverages, each
+with its cards, empty state and "View all". It is laid out as the web lays it
+out on a phone — one column, no panel around the cards, "View all" beside each
+title. The cards are the web's `EntityCard` anatomy in the web's colours;
+`src/theme.ts` carries Tailwind's slate and indigo, converted from Tailwind
+v4's OKLCH values so they match rather than approximate.
+
+What is not the web's is the chrome. The web draws an iOS-style nav bar, tab
+bar and sheet in CSS; here they are the real ones. The four header tabs (Home,
+Competitions, Beverages, Map) are a native tab bar — Liquid Glass on iOS 26, a
+Material 3 navigation bar on Android. It stays on screen as in the App Store
+rather than Music: no minimising on scroll, and the lobby, commissions list,
+panel summary and results are pushed inside the Home tab. It hides only on the
+waiting room and the scorecard, as the web's phone tab bar does while scoring.
+The session screens hand off with `router.replace`, which cannot cross
+navigators without rebuilding the tab bar, so they all share the Home stack. The account is an avatar in the Home
+header, as in the App Store and Gmail, opening a system form sheet with the
+personal lists, AXUS ID, sign-out, and a language control that is a real
+UISegmentedControl (SwiftUI via `@expo/ui`) on iOS and a Material segmented
+button row (Compose) on Android. Icons are SF Symbols and Material Symbols via
+`expo-symbols`, mapped by meaning to the lucide icons the web uses in
+`src/ui/Icon.tsx`. Signed out, the root is the web's landing page.
+
+Everything the cards show is computed by `@winelore/core/dashboard`, and the
+web's home page now calls the same functions: competition and beverage
+shaping, template edition selection, status tones, and the live commission
+timer. `selectCommissionsForUser` does the membership filtering for the home
+screen, the full commissions list, and both of the web's equivalents.
+
+Where a card or link goes is one table, `src/navigation/destinations.ts`. A
+commission opens the lobby natively; anything whose screen is not ported yet —
+competitions, beverages, templates, the personal lists, the three other tabs —
+opens the same page of the website in the in-app browser. Porting a screen is
+flipping its entry from `web` to `app`. The unported tabs say so plainly and
+offer the website, rather than showing an empty list.
+
+Tapping a commission enters through the waiting room rather than guessing a
+candidate: panel sequencing then routes to whatever the chair currently has
+open, which is the same path a judge takes mid-session.
 
 "View all" opens `/commissions`: every commission the judge is on, whatever its
 status. There is no pagination — the web pages that list, but it already
@@ -54,9 +88,10 @@ Not yet ported:
   `expo-audio`, replacing the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **The dashboard's other three sections** — templates, competitions and
-  beverages. The web home page shows these alongside commissions; mobile shows
-  commissions only, since the screens those cards open do not exist yet.
+- **Competitions, beverages, map, templates, outcome policies** — the lists and
+  the detail pages. Their tabs and links exist and open the website for now;
+  see `destinations.ts`. The web session is separate from the app's, so the
+  first visit asks for an AXUS ID sign-in in the in-app browser.
 - **Results filters and expert drill-down.** The mobile list shows final
   standings and each candidate's outcomes; filtering by commission, per-expert
   score breakdowns, outlier highlighting and export are web-only.
@@ -85,13 +120,13 @@ works for on-device development).
 No configuration step: `app.config.ts` reads the repo-root `.env` the web app
 already uses, so the client id and endpoints come across automatically.
 
-Tap *Open sample scorecard* for the preview route — the real evaluator on
-sample data, no sign-in and no backend. That is the fastest way to judge the
+In a development build, the landing page has a *Sample scorecard* link to the
+preview route — the real evaluator on sample data, no sign-in and no backend. That is the fastest way to judge the
 two things that cannot be checked anywhere else: haptics, which a simulator
 cannot produce, and Liquid Glass, which needs iOS 26 hardware.
 
-The sign-in screen prints the client id, redirect URI and issuer it will
-actually use. A failed sign-in is nearly always a redirect URI outside the
+Below it, a development build prints the client id, redirect URI and issuer
+the sign-in will actually use. Release builds show neither. A failed sign-in is nearly always a redirect URI outside the
 allowlist, and that value is derived at runtime rather than configured, so it
 is shown rather than left to guess at.
 
@@ -297,3 +332,17 @@ Every version here comes from Expo SDK 57's own `bundledNativeModules.json`,
 not from npm `latest`. Pinning `latest` installs React Native ahead of what the
 SDK supports and Metro fails to bundle. Use `npx expo install <pkg>` to add
 dependencies so this stays true.
+
+### Reanimated is installed but not imported
+
+The first import of `react-native-reanimated` breaks the dev bundle:
+
+```
+Unable to resolve module semver/functions/satisfies
+```
+
+Its dev-only version check needs semver 7, npm hoists semver 6 to the root,
+and `disableHierarchicalLookup` in `metro.config.js` stops Metro from finding
+the copy nested under reanimated. Animations use React Native's `Animated`
+(with the native driver) until that is resolved — pinning `semver` with
+`pinPackage` would do it, but moves every other semver consumer too.
