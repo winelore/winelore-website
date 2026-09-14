@@ -57,12 +57,31 @@ timer. `selectCommissionsForUser` does the membership filtering for the home
 screen, the full commissions list, and both of the web's equivalents.
 
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
-Commissions, the Competitions and Beverages tabs and the personal commission,
-competition and beverage lists are native; anything not ported yet —
-competition and beverage pages, templates, outcome policies, the map, create
-forms — opens the same page of the website in the in-app browser. Porting a
+Commissions, competitions, the Competitions and Beverages tabs and the
+personal commission, competition and beverage lists are native; anything not
+ported yet — beverage pages, competition results, templates, outcome
+policies, the map, create forms — opens the same page of the website in the
+in-app browser. Porting a
 screen is flipping its entry from `web` to `app`. The Map tab says so plainly
 and offers the website, rather than showing an empty page.
+
+The competition page (`src/competition/`) is the web's /competition/[id]
+stacked as its phone layout stacks it: the competition's card with its live
+timer and holders, the status steps, series, timeline, a holder's controls and
+the commissions. A holder renames it, edits the planned dates with the
+system's own date pickers, submits a draft for review, starts it and adds
+commissions, through the same mutations and input builders
+(`@winelore/core/competition`) the web's server actions use. Starting and
+submitting ask first, which the web does not: they cannot be undone, and a
+phone is easier to tap by accident than a desk. Like the web, the page polls
+every three seconds until the competition completes — here only while it is
+on screen. A commission the user sits on opens its lobby; any other opens the
+web's organiser page.
+
+It opens inside whichever tab it was tapped in: the route lives in
+`app/(tabs)/(home,competitions)/`, an expo-router shared group, which is why
+the Competitions and Beverages tabs are route groups rather than plain
+folders. Their URLs are unchanged.
 
 The list screens (`src/lists/`) are the web's list pages as a phone draws them:
 title and subtitle, the count chip and the gradient create button, one column

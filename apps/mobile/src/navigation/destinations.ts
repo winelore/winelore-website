@@ -31,7 +31,8 @@ const web = (path: string): Destination => ({ kind: "web", path })
 export const destinations = {
     commission: (id: string, replicaId: string | null) =>
         replicaId ? app(`/commission/${id}/${replicaId}`) : web(`/commission/${id}`),
-    competition: (id: string) => web(`/competition/${id}`),
+    competition: (id: string) => app(`/competition/${id}`),
+    competitionResults: (id: string) => web(`/competition/${id}/results`),
     beverage: (id: string) => web(`/beverage/${id}`),
     template: (id: string, version: number | undefined) =>
         web(`/myTemplates?templateId=${id}-${version || 0}`),

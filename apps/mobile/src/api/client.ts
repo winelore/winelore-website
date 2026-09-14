@@ -64,6 +64,36 @@ export async function fetchGraphQLRaw<TResult>(
     query: string,
     variables?: Record<string, unknown>,
 ): Promise<TResult> {
+    const json = await post<TResult>(query, variables)
+    if (json.errors?.length && !json.data) {
+        throw new Error(json.errors[0]?.message || "GraphQL query failed")
+    }
+    return json.data as TResult
+}
+
+/**
+ * Send a mutation. Unlike a query, any GraphQL error fails it: a mutation
+ * that comes back with errors beside its data did not do what was asked,
+ * and reading it as success would tell the user a change was made when it
+ * was not.
+ */
+export async function mutateGraphQLRaw<TResult>(
+    query: string,
+    variables?: Record<string, unknown>,
+    headers?: Record<string, string>,
+): Promise<TResult> {
+    const json = await post<TResult>(query, variables, headers)
+    if (json.errors?.length) {
+        throw new Error(json.errors[0]?.message || "GraphQL mutation failed")
+    }
+    return json.data as TResult
+}
+
+async function post<TResult>(
+    query: string,
+    variables?: Record<string, unknown>,
+    headers?: Record<string, string>,
+): Promise<{ data?: TResult; errors?: Array<{ message?: string }> }> {
     const accessToken = await getValidAccessToken()
 
     const response = await fetch(getEndpoint(), {
@@ -71,19 +101,15 @@ export async function fetchGraphQLRaw<TResult>(
         headers: {
             "Content-Type": "application/json",
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            ...headers,
         },
         body: JSON.stringify({ query, variables }),
     })
 
     const text = await response.text()
-    let json: { data?: TResult; errors?: Array<{ message?: string }> }
     try {
-        json = JSON.parse(text)
+        return JSON.parse(text)
     } catch {
         throw new Error(`GraphQL server error (${response.status})`)
     }
-    if (json.errors?.length && !json.data) {
-        throw new Error(json.errors[0]?.message || "GraphQL query failed")
-    }
-    return json.data as TResult
 }

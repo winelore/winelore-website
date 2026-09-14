@@ -56,11 +56,11 @@ export default function TabsLayout() {
                 <NativeTabs.Trigger.Icon sf={{ default: "house", selected: "house.fill" }} md="home" />
                 <NativeTabs.Trigger.Label>{t("common.home")}</NativeTabs.Trigger.Label>
             </NativeTabs.Trigger>
-            <NativeTabs.Trigger name="competitions">
+            <NativeTabs.Trigger name="(competitions)">
                 <NativeTabs.Trigger.Icon sf={{ default: "trophy", selected: "trophy.fill" }} md="trophy" />
                 <NativeTabs.Trigger.Label>{t("common.competitions")}</NativeTabs.Trigger.Label>
             </NativeTabs.Trigger>
-            <NativeTabs.Trigger name="beverages">
+            <NativeTabs.Trigger name="(beverages)">
                 <NativeTabs.Trigger.Icon sf={{ default: "wineglass", selected: "wineglass.fill" }} md="wine_bar" />
                 <NativeTabs.Trigger.Label>{t("common.beverages")}</NativeTabs.Trigger.Label>
             </NativeTabs.Trigger>

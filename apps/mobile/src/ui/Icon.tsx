@@ -34,6 +34,11 @@ const GLYPHS = {
     arrow: { ios: "arrow.right", android: "arrow_forward" }, // ArrowRight
     retry: { ios: "arrow.clockwise", android: "refresh" },
     plus: { ios: "plus", android: "add" }, // Plus
+    timer: { ios: "timer", android: "timer" }, // Timer
+    edit: { ios: "pencil", android: "edit" }, // Pencil
+    close: { ios: "xmark", android: "close" }, // X
+    done: { ios: "checkmark", android: "check" }, // Check
+    send: { ios: "paperplane", android: "send" }, // Send
     web: { ios: "safari", android: "public" },
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle

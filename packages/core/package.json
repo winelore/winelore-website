@@ -17,7 +17,8 @@
     "./evaluation": "./src/evaluation/index.ts",
     "./results": "./src/results/index.ts",
     "./dashboard": "./src/dashboard/index.ts",
-    "./commission": "./src/commission/index.ts"
+    "./commission": "./src/commission/index.ts",
+    "./competition": "./src/competition/index.ts"
   },
   "dependencies": {
     "graphql": "^16.14.1"

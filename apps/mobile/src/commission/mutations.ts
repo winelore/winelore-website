@@ -1,4 +1,4 @@
-import { fetchGraphQLRaw } from "../api/client"
+import { mutateGraphQLRaw } from "../api/client"
 
 /**
  * Mutations the generated SDK does not carry — the web app sends these as raw
@@ -38,8 +38,8 @@ export async function startNextPanel(
     nextPanelId: string,
     firstCandidateId: string,
 ): Promise<void> {
-    await fetchGraphQLRaw(SET_CURRENT_PANEL, { id: replicaId, currentPanelId: nextPanelId })
-    await fetchGraphQLRaw(SET_PANEL_CURRENT_CANDIDATE, {
+    await mutateGraphQLRaw(SET_CURRENT_PANEL, { id: replicaId, currentPanelId: nextPanelId })
+    await mutateGraphQLRaw(SET_PANEL_CURRENT_CANDIDATE, {
         id: replicaId,
         panelId: nextPanelId,
         currentCandidateId: firstCandidateId,
@@ -48,5 +48,5 @@ export async function startNextPanel(
 
 /** End the replica; every participant is then routed to the shared results. */
 export async function completeReplica(replicaId: string): Promise<void> {
-    await fetchGraphQLRaw(COMPLETE_REPLICA, { id: replicaId })
+    await mutateGraphQLRaw(COMPLETE_REPLICA, { id: replicaId })
 }

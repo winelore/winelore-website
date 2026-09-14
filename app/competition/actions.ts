@@ -3,6 +3,15 @@
 import { sdk } from '../../lib/apiClient';
 import { getGraphQLEndpoint } from '../../lib/graphqlEndpoint';
 import { cookies } from 'next/headers';
+import {
+    CHANGE_COMPETITION_NAME,
+    CREATE_COMMISSION,
+    UPDATE_COMPETITION_DATES,
+    createCommissionInput,
+    plannedDatesInput,
+    toCompetitionPage,
+    type NewCommission,
+} from '@winelore/core/competition';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -42,36 +51,7 @@ export async function getCompetitionDataAction(competitionId: string) {
         const data = await sdk.GetCompetitionPage({ id: competitionId });
         const competition = data.competition;
         if (!competition) return null;
-        const commissions = data.commissionsByCompetition?.items || [];
-
-        return {
-            id: competition.id,
-            name: competition.name,
-            status: competition.status,
-            startedAt: competition.startedAt || null,
-            plannedStartAt: competition.plannedDates?.start || null,
-            plannedEndAt: competition.plannedDates?.end || null,
-            endedAt: competition.endedAt || null,
-            series: {
-                id: competition.series.id,
-                name: competition.series.name,
-                status: competition.series.status
-            },
-            holders: competition.holders.flat(),
-            commissions: commissions.map((comm: any) => ({
-                id: comm.id,
-                name: comm.name,
-                status: comm.status,
-                plannedStartAt: comm.plannedDates?.start || null,
-                plannedEndAt: comm.plannedDates?.end || null,
-                startedAt: comm.startedAt || null,
-                endedAt: comm.endedAt || null,
-                wineJumperMiniGameEnabled: comm.wineJumperMiniGameEnabled || false,
-                voiceCommentsEnabled: comm.voiceCommentsEnabled || false,
-                propertyCommentsEnabled: comm.propertyCommentsEnabled || false,
-                beverageOriginDuringEvaluationEnabled: comm.beverageOriginDuringEvaluationEnabled || false
-            }))
-        };
+        return toCompetitionPage(competition, data.commissionsByCompetition?.items);
     } catch (err: any) {
         console.error("Server Action Error (getCompetitionDataAction):", err);
         throw new Error(err.message || "Failed to fetch competition data");
@@ -171,17 +151,9 @@ export async function updateCompetitionDatesAction(
 ) {
     if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
     try {
-        const mutation = `
-            mutation UpdateCompetitionDates($id: ID!, $input: PlannedDatesInput!) {
-                updateCompetitionDates(id: $id, input: $input) { id }
-            }
-        `;
-        await executeGraphQL(mutation, {
+        await executeGraphQL(UPDATE_COMPETITION_DATES, {
             id: competitionId,
-            input: {
-                start: plannedStartDate ? new Date(plannedStartDate).toISOString() : null,
-                end: plannedEndDate ? new Date(plannedEndDate).toISOString() : null
-            }
+            input: plannedDatesInput(plannedStartDate, plannedEndDate),
         });
         return { success: true };
     } catch (err: any) {
@@ -193,12 +165,7 @@ export async function updateCompetitionDatesAction(
 export async function updateCompetitionNameAction(competitionId: string, newName: string) {
     if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
     try {
-        const mutation = `
-            mutation ChangeCompetitionName($id: ID!, $newName: String!) {
-                changeCompetitionName(id: $id, newName: $newName) { id name }
-            }
-        `;
-        await executeGraphQL(mutation, { id: competitionId, newName });
+        await executeGraphQL(CHANGE_COMPETITION_NAME, { id: competitionId, newName });
         return { success: true };
     } catch (err: any) {
         console.error("Server Action Error (updateCompetitionNameAction):", err);
@@ -236,16 +203,6 @@ export async function getCompetitionSeriesListAction() {
     }
 }
 
-interface CreateCommissionParams {
-    competitionId: string;
-    name: string;
-    plannedStartDate?: string; // ISO string, optional
-    plannedEndDate?: string;   // ISO string, optional
-    wineJumperMiniGameEnabled?: boolean;
-    voiceCommentsEnabled?: boolean;
-    propertyCommentsEnabled?: boolean;
-    beverageOriginDuringEvaluationEnabled?: boolean;
-}
 
 async function executeGraphQL(query: string, variables: any) {
     const response = await fetch(getGraphQLEndpoint(), {
@@ -275,35 +232,10 @@ async function executeGraphQL(query: string, variables: any) {
     return json.data;
 }
 
-export async function createCommission(params: CreateCommissionParams) {
+export async function createCommission(params: NewCommission) {
     try {
-        const createCommissionMutation = `
-            mutation CreateCommission($input: CreateCommissionInput!) {
-                createCommission(input: $input) {
-                    id
-                    name
-                }
-            }
-        `;
-
-        const plannedDates = (params.plannedStartDate || params.plannedEndDate)
-            ? {
-                start: params.plannedStartDate ? new Date(params.plannedStartDate).toISOString() : null,
-                end: params.plannedEndDate ? new Date(params.plannedEndDate).toISOString() : null,
-            }
-            : null;
-
-        const data = await executeGraphQL(createCommissionMutation, {
-            input: {
-                competitionId: params.competitionId,
-                name: params.name,
-                plannedDates,
-                wineJumperMiniGameEnabled: params.wineJumperMiniGameEnabled ?? false,
-                voiceCommentsEnabled: params.voiceCommentsEnabled ?? false,
-                propertyCommentsEnabled: params.propertyCommentsEnabled ?? false,
-                beverageOriginDuringEvaluationEnabled: params.beverageOriginDuringEvaluationEnabled ?? false,
-            }
-        });
+        // The input is built in core, so the mobile app creates the same commission.
+        const data = await executeGraphQL(CREATE_COMMISSION, { input: createCommissionInput(params) });
 
         const commission = data?.createCommission;
         if (!commission?.id) throw new Error("Failed to create commission.");
