@@ -5,9 +5,12 @@ import {
     findWineRegionsForPoint,
     toWineRegionLayer,
 } from "@/lib/wineRegions"
-import type {
-    WineRegionBounds,
-    WineRegionFeatureCollection,
+import {
+    nominatimRegionUrl,
+    parseNominatimRegion,
+    wineRegionSummaries,
+    type WineRegionBounds,
+    type WineRegionFeatureCollection,
 } from '@winelore/core'
 
 const globalForMapCache = globalThis as typeof globalThis & {
@@ -31,27 +34,17 @@ async function reverseGeocode(lat: number, lng: number) {
     const timeoutId = setTimeout(() => controller.abort(), 5000)
 
     try {
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&accept-language=en&zoom=5`,
-            {
-                headers: {
-                    "Accept": "application/json",
-                    "User-Agent": "WineLoreWebsite/1.0 (contact@winelore.com)",
-                },
-                signal: controller.signal,
+        const response = await fetch(nominatimRegionUrl(lat, lng), {
+            headers: {
+                "Accept": "application/json",
+                "User-Agent": "WineLoreWebsite/1.0 (contact@winelore.com)",
             },
-        )
+            signal: controller.signal,
+        })
 
         if (!response.ok) return {}
 
-        const data = await response.json()
-        const result = {
-            region: data.address?.state
-                || data.address?.region
-                || data.address?.county,
-            countryCode: data.address?.country_code?.toUpperCase(),
-            countryName: data.address?.country,
-        }
+        const result = parseNominatimRegion(await response.json())
         globalForMapCache.reverseGeocodeCache.set(cacheKey, result)
         return result
     } catch (error) {
@@ -72,14 +65,7 @@ export async function getRegionInfo(lat: number, lng: number) {
             type: "FeatureCollection",
             features: matches,
         }
-        const wineRegions = matches.map((feature) => ({
-            id: feature.properties.id,
-            name: feature.properties.name,
-            type: "Wine region",
-            status: feature.properties.status || "mapped",
-            countryCode: feature.properties.country,
-            localName: feature.properties.localName,
-        }))
+        const wineRegions = wineRegionSummaries(matches)
 
         return {
             ...geography,
@@ -97,9 +83,7 @@ export async function getRegionInfo(lat: number, lng: number) {
 }
 
 export async function getVisiblePolygons(bounds: WineRegionBounds) {
-    const matches = await findWineRegionsInBounds(bounds)
-
-    return matches
+    return (await findWineRegionsInBounds(bounds))
         .map(toWineRegionLayer)
         .sort((left, right) => left.name.localeCompare(right.name))
 }

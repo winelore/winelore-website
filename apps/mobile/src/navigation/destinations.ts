@@ -59,7 +59,7 @@ export const destinations = {
 
     competitions: app("/competitions"),
     beverages: app("/beverages"),
-    map: web("/map"),
+    map: app("/map"),
 
     // Create forms are organiser desk work and stay on the web for now.
     createCompetition: web("/competition/create"),

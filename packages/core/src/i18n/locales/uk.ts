@@ -1134,9 +1134,6 @@ const uk: TranslationKey = {
     retry: "Спробувати ще раз",
   },
   nativeApp: {
-    notPortedTitle: "Ще не в застосунку",
-    notPortedBody: "Цю сторінку ще переносять у застосунок. Поки що її можна відкрити на сайті.",
-    openOnWeb: "Відкрити на сайті",
     discardChanges: "Зміни не збережено. Скасувати їх?",
     discard: "Скасувати зміни",
   },

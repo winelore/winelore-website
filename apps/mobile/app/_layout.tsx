@@ -80,6 +80,23 @@ function RootStack() {
                 {/* The beverage page's modals — the web's edit and samples dialogs — as page sheets. */}
                 <Stack.Screen name="beverage/[id]/edit" options={pageSheet} />
                 <Stack.Screen name="beverage/[id]/samples/[batchId]" options={pageSheet} />
+                {/*
+                 * A beverage from the map, as Apple Maps opens a place: a sheet
+                 * at half height that leaves the map usable behind it, pulled up
+                 * for the rest.
+                 */}
+                <Stack.Screen
+                    name="map/beverage/[id]"
+                    options={{
+                        presentation: "formSheet",
+                        headerShown: false,
+                        sheetGrabberVisible: true,
+                        sheetAllowedDetents: [0.5, 1.0],
+                        sheetLargestUndimmedDetentIndex: 0,
+                        contentStyle: { backgroundColor: palette.background },
+                        ...(Platform.OS === "android" ? { sheetCornerRadius: 28 } : {}),
+                    }}
+                />
                 {/* The web's outcome policy dialog, for a new policy and an existing one. */}
                 <Stack.Screen name="outcome-policy/new" options={pageSheet} />
                 <Stack.Screen name="outcome-policy/[id]" options={pageSheet} />

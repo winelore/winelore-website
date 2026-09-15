@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
-import { beverageOriginParts, nominatimReverseUrl, parseNominatimAddress, type GeographicInfo } from "@winelore/core"
+import {
+    beverageOriginParts,
+    nominatimRegionUrl,
+    nominatimReverseUrl,
+    parseNominatimAddress,
+    parseNominatimRegion,
+    type GeographicInfo,
+    type RegionGeography,
+} from "@winelore/core"
 
 interface Point {
     latitude: number
@@ -14,17 +22,17 @@ interface Point {
 const SPACING_MS = 1000
 const TIMEOUT_MS = 4000
 
-const cache = new Map<string, Promise<GeographicInfo | null>>()
+const cache = new Map<string, Promise<unknown>>()
 let queue: Promise<unknown> = Promise.resolve()
 
 // Five decimals is about a metre: the same vineyard, the same answer.
 const keyOf = ({ latitude, longitude }: Point) => `${latitude.toFixed(5)},${longitude.toFixed(5)}`
 
-async function request(point: Point): Promise<GeographicInfo | null> {
+async function request(url: string): Promise<any | null> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
     try {
-        const response = await fetch(nominatimReverseUrl(point.latitude, point.longitude), {
+        const response = await fetch(url, {
             headers: {
                 "User-Agent": "WineLoreApp/1.0 (contact@winelore.com)",
                 // As the web asks: English first, then Ukrainian.
@@ -32,9 +40,7 @@ async function request(point: Point): Promise<GeographicInfo | null> {
             },
             signal: controller.signal,
         })
-        if (!response.ok) return null
-        const data = await response.json()
-        return parseNominatimAddress(data?.address)
+        return response.ok ? await response.json() : null
     } catch {
         return null
     } finally {
@@ -42,21 +48,33 @@ async function request(point: Point): Promise<GeographicInfo | null> {
     }
 }
 
-/** One point's place, through the paced queue; also what a download's origins go through. */
-export function lookUp(point: Point): Promise<GeographicInfo | null> {
-    const key = keyOf(point)
-    let pending = cache.get(key)
+/** A lookup through the queue, once per key; a failure is not cached, so a later screen can try again. */
+function paced<T>(key: string, url: string, read: (data: any) => T | null): Promise<T | null> {
+    let pending = cache.get(key) as Promise<T | null> | undefined
     if (!pending) {
-        pending = queue.then(() => request(point))
-        // The next lookup waits for this one and then the spacing.
-        queue = pending.then(() => new Promise((resolve) => setTimeout(resolve, SPACING_MS)))
-        // A failure is not an answer; let a later screen try again.
-        pending.then((info) => {
-            if (!info) cache.delete(key)
+        const answer = queue.then(async () => {
+            const data = await request(url)
+            return data ? read(data) : null
         })
-        cache.set(key, pending)
+        pending = answer
+        // The next lookup waits for this one and then the spacing.
+        queue = answer.then(() => new Promise((resolve) => setTimeout(resolve, SPACING_MS)))
+        answer.then((value) => {
+            if (!value) cache.delete(key)
+        })
+        cache.set(key, answer)
     }
     return pending
+}
+
+/** One point's place, through the paced queue; also what a download's origins go through. */
+export function lookUp(point: Point): Promise<GeographicInfo | null> {
+    return paced(keyOf(point), nominatimReverseUrl(point.latitude, point.longitude), (data) => parseNominatimAddress(data?.address))
+}
+
+/** A point's region and country — the map's beverage panel — through the same queue. */
+export function lookUpRegion(point: Point): Promise<RegionGeography | null> {
+    return paced(`region:${keyOf(point)}`, nominatimRegionUrl(point.latitude, point.longitude), parseNominatimRegion)
 }
 
 /**

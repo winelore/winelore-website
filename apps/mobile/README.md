@@ -67,14 +67,36 @@ timer. `selectCommissionsForUser` does the membership filtering for the home
 screen, the full commissions list, and both of the web's equivalents.
 
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
-Commissions, competitions, beverages, the Competitions and Beverages tabs and
-the personal commission, competition, beverage, template and outcome policy
-lists, a judge's tasting summary, a template's own page and the outcome
-policy editor are native; anything not ported yet — the template editor,
-the map, create forms — opens the same page of the website in the in-app
-browser. Porting a
-screen is flipping its entry from `web` to `app`. The Map tab says so plainly
-and offers the website, rather than showing an empty page.
+Commissions, competitions, beverages, all four tabs and the personal
+commission, competition, beverage, template and outcome policy lists, a
+judge's tasting summary, a template's own page and the outcome policy editor
+are native; anything not ported yet — the template editor, create forms —
+opens the same page of the website in the in-app browser. Porting a screen
+is flipping its entry from `web` to `app`.
+
+The Map tab (`src/map/`) is the web's /map on the system's map — Apple Maps
+through `expo-maps` on iOS, Google Maps on Android — where the web draws
+OpenStreetMap tiles. It opens where the web's does, over Ukraine. Every
+beverage with an origin is a pin, searched around the view each time it
+settles, as the web does; mapped wine regions are outlined, and a capsule
+says how many are in view. A pin opens the beverage in a sheet at half
+height that leaves the map usable behind it, as Apple Maps opens a place —
+the web's panel: name, type and status, producers, when it was entered, the
+origin's region and country, and the wine regions it lies in, which the map
+outlines in indigo while the sheet is open.
+
+The regions are the website's own GeoJSON files (`public/data/`, 1,183
+regions, about 128,000 points), downloaded once and kept in the cache
+directory for a week. Finding regions in them — a point's, the view's —
+moved to `@winelore/core` (`wineRegions.ts`), which the web's server now
+calls. A phone does not outline a whole country's worth: regions are drawn
+once the view spans six degrees of latitude or less and holds 150 or fewer,
+their outlines thinned to the zoom (`wineRegionOutlines`), and without holes,
+which a native map polygon does not have. The origin's region and country
+go through the same paced Nominatim queue as My Beverages. The map asks for
+no location permission, so `expo-maps`' config plugin is not needed. On
+Android, Google Maps needs an API key in the manifest, which is not set up;
+Android has not been launched yet in any case.
 
 The competition page (`src/competition/`) is the web's /competition/[id]
 stacked as its phone layout stacks it: the competition's card with its live
@@ -228,7 +250,7 @@ Not yet ported:
   recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **The template editor, the map and the create forms.** Their links exist and open the website for now; see
+- **The template editor and the create forms.** Their links exist and open the website for now; see
   `destinations.ts`. The web session
   is separate from the app's, so the first visit asks for an AXUS ID sign-in
   in the in-app browser.

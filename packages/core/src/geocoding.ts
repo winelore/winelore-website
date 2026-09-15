@@ -64,3 +64,24 @@ export function beverageOriginParts(info: GeographicInfo | null | undefined): st
     if (!info) return []
     return [info.country, info.district].filter((part): part is string => Boolean(part))
 }
+
+/** The coarser lookup the map's beverage panel makes: a point's region and country, in English. */
+export function nominatimRegionUrl(latitude: number, longitude: number): string {
+    return `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=jsonv2&accept-language=en&zoom=5`
+}
+
+export interface RegionGeography {
+    region?: string
+    countryCode?: string
+    countryName?: string
+}
+
+/** A region lookup's answer: the state (or region, or county) and the country. */
+export function parseNominatimRegion(data: { address?: NominatimAddress } | null | undefined): RegionGeography {
+    const address = data?.address
+    return {
+        region: address?.state || address?.region || address?.county,
+        countryCode: address?.country_code?.toUpperCase(),
+        countryName: address?.country,
+    }
+}
