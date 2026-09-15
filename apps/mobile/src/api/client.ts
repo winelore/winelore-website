@@ -63,8 +63,9 @@ export const sdk = getSdk<RequesterOptions>(requester)
 export async function fetchGraphQLRaw<TResult>(
     query: string,
     variables?: Record<string, unknown>,
+    headers?: Record<string, string>,
 ): Promise<TResult> {
-    const json = await post<TResult>(query, variables)
+    const json = await post<TResult>(query, variables, headers)
     if (json.errors?.length && !json.data) {
         throw new Error(json.errors[0]?.message || "GraphQL query failed")
     }

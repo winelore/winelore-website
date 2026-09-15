@@ -102,13 +102,20 @@ export function HolderAvatar({ auid, username, size = 20 }: { auid: number; user
 /** Planned → started → completed, as the web stacks the steps on a phone. */
 export function StatusSteps({ status }: { status: string }) {
     const { t } = useTranslation()
-    const current = competitionStepIndex(status)
-    const steps = [
-        { label: t("competition.stepPlanned"), description: t("competition.stepPlannedDesc") },
-        { label: t("competition.stepStarted"), description: t("competition.stepStartedDesc") },
-        { label: t("competition.stepCompleted"), description: t("competition.stepCompletedDesc") },
-    ]
+    return (
+        <StepsCard
+            current={competitionStepIndex(status)}
+            steps={[
+                { label: t("competition.stepPlanned"), description: t("competition.stepPlannedDesc") },
+                { label: t("competition.stepStarted"), description: t("competition.stepStartedDesc") },
+                { label: t("competition.stepCompleted"), description: t("competition.stepCompletedDesc") },
+            ]}
+        />
+    )
+}
 
+/** The web's three-step tracker: done steps ticked in green, the current one in indigo. */
+export function StepsCard({ steps, current }: { steps: Array<{ label: string; description: string }>; current: number }) {
     return (
         <View style={[panelSurface, styles.steps]}>
             {steps.map((step, index) => {

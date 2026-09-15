@@ -11,8 +11,8 @@ import type { ListController } from "../../../src/lists/usePagedList"
  *
  * The backend cannot list "my" commissions, so both apps fetch them all and
  * filter; with everything already here there is no next page to load, and
- * the list is handed over whole. Each card opens the lobby, which routes on
- * by status.
+ * the list is handed over whole. Each card opens the commission's page, on
+ * the judge's own replica.
  */
 export default function CommissionsRoute() {
     const { t, tCount } = useTranslation()

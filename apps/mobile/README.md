@@ -129,15 +129,24 @@ status. It is handed to the list whole — the web pages it, but it already
 fetches all of it and slices client-side, so paging is a desktop affordance
 rather than a data constraint.
 
-Tapping any commission opens the lobby, which routes on by status: a running
-session to the waiting room, a finished one to its results, and otherwise the
-lobby itself — who is here, who is ready, and the chair's control to begin.
-`resolveLobbyState` in `@winelore/core/commission` decides all of that and is
-shared with the web commission page.
-
-The web's commission screen does much more than the lobby: panel and candidate
-management, template assignment, replica setup and session settings. Those are
-organiser desk work and are not ported; the lobby is the judge-facing half.
+Tapping a commission opens its page (`src/commission/CommissionScreen.tsx`),
+the web's /commission/[id] as its phone layout stacks it, on the judge's own
+replica: the banners to the results and a judge's own ranking, the session's
+card with its live timer, the timeline, the replica selector, the steps, the
+tasting panel with each judge's readiness, a holder's evaluation and replica
+settings (the system's switches), and the actions — submit for review, mark
+ready, the chair's start, enter the session, view results. A holder renames
+the commission and replicas, edits the dates, adds replicas and adds and
+removes experts (found by username, as on the beverage page). It polls every
+three seconds, and when the selected replica starts, a judge on it is taken
+into the session, as the web does. The data is `loadCommissionPage` in
+`@winelore/core/commission`, which the web's action now calls, with the rules
+for what the page shows (`commissionPageView`) and the start sequence
+(`startCommissionReplica`): the web started a replica by moving the series,
+competition and commission forward, binding templates and setting the first
+candidate, and the app now does the same rather than only starting the
+replica. Starting and submitting ask first, as they do on the competition page.
+Panels, candidates and templates on this page are next.
 
 Not yet ported:
 

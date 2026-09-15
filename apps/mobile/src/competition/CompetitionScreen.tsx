@@ -265,7 +265,18 @@ function Loaded({
                 <SeriesCard name={page.series.name} />
                 <TimelineCard
                     page={page}
-                    isHolder={isHolder}
+                    labels={{
+                        title: t("competition.timelineDetails"),
+                        plannedStart: t("competition.plannedStart"),
+                        plannedEnd: t("competition.plannedEnd"),
+                        actualStart: t("competition.actualStart"),
+                        actualEnd: t("competition.actualEnd"),
+                        notStarted: t("competition.notStartedYet"),
+                        notEnded: t("competition.notEndedYet"),
+                    }}
+                    canEdit={isHolder}
+                    showCalendar={page.status === "PLANNED"}
+                    calendarDetails={t("competition.calendarDetails", { name: page.name })}
                     busy={busy === "dates"}
                     onSaveDates={(start, end) => run("dates", () => updateCompetitionDates(page.id, start, end))}
                 />

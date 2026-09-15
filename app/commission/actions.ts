@@ -15,6 +15,24 @@ import {
     memberMatchesActor,
 } from '@winelore/core';
 import { isReplicaCandidateFinished } from "./replicaUtils";
+import {
+    ADD_COMMISSION_REPLICA_MEMBER,
+    COMMISSION_SETTINGS,
+    CREATE_COMMISSION_REPLICA,
+    REMOVE_COMMISSION_REPLICA_MEMBER,
+    RENAME_COMMISSION,
+    RENAME_COMMISSION_REPLICA,
+    SET_REPLICA_CHAOTIC_PANEL_CHANGES,
+    SET_REPLICA_PANEL_CHAOTIC_CANDIDATE_CHANGES,
+    UPDATE_COMMISSION_DATES,
+    commissionDatesInput,
+    loadCommissionPage,
+    startCommissionReplica,
+    type CommissionSetting,
+} from '@winelore/core/commission';
+
+const settingMutation = (key: CommissionSetting) =>
+    COMMISSION_SETTINGS.find((setting) => setting.key === key)!.mutation;
 import { buildPropertyMapFromCommissionTemplates } from '@winelore/core';
 import type { PropertyMeta } from '@winelore/core';
 import {
@@ -108,266 +126,13 @@ export async function startCommissionAction(id: string, commissionId?: string) {
     if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
         const headers = await getActorHeaders();
-
-        // 1. Query replica hierarchy to discover competition, series, commission and candidate data
-        let replicaData: any = null;
-        try {
-            const queryRes = await rawGraphQL(`
-                query GetReplicaHierarchy($id: ID!) {
-                    commissionReplica(id: $id) {
-                        id
-                        status
-                        members {
-                            id
-                            auid
-                            role
-                            isReady
-                        }
-                        commission {
-                            id
-                            status
-                            panels {
-                                id
-                                candidates {
-                                  id
-                                  beverageType {
-                                    id
-                                    code
-                                    name
-                                  }
-                                sample {
-                                    id
-                                    batch {
-                                        id
-                                        beverage {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
-                                }
-                            }
-                            templateEditions {
-                                id
-                                beverageType {
-                                    id
-                                    code
-                                }
-                                templateEdition {
-                                    id
-                                }
-                            }
-                            competition {
-                                id
-                                status
-                                series {
-                                    id
-                                    status
-                                }
-                            }
-                        }
-                    }
-                }
-            `, { id }, headers);
-            replicaData = queryRes?.commissionReplica;
-        } catch (e: any) {
-            console.error("Could not query replica hierarchy:", e?.message);
-        }
-
-        // Fallback: if commission candidates weren't fetched from replica, query commission directly
-        let candidates = (replicaData?.commission?.panels || []).flatMap((panel: any) => panel.candidates || []);
-        if (candidates.length === 0 && (commissionId || replicaData?.commission?.id)) {
-            const targetCommId = commissionId || replicaData?.commission?.id;
-            try {
-                const commRes = await rawGraphQL(`
-                    query GetCommissionCandidates($id: ID!) {
-                        commission(id: $id) {
-                            id
-                            status
-                            panels {
-                                id
-                                candidates {
-                                  id
-                                  beverageType {
-                                    id
-                                    code
-                                    name
-                                  }
-                                sample {
-                                    id
-                                    batch {
-                                        id
-                                        beverage {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
-                                }
-                            }
-                            templateEditions {
-                                id
-                                beverageType {
-                                    id
-                                    code
-                                }
-                                templateEdition {
-                                    id
-                                }
-                            }
-                            competition {
-                                id
-                                status
-                                series {
-                                    id
-                                    status
-                                }
-                            }
-                        }
-                    }
-                `, { id: targetCommId }, headers);
-                if (commRes?.commission) {
-                    if (!replicaData) replicaData = {};
-                    replicaData.commission = commRes.commission;
-                    candidates = (commRes.commission.panels || []).flatMap((panel: any) => panel.candidates || []);
-                }
-            } catch (fallbackErr: any) {
-                console.error("Fallback commission query failed:", fallbackErr?.message);
-            }
-        }
-
-        const seriesId = replicaData?.commission?.competition?.series?.id;
-        const seriesStatus = replicaData?.commission?.competition?.series?.status;
-        const compId = replicaData?.commission?.competition?.id;
-        const compStatus = replicaData?.commission?.competition?.status;
-        const commId = replicaData?.commission?.id || commissionId;
-        const commStatus = replicaData?.commission?.status;
-        const replStatus = replicaData?.status;
-
-        // Validation: Commission must have at least one candidate
-        if (candidates.length === 0) {
-            throw new Error("NO_CANDIDATES_TO_START");
-        }
-
-        // 2. Ensure parent Competition Series is APPROVED or PUBLISHED
-        if (seriesId && seriesStatus !== 'APPROVED' && seriesStatus !== 'PUBLISHED') {
-            if (seriesStatus === 'DRAFT') {
-                try { await sdk.DevSubmitCompetitionSeriesForReview({ id: seriesId }, { headers }); } catch (_) {}
-            }
-            try { await sdk.DevApproveCompetitionSeries({ id: seriesId }, { headers }); } catch (_) {}
-            console.log(`✅ Ensured Competition Series ${seriesId} is APPROVED`);
-        }
-
-        // 3. Ensure parent Competition is STARTED
-        if (compId && compStatus !== 'STARTED') {
-            if (compStatus === 'DRAFT') {
-                try { await sdk.DevSubmitCompetitionForReview({ id: compId }, { headers }); } catch (_) {}
-                try { await sdk.DevApproveCompetition({ id: compId }, { headers }); } catch (_) {}
-            }
-            if (compStatus === 'DRAFT' || compStatus === 'APPROVED') {
-                try { await sdk.DevPlanCompetition({ id: compId }, { headers }); } catch (_) {}
-            }
-            try { await sdk.DevStartCompetition({ id: compId }, { headers }); } catch (_) {}
-            console.log(`✅ Ensured Competition ${compId} is STARTED`);
-        }
-
-        // 4. Ensure Commission has template & is STARTED
-        if (commId && commStatus !== 'STARTED') {
-            if (commStatus === 'DRAFT') {
-                // Discover all beverage types from candidates
-                const boundBevTypeIds = new Set(
-                    (replicaData?.commission?.templateEditions || []).map((te: any) => te.beverageType?.id).filter(Boolean)
-                );
-
-                const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
-                const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
-                const activeEditions = items.filter((i: any) => (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.categories && i.categories.length > 0);
-                const defaultEdition = activeEditions.find((i: any) => i.categories && i.categories.length > 1) || activeEditions[0] || items[0];
-
-                const candidateBevTypes = new Set<string>();
-                for (const cand of candidates) {
-                    const btId = cand?.beverageType?.id;
-                    if (btId) candidateBevTypes.add(btId);
-                }
-
-                // If candidate beverage types exist, bind templates for all of them
-                if (candidateBevTypes.size > 0) {
-                    for (const btId of candidateBevTypes) {
-                        if (!boundBevTypeIds.has(btId)) {
-                            const editionForType = activeEditions.find((i: any) => i.template?.beverageType?.id === btId) || defaultEdition;
-                            if (editionForType) {
-                                try {
-                                    await sdk.DevSetCommissionTemplateEdition({
-                                        id: commId,
-                                        beverageTypeId: btId,
-                                        templateEditionId: editionForType.id
-                                    }, { headers });
-                                } catch (teErr: any) {
-                                    console.warn(`Could not bind template for beverage type ${btId}:`, teErr?.message);
-                                }
-                            }
-                        }
-                    }
-                } else if (boundBevTypeIds.size === 0 && defaultEdition) {
-                    const beverageTypeId = defaultEdition.template?.beverageType?.id || "11111111-1111-4111-8111-111111111101";
-                    try {
-                        await sdk.DevSetCommissionTemplateEdition({
-                            id: commId,
-                            beverageTypeId,
-                            templateEditionId: defaultEdition.id
-                        }, { headers });
-                    } catch (_) {}
-                }
-
-                try { await sdk.DevSubmitCommissionForReview({ id: commId }, { headers }); } catch (_) {}
-                try { await sdk.DevApproveCommission({ id: commId }, { headers }); } catch (_) {}
-            }
-
-            if (commStatus === 'DRAFT' || commStatus === 'APPROVED') {
-                try { await sdk.DevPlanCommission({ id: commId }, { headers }); } catch (_) {}
-            }
-
-            try {
-                await sdk.DevStartCommission({ id: commId }, { headers });
-                console.log(`✅ Ensured Commission ${commId} is STARTED`);
-            } catch (startCommErr: any) {
-                console.error("❌ Failed to start root commission:", startCommErr?.message);
-                throw new Error(startCommErr.message || "Failed to start root commission");
-            }
-        }
-
-        // 5. Ensure Replica is PLANNED
-        if (replStatus !== 'PLANNED' && replStatus !== 'STARTED') {
-            try {
-                await sdk.DevPlanCommissionReplica({ id }, { headers });
-                console.log(`✅ Ensured Replica ${id} is PLANNED`);
-            } catch (planErr: any) {
-                console.warn("DevPlanCommissionReplica:", planErr?.message);
-            }
-        }
-
-        // 6. Start the Replica tasting session
-        const startResult = await sdk.StartCommissionReplica({ id }, { headers });
-
-        // 7. Initialize first candidate for the tasting session
-        try {
-            const candRes = await sdk.GetReplicaCandidates({ replicaId: id }, { headers });
-            const firstPanel = candRes.commissionReplica?.replicaPanels?.[0];
-            const firstPending = firstPanel?.replicaCandidates.find((rc: any) => rc.status === 'PENDING') || firstPanel?.replicaCandidates?.[0];
-            if (firstPanel && firstPending) {
-                await rawGraphQL(`
-                    mutation InitializeCommissionReplicaPanel($id: ID!, $panelId: ID!, $currentCandidateId: ID) {
-                        setCommissionReplicaCurrentPanel(id: $id, currentPanelId: $panelId) { id }
-                        setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) { id }
-                    }
-                `, { id, panelId: firstPanel.id, currentCandidateId: firstPending.id }, headers);
-                console.log(`✅ Set initial current candidate ${firstPending.id} for replica ${id}`);
-            }
-        } catch (setCandErr: any) {
-            console.warn("Could not set initial candidate on start:", setCandErr?.message);
-        }
-
-        return startResult;
+        // The whole start sequence is core's, so a chair starting from the app does the same.
+        return await startCommissionReplica(
+            (query, variables) => rawGraphQL(query, variables ?? {}, headers),
+            id,
+            commissionId,
+            (context, error: any) => console.warn(`startCommissionAction: ${context}:`, error?.message),
+        );
     } catch (err: any) {
         console.error("Server Action Error (startCommissionAction):", err);
         throw new Error(err.message || "Failed to start commission replica");
@@ -378,11 +143,7 @@ export async function renameCommissionAction(commissionId: string, name: string)
     if (!isValidUuid(commissionId)) throw new Error("Invalid UUID parameter");
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation RenameCommission($id: ID!, $name: String!) {
-                renameCommission(id: $id, name: $name) { id name }
-            }
-        `, { id: commissionId, name }, headers);
+        const data = await rawGraphQL(RENAME_COMMISSION, { id: commissionId, name }, headers);
         return { success: true, commission: data.renameCommission };
     } catch (err: any) {
         console.error("Server Action Error (renameCommissionAction):", err);
@@ -398,16 +159,9 @@ export async function updateCommissionDatesAction(
     if (!isValidUuid(commissionId)) throw new Error("Invalid UUID parameter");
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation UpdateCommissionDates($id: ID!, $input: PlannedDatesInput!) {
-                updateCommissionDates(id: $id, input: $input) { id }
-            }
-        `, {
+        const data = await rawGraphQL(UPDATE_COMMISSION_DATES, {
             id: commissionId,
-            input: {
-                start: plannedStartDate ? new Date(plannedStartDate).toISOString() : null,
-                end: plannedEndDate ? new Date(plannedEndDate).toISOString() : null
-            }
+            input: commissionDatesInput(plannedStartDate, plannedEndDate),
         }, headers);
         return { success: true, commission: data.updateCommissionDates };
     } catch (err: any) {
@@ -430,16 +184,7 @@ export async function createCommissionReplicaAction(input: {
     if (!isValidUuid(input.commissionId)) throw new Error("Invalid UUID parameter");
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation CreateCommissionReplica($input: CreateCommissionReplicaInput!) {
-                createCommissionReplica(input: $input) {
-                    id
-                    name
-                    type
-                    status
-                }
-            }
-        `, {
+        const data = await rawGraphQL(CREATE_COMMISSION_REPLICA, {
             input: {
                 ...input,
                 members: [],
@@ -637,117 +382,13 @@ export async function removeCommissionTemplateAction(commissionId: string, bever
 export async function getCommissionDataAction(commissionId: string) {
     if (!isValidUuid(commissionId)) return null;
     try {
-        const commissionData = await sdk.GetCommission({ id: commissionId });
-        const commission = commissionData.commission;
-        if (!commission) return null;
-
-        // Fetch template editions
-        let templateEditions: any[] = [];
-        try {
-            console.log(`🔍 Fetching templates for commission ${commissionId}...`);
-            const templateResult = await getCommissionTemplatesWithResultMarkers(commissionId);
-            const commissionWithTemplates = templateResult.commission;
-
-            if (commissionWithTemplates && commissionWithTemplates.templateEditions) {
-                templateEditions = commissionWithTemplates.templateEditions.map((link: any) => ({
-                    id: link.id,
-                    beverageType: link.beverageType,
-                    templateEdition: link.templateEdition
-                }));
-            }
-        } catch (err: any) {
-            console.warn("❌ Failed to fetch template editions from backend:", err.message);
-        }
-
-        // Для зворотної сумісності залишаємо один legacy template
-        const validEditions = templateEditions.filter((link: any) => {
-            const te = link.templateEdition;
-            return te && te.categories && te.categories.length > 0 &&
-                te.categories.every((c: any) => c.properties && c.properties.length > 0 && c.properties.every((p: any) => p.id && p.code && p.name));
-        });
-
-        const defaultLink = validEditions.find((l: any) => l.beverageType?.code === "WINE") || validEditions[0];
-        let legacyTemplateEdition = defaultLink?.templateEdition || null;
-
-        if (!legacyTemplateEdition && (commission.status === "DRAFT" || commission.status === "PLANNED")) {
-            legacyTemplateEdition = null;
-        }
-
-        const candidatesOrder = (commission.panels || []).flatMap((panel: any) =>
-            (panel.candidates || []).map((candidate: any) => candidate.id),
+        // Shaped by core, which the app's commission screen loads through too.
+        return await loadCommissionPage(
+            async (id) => (await sdk.GetCommission({ id })).commission,
+            getCommissionTemplatesWithResultMarkers,
+            commissionId,
+            (context, error: any) => console.warn(`❌ Failed to fetch ${context} from backend:`, error?.message),
         );
-
-        const replicas = (commission.replicas || []).map((r: any) => ({
-            id: r.id,
-            name: r.name || `${r.type} Replica`,
-            type: r.type,
-            status: r.status,
-            currentPanelId: r.currentPanelId || null,
-            currentCandidateId: r.replicaPanels?.find((panel: any) => panel.id === r.currentPanelId)?.currentCandidateId || null,
-            chaoticCurrentPanelChangesEnabled: r.chaoticCurrentPanelChangesEnabled,
-            members: (r.members || []).map((m: any) => ({
-                id: m.id,
-                auid: m.auid ? m.auid.flat() : [],
-                role: m.role,
-                isReady: m.isReady,
-            })),
-            replicaPanels: (r.replicaPanels || []).map((rp: any) => ({ ...rp, panelId: rp.panel?.id })),
-            candidateCount: (r.replicaPanels || []).reduce((count: number, rp: any) => count + (rp.replicaCandidates?.length || 0), 0),
-            replicaCandidates: (r.replicaPanels || []).flatMap((rp: any) => (rp.replicaCandidates || []).map((rc: any) => ({
-                id: rc.id,
-                status: rc.status,
-                replicaPanelId: rp.id,
-                panelId: rp.panel?.id,
-                candidate: rc.candidate ? {
-                    id: rc.candidate.id,
-                    anonymizedCode: rc.candidate.anonymizedCode || null,
-                    beverageType: rc.candidate.beverageType || null,
-                    panelId: rp.panel?.id,
-                } : null
-            }))).sort((a: any, b: any) => {
-                const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
-                const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
-                return idxA - idxB;
-            })
-        }));
-
-        const defaultReplica = replicas.find((r: any) => r.type === "STANDARD") || replicas[0] || null;
-        const defaultMembers = defaultReplica ? defaultReplica.members : [];
-
-        return {
-            id: commission.id,
-            name: commission.name,
-            status: commission.status,
-            plannedStartAt: commission.plannedDates?.start || null,
-            plannedEndAt: commission.plannedDates?.end || null,
-            startedAt: commission.startedAt || null,
-            endedAt: commission.endedAt || null,
-            partialCandidateEvaluationEnabled: commission.partialCandidateEvaluationEnabled ?? false,
-            wineJumperMiniGameEnabled: commission.wineJumperMiniGameEnabled ?? false,
-            voiceCommentsEnabled: commission.voiceCommentsEnabled ?? false,
-            propertyCommentsEnabled: commission.propertyCommentsEnabled ?? false,
-            beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled ?? false,
-            evaluationVisibleAttributes: commission.evaluationVisibleAttributes || {
-                beverage: [],
-                batch: [],
-                sample: []
-            },
-            competition: {
-                id: commission.competition.id,
-                name: commission.competition.name,
-                holders: commission.competition.holders.flat(),
-                wineJumperMiniGameEnabled: commission.wineJumperMiniGameEnabled,
-                voiceCommentsEnabled: commission.voiceCommentsEnabled,
-                propertyCommentsEnabled: commission.propertyCommentsEnabled,
-                beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled,
-                evaluationTemplateEdition: legacyTemplateEdition
-            },
-            templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
-            candidateCount: candidatesOrder.length,
-            panels: commission.panels || [],
-            replicas,
-            members: defaultMembers
-        };
     } catch (err: any) {
         console.error("Server Action Error (getCommissionDataAction):", err);
         throw new Error(err.message || "Failed to fetch commission data");
@@ -1185,14 +826,7 @@ export async function setCommissionPartialCandidateEvaluationEnabledAction(commi
     if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation SetCommissionPartialCandidateEvaluationEnabled($id: ID!, $enabled: Boolean!) {
-                setCommissionPartialCandidateEvaluationEnabled(id: $id, enabled: $enabled) {
-                    id
-                    partialCandidateEvaluationEnabled
-                }
-            }
-        `, { id: commissionId, enabled }, headers);
+        const data = await rawGraphQL(settingMutation("partialCandidateEvaluationEnabled"), { id: commissionId, enabled }, headers);
         return { success: true, commission: data?.setCommissionPartialCandidateEvaluationEnabled };
     } catch (err: any) {
         console.error("Server Action Error (setCommissionPartialCandidateEvaluationEnabledAction):", err);
@@ -1204,14 +838,7 @@ export async function setCommissionWineJumperMiniGameEnabledAction(commissionId:
     if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation SetCommissionWineJumperMiniGameEnabled($id: ID!, $enabled: Boolean!) {
-                setCommissionWineJumperMiniGameEnabled(id: $id, enabled: $enabled) {
-                    id
-                    wineJumperMiniGameEnabled
-                }
-            }
-        `, { id: commissionId, enabled }, headers);
+        const data = await rawGraphQL(settingMutation("wineJumperMiniGameEnabled"), { id: commissionId, enabled }, headers);
         return { success: true, commission: data?.setCommissionWineJumperMiniGameEnabled };
     } catch (err: any) {
         console.error("Server Action Error (setCommissionWineJumperMiniGameEnabledAction):", err);
@@ -1223,14 +850,7 @@ export async function setCommissionVoiceCommentsEnabledAction(commissionId: stri
     if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation SetCommissionVoiceCommentsEnabled($id: ID!, $enabled: Boolean!) {
-                setCommissionVoiceCommentsEnabled(id: $id, enabled: $enabled) {
-                    id
-                    voiceCommentsEnabled
-                }
-            }
-        `, { id: commissionId, enabled }, headers);
+        const data = await rawGraphQL(settingMutation("voiceCommentsEnabled"), { id: commissionId, enabled }, headers);
         return { success: true, commission: data?.setCommissionVoiceCommentsEnabled };
     } catch (err: any) {
         console.error("Server Action Error (setCommissionVoiceCommentsEnabledAction):", err);
@@ -1242,14 +862,7 @@ export async function setCommissionPropertyCommentsEnabledAction(commissionId: s
     if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation SetCommissionPropertyCommentsEnabled($id: ID!, $enabled: Boolean!) {
-                setCommissionPropertyCommentsEnabled(id: $id, enabled: $enabled) {
-                    id
-                    propertyCommentsEnabled
-                }
-            }
-        `, { id: commissionId, enabled }, headers);
+        const data = await rawGraphQL(settingMutation("propertyCommentsEnabled"), { id: commissionId, enabled }, headers);
         return { success: true, commission: data?.setCommissionPropertyCommentsEnabled };
     } catch (err: any) {
         console.error("Server Action Error (setCommissionPropertyCommentsEnabledAction):", err);
@@ -1261,14 +874,7 @@ export async function setCommissionBeverageOriginDuringEvaluationEnabledAction(c
     if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation SetCommissionBeverageOriginDuringEvaluationEnabled($id: ID!, $enabled: Boolean!) {
-                setCommissionBeverageOriginDuringEvaluationEnabled(id: $id, enabled: $enabled) {
-                    id
-                    beverageOriginDuringEvaluationEnabled
-                }
-            }
-        `, { id: commissionId, enabled }, headers);
+        const data = await rawGraphQL(settingMutation("beverageOriginDuringEvaluationEnabled"), { id: commissionId, enabled }, headers);
         return { success: true, commission: data?.setCommissionBeverageOriginDuringEvaluationEnabled };
     } catch (err: any) {
         console.error("Server Action Error (setCommissionBeverageOriginDuringEvaluationEnabledAction):", err);
@@ -1306,14 +912,7 @@ export async function setCommissionReplicaPanelChaoticCurrentCandidateChangesEna
     if (!isValidUuid(replicaId) || !isValidUuid(panelId)) return { success: false, error: "Invalid replica or panel ID" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation SetCommissionReplicaPanelChaoticCurrentCandidateChangesEnabled($id: ID!, $panelId: ID!, $enabled: Boolean!) {
-                setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabled(id: $id, panelId: $panelId, enabled: $enabled) {
-                    id
-                    currentPanelId
-                }
-            }
-        `, { id: replicaId, panelId, enabled }, headers);
+        const data = await rawGraphQL(SET_REPLICA_PANEL_CHAOTIC_CANDIDATE_CHANGES, { id: replicaId, panelId, enabled }, headers);
         return { success: true, replica: data?.setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabled };
     } catch (err: any) {
         console.error("Server Action Error (setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction):", err);
@@ -1325,14 +924,7 @@ export async function setCommissionReplicaChaoticCurrentPanelChangesEnabledActio
     if (!isValidUuid(replicaId)) return { success: false, error: "Invalid replicaId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation SetCommissionReplicaChaoticCurrentPanelChangesEnabled($id: ID!, $enabled: Boolean!) {
-                setCommissionReplicaChaoticCurrentPanelChangesEnabled(id: $id, enabled: $enabled) {
-                    id
-                    chaoticCurrentPanelChangesEnabled
-                }
-            }
-        `, { id: replicaId, enabled }, headers);
+        const data = await rawGraphQL(SET_REPLICA_CHAOTIC_PANEL_CHANGES, { id: replicaId, enabled }, headers);
         return { success: true, replica: data?.setCommissionReplicaChaoticCurrentPanelChangesEnabled };
     } catch (err: any) {
         console.error("Server Action Error (setCommissionReplicaChaoticCurrentPanelChangesEnabledAction):", err);
@@ -1414,19 +1006,7 @@ export async function renameCommissionReplicaAction(id: string, name?: string) {
     if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation RenameCommissionReplica($id: ID!, $name: String) {
-                renameCommissionReplica(id: $id, name: $name) {
-                    id
-                    name
-                    type
-                    status
-                }
-            }
-        `, {
-            id,
-            name
-        }, headers);
+        const data = await rawGraphQL(RENAME_COMMISSION_REPLICA, { id, name }, headers);
         return {success: true, replica: data.renameCommissionReplica};
     } catch (err: any) {
         console.error("Server Action Error (renameCommissionReplicaAction):", err);
@@ -1493,20 +1073,7 @@ export async function addCommissionReplicaMemberAction(
     if (!isValidUuid(replicaId)) return { success: false, error: "Invalid replicaId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation AddCommissionReplicaMember($id: ID!, $input: CommissionReplicaMemberInput!) {
-                addCommissionReplicaMember(id: $id, input: $input) {
-                    id
-                    name
-                    members {
-                        id
-                        auid
-                        role
-                        isReady
-                    }
-                }
-            }
-        `, {
+        const data = await rawGraphQL(ADD_COMMISSION_REPLICA_MEMBER, {
             id: replicaId,
             input: {
                 auid: [auid],
@@ -1524,20 +1091,7 @@ export async function removeCommissionReplicaMemberAction(replicaId: string, mem
     if (!isValidUuid(replicaId) || !isValidUuid(memberId)) return { success: false, error: "Invalid parameters" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation RemoveCommissionReplicaMember($id: ID!, $memberId: ID!) {
-                removeCommissionReplicaMember(id: $id, memberId: $memberId) {
-                    id
-                    name
-                    members {
-                        id
-                        auid
-                        role
-                        isReady
-                    }
-                }
-            }
-        `, {
+        const data = await rawGraphQL(REMOVE_COMMISSION_REPLICA_MEMBER, {
             id: replicaId,
             memberId
         }, headers);

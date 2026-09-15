@@ -339,6 +339,7 @@ const hu = {
         removeMemberError: "Nem sikerült eltávolítani a tagot",
         removeMemberErrorGeneric: "Hiba történt a tag eltávolítása közben",
         startTastingNoSamplesError: "A kóstolás nem indítható: adjon hozzá legalább 1 mintát (jelöltet) a bizottsághoz.",
+        startTastingConfirm: "A replika minden tagja a kóstolásba kerül. Indítás után ez nem vonható vissza.",
         startTastingNoExpertsError: "A kóstolás nem indítható: adjon hozzá legalább 1 szakértőt a bizottsághoz.",
         startTastingErrorGeneric: "Hiba történt a kóstolás indítása közben",
         partialEvaluationRequiredError: "Nem minden bizottsági tag adott le megerősített értékelést. Engedélyezze a részleges mintaértékelést a bizottság beállításaiban, vagy várja meg az összes tag értékelését.",

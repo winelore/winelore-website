@@ -339,6 +339,7 @@ const en = {
     removeMemberError: "Failed to remove member",
     removeMemberErrorGeneric: "An error occurred while removing the member",
     startTastingNoSamplesError: "Cannot start tasting: add at least 1 sample (candidate) to the commission.",
+    startTastingConfirm: "Everyone on this replica will be taken into the tasting. Once started, it cannot be undone.",
     startTastingNoExpertsError: "Cannot start tasting: add at least 1 expert to the commission.",
     startTastingErrorGeneric: "An error occurred while starting the tasting",
     partialEvaluationRequiredError: "Not all commission members have submitted confirmed evaluations. Enable partial candidate evaluation in the commission settings, or wait for all members' evaluations.",

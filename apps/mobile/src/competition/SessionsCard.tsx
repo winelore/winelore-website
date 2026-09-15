@@ -28,8 +28,8 @@ interface SessionsCardProps {
  * The competition's commissions, with the web's results link and — for a
  * holder — its inline "Add commission" form.
  *
- * A commission the user sits on opens its lobby here; any other opens the
- * web's commission page, which is where organisers manage one.
+ * Each commission opens its page — on the user's own replica when they sit
+ * on one.
  */
 export function SessionsCard({ page, replicaIds, isHolder, busy, onAddCommission }: SessionsCardProps) {
     const { t } = useTranslation()

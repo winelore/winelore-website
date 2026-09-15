@@ -82,7 +82,8 @@ export function PressableSurface({
             onPressIn={onPressIn}
             onPressOut={onPressOut}
         >
-            <Animated.View style={[style, feedbackStyle]}>{children}</Animated.View>
+            {/* The caller's style last, so a dimmed (disabled) look is not undone by the press animation's opacity. */}
+            <Animated.View style={[feedbackStyle, style]}>{children}</Animated.View>
         </Pressable>
     )
 }

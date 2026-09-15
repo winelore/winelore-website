@@ -61,6 +61,9 @@ const GLYPHS = {
     printer: { ios: "printer", android: "print" }, // Printer
     playFill: { ios: "play.fill", android: "play_arrow" },
     pauseFill: { ios: "pause.fill", android: "pause" },
+    crown: { ios: "crown.fill", android: "crown" }, // Crown
+    graduation: { ios: "graduationcap", android: "school" }, // GraduationCap
+    sliders: { ios: "slider.horizontal.3", android: "tune" }, // Sliders
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle
     check: { ios: "checkmark.circle", android: "check_circle" }, // CheckCircle

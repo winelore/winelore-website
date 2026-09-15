@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import {
     ActivityIndicator,
     Alert,
@@ -13,7 +13,6 @@ import {
 } from "react-native"
 import { Stack, useRouter } from "expo-router"
 import * as Haptics from "expo-haptics"
-import { findUserByUsername, type FoundUser } from "@winelore/core/auth"
 import {
     ADDABLE_PRODUCER_ROLES,
     producerAuid,
@@ -23,7 +22,6 @@ import {
     type BeverageOrigin,
     type BeverageProducer,
 } from "@winelore/core/beverage"
-import { getAxusConfig } from "../auth/config"
 import { HolderAvatar } from "../competition/parts"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { continuous, palette, radius } from "../theme"
@@ -31,6 +29,7 @@ import { Icon } from "../ui/Icon"
 import { PressableSurface } from "../ui/Pressable"
 import { Segmented } from "../ui/Segmented"
 import { useDisplayNames } from "../users/useDisplayNames"
+import { useUserSearch } from "../users/useUserSearch"
 import {
     changeBeverageOrigin,
     registerBeverageProducer,
@@ -47,9 +46,6 @@ const COORDINATE_KEYBOARD: KeyboardTypeOptions = Platform.select({
     ios: "numbers-and-punctuation",
     default: "numeric",
 })
-
-/** Search the username after a pause in typing, as the web does. */
-const SEARCH_DELAY_MS = 400
 
 /**
  * The web's "Edit Beverage" modal, as a sheet: the name and origin, saved
@@ -353,38 +349,12 @@ function Producers({ id, producers, auid }: { id: string; producers: BeveragePro
 function AddProducer({ id, auid }: { id: string; auid: string }) {
     const { t } = useTranslation()
     const [username, setUsername] = useState("")
-    const [searching, setSearching] = useState(false)
-    const [searchError, setSearchError] = useState<string | null>(null)
-    const [found, setFound] = useState<FoundUser | null>(null)
+    const { searching, error: searchError, found } = useUserSearch(username, {
+        notFound: t("beverage.edit.userNotFound"),
+        failed: t("beverage.edit.searchError"),
+    })
     const [role, setRole] = useState<AddableProducerRole>("MAKER")
     const [adding, setAdding] = useState(false)
-    const latest = useRef("")
-
-    useEffect(() => {
-        const query = username.trim().replace(/^@/, "")
-        latest.current = query
-        setFound(null)
-        setSearchError(null)
-        if (!query) {
-            setSearching(false)
-            return
-        }
-        const timer = setTimeout(async () => {
-            setSearching(true)
-            try {
-                const user = await findUserByUsername(getAxusConfig(), query)
-                if (latest.current !== query) return
-                if (user) setFound(user)
-                else setSearchError(t("beverage.edit.userNotFound"))
-            } catch (error) {
-                if (latest.current !== query) return
-                setSearchError(error instanceof Error && error.message ? error.message : t("beverage.edit.searchError"))
-            } finally {
-                if (latest.current === query) setSearching(false)
-            }
-        }, SEARCH_DELAY_MS)
-        return () => clearTimeout(timer)
-    }, [username, t])
 
     const add = async () => {
         if (!found) return

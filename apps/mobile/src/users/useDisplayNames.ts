@@ -4,7 +4,7 @@ import { getAxusConfig } from "../auth/config"
 
 /**
  * Lookups outlive the screen that asked: a name does not change within a
- * session, and the home screen, lists and lobby all show the same people.
+ * session, and the home screen, lists and commission page show the same people.
  */
 const cache = new Map<string, Promise<string>>()
 

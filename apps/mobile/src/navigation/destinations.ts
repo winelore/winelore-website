@@ -29,8 +29,11 @@ const web = (path: string): Destination => ({ kind: "web", path })
  * its entry here from `web` to `app`; nothing that links to it changes.
  */
 export const destinations = {
+    /** Opened on the judge's own replica when they sit on one. */
     commission: (id: string, replicaId: string | null) =>
-        replicaId ? app(`/commission/${id}/${replicaId}`) : web(`/commission/${id}`),
+        app(replicaId ? `/commission/${id}/${replicaId}` : `/commission/${id}`),
+    tastingSummary: (commissionId: string, replicaId: string) =>
+        web(`/commission/${commissionId}/replica/${replicaId}/summary`),
     competition: (id: string) => app(`/competition/${id}`),
     competitionResults: (id: string, commissionId?: string) =>
         app(`/competition/${id}/results${commissionId ? `?commission=${encodeURIComponent(commissionId)}` : ""}`),

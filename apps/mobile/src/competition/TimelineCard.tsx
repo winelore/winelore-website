@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
-import { googleCalendarUrl, type CompetitionPageData } from "@winelore/core/competition"
+import { googleCalendarUrl } from "@winelore/core/competition"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { openWebPage } from "../navigation/destinations"
 import { palette, radius } from "../theme"
@@ -8,9 +8,34 @@ import { DateTimeField } from "../ui/DateTimeField"
 import { Icon } from "../ui/Icon"
 import { panelSurface } from "../ui/Surface"
 
+/** The dates a timeline shows: a competition's or a commission's. */
+export interface TimelineDates {
+    name: string
+    plannedStartAt: string | null
+    plannedEndAt: string | null
+    startedAt: string | null
+    endedAt: string | null
+}
+
+export interface TimelineLabels {
+    title: string
+    plannedStart: string
+    plannedEnd: string
+    actualStart: string
+    actualEnd: string
+    notStarted: string
+    notEnded: string
+}
+
 interface TimelineCardProps {
-    page: CompetitionPageData
-    isHolder: boolean
+    page: TimelineDates
+    labels: TimelineLabels
+    /** Whether the planned dates may be edited here. */
+    canEdit: boolean
+    /** Whether to offer "Add to calendar" beside the planned start. */
+    showCalendar: boolean
+    /** The calendar event's description; empty for none. */
+    calendarDetails: string
     busy: boolean
     onSaveDates: (start: string | null, end: string | null) => Promise<boolean>
 }
@@ -35,7 +60,7 @@ function tomorrowMorning(): Date {
  * The planned and actual dates on a line, as the web draws them. A holder
  * edits the planned pair in place with the system's own date pickers.
  */
-export function TimelineCard({ page, isHolder, busy, onSaveDates }: TimelineCardProps) {
+export function TimelineCard({ page, labels, canEdit, showCalendar, calendarDetails, busy, onSaveDates }: TimelineCardProps) {
     const { t, formatDateTime } = useTranslation()
     const [draft, setDraft] = useState<Draft | null>(null)
     const editing = draft !== null
@@ -71,12 +96,7 @@ export function TimelineCard({ page, isHolder, busy, onSaveDates }: TimelineCard
     const openCalendar = () =>
         page.plannedStartAt &&
         openWebPage(
-            googleCalendarUrl(
-                page.name,
-                t("competition.calendarDetails", { name: page.name }),
-                page.plannedStartAt,
-                page.plannedEndAt,
-            ),
+            googleCalendarUrl(page.name, calendarDetails, page.plannedStartAt, page.plannedEndAt),
         )
 
     return (
@@ -84,9 +104,9 @@ export function TimelineCard({ page, isHolder, busy, onSaveDates }: TimelineCard
             <View style={styles.header}>
                 <View style={styles.titleRow}>
                     <Icon name="calendar" size={20} color={palette.accentBright} />
-                    <Text style={styles.title}>{t("competition.timelineDetails")}</Text>
+                    <Text style={styles.title}>{labels.title}</Text>
                 </View>
-                {isHolder ? (
+                {canEdit ? (
                     editing ? (
                         <View style={styles.editActions}>
                             <Pressable
@@ -128,13 +148,13 @@ export function TimelineCard({ page, isHolder, busy, onSaveDates }: TimelineCard
             </View>
 
             <View style={styles.line}>
-                <Entry dot={palette.accentBright} label={t("competition.plannedStart")}>
+                <Entry dot={palette.accentBright} label={labels.plannedStart}>
                     {editing ? (
-                        plannedEditor("start", t("competition.plannedStart"))
+                        plannedEditor("start", labels.plannedStart)
                     ) : (
                         <View style={styles.valueRow}>
                             <Text style={styles.value}>{formatDateTime(page.plannedStartAt)}</Text>
-                            {page.status === "PLANNED" && page.plannedStartAt ? (
+                            {showCalendar && page.plannedStartAt ? (
                                 <Pressable
                                     accessibilityRole="link"
                                     onPress={openCalendar}
@@ -147,22 +167,22 @@ export function TimelineCard({ page, isHolder, busy, onSaveDates }: TimelineCard
                     )}
                 </Entry>
                 {page.plannedEndAt || editing ? (
-                    <Entry dot="#7c86ff" label={t("competition.plannedEnd")}>
+                    <Entry dot="#7c86ff" label={labels.plannedEnd}>
                         {editing ? (
-                            plannedEditor("end", t("competition.plannedEnd"))
+                            plannedEditor("end", labels.plannedEnd)
                         ) : (
                             <Text style={styles.value}>{formatDateTime(page.plannedEndAt)}</Text>
                         )}
                     </Entry>
                 ) : null}
-                <Entry dot={page.startedAt ? "#00bc7d" : palette.border} label={t("competition.actualStart")}>
+                <Entry dot={page.startedAt ? "#00bc7d" : palette.border} label={labels.actualStart}>
                     <Text style={[styles.value, !page.startedAt && styles.valueMissing]}>
-                        {page.startedAt ? formatDateTime(page.startedAt) : t("competition.notStartedYet")}
+                        {page.startedAt ? formatDateTime(page.startedAt) : labels.notStarted}
                     </Text>
                 </Entry>
-                <Entry dot={page.endedAt ? "#ff2056" : palette.border} label={t("competition.actualEnd")}>
+                <Entry dot={page.endedAt ? "#ff2056" : palette.border} label={labels.actualEnd}>
                     <Text style={[styles.value, !page.endedAt && styles.valueMissing]}>
-                        {page.endedAt ? formatDateTime(page.endedAt) : t("competition.notEndedYet")}
+                        {page.endedAt ? formatDateTime(page.endedAt) : labels.notEnded}
                     </Text>
                 </Entry>
             </View>
