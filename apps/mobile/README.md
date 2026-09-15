@@ -311,6 +311,12 @@ On iOS 27, built with Xcode 27:
   every section from the session card to the actions, panels with their
   samples and codes, templates with their coverage, the add-sample wizard,
   the template catalog and the edit-code dialog; and a finished commission.
+- A judge's tasting summary on a finished dev commission: both samples in
+  tasting order with their total scores, one opened onto its submitted
+  scores and results, and the export and print buttons in the bar.
+- Template pages: an owner's (Edit in the bar, opened on `?version=1` of
+  two) and someone else's (no Edit, opened on the latest of fourteen), with
+  a category opened onto its properties.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end
@@ -337,8 +343,12 @@ On iOS 27, built with Xcode 27:
 8. The commission page's changes from the phone — readiness, the chair's
    start, settings, replicas, experts, panels, samples, codes, templates —
    kept off shared dev data; they send core's documents and sequences.
-9. The web results page signed in. Its server part renders the access-denied
-   and load-error states; the table itself needs a signed-in browser.
+9. The tasting summary's download and print sheet, and the template editor
+   hand-off (`/templates/[id]?edit=1`), which need taps; the files are
+   core's sheets, which the tests cover.
+10. The web results, tasting summary and template pages signed in. The
+    results page's server part renders the access-denied and load-error
+    states; the rest needs a signed-in browser.
 
 ## iOS 27 requires the scene life cycle
 
