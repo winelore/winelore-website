@@ -8,6 +8,7 @@ import Link from "next/link"
 import TemplateCreatorModal, { getPropertyTypeLabel } from "./TemplateCreatorModal"
 import { useSearchParams } from "next/navigation"
 import { ListPageShell, ListPageHeader, StateCard } from "@/components/list"
+import { catalogTemplateCounts } from "@winelore/core/commission"
 
 interface Property {
     id: string
@@ -57,6 +58,14 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
             if (!isNaN(parsed)) setCurrentAuid(parsed)
         }
     }, [])
+
+    // `?create=1` opens the editor on a new template — how the app hands its create button over.
+    useEffect(() => {
+        if (searchParams.get("create") === "1") {
+            setEditingTemplateId(null)
+            setIsModalOpen(true)
+        }
+    }, [searchParams])
 
     useEffect(() => {
         const templateIdParam = searchParams.get("templateId")
@@ -124,7 +133,7 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                     const edition = template.latestEdition
                     const uniqueKey = `${template.id}-${edition?.version || 0}`
                     const isExpanded = expandedTemplateId === uniqueKey
-                    const propertiesCount = edition?.categories.reduce((acc, cat) => acc + cat.properties.length, 0) || 0
+                    const { properties: propertiesCount } = catalogTemplateCounts(template)
 
                     return (
                         <div

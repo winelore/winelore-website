@@ -298,6 +298,20 @@ export function toTemplateCatalog(items: any[] | null | undefined, ownerAuid?: n
         : catalog.filter((template) => template.owners?.some((owner) => owner.includes(ownerAuid)))
 }
 
+/** What a My Templates row counts: its latest edition's categories and properties. */
+export function catalogTemplateCounts(
+    template: { latestEdition?: { categories: Array<{ properties: unknown[] }> } | null } | null | undefined,
+): {
+    categories: number
+    properties: number
+} {
+    const categories = template?.latestEdition?.categories ?? []
+    return {
+        categories: categories.length,
+        properties: categories.reduce((sum, category) => sum + category.properties.length, 0),
+    }
+}
+
 /** Filter chips: the commission's beverage types first, then the rest of the catalog's. */
 export function catalogTypeChips(catalog: CatalogTemplate[] | null, commissionTypeIds: Set<string>): Array<{ id: string; name: string }> {
     const map = new Map<string, string>()

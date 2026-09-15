@@ -68,10 +68,10 @@ screen, the full commissions list, and both of the web's equivalents.
 
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
 Commissions, competitions, beverages, the Competitions and Beverages tabs and
-the personal commission, competition and beverage lists, a judge's tasting
-summary and a template's own page are native; anything not ported yet — My
-Templates and the template editor, outcome policies, the map, create forms —
-opens the same page of the website in the in-app browser. Porting a
+the personal commission, competition, beverage and template lists, a judge's
+tasting summary and a template's own page are native; anything not ported
+yet — the template editor, outcome policies, the map, create forms — opens
+the same page of the website in the in-app browser. Porting a
 screen is flipping its entry from `web` to `app`. The Map tab says so plainly
 and offers the website, rather than showing an empty page.
 
@@ -192,6 +192,18 @@ The data is `loadTemplateDetail` in core, which the web's action calls, with
 the same fallbacks through the catalog for backends without the by-template
 query.
 
+My Templates (`src/templates/MyTemplatesScreen.tsx`, the web's /myTemplates)
+is a list screen like the others: the templates this user owns, each card
+the web's row as a phone stacks it — created, type, category and score
+counts, version and status, and the edit button. The backend cannot filter
+templates by owner, so it fetches the catalog whole and filters it, as the
+web does (`toTemplateCatalog`), in one page. The web expands a row onto its
+structure; a phone opens the template's page instead, and Home's template
+cards now go there too rather than to the web's list with the row expanded.
+Creating and editing are the web's editor — My Templates opens it at once
+for `?create=1`, as the template page does for `?edit=1` — and the list
+reloads when the in-app browser closes.
+
 Not yet ported:
 
 - **Comments** on the scorecard — per-property and general, including voice
@@ -199,8 +211,7 @@ Not yet ported:
   recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **My Templates, the template editor, outcome policies, the map and the
-  create forms.** Their links exist and open the website for now; see
+- **The template editor, outcome policies, the map and the create forms.** Their links exist and open the website for now; see
   `destinations.ts`. The web session
   is separate from the app's, so the first visit asks for an AXUS ID sign-in
   in the in-app browser.

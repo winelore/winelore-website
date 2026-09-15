@@ -1,5 +1,6 @@
+import { GET_TEMPLATE_CATALOG, toTemplateCatalog, type CatalogTemplate } from "@winelore/core/commission"
 import { toDashboardCompetition, withBeverageType, type DashboardCompetition } from "@winelore/core/dashboard"
-import { sdk } from "../api/client"
+import { fetchGraphQLRaw, sdk } from "../api/client"
 import type { DashboardBeverage } from "../dashboard/useHome"
 import type { Page } from "./usePagedList"
 
@@ -57,5 +58,18 @@ export function myBeveragesSource(auid: string) {
             items: (response.beverages?.items ?? []).map((item) => withBeverageType(item, "WINE")),
             total: response.beverageCount ?? 0,
         }
+    }
+}
+
+/**
+ * Templates the user owns — the web's /myTemplates. The backend cannot filter
+ * templates by owner, so the web fetches the catalog whole and filters it;
+ * this does the same, as one page.
+ */
+export function myTemplatesSource(auid: string) {
+    return async (): Promise<Page<CatalogTemplate>> => {
+        const response = await fetchGraphQLRaw<any>(GET_TEMPLATE_CATALOG, { limit: 100 })
+        const items = toTemplateCatalog(response?.evaluationTemplateEditions?.items, Number(auid))
+        return { items, total: items.length }
     }
 }

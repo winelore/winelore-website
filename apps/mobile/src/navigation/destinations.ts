@@ -38,8 +38,11 @@ export const destinations = {
     competitionResults: (id: string, commissionId?: string) =>
         app(`/competition/${id}/results${commissionId ? `?commission=${encodeURIComponent(commissionId)}` : ""}`),
     beverage: (id: string) => app(`/beverage/${id}`),
-    template: (id: string, version: number | undefined) =>
-        web(`/myTemplates?templateId=${id}-${version || 0}`),
+    /**
+     * A template from a card. The web opens My Templates with its row
+     * expanded; a phone shows the template's own page, on its latest edition.
+     */
+    template: (id: string, version: number | undefined) => app(`/templates/${id}${version ? `?version=${version}` : ""}`),
     /** A template's own page, at one edition — where the commission page links a template. */
     templateEdition: (id: string, version: number) => app(`/templates/${id}?version=${version}`),
     /** The web's template editor, which its template page opens at once for `?edit=1`. */
@@ -48,7 +51,7 @@ export const destinations = {
     myCommissions: app("/commissions"),
     myCompetitions: app("/myCompetitions"),
     myBeverages: app("/myBeverages"),
-    myTemplates: web("/myTemplates"),
+    myTemplates: app("/myTemplates"),
     myOutcomePolicies: web("/myOutcomePolicies"),
 
     competitions: app("/competitions"),
@@ -58,6 +61,8 @@ export const destinations = {
     // Create forms are organiser desk work and stay on the web for now.
     createCompetition: web("/competition/create"),
     createBeverage: web("/beverage/create"),
+    /** The web's template editor on a new template, which My Templates opens at once for `?create=1`. */
+    createTemplate: web("/myTemplates?create=1"),
     createBatch: (beverageId: string) => web(`/batch/create?beverageId=${beverageId}`),
     createSample: (batchId: string, beverageId: string) =>
         web(`/sample/create?batchId=${batchId}&beverageId=${beverageId}`),

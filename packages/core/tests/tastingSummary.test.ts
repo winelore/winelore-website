@@ -8,6 +8,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import {
     GET_TEMPLATE_CATALOG,
+    catalogTemplateCounts,
     GET_TEMPLATE_DETAIL,
     isTemplateOwner,
     loadMyTastingSummary,
@@ -20,6 +21,7 @@ import {
     tastingSummaryOrigins,
     tastingSummarySheets,
     templateEditionAt,
+    toTemplateCatalog,
     type SummaryEvaluation,
     type TastingSummarySource,
 } from "../src/commission"
@@ -314,4 +316,21 @@ test("only an owner may edit a template", () => {
     assert.equal(isTemplateOwner([[42]], 7), false)
     assert.equal(isTemplateOwner([[42]], null), false)
     assert.equal(isTemplateOwner(null, "42"), false)
+})
+
+test("My Templates lists the owner's templates, counting the latest edition", () => {
+    const catalog = toTemplateCatalog(
+        [
+            { ...edition("e1", 1), template: templateRecord },
+            { ...edition("e2", 2), template: templateRecord, categories: [...edition("e2", 2).categories, ...edition("e2b", 2).categories] },
+            { ...edition("x", 1), template: { ...templateRecord, id: "other", owners: [[7]] } },
+        ],
+        42,
+    )
+    assert.deepEqual(
+        catalog.map((template) => [template.id, template.latestEdition.version, template.totalEditions]),
+        [["t-1", 2, 2]],
+    )
+    assert.deepEqual(catalogTemplateCounts(catalog[0]), { categories: 2, properties: 2 })
+    assert.deepEqual(catalogTemplateCounts(null), { categories: 0, properties: 0 })
 })
