@@ -69,10 +69,10 @@ screen, the full commissions list, and both of the web's equivalents.
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
 Commissions, competitions, beverages, all four tabs and the personal
 commission, competition, beverage, template and outcome policy lists, a
-judge's tasting summary, a template's own page and the outcome policy editor
-and the create forms are native; the one page not ported yet — the template
-editor — opens the website in the in-app browser. Porting a screen is
-flipping its entry from `web` to `app`.
+judge's tasting summary, a template's own page and its editor, the outcome
+policy editor and the create forms are native: every page the app links to
+is its own. The in-app browser remains for what is the website's by nature,
+such as the AXUS ID account.
 
 The create forms — competition, beverage, batch, sample — are the web's
 create pages as page sheets at the web's paths (`/competition/create`,
@@ -151,8 +151,8 @@ the web's search now uses) and removed at once. Submitting for review and
 removing a producer ask first — the web does neither — since one cannot be
 undone and the other can take away your own right to edit. A batch's samples
 open in a sheet with the system's search field and tap-to-copy codes. Creating
-batches and samples is still the web's, in the in-app browser, and the page
-reloads when it closes. The page lives in `app/(tabs)/(home,beverages)/`; the
+batches and samples opens their create sheets, and the page reloads when one
+is made. The page lives in `app/(tabs)/(home,beverages)/`; the
 sheets are in the root stack so they sit over the tab bar, and read the
 beverage the page loaded (`useBeveragePage.ts`), writing each mutation's
 result back so the page behind is current when a sheet closes.
@@ -230,9 +230,9 @@ A template on the commission page opens its own page (`src/templates/`, the
 web's `/templates/[id]`, on the edition the commission uses via `?version=`):
 the template's card, its editions to switch between when there are several,
 and the edition's categories, each opening onto its properties with their
-type, range, options and default. Its owner has Edit in the bar; the editor
-is still the web's, which now opens at once for `/templates/[id]?edit=1`,
-and the page reloads onto the newest edition when the in-app browser closes.
+type, range, options and default. Its owner has Edit in the bar, which
+opens the editor sheet; the page reloads onto the newest edition once it is
+saved.
 The data is `loadTemplateDetail` in core, which the web's action calls, with
 the same fallbacks through the catalog for backends without the by-template
 query.
@@ -245,9 +245,27 @@ templates by owner, so it fetches the catalog whole and filters it, as the
 web does (`toTemplateCatalog`), in one page. The web expands a row onto its
 structure; a phone opens the template's page instead, and Home's template
 cards now go there too rather than to the web's list with the row expanded.
-Creating and editing are the web's editor — My Templates opens it at once
-for `?create=1`, as the template page does for `?edit=1` — and the list
-reloads when the in-app browser closes.
+Creating and editing open the editor sheet, and the list reloads once it
+saves. (The web's My Templates opens its editor at once for `?create=1`, and
+a template's page for `?edit=1`; the app used those while the editor was the
+web's.)
+
+The template editor (`src/templates/TemplateEditorSheet.tsx`, at
+`/templates/new` and `/templates/[id]/edit` — the web has no page for it, only
+a dialog) is the web's as a page sheet: the name and beverage type (fixed
+once created), then the categories and their properties — each a name whose
+code follows it, a type and what the type needs (a range, options, a
+formula), and the star that makes it a result. The web drags to reorder; a
+phone moves a category or property up or down from its long-press or ⋯
+menu, where it is also deleted. A code renamed follows into the formulas
+that use it. The checks before saving — in the web's order, stopping at the
+first and marking what is at fault — the formula parser, and saving, which
+changes the name and adds and activates the next edition, are core's
+(`commission/templateEditor.ts`), which the web's dialog now calls. Two web
+fixes came with the move: the editor loaded templates without their Smart
+properties' formulas, so a template with one could not be saved again
+unedited; and saving an existing template went out as the action's default
+actor rather than the signed-in owner.
 
 My Outcome Policies (`src/outcomePolicies/`, the web's /myOutcomePolicies)
 lists the policies this user owns — name, created date, latest version and
@@ -272,10 +290,6 @@ Not yet ported:
   recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **The template editor.** Its links exist and open the website for now; see
-  `destinations.ts`. The web session
-  is separate from the app's, so the first visit asks for an AXUS ID sign-in
-  in the in-app browser.
 
 The app was first written on Linux, where it could only be typechecked and
 bundled; it has since run on an iPhone 15 Pro on iOS 26.6 and iOS 27. What is
@@ -420,10 +434,10 @@ On iOS 27, built with Xcode 27:
 8. The commission page's changes from the phone — readiness, the chair's
    start, settings, replicas, experts, panels, samples, codes, templates —
    kept off shared dev data; they send core's documents and sequences.
-9. The tasting summary's download and print sheet, the template editor
-   hand-offs (`/templates/[id]?edit=1`, `/myTemplates?create=1`), and typing
-   in the outcome policy script (that no smart quotes creep in) and saving
-   it, which need taps; the files are
+9. Anything that needs typing or tapping on the phone: the tasting
+   summary's download and print sheet; typing in the outcome policy script
+   (that no smart quotes creep in) and saving it; the create forms and the
+   template editor filled in and saved, a map pin tapped; the files are
    core's sheets, which the tests cover.
 10. The web results, tasting summary and template pages signed in. The
     results page's server part renders the access-denied and load-error

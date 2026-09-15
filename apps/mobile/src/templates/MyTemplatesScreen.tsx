@@ -7,6 +7,7 @@ import { useTranslation } from "../i18n/LocaleProvider"
 import { EntityList } from "../lists/EntityList"
 import { myTemplatesSource } from "../lists/sources"
 import { usePagedList } from "../lists/usePagedList"
+import { useOnChanged } from "../navigation/changes"
 import { destinations, useOpenDestination } from "../navigation/destinations"
 import { palette, radius, type } from "../theme"
 import { cardSurface } from "../ui/EntityCard"
@@ -17,8 +18,8 @@ import { PressableSurface } from "../ui/Pressable"
  * The web's /myTemplates: the evaluation templates this user owns, one card
  * each, as its phone layout stacks a row. The web expands a row onto its
  * structure; here a card opens the template's own page, which shows it in
- * full. Creating and editing are the web's editor, in the in-app browser,
- * and the list reloads when it closes.
+ * full. Creating and editing open the editor sheet, and the list reloads
+ * once it saves.
  */
 export function MyTemplatesScreen() {
     const { t, tCount } = useTranslation()
@@ -27,11 +28,8 @@ export function MyTemplatesScreen() {
     const source = useMemo(() => myTemplatesSource(session?.auid ?? ""), [session?.auid])
     const list = usePagedList(source)
 
-    /** The web's editor, then a fresh list for whatever it saved. */
-    const openThenReload = async (destination: Parameters<typeof open>[0]) => {
-        await open(destination)
-        list.refresh()
-    }
+    // Whatever the editor saved.
+    useOnChanged("templates", list.refresh)
 
     return (
         <EntityList
@@ -40,7 +38,7 @@ export function MyTemplatesScreen() {
             title={t("common.myTemplates")}
             subtitle={t("myTemplates.subtitle")}
             countLabel={(total) => tCount("common.templatesCount", total)}
-            action={{ label: t("myTemplates.createNew"), onPress: () => openThenReload(destinations.createTemplate) }}
+            action={{ label: t("myTemplates.createNew"), onPress: () => open(destinations.createTemplate) }}
             list={list}
             keyExtractor={(template) => template.id}
             renderItem={(template) => (
@@ -49,7 +47,7 @@ export function MyTemplatesScreen() {
                     onOpen={() => open(destinations.template(template.id, template.latestEdition?.version))}
                     onEdit={() => {
                         Haptics.selectionAsync()
-                        openThenReload(destinations.editTemplate(template.id))
+                        open(destinations.editTemplate(template.id))
                     }}
                 />
             )}

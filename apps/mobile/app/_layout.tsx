@@ -102,6 +102,9 @@ function RootStack() {
                 <Stack.Screen name="beverage/create" options={pageSheet} />
                 <Stack.Screen name="batch/create" options={pageSheet} />
                 <Stack.Screen name="sample/create" options={pageSheet} />
+                {/* The web's template editor, for a new template and an existing one. */}
+                <Stack.Screen name="templates/new" options={pageSheet} />
+                <Stack.Screen name="templates/[id]/edit" options={pageSheet} />
                 {/* The web's outcome policy dialog, for a new policy and an existing one. */}
                 <Stack.Screen name="outcome-policy/new" options={pageSheet} />
                 <Stack.Screen name="outcome-policy/[id]" options={pageSheet} />

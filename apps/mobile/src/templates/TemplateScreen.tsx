@@ -25,6 +25,7 @@ import {
     type TemplateDetail,
 } from "@winelore/core/commission"
 import { useTranslation } from "../i18n/LocaleProvider"
+import { useOnChanged } from "../navigation/changes"
 import { destinations, useOpenDestination } from "../navigation/destinations"
 import { continuous, palette, radius } from "../theme"
 import { Icon } from "../ui/Icon"
@@ -38,9 +39,8 @@ import { useTemplate } from "./useTemplate"
  * edition's categories, each opening onto its properties. `version` picks
  * the edition to open on, as the web's `?version=` does.
  *
- * Its owner edits it from the bar, as on the web; the editor is still the
- * web's, in the in-app browser, and the page reloads onto the newest edition
- * when it closes.
+ * Its owner edits it from the bar, as on the web, in the editor sheet; the
+ * page reloads onto the newest edition once it is saved.
  */
 export function TemplateScreen({ id, version }: { id: string; version?: number }) {
     const { t } = useTranslation()
@@ -108,12 +108,12 @@ function Loaded({
     const categories = useMemo(() => normalizeTemplateCategories(edition?.categories), [edition])
     const isOwner = isTemplateOwner(template.owners, auid)
 
-    const edit = async () => {
-        await open(destinations.editTemplate(template.id))
-        // Saving makes a new edition; show it.
+    const edit = () => open(destinations.editTemplate(template.id))
+    // Saving makes a new edition; show it.
+    useOnChanged("templates", () => {
         setSelectedVersion(undefined)
         reload()
-    }
+    })
 
     const onRefresh = async () => {
         setRefreshing(true)

@@ -21,9 +21,10 @@ function leftSpine(depth: number): string {
   return `...ExprFields ... on BinaryExpression { left { ${leftSpine(depth - 1)} } right { ${symmetricBranch(BRANCH_DEPTH)} } }`;
 }
 
-const EXPRESSION_SELECTION = leftSpine(SPINE_DEPTH);
+/** A SmartProperty's expression tree, as deep as any formula goes — shared with the template editor's query. */
+export const EXPRESSION_SELECTION = leftSpine(SPINE_DEPTH);
 
-const FRAGMENT = "fragment ExprFields on EvaluationExpression { __typename type ... on ConstantExpression { value } ... on VariableExpression { code } }";
+export const EXPRESSION_FRAGMENT = "fragment ExprFields on EvaluationExpression { __typename type ... on ConstantExpression { value } ... on VariableExpression { code } }";
 
 /** Compact query string — sent as-is, never passed through graphql.print(). */
 export const GET_COMMISSION_TEMPLATES_DEEP_QUERY = [
@@ -50,7 +51,7 @@ export const GET_COMMISSION_TEMPLATES_DEEP_QUERY = [
   "}",
   "}",
   "}",
-  FRAGMENT,
+  EXPRESSION_FRAGMENT,
 ].join(" ");
 
 export type GetCommissionTemplatesDeepResult = GetCommissionTemplatesQuery;

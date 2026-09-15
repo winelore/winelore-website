@@ -13,20 +13,19 @@ export function getWebOrigin(): string {
 }
 
 /**
- * Where a link goes: a native screen, or — for pages not ported yet — the same
- * page on the website.
+ * Where a link goes: a native screen, or a page of the website in the in-app
+ * browser. Every page the website links to is now native; the web kind stays
+ * for what is the website's by nature.
  */
 export type Destination = { kind: "app"; href: string } | { kind: "web"; path: string }
 
 const app = (href: string): Destination => ({ kind: "app", href })
-const web = (path: string): Destination => ({ kind: "web", path })
 
 /**
  * Every place the app links to, and whether it can show it natively yet.
  *
- * The paths are the web's own, so the web entries open exactly the page a
- * desktop user would reach from the same card. Porting a screen means flipping
- * its entry here from `web` to `app`; nothing that links to it changes.
+ * The paths are the web's own wherever the web has one, so a link means the
+ * same thing on both.
  */
 export const destinations = {
     /** Opened on the judge's own replica when they sit on one. */
@@ -45,8 +44,8 @@ export const destinations = {
     template: (id: string, version: number | undefined) => app(`/templates/${id}${version ? `?version=${version}` : ""}`),
     /** A template's own page, at one edition — where the commission page links a template. */
     templateEdition: (id: string, version: number) => app(`/templates/${id}?version=${version}`),
-    /** The web's template editor, which its template page opens at once for `?edit=1`. */
-    editTemplate: (id: string) => web(`/templates/${id}?edit=1`),
+    /** A template's editor — on the web a dialog, which its template page opens at once for `?edit=1`. */
+    editTemplate: (id: string) => app(`/templates/${id}/edit`),
 
     myCommissions: app("/commissions"),
     myCompetitions: app("/myCompetitions"),
@@ -63,8 +62,8 @@ export const destinations = {
 
     createCompetition: app("/competition/create"),
     createBeverage: app("/beverage/create"),
-    /** The web's template editor on a new template, which My Templates opens at once for `?create=1`. */
-    createTemplate: web("/myTemplates?create=1"),
+    /** The template editor on a new template — on the web, My Templates' dialog, open at once for `?create=1`. */
+    createTemplate: app("/templates/new"),
     createBatch: (beverageId: string) => app(`/batch/create?beverageId=${beverageId}`),
     createSample: (batchId: string, beverageId: string) => app(`/sample/create?batchId=${batchId}&beverageId=${beverageId}`),
 } as const

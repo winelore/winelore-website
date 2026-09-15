@@ -1042,6 +1042,7 @@ const uk: TranslationKey = {
     noCategoriesTitle: "Ще немає жодної категорії",
     noCategoriesDesc: "Натисніть «Додати категорію», щоб розпочати",
     deleteCategory: "Видалити категорію",
+    deleteProperty: "Видалити показник",
     categoryNumber: "Категорія #{{number}}",
     categoryNamePlaceholder: "Назва категорії, наприклад: Зовнішній вигляд...",
     propertiesLabel: "Показники оцінки",

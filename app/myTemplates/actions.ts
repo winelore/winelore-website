@@ -1,14 +1,28 @@
 "use server"
 
-import { sdk, fetchGraphQLRaw } from '../../lib/apiClient';
+import { fetchGraphQLRaw, mutateGraphQLRaw } from '../../lib/apiClient';
 import { revalidatePath } from 'next/cache';
-import { GET_TEMPLATE_CATALOG, loadTemplateDetail, toTemplateCatalog } from '@winelore/core/commission';
+import {
+    GET_TEMPLATE_CATALOG,
+    createEvaluationTemplate,
+    loadTemplateDetail,
+    loadTemplateForEditor,
+    saveEvaluationTemplate,
+    toTemplateCatalog,
+} from '@winelore/core/commission';
 
 // Was pointed at a stale Railway host over plain HTTP as its ultimate
 // fallback; now shares the same endpoint resolution (and transport) as
 // every other caller — see lib/graphqlEndpoint.ts.
 async function rawGraphQL(query: string, variables?: Record<string, any>) {
     return fetchGraphQLRaw<any, Record<string, any> | undefined>(query, variables);
+}
+
+/** Reads as usual; a mutation fails on any error, with the backend's message. */
+async function strictSend(query: string, variables: Record<string, unknown>, headers?: Record<string, string>) {
+    return query.trimStart().startsWith('mutation')
+        ? mutateGraphQLRaw<any>(query, variables, headers)
+        : fetchGraphQLRaw<any, Record<string, unknown>>(query, variables, headers);
 }
 
 export async function getBeverageTypesAction(): Promise<{ id: string; code: string; name: string }[]> {
@@ -54,39 +68,19 @@ export async function createGlobalTemplateAction(
     beverageTypeId: string
 ) {
     try {
-        console.log(`🚀 Creating global template "${templateName}"...`);
-
-        const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
-        const templateRes = await sdk.CreateEvaluationTemplate({
-            input: {
-                name: templateName,
-                beverageTypeId,
-                owners: [[ownerAuid]]
-            }
-        }, { headers: actorHeaders });
-        const templateId = templateRes.createEvaluationTemplate.id;
-        console.log(`  Created template: ${templateId}`);
-
-        const editionRes = await sdk.CreateEvaluationTemplateEdition({
-            input: {
-                templateId,
-                version: 1,
-                categories
-            }
-        }, { headers: actorHeaders });
-        const editionId = editionRes.createEvaluationTemplateEdition.id;
-        console.log(`  Created template edition: ${editionId}`);
-
-        await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
-        console.log(`  Activated template edition: ${editionId}`);
-
+        // The sequence is core's, which the app's template editor runs too.
+        const { templateId, editionId } = await createEvaluationTemplate(strictSend, templateName, categories, ownerAuid, beverageTypeId);
         revalidatePath('/myTemplates');
-
         return { success: true, templateId, editionId };
     } catch (err: any) {
         console.error("❌ Failed to create template on backend:", err.message);
         throw err;
     }
+}
+
+/** A template as the editor opens it: its latest edition with its formulas, which the detail leaves out. */
+export async function getTemplateForEditorAction(templateId: string) {
+    return loadTemplateForEditor(strictSend, templateId);
 }
 
 export async function getEvaluationTemplateDetailAction(templateId: string) {
@@ -111,37 +105,14 @@ export async function updateGlobalTemplateAction(
     templateId: string,
     templateName: string,
     categories: any[],
-    beverageTypeId?: string,
+    _beverageTypeId?: string,
     ownerAuid: number = 1
 ) {
     try {
-        console.log(`🔄 Updating global template "${templateId}"...`);
-        const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
-
-        // Note: beverageTypeId is intentionally not sent — there's no mutation
-        // to change it after creation, and the editor keeps that field locked
-        // for existing templates for the same reason.
-        await sdk.ChangeEvaluationTemplateName({ id: templateId, newName: templateName }, { headers: actorHeaders });
-
-        const currentTemplate = await getTemplateByIdAction(templateId);
-        const nextVersion = (currentTemplate?.latestEdition?.version || 1) + 1;
-
-        const editionRes = await sdk.CreateEvaluationTemplateEdition({
-            input: {
-                templateId,
-                version: nextVersion,
-                categories
-            }
-        }, { headers: actorHeaders });
-
-        const editionId = editionRes.createEvaluationTemplateEdition.id;
-        console.log(`  Created new template edition: ${editionId} (v${nextVersion})`);
-
-        await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
-        console.log(`  Activated new template edition: ${editionId}`);
-
+        // The name in place, then the next edition, activated — core's, as in the app. The
+        // beverage type is not sent: there is no mutation to change it after creation.
+        const { editionId } = await saveEvaluationTemplate(strictSend, templateId, templateName, categories, ownerAuid);
         revalidatePath('/myTemplates');
-
         return { success: true, templateId, editionId };
     } catch (err: any) {
         console.error("❌ Failed to update template on backend:", err.message);

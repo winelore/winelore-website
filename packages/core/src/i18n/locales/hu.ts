@@ -1040,6 +1040,7 @@ const hu = {
         noCategoriesTitle: "Még nincsenek kategóriák",
         noCategoriesDesc: "Kattintson a „Kategória hozzáadása” gombra a kezdéshez",
         deleteCategory: "Kategória törlése",
+        deleteProperty: "Tulajdonság törlése",
         categoryNumber: "Kategória #{{number}}",
         categoryNamePlaceholder: "Kategória neve, pl. Megjelenés...",
         propertiesLabel: "Értékelési mutatók",

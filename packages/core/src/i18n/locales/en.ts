@@ -1040,6 +1040,7 @@ const en = {
     noCategoriesTitle: "No categories yet",
     noCategoriesDesc: "Click \"Add Category\" to get started",
     deleteCategory: "Delete Category",
+    deleteProperty: "Delete Property",
     categoryNumber: "Category #{{number}}",
     categoryNamePlaceholder: "Category name, e.g. Appearance...",
     propertiesLabel: "Evaluation Properties",
