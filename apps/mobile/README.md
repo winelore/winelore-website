@@ -68,10 +68,11 @@ screen, the full commissions list, and both of the web's equivalents.
 
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
 Commissions, competitions, beverages, the Competitions and Beverages tabs and
-the personal commission, competition, beverage and template lists, a judge's
-tasting summary and a template's own page are native; anything not ported
-yet — the template editor, outcome policies, the map, create forms — opens
-the same page of the website in the in-app browser. Porting a
+the personal commission, competition, beverage, template and outcome policy
+lists, a judge's tasting summary, a template's own page and the outcome
+policy editor are native; anything not ported yet — the template editor,
+the map, create forms — opens the same page of the website in the in-app
+browser. Porting a
 screen is flipping its entry from `web` to `app`. The Map tab says so plainly
 and offers the website, rather than showing an empty page.
 
@@ -204,6 +205,22 @@ Creating and editing are the web's editor — My Templates opens it at once
 for `?create=1`, as the template page does for `?edit=1` — and the list
 reloads when the in-app browser closes.
 
+My Outcome Policies (`src/outcomePolicies/`, the web's /myOutcomePolicies)
+lists the policies this user owns — name, created date, latest version and
+its status — paging by the backend's cursor as the list scrolls. A card
+opens the policy's editor and the create button a blank one, both the web's
+dialog as a page sheet at the web's paths (`/outcome-policy/[id]`,
+`/outcome-policy/new`): the name, fixed once created, and the script. The
+script is plain monospace text with the keyboard's corrections off, since a
+smart quote or an automatic capital breaks JavaScript; the web draws a code
+editor. Saving adds and activates the next edition, as on the web, and the
+list reloads when the sheet closes; a sheet with unsaved changes asks
+before it is closed and cannot be swiped away. Loading, the duplicate-name
+check, the trace id in a failure, and creating and saving are
+`@winelore/core` (`outcomePolicy/policies.ts`), which the web's actions and
+dialog now call. The web's own policy page saved as the action's default
+actor rather than the signed-in owner; it passes the owner now.
+
 Not yet ported:
 
 - **Comments** on the scorecard — per-property and general, including voice
@@ -211,7 +228,7 @@ Not yet ported:
   recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **The template editor, outcome policies, the map and the create forms.** Their links exist and open the website for now; see
+- **The template editor, the map and the create forms.** Their links exist and open the website for now; see
   `destinations.ts`. The web session
   is separate from the app's, so the first visit asks for an AXUS ID sign-in
   in the in-app browser.

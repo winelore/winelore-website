@@ -1,3 +1,4 @@
+import { loadOutcomePolicies, type OutcomePolicySummary } from "@winelore/core"
 import { GET_TEMPLATE_CATALOG, toTemplateCatalog, type CatalogTemplate } from "@winelore/core/commission"
 import { toDashboardCompetition, withBeverageType, type DashboardCompetition } from "@winelore/core/dashboard"
 import { fetchGraphQLRaw, sdk } from "../api/client"
@@ -71,5 +72,24 @@ export function myTemplatesSource(auid: string) {
         const response = await fetchGraphQLRaw<any>(GET_TEMPLATE_CATALOG, { limit: 100 })
         const items = toTemplateCatalog(response?.evaluationTemplateEditions?.items, Number(auid))
         return { items, total: items.length }
+    }
+}
+
+/**
+ * Outcome policies the user owns — the web's /myOutcomePolicies. The backend
+ * pages them by cursor, the last id of the page before, where the list asks
+ * by offset; each page's cursor is remembered by the offset it ends at.
+ */
+export function myOutcomePoliciesSource(auid: string) {
+    const cursors = new Map<number, string>()
+    return async (offset: number, limit: number): Promise<Page<OutcomePolicySummary>> => {
+        const { policies, totalCount } = await loadOutcomePolicies(
+            (query, variables) => fetchGraphQLRaw<any>(query, variables),
+            Number(auid),
+            limit,
+            offset === 0 ? undefined : cursors.get(offset),
+        )
+        if (policies.length > 0) cursors.set(offset + policies.length, policies[policies.length - 1].id)
+        return { items: policies, total: totalCount }
     }
 }

@@ -41,7 +41,7 @@ export default function RootLayout() {
  * on iOS 26, and a full-screen dialog on Android. Content is white, as the
  * web's dialogs are.
  */
-const beverageSheet = {
+const pageSheet = {
     presentation: "modal",
     headerLargeTitle: false,
     contentStyle: { backgroundColor: palette.surface },
@@ -78,8 +78,11 @@ function RootStack() {
                     }}
                 />
                 {/* The beverage page's modals — the web's edit and samples dialogs — as page sheets. */}
-                <Stack.Screen name="beverage/[id]/edit" options={beverageSheet} />
-                <Stack.Screen name="beverage/[id]/samples/[batchId]" options={beverageSheet} />
+                <Stack.Screen name="beverage/[id]/edit" options={pageSheet} />
+                <Stack.Screen name="beverage/[id]/samples/[batchId]" options={pageSheet} />
+                {/* The web's outcome policy dialog, for a new policy and an existing one. */}
+                <Stack.Screen name="outcome-policy/new" options={pageSheet} />
+                <Stack.Screen name="outcome-policy/[id]" options={pageSheet} />
             </Stack.Protected>
             <Stack.Protected guard={!signedIn}>
                 <Stack.Screen name="welcome" options={{ headerShown: false }} />

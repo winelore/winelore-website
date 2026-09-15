@@ -1135,6 +1135,8 @@ const hu = {
         notPortedTitle: "Még nincs az alkalmazásban",
         notPortedBody: "Ez az oldal még készül az alkalmazásba. Addig a weboldalon nyithatod meg.",
         openOnWeb: "Megnyitás a weboldalon",
+        discardChanges: "A módosítások nincsenek mentve. Elveted őket?",
+        discard: "Elvetés",
     },
 } as const
 

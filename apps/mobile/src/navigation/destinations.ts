@@ -52,7 +52,10 @@ export const destinations = {
     myCompetitions: app("/myCompetitions"),
     myBeverages: app("/myBeverages"),
     myTemplates: app("/myTemplates"),
-    myOutcomePolicies: web("/myOutcomePolicies"),
+    myOutcomePolicies: app("/myOutcomePolicies"),
+    /** A policy's editor — the web's edit dialog, at the path of its own page. */
+    outcomePolicy: (id: string) => app(`/outcome-policy/${id}`),
+    createOutcomePolicy: app("/outcome-policy/new"),
 
     competitions: app("/competitions"),
     beverages: app("/beverages"),

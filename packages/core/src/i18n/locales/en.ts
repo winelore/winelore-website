@@ -1135,6 +1135,8 @@ const en = {
     notPortedTitle: "Not in the app yet",
     notPortedBody: "This page is still being brought to the app. Until then, you can open it on the website.",
     openOnWeb: "Open on the website",
+    discardChanges: "Your changes have not been saved. Discard them?",
+    discard: "Discard",
   },
 } as const
 

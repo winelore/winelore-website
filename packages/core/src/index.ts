@@ -30,6 +30,7 @@ export * from "./outcomePolicy/outcomePropertyMap"
 export * from "./outcomePolicy/buildScriptContext"
 export * from "./outcomePolicy/evaluateOutcomePolicy"
 export * from "./outcomePolicy/resolveBeverageOutcomes"
+export * from "./outcomePolicy/policies"
 
 // Reference data & timing
 export * from "./wineRegionTypes"

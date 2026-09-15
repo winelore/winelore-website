@@ -28,9 +28,10 @@ interface OutcomePolicyEdition {
 interface OutcomePolicyDetailProps {
     policy: OutcomePolicy
     edition: OutcomePolicyEdition | null
+    currentAuid: number
 }
 
-export default function OutcomePolicyDetailView({ policy, edition }: OutcomePolicyDetailProps) {
+export default function OutcomePolicyDetailView({ policy, edition, currentAuid }: OutcomePolicyDetailProps) {
     const { t, locale } = useTranslation()
     const [scriptCode, setScriptCode] = useState(edition?.scriptCode || "")
     const [isSaving, setIsSaving] = useState(false)
@@ -53,7 +54,8 @@ export default function OutcomePolicyDetailView({ policy, edition }: OutcomePoli
 
         setIsSaving(true)
         try {
-            await updateOutcomePolicyAction(policy.id, scriptCode)
+            // As the signed-in owner; this used to fall back to the action's default actor.
+            await updateOutcomePolicyAction(policy.id, scriptCode, currentAuid)
             setSavedRecently(true)
             router.push("/myOutcomePolicies")
         } catch (error) {
