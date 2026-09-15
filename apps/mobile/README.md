@@ -347,6 +347,9 @@ On iOS 27, built with Xcode 27:
   a category opened onto its properties.
 - My Templates for a user with three templates: their counts, versions and
   edit buttons, the count chip and the create button.
+- My Outcome Policies with a user's one policy, its editor sheet (the name
+  read-only, the script, Save held until the script changes) and a blank
+  create sheet.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end
@@ -373,9 +376,10 @@ On iOS 27, built with Xcode 27:
 8. The commission page's changes from the phone — readiness, the chair's
    start, settings, replicas, experts, panels, samples, codes, templates —
    kept off shared dev data; they send core's documents and sequences.
-9. The tasting summary's download and print sheet, and the template editor
-   hand-offs (`/templates/[id]?edit=1`, `/myTemplates?create=1`), which need
-   taps; the files are
+9. The tasting summary's download and print sheet, the template editor
+   hand-offs (`/templates/[id]?edit=1`, `/myTemplates?create=1`), and typing
+   in the outcome policy script (that no smart quotes creep in) and saving
+   it, which need taps; the files are
    core's sheets, which the tests cover.
 10. The web results, tasting summary and template pages signed in. The
     results page's server part renders the access-denied and load-error
