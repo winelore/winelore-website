@@ -116,7 +116,9 @@ once the view spans six degrees of latitude or less and holds 150 or fewer,
 their outlines thinned to the zoom (`wineRegionOutlines`), and without holes,
 which a native map polygon does not have. The origin's region and country
 go through the same paced Nominatim queue as My Beverages. The map asks for
-no location permission, so `expo-maps`' config plugin is not needed. On
+no location permission, so `expo-maps`' config plugin is not needed — and
+its my-location button is turned off, since tapping it would ask for location
+with no reason declared, which iOS does not allow. On
 Android, Google Maps needs an API key in the manifest, which is not set up;
 Android has not been launched yet in any case.
 
@@ -408,6 +410,13 @@ On iOS 27, built with Xcode 27:
 - My Outcome Policies with a user's one policy, its editor sheet (the name
   read-only, the script, Save held until the script changes) and a blank
   create sheet.
+- The Map over Ukraine with dev's pins and its region count, and a
+  Zakarpattia beverage's sheet — producers, date, region and country.
+- The four create forms opened as they are reached: competition (the user's
+  own series chosen), beverage (types, roles), batch for a beverage and
+  sample for a batch (its total, used and remaining volume).
+- The template editor on an owner's template, its formula loaded — which
+  the web's editor lost before — and on a new one.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end

@@ -113,6 +113,7 @@ export function LocationPicker({ value, onChange, disabled }: { value: Point | n
                         cameraPosition={start}
                         markers={markers}
                         colorScheme={AppleMaps.MapColorScheme.LIGHT}
+                        uiSettings={{ myLocationButtonEnabled: false }}
                         properties={{ pointsOfInterest: { including: [] } }}
                         onMapClick={(event) => {
                             const { latitude, longitude } = event.coordinates
@@ -124,6 +125,7 @@ export function LocationPicker({ value, onChange, disabled }: { value: Point | n
                         ref={google}
                         style={StyleSheet.absoluteFill}
                         cameraPosition={start}
+                        uiSettings={{ myLocationButtonEnabled: false }}
                         markers={markers}
                         onMapClick={(event) => {
                             const { latitude, longitude } = event.coordinates

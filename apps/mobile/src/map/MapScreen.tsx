@@ -154,7 +154,9 @@ export function MapScreen() {
                         markers={markers}
                         polygons={polygons}
                         colorScheme={AppleMaps.MapColorScheme.LIGHT}
-                        uiSettings={{ compassEnabled: true, scaleBarEnabled: true }}
+                        // The app asks for no location, and declares no reason to; a
+                        // location button would ask anyway, which iOS does not allow.
+                        uiSettings={{ compassEnabled: true, scaleBarEnabled: true, myLocationButtonEnabled: false }}
                         properties={{ pointsOfInterest: { including: [] } }}
                         onCameraMove={onCameraMove}
                         onMarkerClick={openBeverage}
@@ -163,6 +165,7 @@ export function MapScreen() {
                     <GoogleMaps.View
                         style={StyleSheet.absoluteFill}
                         cameraPosition={START}
+                        uiSettings={{ myLocationButtonEnabled: false }}
                         markers={markers}
                         polygons={polygons}
                         onCameraMove={onCameraMove}
