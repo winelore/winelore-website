@@ -251,6 +251,13 @@ On iOS 27, built with Xcode 27:
   published beverage; batches with their samples and allocation; the samples
   sheet with its search field; the edit sheet with a username found; the
   awards and specs empty states (no beverage on dev has awards or specs).
+- The in-app browser under the scene life cycle, opening the web's create
+  batch page.
+- Competition results for a holder, on two dev competitions: the figures,
+  tabs and filter; a candidate opened onto its judges, with out-of-delta
+  judges flagged; the outcome column; the comments tab; a session's end
+  (`/results/[commissionId]`) narrowed to its commission; the Excel file in
+  the share sheet; and the print sheet's preview.
 
 **Not verified yet:**
 
@@ -267,9 +274,10 @@ On iOS 27, built with Xcode 27:
 6. The beverage page's mutations (rename, origin, producers, submit) from the
    phone, kept off shared dev data; they send the same documents the web's
    actions do.
-7. The in-app browser under the scene life cycle. It presents from
-   `UIApplication.keyWindow`, which the scene's window is, but it has not
-   been opened on iOS 27 yet.
+7. Voice comments on the results page: no commission on dev has voice
+   comments enabled, so `expo-audio` playback has not been heard.
+8. The web results page signed in. Its server part renders the access-denied
+   and load-error states; the table itself needs a signed-in browser.
 
 ## iOS 27 requires the scene life cycle
 
