@@ -126,9 +126,9 @@ Not yet ported:
   score breakdowns, outlier highlighting and export are web-only.
 
 The app was first written on Linux, where it could only be typechecked and
-bundled; it has since run on an iPhone 15 Pro on iOS 26.6. What is verified,
-and what is not, is spelled out under *Verification* below. Android has still
-never been launched.
+bundled; it has since run on an iPhone 15 Pro on iOS 26.6 and iOS 27. What is
+verified, and what is not, is spelled out under *Verification* below. Android
+has still never been launched.
 
 ## Running on a device
 
@@ -216,6 +216,12 @@ Verified on an iPhone 15 Pro, iOS 26.6, against the dev backend:
 - Home, the four list screens (paging to the end of a 136-item list, a
   resolved origin), the lobby, results and the scorecard's routing.
 
+On iOS 27, built with Xcode 27:
+
+- The app launches (the build before the scene plugin crashed at launch).
+- Links: one that cold-starts the app, and one sent to the running app, both
+  land on the page they name.
+
 **Not verified yet:**
 
 1. Keychain behaviour on a locked device (`AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`).
@@ -228,6 +234,27 @@ Verified on an iPhone 15 Pro, iOS 26.6, against the dev backend:
    schema and bundle, but the shape of a live template — especially a
    SmartProperty formula tree — has not been seen.
 5. Anything on Android.
+6. The in-app browser under the scene life cycle. It presents from
+   `UIApplication.keyWindow`, which the scene's window is, but it has not
+   been opened on iOS 27 yet.
+
+## iOS 27 requires the scene life cycle
+
+iOS 27 stops an app at launch unless it has adopted UIScene — a SIGTRAP in
+`_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption` before any
+JavaScript runs, whichever SDK built it. Expo SDK 58's template adopts scenes
+(`ExpoAppSceneDelegate`); SDK 57's does not, so `plugins/withSceneLifecycle.js`
+backports the same arrangement at prebuild: a scene manifest in Info.plist, a
+`SceneDelegate.swift` that makes the window from its scene and starts React
+Native in it, and an `AppDelegate` that no longer makes a window of its own.
+The scene delegate rebuilds the launch options from the scene's connection
+options, so `Linking.getInitialURL()` still sees a link that cold-starts the
+app, and hands URLs, user activities and foreground/background events on to
+`AppDelegate`, which UIKit no longer calls for them.
+
+The plugin fails prebuild if the template's window setup is not where it
+expects, rather than producing an app that dies at launch. Remove it on moving
+to SDK 58.
 
 ## Typed routes are off, deliberately
 

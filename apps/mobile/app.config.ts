@@ -70,7 +70,9 @@ const config: ExpoConfig = {
     android: {
         package: "com.thewinelore.winelore",
     },
-    plugins: ["expo-router", "expo-secure-store", "expo-web-browser"],
+    // withSceneLifecycle: iOS 27 will not launch an app without UIScene
+    // support, which SDK 57's template lacks. Drop it on moving to SDK 58.
+    plugins: ["expo-router", "expo-secure-store", "expo-web-browser", "./plugins/withSceneLifecycle"],
     // experiments.typedRoutes is deliberately off. Turning it on makes the CLI
     // load @expo/router-server, which resolves expo-router from its own nested
     // location under node_modules/expo/ and cannot see a workspace-nested copy,
