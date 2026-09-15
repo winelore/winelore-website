@@ -1,8 +1,8 @@
 "use server"
 
 import { fetchGraphQL, fetchGraphQLRaw, sdk } from '../../lib/apiClient';
-import { axusSdk } from '../../lib/axusClient';
-import { getAxusEndpoint } from '../../lib/graphqlEndpoint';
+import { getAxusConfig } from '../../lib/axusConfig';
+import { findUserByUsername } from '@winelore/core/auth';
 import { GetCommissionTemplatesDocument as LegacyGetCommissionTemplatesDocument } from '@winelore/core/gql/graphql';
 import {
     GET_COMMISSION_TEMPLATES_DEEP_QUERY,
@@ -1473,69 +1473,12 @@ export async function completeCommissionReplicaAction(replicaId: string) {
     }
 }
 
-async function fetchAxusGraphQL(query: string, variables: Record<string, any> = {}) {
-    const res = await fetch(getAxusEndpoint(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables }),
-        next: { revalidate: 0 }
-    });
-    const json = await res.json();
-    if (json.errors) {
-        throw new Error(json.errors[0]?.message || 'AXUS ID GraphQL Query Error');
-    }
-    return json.data;
-}
-
 export async function searchUserByUsernameAction(username: string) {
     const trimmed = username.trim().replace(/^@/, "");
     if (!trimmed) return { success: false, error: "" };
     try {
-        const ownerRes = await axusSdk.OwnerByUsername({ username: trimmed });
-        const auid = ownerRes?.ownerByUsername;
-        if (!auid) {
-            return { success: false, error: "" };
-        }
-
-        let displayName = `@${trimmed}`;
-        try {
-            const varData = await fetchAxusGraphQL(`
-                query GetUserVars($auid: ID!) {
-                    defaultVariation(auid: $auid) {
-                        variationId
-                    }
-                    variations(auid: $auid) {
-                        id
-                    }
-                }
-            `, { auid: String(auid) });
-
-            const variationId = varData?.defaultVariation?.variationId || varData?.variations?.[0]?.id;
-            if (variationId) {
-                const nameData = await fetchAxusGraphQL(`
-                    query GetName($variationId: ID!) {
-                        name(variationId: $variationId) {
-                            displayName
-                        }
-                    }
-                `, { variationId });
-                
-                if (nameData?.name?.displayName) {
-                    displayName = nameData.name.displayName;
-                }
-            }
-        } catch (detailErr) {
-            console.warn("Failed to fetch user details for auid", auid, detailErr);
-        }
-
-        return {
-            success: true,
-            user: {
-                auid: Number(auid),
-                username: trimmed,
-                displayName
-            }
-        };
+        const user = await findUserByUsername(getAxusConfig(), trimmed);
+        return user ? { success: true, user } : { success: false, error: "" };
     } catch (err: any) {
         console.error("searchUserByUsernameAction error:", err);
         return { success: false, error: err.message || "" };

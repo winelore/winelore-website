@@ -1,22 +1,21 @@
 import { Host, SegmentedButton, SingleChoiceSegmentedButtonRow, Text } from "@expo/ui/jetpack-compose"
 import { fillMaxWidth, weight } from "@expo/ui/jetpack-compose/modifiers"
-import { LOCALES, LOCALE_LABELS } from "@winelore/core/i18n"
 import { palette } from "../theme"
-import type { LanguagePickerProps } from "./LanguagePicker"
+import type { SegmentedProps } from "./Segmented"
 
 /**
  * A Material 3 single-choice segmented button row, in the brand's indigo
  * where Material would use its dynamic primary.
  */
-export function LanguagePicker({ locale, onChange }: LanguagePickerProps) {
+export function Segmented<T extends string>({ options, value, onChange }: SegmentedProps<T>) {
     return (
         <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
             <SingleChoiceSegmentedButtonRow modifiers={[fillMaxWidth()]}>
-                {LOCALES.map((option) => (
+                {options.map((option) => (
                     <SegmentedButton
-                        key={option}
-                        selected={option === locale}
-                        onClick={() => onChange(option)}
+                        key={option.value}
+                        selected={option.value === value}
+                        onClick={() => onChange(option.value)}
                         modifiers={[weight(1)]}
                         colors={{
                             activeContainerColor: palette.accentBorder,
@@ -28,7 +27,7 @@ export function LanguagePicker({ locale, onChange }: LanguagePickerProps) {
                         }}
                     >
                         <SegmentedButton.Label>
-                            <Text>{LOCALE_LABELS[option]}</Text>
+                            <Text>{option.label}</Text>
                         </SegmentedButton.Label>
                     </SegmentedButton>
                 ))}

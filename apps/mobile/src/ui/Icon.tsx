@@ -40,6 +40,17 @@ const GLYPHS = {
     done: { ios: "checkmark", android: "check" }, // Check
     send: { ios: "paperplane", android: "send" }, // Send
     web: { ios: "safari", android: "public" },
+    people: { ios: "person.2", android: "group" }, // Users
+    personAdd: { ios: "person.badge.plus", android: "person_add" }, // UserPlus
+    trash: { ios: "trash", android: "delete" }, // Trash2
+    award: { ios: "rosette", android: "workspace_premium" }, // Award
+    barcode: { ios: "barcode", android: "barcode" }, // Barcode
+    percent: { ios: "percent", android: "percent" }, // Percent
+    droplet: { ios: "drop", android: "water_drop" }, // Droplet
+    flask: { ios: "flask", android: "science" }, // FlaskConical
+    specs: { ios: "questionmark.circle", android: "help" }, // HelpCircle
+    copy: { ios: "doc.on.doc", android: "content_copy" }, // Copy
+    clock: { ios: "clock", android: "schedule" }, // Clock
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle
     check: { ios: "checkmark.circle", android: "check_circle" }, // CheckCircle

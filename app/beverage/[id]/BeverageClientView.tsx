@@ -14,6 +14,21 @@ import { submitBeverageForReviewAction } from "../actions"
 import { BackLink } from "@/components/BackLink"
 import { EditBeverageModal } from "./EditBeverageModal"
 import { SamplesListModal, type ModalBatchData } from "./SamplesListModal"
+import {
+    batchFigures,
+    beverageStatusTone,
+    beverageTabs,
+    defaultBeverageTab,
+    groupAwardsByCompetition,
+    isBeverageProducer,
+    isBeverageTab,
+    producerName,
+    producerRoleKey,
+    technicalSpecs as readTechnicalSpecs,
+    type BeverageAward,
+    type BeverageBatch,
+    type BeverageTab,
+} from "@winelore/core/beverage"
 
 type BeverageStatus = "APPROVED" | "DRAFT" | "IN_REVIEW" | "PUBLISHED" | "SUBMITTED" | "SUSPENDED"
 type BeverageType = "FORTIFIED" | "RED" | "ROSE" | "SPARKLING" | "WHITE"
@@ -52,54 +67,8 @@ interface Beverage {
     beverageTypeName?: string | null
 }
 
-interface AwardType {
-    id: string
-    commissionId: string
-    candidateId: string
-    assignedAt: string
-    award: {
-        id: string
-        code: string
-        name: string
-        description?: string
-        badgeUrl?: string
-    }
-    commission?: {
-        id: string
-        name: string
-        competition: {
-            id: string
-            name: string
-            status: string
-            plannedDates?: {
-                start: string
-                end: string
-            }
-            startedAt?: string
-            endedAt?: string
-            series: {
-                id: string
-                name: string
-            }
-        }
-    } | null
-}
-
-interface SampleType {
-    id: string
-    volumeMl?: number | null
-    attributes?: any
-    createdAt?: string | null
-}
-
-interface BatchType {
-    id: string
-    volumeMl?: number | null
-    lotNumber?: string | null
-    attributes?: any
-    createdAt?: string | null
-    samples?: SampleType[]
-}
+type AwardType = BeverageAward
+type BatchType = BeverageBatch
 
 interface InitialData {
     beverage: Beverage
@@ -112,63 +81,6 @@ interface Props {
     currentAuid: number;
     isNotFound?: boolean;
     isError?: boolean;
-}
-
-function parseAttributes(attrInput: unknown): Record<string, string> {
-    if (!attrInput) return {}
-
-    if (typeof attrInput === "object" && attrInput !== null) {
-        const result: Record<string, string> = {}
-        Object.entries(attrInput).forEach(([k, v]) => {
-            if (v !== null && v !== undefined) {
-                result[k] = String(v)
-            }
-        })
-        return result
-    }
-
-    if (typeof attrInput === "string") {
-        const trimmed = attrInput.trim()
-        if (!trimmed) return {}
-
-        // First try standard JSON.parse
-        try {
-            const parsed = JSON.parse(trimmed)
-            if (parsed && typeof parsed === "object" && parsed !== null) {
-                const result: Record<string, string> = {}
-                Object.entries(parsed).forEach(([k, v]) => {
-                    if (v !== null && v !== undefined) {
-                        result[k] = String(v)
-                    }
-                })
-                return result
-            }
-        } catch {
-            // Fall back to Kotlin Map toString parser
-        }
-
-        // Parse Kotlin Map toString representation: {key1=val1, key2=val2}
-        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-            const content = trimmed.slice(1, -1).trim()
-            if (!content) return {}
-            
-            const result: Record<string, string> = {}
-            const parts = content.split(/,\s*/)
-            parts.forEach(part => {
-                const eqIdx = part.indexOf('=')
-                if (eqIdx !== -1) {
-                    const key = part.substring(0, eqIdx).trim().replace(/^["']|["']$/g, "")
-                    const val = part.substring(eqIdx + 1).trim().replace(/^["']|["']$/g, "")
-                    if (key) {
-                        result[key] = val
-                    }
-                }
-            })
-            return result
-        }
-    }
-
-    return {}
 }
 
 const getColorDotClass = (type: string) => {
@@ -262,25 +174,9 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
         }
     }
 
-    let displayRole: string = producer.role
-    const roleUpper = producer.role.toUpperCase()
-    if (roleUpper === "MAKER") {
-        displayRole = (t("roles.maker") as string) || "Maker"
-    } else if (roleUpper === "OWNER") {
-        displayRole = (t("roles.owner") as string) || "Owner"
-    } else if (roleUpper === "DISTRIBUTOR") {
-        displayRole = (t("roles.distributor") as string) || "Distributor"
-    } else if (roleUpper === "BOTTLER") {
-        displayRole = (t("roles.bottler") as string) || "Bottler"
-    }
-
-    const renderName = () => {
-        if (producer.displayName) return producer.displayName
-        if (producer.username) return `@${producer.username}`
-        if (producer.auid && producer.auid.length > 0) return `@user-${producer.auid[0]}`
-        if (producer.producerId) return `Winery ${String(producer.producerId).slice(0, 8)}`
-        return (t("common.unknownUser") as string) || "Unknown User"
-    }
+    const roleKey = producerRoleKey(producer.role)
+    const displayRole: string = roleKey ? t(roleKey) : producer.role
+    const renderName = () => producerName(producer, t("common.unknownUser"))
 
     return (
         <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all duration-300 hover:-translate-y-0.5 ${getRoleColors(producer.role)}`}>
@@ -292,29 +188,18 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
 }
 
 export default function BeverageClientView({ initialData, currentAuid, isNotFound, isError }: Props) {
-    const [currentTab, setCurrentTab] = useState<"batches" | "awards" | "specs">(() => {
+    const [currentTab, setCurrentTab] = useState<BeverageTab>(() => {
         if (typeof window !== "undefined") {
-            const params = new URLSearchParams(window.location.search)
-            const tabParam = params.get("tab")
-            if (tabParam === "batches" || tabParam === "awards" || tabParam === "specs") {
-                return tabParam
-            }
+            const tabParam = new URLSearchParams(window.location.search).get("tab")
+            if (isBeverageTab(tabParam)) return tabParam
         }
-        if (initialData?.beverage?.attributes) {
-            const parsed = parseAttributes(initialData.beverage.attributes)
-            const specCount = Object.keys(parsed).filter(k => k !== "color").length
-            if (specCount > 0) return "specs"
-        }
-        return "batches"
+        return defaultBeverageTab(readTechnicalSpecs(initialData?.beverage?.attributes).length)
     })
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const params = new URLSearchParams(window.location.search)
-            const tabParam = params.get("tab")
-            if (tabParam === "batches" || tabParam === "awards" || tabParam === "specs") {
-                setCurrentTab(tabParam)
-            }
+            const tabParam = new URLSearchParams(window.location.search).get("tab")
+            if (isBeverageTab(tabParam)) setCurrentTab(tabParam)
         }
     }, [])
     const [beverageStatus, setBeverageStatus] = useState<BeverageStatus | null>(initialData?.beverage?.status || null)
@@ -388,13 +273,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         status: beverageStatus || initialData.beverage.status,
         ...beverageEdits,
     }
-    const isProducer = beverage.producers.some((producer) => {
-        const auidMatches = producer.auid
-            ? (Array.isArray(producer.auid) ? producer.auid.includes(currentAuid) : Number(producer.auid) === currentAuid)
-            : false
-        const idMatches = Boolean(producer.producerId && producer.producerId === String(currentAuid))
-        return auidMatches || idMatches
-    })
+    const isProducer = isBeverageProducer(beverage.producers, currentAuid)
 
     const handleSubmitForReview = async () => {
         if (isSubmittingForReview || beverage.status !== "DRAFT" || !isProducer) return
@@ -412,21 +291,18 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     }
 
     const getStatusConfig = (status: string) => {
-        switch (status.toUpperCase()) {
-            case "APPROVED":
-            case "PUBLISHED":
+        switch (beverageStatusTone(status)) {
+            case "approved":
                 return {
                     icon: <CheckCircle className="w-3.5 h-3.5" />,
                     className: "bg-emerald-50 text-emerald-600 border-emerald-100"
                 }
-            case "SUSPENDED":
+            case "suspended":
                 return {
                     icon: <AlertCircle className="w-3.5 h-3.5" />,
                     className: "bg-rose-50 text-rose-600 border-rose-100"
                 }
-            case "DRAFT":
-            case "IN_REVIEW":
-            case "SUBMITTED":
+            case "pending":
                 return {
                     icon: <Clock className="w-3.5 h-3.5" />,
                     className: "bg-amber-50 text-amber-600 border-amber-100"
@@ -441,40 +317,18 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
 
     const statusConfig = getStatusConfig(beverage.status)
 
-    const awardsByCompetition = awards.reduce((acc, award) => {
-        const key = award.commission?.competition.id || 'unknown'
-        if (!acc[key]) {
-            acc[key] = {
-                competition: award.commission?.competition,
-                awards: []
-            }
-        }
-        acc[key].awards.push(award)
-        return acc
-    }, {} as Record<string, { competition: any, awards: AwardType[] }>)
+    const awardsByCompetition = groupAwardsByCompetition(awards)
 
-    // Parse technical specs from attributes (excluding color)
-    let technicalSpecs: { key: string; value: string }[] = []
-    const parsedBeverageAttrs = parseAttributes(beverage.attributes)
-    Object.entries(parsedBeverageAttrs).forEach(([key, val]) => {
-        if (key !== "color" && val !== undefined && val !== null) {
-            technicalSpecs.push({
-                key: key.replace(/([A-Z])/g, " $1").trim(),
-                value: String(val)
-            })
-        }
-    })
+    // Technical specs from attributes (excluding color)
+    const technicalSpecs = readTechnicalSpecs(beverage.attributes)
 
     // Dynamic Tab Navigation Configuration
-    const tabOptions: { id: "batches" | "awards" | "specs"; label: string; icon: any; count?: number }[] = []
-    if (technicalSpecs.length > 0) {
-        tabOptions.push({ id: "specs", label: t("beverage.tabs.specs"), icon: HelpCircle })
+    const tabDetails: Record<BeverageTab, { label: string; icon: any; count?: number }> = {
+        specs: { label: t("beverage.tabs.specs"), icon: HelpCircle },
+        batches: { label: t("beverage.tabs.batches"), icon: Barcode, count: batches.length },
+        awards: { label: t("beverage.tabs.awards"), icon: Trophy, count: awards.length },
     }
-    tabOptions.push({ id: "batches", label: t("beverage.tabs.batches"), icon: Barcode, count: batches.length })
-    tabOptions.push({ id: "awards", label: t("beverage.tabs.awards"), icon: Trophy, count: awards.length })
-    if (technicalSpecs.length === 0) {
-        tabOptions.push({ id: "specs", label: t("beverage.tabs.specs"), icon: HelpCircle })
-    }
+    const tabOptions = beverageTabs(technicalSpecs.length).map((id) => ({ id, ...tabDetails[id] }))
 
     return (
         <div className="app-screen bg-slate-50/50">
@@ -682,10 +536,8 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                 {batches.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {batches.map((batch) => {
-                                            // Parse vintage and ABV from attributes
-                                            const parsedBatchAttrs = parseAttributes(batch.attributes)
-                                            const displayVintage = parsedBatchAttrs.vintage || null
-                                            const displayAbv = parsedBatchAttrs.alcoholByVolume || parsedBatchAttrs.abv || parsedBatchAttrs.alcohol || null
+                                            const figures = batchFigures(batch)
+                                            const displayVintage = figures.vintage
                                             const batchSamples = batch.samples || []
 
                                             return (
@@ -714,7 +566,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                                 <Percent className="w-4 h-4 mx-auto text-indigo-600/80 mb-1" />
                                                                 <span className="text-[9px] uppercase font-bold text-slate-400 block">{t("beverage.batches.abv")}</span>
                                                                 <span className="text-xs font-bold text-slate-700 mt-0.5 block">
-                                                                    {displayAbv ? `${Math.round(parseFloat(displayAbv) * 10) / 10}%` : t("common.na")}
+                                                                    {figures.abv ?? t("common.na")}
                                                                 </span>
                                                             </div>
                                                             
@@ -740,23 +592,9 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
 
                                                     {/* Samples Section */}
                                                     {(() => {
-                                                        const sampleGroupsMap = new Map<number | string, { count: number; volumeMl: number | null }>()
-                                                        let totalSamplesVol = 0
-                                                        batchSamples.forEach((s: any) => {
-                                                            const v = typeof s.volumeMl === 'number' && !isNaN(s.volumeMl) ? s.volumeMl : null
-                                                            if (v !== null) totalSamplesVol += v
-                                                            const key = v !== null ? v : 'std'
-                                                            const existing = sampleGroupsMap.get(key)
-                                                            if (existing) {
-                                                                existing.count++
-                                                            } else {
-                                                                sampleGroupsMap.set(key, { count: 1, volumeMl: v })
-                                                            }
-                                                        })
-                                                        const groupedSamples = Array.from(sampleGroupsMap.values()).sort(
-                                                            (a, b) => (b.volumeMl || 0) - (a.volumeMl || 0)
-                                                        )
-                                                        const batchVol = typeof batch.volumeMl === 'number' && !isNaN(batch.volumeMl) ? batch.volumeMl : null
+                                                        const groupedSamples = figures.sampleGroups
+                                                        const totalSamplesVol = figures.sampleVolume
+                                                        const batchVol = figures.batchVolume
 
                                                         return (
                                                             <div className="mt-2 pt-3 border-t border-slate-100 bg-slate-50/50 -mx-5 -mb-5 p-4 rounded-b-[24px]">
@@ -792,7 +630,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                                                 >
                                                                                     <Droplet className="w-3 h-3 text-indigo-500" />
                                                                                     <span>
-                                                                                        {group.count} × {group.volumeMl ? `${group.volumeMl.toLocaleString()} мл` : t("common.standard", { defaultValue: "Стандарт" })}
+                                                                                        {group.count} × {group.volumeMl ? `${group.volumeMl.toLocaleString()} ${t("common.milliliters")}` : t("common.standard", { defaultValue: "Стандарт" })}
                                                                                     </span>
                                                                                 </span>
                                                                             ))}
@@ -881,7 +719,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
 
                                 {awards.length > 0 ? (
                                     <div className="grid grid-cols-1 gap-6">
-                                        {Object.values(awardsByCompetition).map((group, idx: number) => (
+                                        {awardsByCompetition.map((group, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="border border-slate-100 rounded-[28px] p-6 bg-white shadow-md hover:shadow-lg transition-shadow duration-300"

@@ -33,7 +33,7 @@ export const destinations = {
         replicaId ? app(`/commission/${id}/${replicaId}`) : web(`/commission/${id}`),
     competition: (id: string) => app(`/competition/${id}`),
     competitionResults: (id: string) => web(`/competition/${id}/results`),
-    beverage: (id: string) => web(`/beverage/${id}`),
+    beverage: (id: string) => app(`/beverage/${id}`),
     template: (id: string, version: number | undefined) =>
         web(`/myTemplates?templateId=${id}-${version || 0}`),
 
@@ -50,6 +50,9 @@ export const destinations = {
     // Create forms are organiser desk work and stay on the web for now.
     createCompetition: web("/competition/create"),
     createBeverage: web("/beverage/create"),
+    createBatch: (beverageId: string) => web(`/batch/create?beverageId=${beverageId}`),
+    createSample: (batchId: string, beverageId: string) =>
+        web(`/sample/create?batchId=${batchId}&beverageId=${beverageId}`),
 } as const
 
 /**

@@ -78,3 +78,51 @@ export async function resolveDisplayName(
         ? displayName
         : `@${defaultUsername}`
 }
+
+const OWNER_BY_USERNAME_QUERY = `
+  query OwnerByUsername($username: String!) {
+    ownerByUsername(username: $username)
+  }
+`
+
+export interface FoundUser {
+    auid: number
+    username: string
+    displayName: string
+}
+
+/**
+ * Look a person up by their AXUS ID username, as the "add a producer" and
+ * "add a member" fields do. A leading `@` is ignored.
+ *
+ * `null` means nobody has that username; a failed lookup throws, so a field
+ * can tell "not found" from "could not search".
+ */
+export async function findUserByUsername(config: AxusConfig, username: string): Promise<FoundUser | null> {
+    const trimmed = username.trim().replace(/^@/, "")
+    if (!trimmed) return null
+
+    const response = await fetch(config.graphqlEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: OWNER_BY_USERNAME_QUERY, variables: { username: trimmed } }),
+    })
+    if (!response.ok) throw new Error(`AXUS ID search failed (${response.status})`)
+    const json = (await response.json()) as {
+        data?: { ownerByUsername?: string | number | null } | null
+        errors?: Array<{ message?: string; extensions?: { classification?: string } }>
+    }
+    const auid = json.data?.ownerByUsername
+    if (auid === null || auid === undefined || auid === "") {
+        // AXUS ID answers an unknown username with null and a NOT_FOUND error.
+        const failure = json.errors?.find((error) => error.extensions?.classification !== "NOT_FOUND")
+        if (failure) throw new Error(failure.message || "AXUS ID search failed")
+        return null
+    }
+
+    return {
+        auid: Number(auid),
+        username: trimmed,
+        displayName: await resolveDisplayName(config, String(auid), trimmed),
+    }
+}

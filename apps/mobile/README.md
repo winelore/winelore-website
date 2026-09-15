@@ -57,11 +57,10 @@ timer. `selectCommissionsForUser` does the membership filtering for the home
 screen, the full commissions list, and both of the web's equivalents.
 
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
-Commissions, competitions, the Competitions and Beverages tabs and the
-personal commission, competition and beverage lists are native; anything not
-ported yet — beverage pages, competition results, templates, outcome
-policies, the map, create forms — opens the same page of the website in the
-in-app browser. Porting a
+Commissions, competitions, beverages, the Competitions and Beverages tabs and
+the personal commission, competition and beverage lists are native; anything
+not ported yet — competition results, templates, outcome policies, the map,
+create forms — opens the same page of the website in the in-app browser. Porting a
 screen is flipping its entry from `web` to `app`. The Map tab says so plainly
 and offers the website, rather than showing an empty page.
 
@@ -82,6 +81,25 @@ It opens inside whichever tab it was tapped in: the route lives in
 `app/(tabs)/(home,competitions)/`, an expo-router shared group, which is why
 the Competitions and Beverages tabs are route groups rather than plain
 folders. Their URLs are unchanged.
+
+The beverage page (`src/beverage/`) is the web's /beverage/[id] as its phone
+layout stacks it: the beverage's card — type, colour and id chips, the name,
+the status, origin, producers and who entered it — then its tabs, Technical
+Specs, Vintages & Batches and Awards, in the web's order and with its default.
+The data is `loadBeveragePage` in `@winelore/core/beverage`, which the web page
+now calls too, along with the attribute parsing, specs, batch figures, award
+grouping and producer check. A producer edits it in a page sheet, as the web
+edits it in a modal: name and origin are saved from the bar, and producers are
+added (found by AXUS ID username through `findUserByUsername` in core, which
+the web's search now uses) and removed at once. Submitting for review and
+removing a producer ask first — the web does neither — since one cannot be
+undone and the other can take away your own right to edit. A batch's samples
+open in a sheet with the system's search field and tap-to-copy codes. Creating
+batches and samples is still the web's, in the in-app browser, and the page
+reloads when it closes. The page lives in `app/(tabs)/(home,beverages)/`; the
+sheets are in the root stack so they sit over the tab bar, and read the
+beverage the page loaded (`useBeveragePage.ts`), writing each mutation's
+result back so the page behind is current when a sheet closes.
 
 The list screens (`src/lists/`) are the web's list pages as a phone draws them:
 title and subtitle, the count chip and the gradient create button, one column
@@ -117,8 +135,8 @@ Not yet ported:
   `expo-audio`, replacing the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **Competition and beverage pages, templates, outcome policies, the map and
-  the create forms.** Their links exist and open the website for now; see
+- **Competition results, templates, outcome policies, the map and the create
+  forms.** Their links exist and open the website for now; see
   `destinations.ts`. The web session is separate from the app's, so the first
   visit asks for an AXUS ID sign-in in the in-app browser.
 - **Results filters and expert drill-down.** The mobile list shows final
@@ -221,6 +239,10 @@ On iOS 27, built with Xcode 27:
 - The app launches (the build before the scene plugin crashed at launch).
 - Links: one that cold-starts the app, and one sent to the running app, both
   land on the page they name.
+- The beverage page for a producer's own draft and review, and someone else's
+  published beverage; batches with their samples and allocation; the samples
+  sheet with its search field; the edit sheet with a username found; the
+  awards and specs empty states (no beverage on dev has awards or specs).
 
 **Not verified yet:**
 
@@ -234,7 +256,10 @@ On iOS 27, built with Xcode 27:
    schema and bundle, but the shape of a live template — especially a
    SmartProperty formula tree — has not been seen.
 5. Anything on Android.
-6. The in-app browser under the scene life cycle. It presents from
+6. The beverage page's mutations (rename, origin, producers, submit) from the
+   phone, kept off shared dev data; they send the same documents the web's
+   actions do.
+7. The in-app browser under the scene life cycle. It presents from
    `UIApplication.keyWindow`, which the scene's window is, but it has not
    been opened on iOS 27 yet.
 

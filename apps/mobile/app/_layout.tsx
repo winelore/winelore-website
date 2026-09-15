@@ -36,6 +36,17 @@ export default function RootLayout() {
     )
 }
 
+/**
+ * A page sheet with its own bar: the system's modal card on iOS, glass-edged
+ * on iOS 26, and a full-screen dialog on Android. Content is white, as the
+ * web's dialogs are.
+ */
+const beverageSheet = {
+    presentation: "modal",
+    headerLargeTitle: false,
+    contentStyle: { backgroundColor: palette.surface },
+} as const
+
 function RootStack() {
     const { session } = useAuth()
 
@@ -66,6 +77,9 @@ function RootStack() {
                         ...(Platform.OS === "android" ? { sheetCornerRadius: 28 } : {}),
                     }}
                 />
+                {/* The beverage page's modals — the web's edit and samples dialogs — as page sheets. */}
+                <Stack.Screen name="beverage/[id]/edit" options={beverageSheet} />
+                <Stack.Screen name="beverage/[id]/samples/[batchId]" options={beverageSheet} />
             </Stack.Protected>
             <Stack.Protected guard={!signedIn}>
                 <Stack.Screen name="welcome" options={{ headerShown: false }} />
