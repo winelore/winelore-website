@@ -51,6 +51,16 @@ const GLYPHS = {
     specs: { ios: "questionmark.circle", android: "help" }, // HelpCircle
     copy: { ios: "doc.on.doc", android: "content_copy" }, // Copy
     clock: { ios: "clock", android: "schedule" }, // Clock
+    layers: { ios: "square.stack.3d.up", android: "stacks" }, // Layers
+    warning: { ios: "exclamationmark.triangle", android: "warning" }, // AlertTriangle
+    chevronDown: { ios: "chevron.down", android: "expand_more" }, // ChevronDown
+    chevronUp: { ios: "chevron.up", android: "expand_less" }, // ChevronUp
+    filter: { ios: "line.3.horizontal.decrease", android: "filter_list" }, // Filter
+    share: { ios: "square.and.arrow.up", android: "ios_share" }, // Download
+    spreadsheet: { ios: "tablecells", android: "table_view" }, // FileSpreadsheet
+    printer: { ios: "printer", android: "print" }, // Printer
+    playFill: { ios: "play.fill", android: "play_arrow" },
+    pauseFill: { ios: "pause.fill", android: "pause" },
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle
     check: { ios: "checkmark.circle", android: "check_circle" }, // CheckCircle

@@ -33,63 +33,41 @@ import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import { MemberEvaluationSection } from "@/app/commission/EvaluationCommentsDisplay"
-import { formatPropertyScoreValue, parseEvaluationTotal } from '@winelore/core';
+import { formatPropertyScoreValue, formatSignedDiff } from '@winelore/core';
+import type { CompetitionPageData } from '@winelore/core/competition'
 import {
-    calculateDeltaOutliers,
-    formatSignedDiff,
-    type DeltaOutlierInfo,
-} from '@winelore/core'
+    ALL_COMMISSIONS,
+    RESULTS_REFRESH_MS,
+    competitionResultsFilename,
+    expertBreakdown,
+    overviewRowDetails,
+    overviewRowKey,
+    resultPersonAuids,
+    resultPersonName,
+    resultsTabCounts,
+    scopeResultsContext,
+    searchOverviewRows,
+    type ResultsTab,
+} from '@winelore/core/results'
 import { getCompetitionExportDataAction } from "../export/actions"
 import {
     downloadCompetitionResultsXlsx,
     buildCompetitionResultsCsv,
     type CompetitionExportContext,
-    type CompetitionCommentRow,
-    type CompetitionExpertScoreRow,
 } from "../export/exportCompetitionResults"
-import { downloadCsv, sanitizeFilename } from "@/app/commission/[id]/results/exportResults"
+import { downloadCsv } from "@/app/commission/[id]/results/exportResults"
 import {
     ResultsTabBar,
     CommissionSummaryTable,
     ExpertScoresTable,
     CommentsTable,
     AwardsTable,
-    type ResultsTab,
 } from "@/components/competition-results"
 import { BackLink } from "@/components/BackLink"
 
-interface CommissionMeta {
-    id: string
-    name: string
-    status: string
-    plannedStartAt: string | null
-    plannedEndAt: string | null
-    startedAt: string | null
-    endedAt: string | null
-    wineJumperMiniGameEnabled: boolean
-    voiceCommentsEnabled: boolean
-    propertyCommentsEnabled: boolean
-    beverageOriginDuringEvaluationEnabled: boolean
-}
-
-interface CompetitionData {
-    id: string
-    name: string
-    status: string
-    startedAt: string | null
-    plannedStartAt: string | null
-    plannedEndAt: string | null
-    endedAt: string | null
-    series: {
-        id: string
-        name: string
-        status: string
-    }
-    holders: number[]
-    commissions: CommissionMeta[]
-}
-
-const AUTO_REFRESH_MS = 3000
+// The competition with only the commissions this user may see, from core's
+// resolveCompetitionResultsScope — the app's results screen gets the same.
+type CompetitionData = CompetitionPageData
 
 export default function CompetitionResultsClientView({
     initialData,
@@ -104,7 +82,7 @@ export default function CompetitionResultsClientView({
 
     // Filter states
     const [selectedCommissionFilter, setSelectedCommissionFilter] = useState<string>(
-        initialCommissionId || "ALL",
+        initialCommissionId || ALL_COMMISSIONS,
     )
     const [searchQuery, setSearchQuery] = useState("")
 
@@ -125,7 +103,7 @@ export default function CompetitionResultsClientView({
     const [activeTab, setActiveTab] = useState<ResultsTab>("overview")
 
     useEffect(() => {
-        setSelectedCommissionFilter(initialCommissionId || "ALL")
+        setSelectedCommissionFilter(initialCommissionId || ALL_COMMISSIONS)
     }, [initialCommissionId])
 
     const selectedCommission = useMemo(
@@ -133,31 +111,16 @@ export default function CompetitionResultsClientView({
         [initialData.commissions, selectedCommissionFilter],
     )
 
-    const resultsContext = useMemo((): CompetitionExportContext | null => {
-        if (!allResultsContext || selectedCommissionFilter === "ALL") return allResultsContext
-
-        const belongsToSelectedCommission = (row: { commissionId: string }) =>
-            row.commissionId === selectedCommissionFilter
-        const overviewRows = allResultsContext.overviewRows.filter(belongsToSelectedCommission)
-
-        return {
-            ...allResultsContext,
-            overviewRows,
-            commissionSummaryRows: allResultsContext.commissionSummaryRows.filter(belongsToSelectedCommission),
-            expertScoreRows: allResultsContext.expertScoreRows.filter(belongsToSelectedCommission),
-            commentRows: allResultsContext.commentRows.filter(belongsToSelectedCommission),
-            awardRows: allResultsContext.awardRows.filter(belongsToSelectedCommission),
-            outcomePropertyCodes: allResultsContext.outcomePropertyCodes.filter((code) =>
-                overviewRows.some((row) => Object.prototype.hasOwnProperty.call(row.outcomes, code)),
-            ),
-        }
-    }, [allResultsContext, selectedCommissionFilter])
+    const resultsContext = useMemo(
+        () => scopeResultsContext(allResultsContext, selectedCommissionFilter),
+        [allResultsContext, selectedCommissionFilter],
+    )
 
     const handleCommissionFilterChange = (commissionId: string) => {
         setSelectedCommissionFilter(commissionId)
 
         const params = new URLSearchParams(window.location.search)
-        if (commissionId === "ALL") {
+        if (commissionId === ALL_COMMISSIONS) {
             params.delete("commission")
         } else {
             params.set("commission", commissionId)
@@ -167,25 +130,12 @@ export default function CompetitionResultsClientView({
     }
 
     // Collect all evaluator/producer AUIDs to resolve names
-    const allPersonAuids = useMemo(() => {
-        if (!resultsContext) return []
-        const set = new Set<string>()
-        resultsContext.overviewRows.forEach((r) => {
-            if (r.producer && !isNaN(Number(r.producer))) set.add(r.producer)
-        })
-        resultsContext.expertScoreRows.forEach((r) => {
-            if (r.evaluator && !isNaN(Number(r.evaluator))) set.add(r.evaluator)
-        })
-        return Array.from(set)
-    }, [resultsContext])
+    const allPersonAuids = useMemo(() => resultPersonAuids(resultsContext), [resultsContext])
 
     const { usernames } = useUsernames(allPersonAuids)
 
-    const resolvePersonName = (auidStr: string) => {
-        if (!auidStr || auidStr === "-") return t("commission.results.unknownProducer")
-        if (usernames[auidStr]) return usernames[auidStr]
-        return auidStr
-    }
+    const resolvePersonName = (auidStr: string) =>
+        resultPersonName(auidStr, usernames, t("commission.results.unknownProducer"))
 
     // Load results data on server action call
     const loadResultsData = async (isBackgroundRefresh = false) => {
@@ -243,7 +193,7 @@ export default function CompetitionResultsClientView({
             }
         }
 
-        const intervalId = setInterval(poll, AUTO_REFRESH_MS)
+        const intervalId = setInterval(poll, RESULTS_REFRESH_MS)
         return () => {
             isMounted = false
             clearInterval(intervalId)
@@ -264,23 +214,10 @@ export default function CompetitionResultsClientView({
     }
 
     // Filter overview rows based on selected commission & search query
-    const filteredOverviewRows = useMemo(() => {
-        if (!resultsContext) return []
-        let rows = resultsContext.overviewRows
-
-        if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase().trim()
-            rows = rows.filter(
-                (r) =>
-                    r.code.toLowerCase().includes(q) ||
-                    r.beverage.toLowerCase().includes(q) ||
-                    r.commissionName.toLowerCase().includes(q) ||
-                    resolvePersonName(r.producer).toLowerCase().includes(q)
-            )
-        }
-
-        return rows
-    }, [resultsContext, searchQuery, usernames])
+    const filteredOverviewRows = useMemo(
+        () => (resultsContext ? searchOverviewRows(resultsContext.overviewRows, searchQuery, resolvePersonName) : []),
+        [resultsContext, searchQuery, usernames],
+    )
 
     // Trigger Excel Download
     const handleExportExcel = async () => {
@@ -288,7 +225,7 @@ export default function CompetitionResultsClientView({
         setIsExporting(true)
         setExportProgress("Generating Excel file...")
         try {
-            const filename = `${sanitizeFilename(selectedCommission?.name || initialData.name)}-results.xlsx`
+            const filename = competitionResultsFilename(selectedCommission?.name || initialData.name, "xlsx")
             await downloadCompetitionResultsXlsx(resultsContext, filename)
         } catch (err: any) {
             console.error("Excel export error:", err)
@@ -304,7 +241,7 @@ export default function CompetitionResultsClientView({
         if (!resultsContext) return
         try {
             const csv = buildCompetitionResultsCsv(resultsContext)
-            const filename = `${sanitizeFilename(selectedCommission?.name || initialData.name)}-results.csv`
+            const filename = competitionResultsFilename(selectedCommission?.name || initialData.name, "csv")
             downloadCsv(csv, filename)
         } catch (err: any) {
             console.error("CSV export error:", err)
@@ -319,44 +256,6 @@ export default function CompetitionResultsClientView({
     const resultsScopeName = selectedCommission?.name || initialData.name
     const resultsScopeStatus = selectedCommission?.status || initialData.status
     const isResultsComplete = resultsScopeStatus === "COMPLETED"
-
-    const toEvaluation = (
-        scoreRow: CompetitionExpertScoreRow,
-        comments: CompetitionCommentRow[],
-    ) => ({
-        scores: Object.entries(scoreRow.scores).map(([code, value]) => ({ code, value })),
-        comments: comments
-            .filter((comment) => comment.evaluationId === scoreRow.evaluationId)
-            .map((comment) => ({
-                id: comment.commentId,
-                text: comment.commentText,
-                voiceUrl: comment.voiceUrl || null,
-                propertyId: comment.property === "General" ? null : comment.property,
-            })),
-    })
-
-    const buildOutlierMap = (scoreRows: CompetitionExpertScoreRow[]) => {
-        const result = new Map<CompetitionExpertScoreRow, DeltaOutlierInfo>()
-        const rowsByReplica = new Map<string, CompetitionExpertScoreRow[]>()
-
-        scoreRows.forEach((scoreRow) => {
-            const replicaRows = rowsByReplica.get(scoreRow.replicaId) || []
-            replicaRows.push(scoreRow)
-            rowsByReplica.set(scoreRow.replicaId, replicaRows)
-        })
-
-        rowsByReplica.forEach((replicaRows) => {
-            const replicaOutliers = calculateDeltaOutliers(replicaRows, (scoreRow) =>
-                parseEvaluationTotal(
-                    Object.entries(scoreRow.scores).map(([code, value]) => ({ code, value })),
-                    resultsContext?.propertyMap,
-                ),
-            )
-            replicaOutliers.forEach((info, scoreRow) => result.set(scoreRow, info))
-        })
-
-        return result
-    }
 
     function ReplicaTypeBadge({ type }: { type: string }) {
         const isTrainee = type === "TRAINEE"
@@ -569,13 +468,7 @@ export default function CompetitionResultsClientView({
                             <ResultsTabBar
                                 activeTab={activeTab}
                                 onTabChange={setActiveTab}
-                                counts={{
-                                    overview: resultsContext ? filteredOverviewRows.length : 0,
-                                    commissions: resultsContext ? resultsContext.commissionSummaryRows.length : 0,
-                                    expertScores: resultsContext ? resultsContext.expertScoreRows.length : 0,
-                                    comments: resultsContext ? resultsContext.commentRows.length : 0,
-                                    awards: resultsContext ? resultsContext.awardRows.length : 0,
-                                }}
+                                counts={resultsTabCounts(resultsContext, filteredOverviewRows.length)}
                             />
 
                             {/* Search & Commission Selector */}
@@ -588,7 +481,7 @@ export default function CompetitionResultsClientView({
                                         onChange={(e) => handleCommissionFilterChange(e.target.value)}
                                         className="bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer"
                                     >
-                                        <option value="ALL">{t("competition.exportAllCommissions")}</option>
+                                        <option value={ALL_COMMISSIONS}>{t("competition.exportAllCommissions")}</option>
                                         {initialData.commissions.map((c) => (
                                             <option key={c.id} value={c.id}>
                                                 {c.name}
@@ -653,17 +546,11 @@ export default function CompetitionResultsClientView({
                                                     </tr>
                                                 ) : (
                                                     filteredOverviewRows.map((row, idx) => {
-                                                        const rowKey = `${row.commissionId}-${row.candidateId}-${idx}`
+                                                        const rowKey = overviewRowKey(row, idx)
                                                         const isExpanded = expandedRowIds.has(rowKey)
 
-                                                        // Find matching expert score rows for detail drawer
-                                                        const rowScores = resultsContext.expertScoreRows.filter(
-                                                            (s) => s.commissionId === row.commissionId && s.code === row.code
-                                                        )
-                                                        const rowComments = resultsContext.commentRows.filter(
-                                                            (c) => c.commissionId === row.commissionId && c.code === row.code
-                                                        )
-                                                        const outlierMap = buildOutlierMap(rowScores)
+                                                        // The judges' cards for the detail drawer
+                                                        const breakdown = isExpanded ? expertBreakdown(resultsContext, row) : []
                                                         const commissionSettings = initialData.commissions.find(
                                                             (commission) => commission.id === row.commissionId,
                                                         )
@@ -698,7 +585,7 @@ export default function CompetitionResultsClientView({
                                                                                 {row.beverage}
                                                                             </span>
                                                                             <span className="text-[10px] text-slate-400">
-                                                                                {[row.wineType !== "-" && row.wineType, row.vintage !== "-" && row.vintage, row.volume !== "-" && row.volume].filter(Boolean).join(" • ")}
+                                                                                {overviewRowDetails(row)}
                                                                             </span>
                                                                         </div>
                                                                     </td>
@@ -729,14 +616,9 @@ export default function CompetitionResultsClientView({
                                                                                 <h4 className="text-sm font-bold text-slate-700 mb-4">
                                                                                     {t("commission.results.expertBreakdown")}
                                                                                 </h4>
-                                                                                {rowScores.length > 0 ? (
+                                                                                {breakdown.length > 0 ? (
                                                                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                                                        {rowScores.map((scoreRow) => {
-                                                                                            const evaluation = toEvaluation(scoreRow, rowComments)
-                                                                                            const outlierInfo = outlierMap.get(scoreRow)
-                                                                                            const resultScores = evaluation.scores.filter(
-                                                                                                (score) => resultsContext.propertyMap[score.code]?.isResult,
-                                                                                            )
+                                                                                        {breakdown.map(({ scoreRow, evaluation, outlier: outlierInfo, resultScores }) => {
                                                                                             const booleanLabels = {
                                                                                                 yesLabel: t("common.yes"),
                                                                                                 noLabel: t("common.no"),

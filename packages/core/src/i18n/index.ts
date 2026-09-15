@@ -156,3 +156,18 @@ export function formatEnumLabel(label: string, locale: Locale): string {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ")
 }
+/**
+ * A text the backend stores in English — a property name, say — in the
+ * locale's own words, when the static `backend` table has it (exactly, else
+ * ignoring case). Null means the table does not, and the caller may ask the
+ * web's machine translation instead.
+ */
+export function lookupBackendText(text: string, locale: Locale): string | null {
+  const trimmed = text.trim()
+  if (!trimmed) return null
+  const dictionary = ((messages[locale] as Record<string, unknown>).backend ?? {}) as Record<string, string>
+  if (dictionary[trimmed]) return dictionary[trimmed]
+  const lower = trimmed.toLowerCase()
+  const key = Object.keys(dictionary).find((candidate) => candidate.toLowerCase() === lower)
+  return key ? dictionary[key] : null
+}

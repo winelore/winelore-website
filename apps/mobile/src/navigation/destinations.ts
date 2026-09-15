@@ -32,7 +32,8 @@ export const destinations = {
     commission: (id: string, replicaId: string | null) =>
         replicaId ? app(`/commission/${id}/${replicaId}`) : web(`/commission/${id}`),
     competition: (id: string) => app(`/competition/${id}`),
-    competitionResults: (id: string) => web(`/competition/${id}/results`),
+    competitionResults: (id: string, commissionId?: string) =>
+        app(`/competition/${id}/results${commissionId ? `?commission=${encodeURIComponent(commissionId)}` : ""}`),
     beverage: (id: string) => app(`/beverage/${id}`),
     template: (id: string, version: number | undefined) =>
         web(`/myTemplates?templateId=${id}-${version || 0}`),

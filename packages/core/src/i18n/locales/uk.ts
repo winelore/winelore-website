@@ -500,6 +500,8 @@ const uk: TranslationKey = {
       noAwardsRegistered: "Для зразків не зареєстровано нагород.",
       showingFirst100: "Показано перші 100 записів у веб-перегляді. Усі {{count}} записів включено до повного файлу Excel.",
       noResultsData: "Результати конкурсу недоступні.",
+      playVoiceComment: "Відтворити голосовий коментар",
+      pauseVoiceComment: "Призупинити голосовий коментар",
     },
     selectFromCatalog: "Оберіть шаблон із каталогу",
     selectingTemplateFor: "Обираємо шаблон для {{type}}",

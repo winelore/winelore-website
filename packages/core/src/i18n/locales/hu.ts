@@ -492,6 +492,8 @@ const hu = {
             noAwardsRegistered: "A mintákhoz nincs regisztrált díj.",
             showingFirst100: "Az első 100 bejegyzés jelenik meg a webes előnézetben. Mind a(z) {{count}} bejegyzés szerepel a teljes Excel letöltésben.",
             noResultsData: "A verseny eredményei nem érhetők el.",
+            playVoiceComment: "Hangos megjegyzés lejátszása",
+            pauseVoiceComment: "Hangos megjegyzés szüneteltetése",
         },
         roleHead: "Elnök",
         roleTrainee: "Gyakornok",

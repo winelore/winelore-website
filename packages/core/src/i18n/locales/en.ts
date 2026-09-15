@@ -498,6 +498,8 @@ const en = {
       noAwardsRegistered: "No awards registered for candidates.",
       showingFirst100: "Showing first 100 entries in web preview. All {{count}} entries included in full Excel download.",
       noResultsData: "No competition results available.",
+      playVoiceComment: "Play voice comment",
+      pauseVoiceComment: "Pause voice comment",
     },
     selectFromCatalog: "Select a template from the catalog",
     selectingTemplateFor: "Selecting template for {{type}}",

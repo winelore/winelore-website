@@ -358,6 +358,4 @@ export async function downloadResultsXlsx(
     XLSX.writeFile(wb, filename)
 }
 
-export function sanitizeFilename(name: string): string {
-    return name.replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").slice(0, 80) || "results"
-}
+export { sanitizeFilename } from "@winelore/core/results"

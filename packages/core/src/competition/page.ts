@@ -52,7 +52,7 @@ export interface RawCompetitionPageCompetition {
     endedAt?: string | null
     plannedDates?: RawPlannedDates | null
     holders?: unknown
-    series: { id: string; name: string; status: string }
+    series?: { id?: string | null; name?: string | null; status?: string | null } | null
 }
 
 export interface RawCompetitionPageCommission {
@@ -82,9 +82,9 @@ export function toCompetitionPage(
         plannedEndAt: competition.plannedDates?.end || null,
         endedAt: competition.endedAt || null,
         series: {
-            id: competition.series.id,
-            name: competition.series.name,
-            status: competition.series.status,
+            id: competition.series?.id || "",
+            name: competition.series?.name || "Series",
+            status: competition.series?.status || "ACTIVE",
         },
         holders: Array.isArray(competition.holders) ? ((competition.holders as unknown[]).flat() as number[]) : [],
         commissions: (commissions ?? []).map((commission) => ({

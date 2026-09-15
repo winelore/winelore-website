@@ -16,6 +16,7 @@ export * from "./evaluationTotals"
 export * from "./evaluationNumericInput"
 export * from "./formatPropertyScore"
 export * from "./deltaOutliers"
+export * from "./evaluationDisplay"
 
 // Commission / template shape
 export * from "./auidUtils"

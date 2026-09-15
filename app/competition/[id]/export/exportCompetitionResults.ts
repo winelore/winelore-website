@@ -1,27 +1,10 @@
-import type { PropertyMeta } from '@winelore/core'
-import { downloadCsv, sanitizeFilename } from "@/app/commission/[id]/results/exportResults"
-
-function escapeCsvCell(value: string): string {
-    if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-        return `"${value.replace(/"/g, '""')}"`
-    }
-    return value
-}
+import { competitionResultSheets, type CompetitionExportContext } from "@winelore/core/results"
 
 /**
- * Row shapes now live in @winelore/core/results so the mobile app builds the
- * same rows. Imported for use below and re-exported to keep existing imports
+ * Row shapes and the sheets' cells live in @winelore/core/results so the
+ * mobile app exports the same file. Re-exported to keep existing imports
  * working.
  */
-import type {
-    CompetitionOverviewRow,
-    CommissionSummaryRow,
-    CompetitionExpertScoreRow,
-    CompetitionCommentRow,
-    CompetitionAwardRow,
-    CompetitionExportContext,
-} from "@winelore/core/results"
-
 export type {
     CompetitionOverviewRow,
     CommissionSummaryRow,
@@ -29,180 +12,8 @@ export type {
     CompetitionCommentRow,
     CompetitionAwardRow,
     CompetitionExportContext,
-}
-
-
-function getPropertyLabel(code: string, propertyMap: Record<string, PropertyMeta>): string {
-    return propertyMap[code]?.name ?? code
-}
-
-function buildCompetitionOverviewSheetData(context: CompetitionExportContext): string[][] {
-    const getOutcomeLabel = (code: string) => context.outcomePropertyNames[code] ?? code
-
-    const headers = [
-        "Commission",
-        "Code",
-        "Beverage",
-        "Beverage Type",
-        "Wine Type",
-        "Vintage",
-        "Volume (ml)",
-        "Origin",
-        "Producer",
-        ...context.outcomePropertyCodes.map((code) => getOutcomeLabel(code)),
-        "Awards",
-    ]
-
-    return [
-        headers,
-        ...context.overviewRows.map((row) => [
-            row.commissionName,
-            row.code,
-            row.beverage,
-            row.beverageType ?? "-",
-            row.wineType ?? "-",
-            row.vintage ?? "-",
-            row.volume ?? "-",
-            row.origin ?? "-",
-            row.producer,
-            ...context.outcomePropertyCodes.map((code) => row.outcomes[code] ?? "-"),
-            row.awards,
-        ]),
-    ]
-}
-
-function buildCommissionSummarySheetData(rows: CommissionSummaryRow[]): string[][] {
-    const headers = [
-        "Commission Name",
-        "Status",
-        "Candidates Count",
-        "Replicas Count",
-        "Awards Granted",
-    ]
-
-    return [
-        headers,
-        ...rows.map((row) => [
-            row.commissionName,
-            row.status,
-            String(row.candidateCount),
-            String(row.replicaCount),
-            String(row.awardsCount),
-        ]),
-    ]
-}
-
-function buildCompetitionExpertScoreSheetData(context: CompetitionExportContext): string[][] {
-    const scoreCodes = Array.from(
-        new Set(
-            context.expertScoreRows.flatMap((row) => Object.keys(row.scores)),
-        ),
-    ).sort()
-
-    const headers = [
-        "Commission",
-        "Code",
-        "Beverage",
-        "Beverage Type",
-        "Wine Type",
-        "Vintage",
-        "Volume (ml)",
-        "Origin",
-        "Producer",
-        "Replica",
-        "Replica Type",
-        "Evaluator",
-        ...scoreCodes.map((code) => getPropertyLabel(code, context.propertyMap)),
-    ]
-
-    return [
-        headers,
-        ...context.expertScoreRows.map((row) => [
-            row.commissionName,
-            row.code,
-            row.beverage,
-            row.beverageType ?? "-",
-            row.wineType ?? "-",
-            row.vintage ?? "-",
-            row.volume ?? "-",
-            row.origin ?? "-",
-            row.producer,
-            row.replicaName,
-            row.replicaType,
-            row.evaluator,
-            ...scoreCodes.map((code) => row.scores[code] ?? ""),
-        ]),
-    ]
-}
-
-function buildCompetitionCommentSheetData(rows: CompetitionCommentRow[]): string[][] {
-    const headers = [
-        "Commission",
-        "Code",
-        "Beverage",
-        "Beverage Type",
-        "Wine Type",
-        "Vintage",
-        "Volume (ml)",
-        "Origin",
-        "Producer",
-        "Replica",
-        "Evaluator",
-        "Property",
-        "Comment Text",
-        "Voice URL",
-    ]
-
-    return [
-        headers,
-        ...rows.map((row) => [
-            row.commissionName,
-            row.code,
-            row.beverage,
-            row.beverageType ?? "-",
-            row.wineType ?? "-",
-            row.vintage ?? "-",
-            row.volume ?? "-",
-            row.origin ?? "-",
-            row.producer,
-            row.replicaName,
-            row.evaluator,
-            row.property,
-            row.commentText,
-            row.voiceUrl,
-        ]),
-    ]
-}
-
-function buildCompetitionAwardSheetData(rows: CompetitionAwardRow[]): string[][] {
-    const headers = [
-        "Commission",
-        "Code",
-        "Beverage",
-        "Producer",
-        "Award Name",
-        "Award Code",
-    ]
-
-    return [
-        headers,
-        ...rows.map((row) => [
-            row.commissionName,
-            row.code,
-            row.beverage,
-            row.producer,
-            row.awardName,
-            row.awardCode,
-        ]),
-    ]
-}
-
-export function buildCompetitionResultsCsv(context: CompetitionExportContext): string {
-    const lines = buildCompetitionOverviewSheetData(context).map((row) =>
-        row.map((cell) => escapeCsvCell(cell)).join(","),
-    )
-    return lines.join("\n")
-}
+} from "@winelore/core/results"
+export { buildCompetitionResultsCsv } from "@winelore/core/results"
 
 export async function downloadCompetitionResultsXlsx(
     context: CompetitionExportContext,
@@ -210,47 +21,8 @@ export async function downloadCompetitionResultsXlsx(
 ): Promise<void> {
     const XLSX = await import("xlsx")
     const wb = XLSX.utils.book_new()
-
-    // 1. Competition Overview
-    XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.aoa_to_sheet(buildCompetitionOverviewSheetData(context)),
-        "Overview",
-    )
-
-    // 2. Commissions Summary
-    XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.aoa_to_sheet(buildCommissionSummarySheetData(context.commissionSummaryRows)),
-        "Commissions Breakdown",
-    )
-
-    // 3. Expert Scores
-    if (context.expertScoreRows.length > 0) {
-        XLSX.utils.book_append_sheet(
-            wb,
-            XLSX.utils.aoa_to_sheet(buildCompetitionExpertScoreSheetData(context)),
-            "Expert Scores",
-        )
+    for (const sheet of competitionResultSheets(context)) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheet.rows), sheet.name)
     }
-
-    // 4. Comments
-    if (context.commentRows.length > 0) {
-        XLSX.utils.book_append_sheet(
-            wb,
-            XLSX.utils.aoa_to_sheet(buildCompetitionCommentSheetData(context.commentRows)),
-            "Comments",
-        )
-    }
-
-    // 5. Awards
-    if (context.awardRows.length > 0) {
-        XLSX.utils.book_append_sheet(
-            wb,
-            XLSX.utils.aoa_to_sheet(buildCompetitionAwardSheetData(context.awardRows)),
-            "Awards",
-        )
-    }
-
     XLSX.writeFile(wb, filename)
 }

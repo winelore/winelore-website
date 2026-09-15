@@ -19,12 +19,22 @@ detects the device language through `Intl` (Hermes ships it, so no extra
 native module) and persists a choice in SecureStore. `npm run check-i18n`
 now scans `apps/mobile` too, so a mistyped key fails there.
 
-Results are ranked standings, built by `buildCommissionResultRows` in
-`@winelore/core/results` — the same function the web table and the spreadsheet
-export now call. The desktop view is a wide grid with a column per outcome
-property, filters and an expert drill-down; on a phone that becomes a ranked
-list with a per-candidate detail sheet. The *numbers* are identical because
-there is one implementation of them; the presentation is not, deliberately.
+Results (`src/results/`) are the web's /competition/[id]/results, feature for
+feature: the four figures, the five tabs with their counts, the commission
+filter, search, the expert breakdown under each candidate with out-of-delta
+judges flagged, voice comments, the Excel and CSV downloads, and printing. It
+refreshes every three seconds until the competition completes, as the web
+does, only while on screen. Who may see which commissions, the loading, the
+narrowing, the breakdown and the files' cells are all `@winelore/core/results`
+(`resolveCompetitionResultsScope`, `loadCompetitionResults`, `expertBreakdown`,
+`competitionResultSheets`), and the web page now calls the same functions — the
+numbers cannot differ because there is one implementation of them. What
+differs is the layout: the web's wide tables become one card per row, and a
+candidate's card opens onto its judges as a table row does. Search is the
+system's field in the bar; the commission filter is a native menu; a download
+goes to the share sheet, and printing to the system print sheet. A session's
+end (`/results/[commissionId]`) shows the same screen narrowed to that
+commission, which is what the web's commission results page redirects to.
 
 The home screen is the web's dashboard, section for section: the welcome
 banner, then active commissions, templates, competitions and beverages, each
@@ -59,8 +69,8 @@ screen, the full commissions list, and both of the web's equivalents.
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
 Commissions, competitions, beverages, the Competitions and Beverages tabs and
 the personal commission, competition and beverage lists are native; anything
-not ported yet — competition results, templates, outcome policies, the map,
-create forms — opens the same page of the website in the in-app browser. Porting a
+not ported yet — templates, outcome policies, the map, create forms — opens
+the same page of the website in the in-app browser. Porting a
 screen is flipping its entry from `web` to `app`. The Map tab says so plainly
 and offers the website, rather than showing an empty page.
 
@@ -131,17 +141,15 @@ organiser desk work and are not ported; the lobby is the judge-facing half.
 
 Not yet ported:
 
-- **Comments** — per-property and general, including voice notes. Voice needs
-  `expo-audio`, replacing the web's `MediaRecorder`.
+- **Comments** on the scorecard — per-property and general, including voice
+  notes. `expo-audio` is installed (results play voice comments with it);
+  recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **Competition results, templates, outcome policies, the map and the create
-  forms.** Their links exist and open the website for now; see
-  `destinations.ts`. The web session is separate from the app's, so the first
-  visit asks for an AXUS ID sign-in in the in-app browser.
-- **Results filters and expert drill-down.** The mobile list shows final
-  standings and each candidate's outcomes; filtering by commission, per-expert
-  score breakdowns, outlier highlighting and export are web-only.
+- **Templates, outcome policies, the map and the create forms.** Their links
+  exist and open the website for now; see `destinations.ts`. The web session
+  is separate from the app's, so the first visit asks for an AXUS ID sign-in
+  in the in-app browser.
 
 The app was first written on Linux, where it could only be typechecked and
 bundled; it has since run on an iPhone 15 Pro on iOS 26.6 and iOS 27. What is
