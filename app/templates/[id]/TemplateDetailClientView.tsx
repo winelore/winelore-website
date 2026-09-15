@@ -11,62 +11,35 @@ import { AppHeader } from "@/components/AppHeader"
 import { useMobileNavAction, useMobileNavBack, useMobileNavTitle } from "@/lib/mobileNav"
 import { getPropertyTypeLabel } from "../../myTemplates/TemplateCreatorModal"
 import TemplateCreatorModal from "../../myTemplates/TemplateCreatorModal"
+import {
+    isTemplateOwner,
+    templateEditionAt,
+    templateEditions,
+    type TemplateDetail,
+    type TemplateEditionDetail,
+} from "@winelore/core/commission"
 
-interface Property {
-    id: string
-    code: string
-    name: string
-    description?: string
-    type: string
-    isRequired: boolean
-    isResult?: boolean
-    minLimit?: number
-    maxLimit?: number
-    allowedValues?: number[] | string[]
-    defaultValue?: any
-}
-
-interface Category {
-    id: string
-    name: string
-    properties: Property[]
-}
-
-interface TemplateEdition {
-    id: string
-    version: number
-    status: string
-    categories: Category[]
-}
-
-interface Template {
-    id: string
-    name: string
-    beverageType: string
-    beverageTypeId?: string
-    status: string
-    createdAt: string
-    owners: number[][]
-    editions?: TemplateEdition[]
-    latestEdition?: TemplateEdition | null
-}
+type Template = TemplateDetail
+type TemplateEdition = TemplateEditionDetail
 
 interface Props {
     template: Template | null
     currentAuid: number
     hasError?: boolean
     initialVersion?: number
+    /** Open the editor at once — how the app hands a template's owner to it. */
+    initialEdit?: boolean
 }
 
-export default function TemplateDetailClientView({ template, currentAuid, hasError = false, initialVersion }: Props) {
+export default function TemplateDetailClientView({ template, currentAuid, hasError = false, initialVersion, initialEdit = false }: Props) {
     const { t } = useTranslation()
     const [selectedEdition, setSelectedEdition] = useState<TemplateEdition | null>(
-        template?.editions?.find((edition) => edition.version === initialVersion) ?? template?.latestEdition ?? null
+        template ? templateEditionAt(template, initialVersion) : null
     )
     const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null)
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
-    const isOwner = template?.owners?.some((ownerArr) => ownerArr.includes(currentAuid)) ?? false
+    const isOwner = isTemplateOwner(template?.owners, currentAuid)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(initialEdit && isOwner)
 
     const toggleCategory = (id: string) => {
         setExpandedCategoryId(prev => prev === id ? null : id)
@@ -122,7 +95,7 @@ export default function TemplateDetailClientView({ template, currentAuid, hasErr
         )
     }
 
-    const editions = template.editions ?? (template.latestEdition ? [template.latestEdition] : [])
+    const editions = templateEditions(template)
 
     return (
         <div className="min-h-app bg-slate-50">

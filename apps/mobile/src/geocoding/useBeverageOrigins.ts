@@ -42,7 +42,8 @@ async function request(point: Point): Promise<GeographicInfo | null> {
     }
 }
 
-function lookUp(point: Point): Promise<GeographicInfo | null> {
+/** One point's place, through the paced queue; also what a download's origins go through. */
+export function lookUp(point: Point): Promise<GeographicInfo | null> {
     const key = keyOf(point)
     let pending = cache.get(key)
     if (!pending) {

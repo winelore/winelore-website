@@ -33,7 +33,7 @@ export const destinations = {
     commission: (id: string, replicaId: string | null) =>
         app(replicaId ? `/commission/${id}/${replicaId}` : `/commission/${id}`),
     tastingSummary: (commissionId: string, replicaId: string) =>
-        web(`/commission/${commissionId}/replica/${replicaId}/summary`),
+        app(`/commission/${commissionId}/replica/${replicaId}/summary`),
     competition: (id: string) => app(`/competition/${id}`),
     competitionResults: (id: string, commissionId?: string) =>
         app(`/competition/${id}/results${commissionId ? `?commission=${encodeURIComponent(commissionId)}` : ""}`),
@@ -41,7 +41,9 @@ export const destinations = {
     template: (id: string, version: number | undefined) =>
         web(`/myTemplates?templateId=${id}-${version || 0}`),
     /** A template's own page, at one edition — where the commission page links a template. */
-    templateEdition: (id: string, version: number) => web(`/templates/${id}?version=${version}`),
+    templateEdition: (id: string, version: number) => app(`/templates/${id}?version=${version}`),
+    /** The web's template editor, which its template page opens at once for `?edit=1`. */
+    editTemplate: (id: string) => web(`/templates/${id}?edit=1`),
 
     myCommissions: app("/commissions"),
     myCompetitions: app("/myCompetitions"),

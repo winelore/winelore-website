@@ -48,11 +48,15 @@ const settingMutation = (key: CommissionSetting) =>
 import { buildPropertyMapFromCommissionTemplates } from '@winelore/core';
 import type { PropertyMeta } from '@winelore/core';
 import {
-    buildExpertBeverageSummary,
+    emptyTastingSummary,
+    loadMyTastingSummary,
+    replicaCandidatesInTastingOrder,
     type MyTastingSummaryData,
-} from "./expertRanking";
+    type SummaryCommission,
+    type TastingSummarySource,
+} from '@winelore/core/commission';
 
-export type { MyTastingSummaryData } from "./expertRanking";
+export type { MyTastingSummaryData } from '@winelore/core/commission';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -405,25 +409,7 @@ export async function getReplicaCandidatesAction(replicaId: string) {
     if (!isValidUuid(replicaId)) return [];
     try {
         const response = await sdk.GetReplicaCandidates({ replicaId });
-        const replicaCandidates = (response.commissionReplica?.replicaPanels || []).flatMap((panel: any) =>
-            (panel.replicaCandidates || []).map((candidate: any) => ({
-                ...candidate,
-                replicaPanelId: panel.id,
-                panelId: panel.panel?.id,
-                candidate: candidate.candidate ? { ...candidate.candidate, panelId: panel.panel?.id } : null,
-            })),
-        );
-        const candidatesOrder = response.commissionReplica?.commission?.panels?.flatMap((panel: any) =>
-            (panel.candidates || []).map((candidate: any) => candidate.id),
-        ) || [];
-        if (candidatesOrder.length > 0) {
-            return [...replicaCandidates].sort((a: any, b: any) => {
-                const idxA = a.candidate ? candidatesOrder.indexOf(a.candidate.id) : -1;
-                const idxB = b.candidate ? candidatesOrder.indexOf(b.candidate.id) : -1;
-                return idxA - idxB;
-            });
-        }
-        return replicaCandidates;
+        return replicaCandidatesInTastingOrder(response.commissionReplica);
     } catch (err: any) {
         console.error("Server Action Error (getReplicaCandidatesAction):", err);
         throw new Error(err.message || "Failed to fetch replica candidates");
@@ -448,89 +434,30 @@ export async function getReplicaCandidateAction(id: string) {
     }
 }
 
-async function fetchMyTastingSummary(
-    replicaId: string,
-    commissionId: string,
-    featureFlags: {
-        propertyCommentsEnabled: boolean;
-        voiceCommentsEnabled: boolean;
-    },
-): Promise<MyTastingSummaryData> {
-    const [candidatesWithBeverage, templateResult] = await Promise.all([
-        getReplicaCandidatesAction(replicaId),
-        getCommissionTemplatesWithResultMarkers(commissionId),
-    ]);
+/**
+ * The summary's fetches, sent as the signed-in expert — core decides which
+ * of their evaluations is theirs, as it does for the app.
+ */
+const tastingSummarySource: TastingSummarySource = {
+    replica: async (replicaId) => (await sdk.GetReplicaCandidates({ replicaId })).commissionReplica,
+    commission: async (id) => (await sdk.GetCommission({ id })).commission,
+    templates: getCommissionTemplatesWithResultMarkers,
+    myEvaluation: getMyEvaluationForCandidateAction,
+    evaluations: getEvaluationsForCandidateAction,
+};
 
-    const cookieStore = await cookies();
-    const actorAuid = cookieStore.get("auid")?.value;
-    const myEvaluations = await Promise.all(
-        candidatesWithBeverage.map(async (rc) => {
-            const directEvaluation = await getMyEvaluationForCandidateAction(rc.id);
-            if (directEvaluation?.isComplete || !actorAuid) {
-                return directEvaluation;
-            }
-
-            // Some backend versions return null from the actor-scoped lookup even
-            // though the same completed evaluation is present in the candidate's
-            // evaluation list. The group breakdown already uses that list, so use
-            // it as the source-of-truth fallback for the signed-in expert.
-            try {
-                const candidateEvaluations = await getEvaluationsForCandidateAction(rc.id);
-                const matchingEvaluation = findEvaluationForMember(candidateEvaluations, actorAuid);
-                return matchingEvaluation?.isComplete
-                    ? matchingEvaluation
-                    : directEvaluation ?? matchingEvaluation ?? null;
-            } catch (err) {
-                console.error(
-                    `Failed to resolve the signed-in expert's evaluation for replica candidate ${rc.id}:`,
-                    err,
-                );
-                return directEvaluation;
-            }
-        }),
-    );
-    const evalMap = new Map<string, any>();
-    candidatesWithBeverage.forEach((rc, index) => {
-        evalMap.set(rc.id, myEvaluations[index]);
-    });
-    const propertyMap = buildPropertyMapFromCommissionTemplates(templateResult);
-    const entries = buildExpertBeverageSummary(
-        candidatesWithBeverage,
-        evalMap,
-        "Unknown Beverage",
-        propertyMap,
-    );
-    return {
-        entries,
-        propertyMap,
-        propertyCommentsEnabled: featureFlags.propertyCommentsEnabled,
-        voiceCommentsEnabled: featureFlags.voiceCommentsEnabled,
-    };
+async function fetchMyTastingSummary(replicaId: string, commission?: SummaryCommission): Promise<MyTastingSummaryData> {
+    const actorAuid = (await cookies()).get("auid")?.value ?? null;
+    return loadMyTastingSummary(tastingSummarySource, replicaId, actorAuid, { commission });
 }
 
 export async function getMyTastingSummaryAction(replicaId: string): Promise<MyTastingSummaryData> {
-    const empty: MyTastingSummaryData = {
-        entries: [],
-        propertyMap: {},
-        propertyCommentsEnabled: false,
-        voiceCommentsEnabled: false,
-    };
-    if (!isValidUuid(replicaId)) return empty;
+    if (!isValidUuid(replicaId)) return emptyTastingSummary();
     try {
-        const response = await sdk.GetReplicaCandidates({ replicaId });
-        const commissionId = response.commissionReplica?.commission?.id;
-        if (!commissionId) return empty;
-
-        const commission = await sdk.GetCommission({ id: commissionId });
-        const featureFlags = getCompetitionFeatureFlags(commission.commission);
-        const summary = await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
-        return {
-            ...summary,
-            commissionName: commission.commission?.name || undefined
-        };
+        return await fetchMyTastingSummary(replicaId);
     } catch (err: any) {
         console.error("Server Action Error (getMyTastingSummaryAction):", err);
-        return empty;
+        return emptyTastingSummary();
     }
 }
 
@@ -687,19 +614,10 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
         let myTastingSummary: MyTastingSummaryData | null = null;
         if (replica.status === "COMPLETED") {
             try {
-                myTastingSummary = await fetchMyTastingSummary(replicaId, commissionId, featureFlags);
-                if (myTastingSummary) {
-                    myTastingSummary.commissionName = commission.name || undefined;
-                }
+                myTastingSummary = await fetchMyTastingSummary(replicaId, commission);
             } catch (err: any) {
                 console.error("Failed to fetch expert tasting summary:", err);
-                myTastingSummary = {
-                    entries: [],
-                    propertyMap: {},
-                    propertyCommentsEnabled: featureFlags.propertyCommentsEnabled,
-                    voiceCommentsEnabled: featureFlags.voiceCommentsEnabled,
-                    commissionName: commission.name || undefined,
-                };
+                myTastingSummary = emptyTastingSummary(featureFlags, commission.name || undefined);
             }
         }
 

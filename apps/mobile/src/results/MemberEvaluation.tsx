@@ -10,39 +10,51 @@ import {
     type CompetitionFeatureFlags,
     type PropertyMeta,
 } from "@winelore/core"
-import type { BreakdownEvaluation } from "@winelore/core/results"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { useBackendText } from "../i18n/useBackendText"
 import { palette } from "../theme"
 import { Icon } from "../ui/Icon"
 import { VoiceComment } from "./VoiceComment"
 
+export interface DisplayedEvaluation {
+    scores: Array<{ code: string; value: string }>
+    comments: Array<{ id: string; text?: string | null; voiceUrl?: string | null; propertyId?: string | null }>
+}
+
 /**
  * One judge's submitted scores and comments, as the web's
- * `MemberEvaluationSection` shows them on the results page: result scores
- * and general comments at once, everything else behind "Show all details".
- * Which is which is core's rule, so the two cards always agree.
+ * `MemberEvaluationSection` shows them: result scores and general comments at
+ * once, everything else behind "Show all details". Which is which is core's
+ * rule, so the two cards always agree.
+ *
+ * The web draws it in two accents — indigo in a results breakdown, slate in a
+ * judge's own summary, where it is also shown whole (`forceShowAll`).
  */
 export function MemberEvaluation({
     evaluation,
     propertyMap,
     flags,
+    tone = "indigo",
+    forceShowAll = false,
 }: {
-    evaluation: BreakdownEvaluation
+    evaluation: DisplayedEvaluation
     propertyMap: Record<string, PropertyMeta>
     flags: CompetitionFeatureFlags
+    tone?: "indigo" | "slate"
+    forceShowAll?: boolean
 }) {
     const { t } = useTranslation()
-    const [expanded, setExpanded] = useState(false)
+    const [expanded, setExpanded] = useState(forceShowAll)
     const { regular, result } = splitDisplayedScores(evaluation.scores, propertyMap)
     const comments = evaluation.comments.filter((comment) => commentHasVisibleContent(comment, flags))
     const shownComments = expanded ? comments : comments.filter((comment) => isResultOrGeneralComment(comment, propertyMap))
-    const canExpand = hasFullAssessmentDetails(evaluation, propertyMap, flags)
+    const canExpand = !forceShowAll && hasFullAssessmentDetails(evaluation, propertyMap, flags)
+    const slate = tone === "slate"
 
     return (
         <View style={styles.section}>
             {regular.length > 0 || result.length > 0 ? (
-                <View style={[styles.rule, styles.scores]}>
+                <View style={[styles.rule, styles.scores, slate && styles.scoresSlate]}>
                     {expanded && regular.length > 0 ? (
                         <View style={styles.group}>
                             <Text style={styles.kicker}>{t("evaluation.submittedScores")}</Text>
@@ -67,10 +79,16 @@ export function MemberEvaluation({
             ) : null}
 
             {shownComments.length > 0 ? (
-                <View style={[styles.rule, styles.commentRule]}>
+                <View style={[styles.rule, styles.commentRule, slate && styles.commentRuleSlate]}>
                     <Text style={styles.kicker}>{t("commission.comments")}</Text>
                     {shownComments.map((comment) => (
-                        <Comment key={comment.id} comment={comment} propertyMap={propertyMap} voice={flags.voiceCommentsEnabled} />
+                        <Comment
+                            key={comment.id}
+                            comment={comment}
+                            propertyMap={propertyMap}
+                            voice={flags.voiceCommentsEnabled}
+                            slate={slate}
+                        />
                     ))}
                 </View>
             ) : null}
@@ -119,10 +137,12 @@ function Comment({
     comment,
     propertyMap,
     voice,
+    slate,
 }: {
-    comment: BreakdownEvaluation["comments"][number]
+    comment: DisplayedEvaluation["comments"][number]
     propertyMap: Record<string, PropertyMeta>
     voice: boolean
+    slate: boolean
 }) {
     const { t } = useTranslation()
     const label = useBackendText(
@@ -130,8 +150,8 @@ function Comment({
     )
     return (
         <View style={styles.comment}>
-            <Text style={styles.commentText}>
-                <Text style={styles.commentLabel}>{label}:</Text>
+            <Text style={[styles.commentText, slate && styles.commentTextSlate]}>
+                <Text style={[styles.commentLabel, slate && styles.commentLabelSlate]}>{label}:</Text>
                 {comment.text ? ` ${comment.text}` : ""}
             </Text>
             {voice && comment.voiceUrl ? <VoiceComment url={comment.voiceUrl} /> : null}
@@ -144,7 +164,10 @@ const styles = StyleSheet.create({
     // pl-3 border-l-2 border-indigo-300 / pl-2 border-l-2 border-slate-300
     rule: { borderLeftWidth: 2, paddingLeft: 12 },
     scores: { gap: 12, marginTop: 8, borderLeftColor: "#a3b3ff" },
+    // border-indigo-200
+    scoresSlate: { borderLeftColor: "#c6d2ff" },
     commentRule: { gap: 6, marginTop: 8, paddingLeft: 8, borderLeftColor: "#cad5e2" },
+    commentRuleSlate: { borderLeftColor: palette.border },
     group: { gap: 6 },
     kicker: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: palette.textFaint },
     kickerAccent: { color: palette.accent },
@@ -168,6 +191,9 @@ const styles = StyleSheet.create({
     comment: { gap: 4 },
     commentText: { fontSize: 12, lineHeight: 17, color: "#1e1a4d" },
     commentLabel: { fontWeight: "600", color: "#615fff" },
+    // text-slate-600 / text-slate-500
+    commentTextSlate: { color: "#45556c" },
+    commentLabelSlate: { color: palette.textMuted },
     toggle: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", marginTop: 2 },
     toggleLabel: { fontSize: 12, fontWeight: "600", color: palette.accent },
 })

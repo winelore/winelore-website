@@ -229,6 +229,41 @@ export interface CatalogTemplate {
     }
 }
 
+/** An edition as GET_TEMPLATE_CATALOG returns it, its properties flattened out of their per-type aliases. */
+export function toCatalogEdition(item: any): CatalogTemplate["latestEdition"] {
+    return {
+        id: item.id,
+        version: item.version,
+        status: item.status,
+        categories: (item.categories || []).map((category: any) => ({
+            id: category.id,
+            name: category.name,
+            properties: (category.properties || []).map((property: any) => {
+                const typeName = property.__typename ? property.__typename.replace("Property", "") : "Boolean"
+                return {
+                    id: property.id,
+                    code: property.code,
+                    name: property.name,
+                    description: property.description,
+                    type: typeName === "DiscreteNumbers" ? "Discrete" : typeName,
+                    isRequired: property.isRequired,
+                    isResult: property.isResult ?? false,
+                    minLimit: property.intMinLimit ?? property.doubleMinLimit ?? undefined,
+                    maxLimit: property.intMaxLimit ?? property.doubleMaxLimit ?? undefined,
+                    allowedValues: property.discreteAllowedValues ?? property.enumAllowedValues ?? undefined,
+                    defaultValue:
+                        property.intDefaultValue ??
+                        property.doubleDefaultValue ??
+                        property.discreteDefaultValue ??
+                        property.enumDefaultValue ??
+                        property.boolDefaultValue ??
+                        undefined,
+                }
+            }),
+        })),
+    }
+}
+
 /**
  * The catalog from GET_TEMPLATE_CATALOG's editions: one entry per template,
  * its latest edition flattened, with how many editions it has. With an
@@ -255,37 +290,7 @@ export function toTemplateCatalog(items: any[] | null | undefined, ownerAuid?: n
         status: item.template.status,
         createdAt: item.template.createdAt,
         totalEditions: editionCounts.get(item.template.id) || 1,
-        latestEdition: {
-            id: item.id,
-            version: item.version,
-            status: item.status,
-            categories: (item.categories || []).map((category: any) => ({
-                id: category.id,
-                name: category.name,
-                properties: (category.properties || []).map((property: any) => {
-                    const typeName = property.__typename ? property.__typename.replace("Property", "") : "Boolean"
-                    return {
-                        id: property.id,
-                        code: property.code,
-                        name: property.name,
-                        description: property.description,
-                        type: typeName === "DiscreteNumbers" ? "Discrete" : typeName,
-                        isRequired: property.isRequired,
-                        isResult: property.isResult ?? false,
-                        minLimit: property.intMinLimit ?? property.doubleMinLimit ?? undefined,
-                        maxLimit: property.intMaxLimit ?? property.doubleMaxLimit ?? undefined,
-                        allowedValues: property.discreteAllowedValues ?? property.enumAllowedValues ?? undefined,
-                        defaultValue:
-                            property.intDefaultValue ??
-                            property.doubleDefaultValue ??
-                            property.discreteDefaultValue ??
-                            property.enumDefaultValue ??
-                            property.boolDefaultValue ??
-                            undefined,
-                    }
-                }),
-            })),
-        },
+        latestEdition: toCatalogEdition(item),
     }))
 
     return ownerAuid === undefined

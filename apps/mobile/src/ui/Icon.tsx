@@ -69,6 +69,8 @@ const GLYPHS = {
     lock: { ios: "lock", android: "lock" }, // Lock
     document: { ios: "doc.text", android: "description" }, // FileText
     chevronLeft: { ios: "chevron.left", android: "chevron_left" }, // ChevronLeft
+    settings: { ios: "gearshape", android: "settings" }, // Settings
+    hash: { ios: "number", android: "tag" }, // Hash
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle
     check: { ios: "checkmark.circle", android: "check_circle" }, // CheckCircle

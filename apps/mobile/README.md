@@ -68,9 +68,10 @@ screen, the full commissions list, and both of the web's equivalents.
 
 Where a card or link goes is one table, `src/navigation/destinations.ts`.
 Commissions, competitions, beverages, the Competitions and Beverages tabs and
-the personal commission, competition and beverage lists are native; anything
-not ported yet — templates, outcome policies, the map, create forms — opens
-the same page of the website in the in-app browser. Porting a
+the personal commission, competition and beverage lists, a judge's tasting
+summary and a template's own page are native; anything not ported yet — My
+Templates and the template editor, outcome policies, the map, create forms —
+opens the same page of the website in the in-app browser. Porting a
 screen is flipping its entry from `web` to `app`. The Map tab says so plainly
 and offers the website, rather than showing an empty page.
 
@@ -163,6 +164,34 @@ reordering, the catalog and coverage are `@winelore/core/commission`
 block and My Templates catalog now call; adding a sample binds a template to
 a new beverage type, as the web's action always has.
 
+A judge whose session has ended opens their tasting summary from the
+commission page's banner (`src/commission/TastingSummaryScreen.tsx`, at the
+web's `/commission/[id]/replica/[replicaId]/summary`): one card per sample
+they completed, in tasting order, with their result scores, each opening
+onto the whole assessment in the web's slate style. The download and
+printing sit in the bar, as on results — core's sheets to the share sheet,
+the page to the print sheet — and the origins in the file are looked up
+through the same paced Nominatim queue My Beverages uses. The data is
+`loadMyTastingSummary` in `@winelore/core/commission`, which the web's summary
+action and waiting room now call, along with tasting order
+(`replicaCandidatesInTastingOrder`, which the web's candidate page uses too),
+the rule for finding a judge's own evaluation when the backend's own lookup
+comes back empty, and the download's sheets. Moving them fixed two things on
+the web: every property was a column twice in the download (the property
+map holds each under its code and again under its id), and a vintage stored
+in the backend's `{vintage=2019}` form was dropped.
+
+A template on the commission page opens its own page (`src/templates/`, the
+web's `/templates/[id]`, on the edition the commission uses via `?version=`):
+the template's card, its editions to switch between when there are several,
+and the edition's categories, each opening onto its properties with their
+type, range, options and default. Its owner has Edit in the bar; the editor
+is still the web's, which now opens at once for `/templates/[id]?edit=1`,
+and the page reloads onto the newest edition when the in-app browser closes.
+The data is `loadTemplateDetail` in core, which the web's action calls, with
+the same fallbacks through the catalog for backends without the by-template
+query.
+
 Not yet ported:
 
 - **Comments** on the scorecard — per-property and general, including voice
@@ -170,8 +199,9 @@ Not yet ported:
   recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **Templates, outcome policies, the map and the create forms.** Their links
-  exist and open the website for now; see `destinations.ts`. The web session
+- **My Templates, the template editor, outcome policies, the map and the
+  create forms.** Their links exist and open the website for now; see
+  `destinations.ts`. The web session
   is separate from the app's, so the first visit asks for an AXUS ID sign-in
   in the in-app browser.
 
