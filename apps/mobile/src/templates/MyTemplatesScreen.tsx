@@ -35,7 +35,9 @@ export function MyTemplatesScreen() {
 
     return (
         <EntityList
-            title={t("myTemplates.title")}
+            // The web's "My Evaluation Templates" is cut short in a large title; the
+            // shorter name is the one Home and the profile sheet already use.
+            title={t("common.myTemplates")}
             subtitle={t("myTemplates.subtitle")}
             countLabel={(total) => tCount("common.templatesCount", total)}
             action={{ label: t("myTemplates.createNew"), onPress: () => openThenReload(destinations.createTemplate) }}

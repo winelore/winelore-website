@@ -328,6 +328,8 @@ On iOS 27, built with Xcode 27:
 - Template pages: an owner's (Edit in the bar, opened on `?version=1` of
   two) and someone else's (no Edit, opened on the latest of fourteen), with
   a category opened onto its properties.
+- My Templates for a user with three templates: their counts, versions and
+  edit buttons, the count chip and the create button.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end
@@ -355,7 +357,8 @@ On iOS 27, built with Xcode 27:
    start, settings, replicas, experts, panels, samples, codes, templates —
    kept off shared dev data; they send core's documents and sequences.
 9. The tasting summary's download and print sheet, and the template editor
-   hand-off (`/templates/[id]?edit=1`), which need taps; the files are
+   hand-offs (`/templates/[id]?edit=1`, `/myTemplates?create=1`), which need
+   taps; the files are
    core's sheets, which the tests cover.
 10. The web results, tasting summary and template pages signed in. The
     results page's server part renders the access-denied and load-error
