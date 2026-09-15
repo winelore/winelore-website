@@ -40,6 +40,8 @@ export const destinations = {
     beverage: (id: string) => app(`/beverage/${id}`),
     template: (id: string, version: number | undefined) =>
         web(`/myTemplates?templateId=${id}-${version || 0}`),
+    /** A template's own page, at one edition — where the commission page links a template. */
+    templateEdition: (id: string, version: number) => web(`/templates/${id}?version=${version}`),
 
     myCommissions: app("/commissions"),
     myCompetitions: app("/myCompetitions"),

@@ -28,7 +28,18 @@ import {
     removeCommissionCandidateAction,
     reorderCommissionCandidatesAction
 } from "../../actions"
-import { isReplicaCandidateFinished } from "../../replicaUtils"
+import {
+    PANEL_SEARCH_THRESHOLD,
+    describeCandidate,
+    moveCandidate,
+    panelEntries,
+    panelsProgress,
+    searchPanelEntries,
+    type CommissionPanelEntry,
+    type PanelCandidate,
+    type PanelsProgressReplica,
+    type SampleState,
+} from '@winelore/core/commission'
 import { CandidateWizardModal } from "./CandidateWizardModal"
 import { EditCandidateCodeModal } from "./EditCandidateCodeModal"
 import { useTranslation } from "@/lib/i18n/context"
@@ -44,62 +55,10 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-export interface CandidateSample {
-    id: string
-    volumeMl?: number | null
-    batch?: {
-        id: string
-        lotNumber?: string | null
-        volumeMl?: number | null
-        attributes?: any
-        beverage?: {
-            id: string
-            name: string
-            status?: string
-            attributes?: any
-            producers?: { auid?: number[] | number | null; producerId?: string | null }[] | null
-        } | null
-    } | null
-}
-
-export interface Candidate {
-    id: string
-    panelId?: string | null
-    anonymizedCode?: string | null
-    beverageType?: { id: string; code: string; name: string } | null
-    sample?: CandidateSample | null
-}
-
-export interface CommissionPanel {
-    id: string
-    name: string
-    candidates?: Candidate[] | null
-}
-
-/** The replica whose tasting progress is overlaid on the panels once it has started. */
-export interface PanelsProgressReplica {
-    name: string
-    status: string
-    currentPanelId?: string | null
-    replicaPanels: {
-        id: string
-        currentCandidateId?: string | null
-        panel?: { id: string } | null
-        replicaCandidates?: { id: string; status: string; candidate?: { id: string } | null }[] | null
-    }[]
-}
-
-type SampleState = "CURRENT" | "EVALUATED" | "DISQUALIFIED" | "POSTPONED" | "PENDING"
-
-interface PanelProgress {
-    isCurrent: boolean
-    finished: number
-    total: number
-    stateByCandidateId: Map<string, SampleState>
-}
-
-// Below this many samples the whole list fits on screen, so a search box is just noise.
-const SEARCH_THRESHOLD = 6
+// Shaped and described by core, which the app's panels card renders too.
+export type { CandidateSample, PanelsProgressReplica } from '@winelore/core/commission'
+export type Candidate = PanelCandidate
+export type CommissionPanel = CommissionPanelEntry
 
 interface PanelsSectionProps {
     commissionId: string
@@ -112,36 +71,6 @@ interface PanelsSectionProps {
     usernames?: Record<string, string>
     progressReplica?: PanelsProgressReplica | null
     onRefresh: () => void | Promise<void>
-}
-
-function getVintage(attributes: unknown): string | null {
-    let attrs = attributes
-    if (typeof attrs === "string") {
-        try {
-            attrs = JSON.parse(attrs)
-        } catch {
-            return null
-        }
-    }
-    const vintage = attrs && typeof attrs === "object" ? (attrs as { vintage?: unknown }).vintage : null
-    return vintage ? String(vintage) : null
-}
-
-function getProducerNames(candidate: Candidate, usernames?: Record<string, string>): string | null {
-    const producers = candidate.sample?.batch?.beverage?.producers
-    if (!producers?.length || !usernames) return null
-    const names = producers
-        .flatMap((p) => (p.auid ? (Array.isArray(p.auid) ? p.auid : [p.auid]) : []))
-        .filter(Boolean)
-        .map((id) => usernames[id] || String(id))
-    return names.length > 0 ? names.join(", ") : null
-}
-
-function moveItem<T>(items: T[], from: number, to: number): T[] {
-    const next = [...items]
-    const [item] = next.splice(from, 1)
-    next.splice(to, 0, item)
-    return next
 }
 
 /** Insertion index (0..rows.length) for a pointer at `clientY` inside a panel's sample list. */
@@ -244,88 +173,20 @@ export function PanelsSection({
     const normalizedQuery = query.trim().toLowerCase()
     const canReorder = canManage && !normalizedQuery && !isReordering
 
-    const getPanelCandidates = (panel: CommissionPanel): Candidate[] => {
-        const list = panel.candidates && panel.candidates.length > 0
-            ? panel.candidates
-            : candidates.filter((c) => c.panelId === panel.id)
-        if (pendingOrder?.panelId !== panel.id) return list
-        const position = new Map(pendingOrder.ids.map((id, i) => [id, i]))
-        return [...list].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0))
-    }
+    const describe = (candidate: Candidate) =>
+        describeCandidate(candidate, { showRealBeverage: canShowRealBeverage, names: usernames, formatBeverageType })
 
-    const getBeverageTypeLabel = (candidate: Candidate): string | null => {
-        const type = candidate.beverageType
-        if (!type) return null
-        const translated = formatBeverageType(type.code)
-        return translated !== type.code ? translated : type.name
-    }
-
-    const describeCandidate = (candidate: Candidate) => {
-        const beverageName = candidate.sample?.batch?.beverage?.name
-        return {
-            beverageName: canShowRealBeverage && beverageName ? beverageName : null,
-            producerName: canShowRealBeverage ? getProducerNames(candidate, usernames) : null,
-            code: candidate.anonymizedCode?.trim() || null,
-            lotNo: candidate.sample?.batch?.lotNumber || null,
-            vintage: getVintage(candidate.sample?.batch?.attributes),
-            volume: candidate.sample?.volumeMl || null,
-            typeLabel: getBeverageTypeLabel(candidate),
-        }
-    }
-
-    const matchesQuery = (candidate: Candidate) => {
-        const d = describeCandidate(candidate)
-        return [d.code, d.beverageName, d.producerName, d.lotNo, d.vintage, d.typeLabel]
-            .some((value) => value?.toLowerCase().includes(normalizedQuery))
-    }
-
-    const panelEntries = panels.map((panel) => ({ panel, items: getPanelCandidates(panel) }))
-    const totalSamples = panelEntries.reduce((sum, entry) => sum + entry.items.length, 0)
+    const allEntries = panelEntries(panels, pendingOrder, candidates)
+    const totalSamples = allEntries.reduce((sum, entry) => sum + entry.items.length, 0)
     // Tasting-order position within the panel, stable while search hides some rows
-    const positionById = new Map(panelEntries.flatMap(({ items }) => items.map((c, i) => [c.id, i] as const)))
-    const visibleEntries = normalizedQuery
-        ? panelEntries
-            .map(({ panel, items }) => ({
-                panel,
-                // A panel whose name matches keeps all its samples; otherwise only the matching ones
-                items: panel.name.toLowerCase().includes(normalizedQuery) ? items : items.filter(matchesQuery),
-            }))
-            .filter((entry) => entry.items.length > 0)
-        : panelEntries
+    const positionById = new Map(allEntries.flatMap(({ items }) => items.map((c, i) => [c.id, i] as const)))
+    const visibleEntries = searchPanelEntries(allEntries, normalizedQuery, describe)
 
-    const showProgress = progressReplica?.status === "STARTED" || progressReplica?.status === "COMPLETED"
-    const isLive = progressReplica?.status === "STARTED"
-
-    const progressByPanelId = useMemo(() => {
-        const map = new Map<string, PanelProgress>()
-        if (!progressReplica || !showProgress) return map
-        for (const replicaPanel of progressReplica.replicaPanels) {
-            const panelId = replicaPanel.panel?.id
-            if (!panelId) continue
-            const replicaCandidates = replicaPanel.replicaCandidates || []
-            const stateByCandidateId = new Map<string, SampleState>()
-            let finished = 0
-            for (const rc of replicaCandidates) {
-                const isFinished = isReplicaCandidateFinished(rc.status)
-                if (isFinished) finished++
-                if (!rc.candidate?.id) continue
-                const isCurrent = isLive && !isFinished && rc.id === replicaPanel.currentCandidateId
-                stateByCandidateId.set(rc.candidate.id, isCurrent ? "CURRENT" : (rc.status as SampleState))
-            }
-            map.set(panelId, {
-                isCurrent: isLive && replicaPanel.id === progressReplica.currentPanelId,
-                finished,
-                total: replicaCandidates.length,
-                stateByCandidateId,
-            })
-        }
-        return map
-    }, [progressReplica, showProgress, isLive])
-
-    const overallProgress = Array.from(progressByPanelId.values()).reduce(
-        (acc, p) => ({ finished: acc.finished + p.finished, total: acc.total + p.total }),
-        { finished: 0, total: 0 },
-    )
+    const progressState = useMemo(() => panelsProgress(progressReplica), [progressReplica])
+    const showProgress = progressState.show
+    const isLive = progressState.live
+    const progressByPanelId = progressState.byPanel
+    const overallProgress = { finished: progressState.finished, total: progressState.total }
 
     const togglePanelCollapsed = (panelId: string) => {
         setCollapsedPanelIds((prev) => {
@@ -337,8 +198,8 @@ export function PanelsSection({
     }
 
     const reorderPanel = async (panelId: string, items: Candidate[], from: number, to: number) => {
-        if (from === to || to < 0 || to >= items.length) return
-        const candidateIds = moveItem(items, from, to).map((c) => c.id)
+        const candidateIds = moveCandidate(items, from, to)
+        if (!candidateIds) return
         setPendingOrder({ panelId, ids: candidateIds })
         setIsReordering(true)
         try {
@@ -507,7 +368,7 @@ export function PanelsSection({
             )}
 
             {/* Search */}
-            {totalSamples >= SEARCH_THRESHOLD && (
+            {totalSamples >= PANEL_SEARCH_THRESHOLD && (
                 <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <input
@@ -806,7 +667,7 @@ export function PanelsSection({
                                             )
                                         ) : (
                                             items.map((cand, idx) => {
-                                                const d = describeCandidate(cand)
+                                                const d = describe(cand)
                                                 const position = positionById.get(cand.id) ?? idx
                                                 const label = d.beverageName || d.code || t("panels.sampleNumber", { number: position + 1 })
                                                 const state = progress?.stateByCandidateId.get(cand.id) ?? "PENDING"

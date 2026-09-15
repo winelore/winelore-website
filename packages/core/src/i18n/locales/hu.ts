@@ -594,6 +594,9 @@ const hu = {
         sampleEvaluated: "Értékelve",
         sampleDisqualified: "Kizárva",
         samplePostponed: "Elhalasztva",
+        moveUp: "Feljebb",
+        moveDown: "Lejjebb",
+        sampleActions: "Minta műveletei",
         wizard: {
             addSampleToPanel: "Minta hozzáadása a panelhez",
             panelLabel: "Panel",

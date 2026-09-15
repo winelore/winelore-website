@@ -146,7 +146,22 @@ for what the page shows (`commissionPageView`) and the start sequence
 competition and commission forward, binding templates and setting the first
 candidate, and the app now does the same rather than only starting the
 replica. Starting and submitting ask first, as they do on the competition page.
-Panels, candidates and templates on this page are next.
+
+Below the tasting panel are the web's panels and templates. Each panel lists
+its samples in tasting order with their blind codes (the real beverage and
+producer only for holders, or once the commission is over), with the
+selected replica's progress laid over them once it runs. A holder of a draft
+adds, renames and deletes panels, adds samples through the web's four-step
+wizard (beverage, batch, sample, code — each list loading more as it
+scrolls), edits codes and deletes samples; the web drags to reorder, and a
+phone moves a sample up or down from its long-press menu. The templates card
+shows one template per beverage type with its coverage, version and
+structure; a holder assigns, changes or removes one from the catalog sheet
+until the commission starts. What a sample row says, search, progress,
+reordering, the catalog and coverage are `@winelore/core/commission`
+(`panels.ts`, `templates.ts`), which the web's panels section, templates
+block and My Templates catalog now call; adding a sample binds a template to
+a new beverage type, as the web's action always has.
 
 Not yet ported:
 
@@ -262,6 +277,10 @@ On iOS 27, built with Xcode 27:
   awards and specs empty states (no beverage on dev has awards or specs).
 - The in-app browser under the scene life cycle, opening the web's create
   batch page.
+- The commission page for a holder who judges on it, on a draft commission:
+  every section from the session card to the actions, panels with their
+  samples and codes, templates with their coverage, the add-sample wizard,
+  the template catalog and the edit-code dialog; and a finished commission.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end
@@ -285,7 +304,10 @@ On iOS 27, built with Xcode 27:
    actions do.
 7. Voice comments on the results page: no commission on dev has voice
    comments enabled, so `expo-audio` playback has not been heard.
-8. The web results page signed in. Its server part renders the access-denied
+8. The commission page's changes from the phone — readiness, the chair's
+   start, settings, replicas, experts, panels, samples, codes, templates —
+   kept off shared dev data; they send core's documents and sequences.
+9. The web results page signed in. Its server part renders the access-denied
    and load-error states; the table itself needs a signed-in browser.
 
 ## iOS 27 requires the scene life cycle

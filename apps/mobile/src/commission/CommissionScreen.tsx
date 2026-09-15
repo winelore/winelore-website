@@ -16,11 +16,13 @@ import { useHeaderHeight } from "expo-router/react-navigation"
 import * as Haptics from "expo-haptics"
 import {
     NO_CANDIDATES_TO_START,
+    commissionBeverageTypes,
     commissionPageView,
     commissionPeopleAuids,
     commissionStepIndex,
     defaultCommissionReplica,
     type CommissionPageData,
+    type CommissionPanelEntry,
     type CommissionSetting,
 } from "@winelore/core/commission"
 import { StepsCard } from "../competition/parts"
@@ -33,9 +35,22 @@ import { PressableSurface } from "../ui/Pressable"
 import { panelSurface } from "../ui/Surface"
 import { useDisplayNames } from "../users/useDisplayNames"
 import { AddExpertSheet } from "./AddExpertSheet"
+import { CandidateWizardSheet } from "./CandidateWizardSheet"
+import { EditCodeSheet } from "./EditCodeSheet"
+import { PanelsCard } from "./PanelsCard"
+import { TemplatesCard } from "./TemplatesCard"
 import { CommissionActionsCard } from "./CommissionActionsCard"
 import {
+    addCandidate,
+    addPanel,
     addReplicaMember,
+    changeCandidateCode,
+    removeCandidate,
+    removeCommissionTemplate,
+    removePanel,
+    renamePanel,
+    reorderCandidates,
+    setCommissionTemplate,
     createReplica,
     removeReplicaMember,
     renameCommission,
@@ -131,6 +146,8 @@ function Loaded({
     const [busy, setBusy] = useState<Busy>(null)
     const [removingId, setRemovingId] = useState<string | null>(null)
     const [addingExpert, setAddingExpert] = useState(false)
+    const [wizardPanel, setWizardPanel] = useState<CommissionPanelEntry | null>(null)
+    const [codeTarget, setCodeTarget] = useState<{ id: string; code: string | null; label: string } | null>(null)
     const [refreshing, setRefreshing] = useState(false)
     const [titleShown, setTitleShown] = useState(false)
     const cardY = useRef(0)
@@ -358,6 +375,40 @@ function Loaded({
                     }}
                 />
 
+                <PanelsCard
+                    panels={page.panels}
+                    names={names}
+                    canManage={view.isHolder && view.isDraft}
+                    showRealBeverage={view.isHolder || view.isCompleted}
+                    progressReplica={replica}
+                    onAddPanel={(name) => run(null, () => addPanel(page.id, name, me), t("panels.createPanelError"))}
+                    onRenamePanel={(panelId, name) => run(null, () => renamePanel(page.id, panelId, name, me), t("panels.renamePanelError"))}
+                    onRemovePanel={async (panelId) => {
+                        await run(null, () => removePanel(page.id, panelId, me), t("panels.deletePanelError"))
+                    }}
+                    onRemoveCandidate={async (candidateId) => {
+                        await run(null, () => removeCandidate(candidateId, me), t("panels.deleteCandidateError"))
+                    }}
+                    onReorder={async (panelId, ids) => {
+                        await run(null, () => reorderCandidates(panelId, ids, me), t("panels.reorderError"))
+                    }}
+                    onAddSample={setWizardPanel}
+                    onEditCode={(candidate, label) => setCodeTarget({ id: candidate.id, code: candidate.anonymizedCode ?? null, label })}
+                />
+
+                <TemplatesCard
+                    links={page.templateEditions}
+                    beverageTypes={commissionBeverageTypes(page)}
+                    isHolder={view.isHolder}
+                    canEdit={page.status === "DRAFT" || page.status === "PLANNED"}
+                    onAssign={(beverageTypeId, editionId) =>
+                        run(null, () => setCommissionTemplate(page.id, beverageTypeId, editionId, me), t("commission.templateAssignError"))
+                    }
+                    onRemove={(beverageTypeId) =>
+                        run(null, () => removeCommissionTemplate(page.id, beverageTypeId, me), t("commission.templateRemoveError"))
+                    }
+                />
+
                 {view.isHolder ? <EvaluationSettingsCard page={page} busy={busy === "setting"} onChange={toggleSetting} /> : null}
 
                 {view.isHolder && replica ? (
@@ -394,6 +445,37 @@ function Loaded({
                     onViewResults={results}
                 />
             </ScrollView>
+
+            <CandidateWizardSheet
+                visible={wizardPanel !== null}
+                panelName={wizardPanel?.name ?? ""}
+                auid={me}
+                onClose={() => setWizardPanel(null)}
+                onAdd={async (sampleId, code) => {
+                    if (!wizardPanel) return t("panels.wizard.failedToAddCandidate")
+                    try {
+                        await addCandidate({ commissionId: page.id, panelId: wizardPanel.id, sampleId, anonymizedCode: code }, me)
+                        await reload()
+                        return null
+                    } catch (error) {
+                        return error instanceof Error && error.message ? error.message : t("panels.wizard.failedToAddCandidate")
+                    }
+                }}
+            />
+
+            <EditCodeSheet
+                target={codeTarget}
+                onClose={() => setCodeTarget(null)}
+                onSave={async (candidateId, code) => {
+                    try {
+                        await changeCandidateCode(candidateId, code, me)
+                        await reload()
+                        return null
+                    } catch (error) {
+                        return error instanceof Error && error.message ? error.message : t("panels.updateCodeError")
+                    }
+                }}
+            />
 
             <AddExpertSheet
                 visible={addingExpert}

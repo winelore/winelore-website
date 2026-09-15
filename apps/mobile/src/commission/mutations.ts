@@ -1,6 +1,22 @@
 import { print } from "graphql"
 import {
+    ADD_COMMISSION_PANEL,
     ADD_COMMISSION_REPLICA_MEMBER,
+    CHANGE_COMMISSION_CANDIDATE_CODE,
+    GET_TEMPLATE_CATALOG,
+    REMOVE_COMMISSION_CANDIDATE,
+    REMOVE_COMMISSION_PANEL,
+    REMOVE_COMMISSION_TEMPLATE_EDITION,
+    RENAME_COMMISSION_PANEL,
+    REORDER_COMMISSION_CANDIDATES,
+    SET_COMMISSION_TEMPLATE_EDITION,
+    addCommissionCandidate,
+    candidateCodeInput,
+    loadBatchPage,
+    loadBeveragePage,
+    loadSamplePage,
+    toTemplateCatalog,
+    type CatalogTemplate,
     COMMISSION_SETTINGS,
     CREATE_COMMISSION_REPLICA,
     REMOVE_COMMISSION_REPLICA_MEMBER,
@@ -133,4 +149,63 @@ export async function startTasting(replicaId: string, commissionId: string, auid
         replicaId,
         commissionId,
     )
+}
+
+// --- Panels, candidates and templates ---------------------------------------
+
+/** A sender for core's multi-step helpers: lenient like the web's, as the user. */
+const sendAs = (auid: string) => (query: string, variables?: Record<string, unknown>) =>
+    fetchGraphQLRaw<any>(query, variables, actor(auid))
+
+export async function addPanel(commissionId: string, name: string, auid: string): Promise<void> {
+    await mutateGraphQLRaw(ADD_COMMISSION_PANEL, { commissionId, name: name.trim() }, actor(auid))
+}
+
+export async function renamePanel(commissionId: string, panelId: string, name: string, auid: string): Promise<void> {
+    await mutateGraphQLRaw(RENAME_COMMISSION_PANEL, { commissionId, panelId, name: name.trim() }, actor(auid))
+}
+
+export async function removePanel(commissionId: string, panelId: string, auid: string): Promise<void> {
+    await mutateGraphQLRaw(REMOVE_COMMISSION_PANEL, { commissionId, panelId }, actor(auid))
+}
+
+export async function removeCandidate(candidateId: string, auid: string): Promise<void> {
+    await mutateGraphQLRaw(REMOVE_COMMISSION_CANDIDATE, { candidateId }, actor(auid))
+}
+
+export async function changeCandidateCode(candidateId: string, code: string, auid: string): Promise<void> {
+    await mutateGraphQLRaw(CHANGE_COMMISSION_CANDIDATE_CODE, { id: candidateId, anonymizedCode: candidateCodeInput(code) }, actor(auid))
+}
+
+export async function reorderCandidates(panelId: string, candidateIds: string[], auid: string): Promise<void> {
+    await mutateGraphQLRaw(REORDER_COMMISSION_CANDIDATES, { panelId, candidateIds }, actor(auid))
+}
+
+/** Core's add, which binds a template to a new beverage type while the commission is a draft. */
+export async function addCandidate(
+    input: { commissionId: string; panelId: string; sampleId: string; anonymizedCode?: string },
+    auid: string,
+): Promise<void> {
+    await addCommissionCandidate(sendAs(auid), input)
+}
+
+export const beveragesPage = (search: string, page: number, auid: string) => loadBeveragePage(sendAs(auid), search, page, WIZARD_PAGE)
+export const batchesPage = (beverageId: string, page: number, auid: string) => loadBatchPage(sendAs(auid), beverageId, page, WIZARD_PAGE)
+export const samplesPage = (batchId: string, page: number, auid: string) => loadSamplePage(sendAs(auid), batchId, page, WIZARD_PAGE)
+
+/** The web's wizard shows eight a page; the phone loads them eight at a time as it scrolls. */
+const WIZARD_PAGE = 8
+
+export async function setCommissionTemplate(commissionId: string, beverageTypeId: string, templateEditionId: string, auid: string): Promise<void> {
+    await mutateGraphQLRaw(SET_COMMISSION_TEMPLATE_EDITION, { id: commissionId, beverageTypeId, templateEditionId }, actor(auid))
+}
+
+export async function removeCommissionTemplate(commissionId: string, beverageTypeId: string, auid: string): Promise<void> {
+    await mutateGraphQLRaw(REMOVE_COMMISSION_TEMPLATE_EDITION, { id: commissionId, beverageTypeId }, actor(auid))
+}
+
+/** Every template's latest edition, to choose one for a beverage type. */
+export async function loadTemplateCatalog(): Promise<CatalogTemplate[]> {
+    const data = await fetchGraphQLRaw<any>(GET_TEMPLATE_CATALOG, { limit: 100 })
+    return toTemplateCatalog(data?.evaluationTemplateEditions?.items)
 }

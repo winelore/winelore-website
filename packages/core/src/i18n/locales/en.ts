@@ -594,6 +594,9 @@ const en = {
     sampleEvaluated: "Evaluated",
     sampleDisqualified: "Disqualified",
     samplePostponed: "Postponed",
+    moveUp: "Move up",
+    moveDown: "Move down",
+    sampleActions: "Sample actions",
     wizard: {
       addSampleToPanel: "Add Sample to Panel",
       panelLabel: "Panel",

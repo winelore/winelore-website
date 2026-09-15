@@ -2,6 +2,7 @@
 
 import { sdk, fetchGraphQLRaw } from '../../lib/apiClient';
 import { revalidatePath } from 'next/cache';
+import { GET_TEMPLATE_CATALOG, toTemplateCatalog } from '@winelore/core/commission';
 
 // Was pointed at a stale Railway host over plain HTTP as its ultimate
 // fallback; now shares the same endpoint resolution (and transport) as
@@ -35,130 +36,11 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
 
 export async function getEvaluationTemplatesAction(ownerAuid?: number) {
     try {
-        const query = `
-            query GetEvaluationTemplateEditions($limit: Int) {
-                evaluationTemplateEditions(limit: $limit) {
-                    items {
-                        id
-                        version
-                        status
-                        template {
-                            id
-                            name
-                            owners
-                            beverageType {
-                                id
-                                code
-                                name
-                            }
-                            status
-                            createdAt
-                        }
-                        categories {
-                            id
-                            name
-                            properties {
-                                __typename
-                                id
-                                code
-                                name
-                                description
-                                isRequired
-                                isResult
-                                ... on IntProperty {
-                                    intMinLimit: minLimit
-                                    intMaxLimit: maxLimit
-                                    intDefaultValue: defaultValue
-                                }
-                                ... on DoubleProperty {
-                                    doubleMinLimit: minLimit
-                                    doubleMaxLimit: maxLimit
-                                    doubleDefaultValue: defaultValue
-                                }
-                                ... on DiscreteNumbersProperty {
-                                    discreteAllowedValues: allowedValues
-                                    discreteDefaultValue: defaultValue
-                                }
-                                ... on EnumProperty {
-                                    enumAllowedValues: allowedValues
-                                    enumDefaultValue: defaultValue
-                                }
-                                ... on BooleanProperty {
-                                    boolDefaultValue: defaultValue
-                                }
-                            }
-                        }
-                    }
-                }
-                evaluationTemplateCount
-            }
-        `;
-        // Note: neither field accepts an owner/filter argument on this backend, so
-        // ownership is applied below once the (unfiltered) result comes back.
-        const variables: any = { limit: 100 };
-        const data = await rawGraphQL(query, variables);
-        const items = data?.evaluationTemplateEditions?.items || [];
-
-        const latestTemplatesMap = new Map<string, any>();
-        const editionCountsMap = new Map<string, number>();
-
-        for (const item of items) {
-            if (!item.template) continue;
-            const templateId = item.template.id;
-            editionCountsMap.set(templateId, (editionCountsMap.get(templateId) || 0) + 1);
-
-            const existing = latestTemplatesMap.get(templateId);
-            if (!existing || item.version > existing.version) {
-                latestTemplatesMap.set(templateId, item);
-            }
-        }
-
-        let templatesList = Array.from(latestTemplatesMap.values()).map((item: any) => ({
-            id: item.template.id,
-            name: item.template.name,
-            owners: (item.template.owners as number[][] | null) ?? [],
-            beverageType: item.template.beverageType?.name ?? item.template.beverageType?.code ?? "",
-            beverageTypeId: item.template.beverageType?.id ?? "",
-            status: item.template.status,
-            createdAt: item.template.createdAt,
-            totalEditions: editionCountsMap.get(item.template.id) || 1,
-            latestEdition: {
-                id: item.id,
-                version: item.version,
-                status: item.status,
-                categories: (item.categories || []).map((cat: any) => ({
-                    id: cat.id,
-                    name: cat.name,
-                    properties: (cat.properties || []).map((prop: any) => {
-                        const typeName = prop.__typename ? prop.__typename.replace("Property", "") : "Boolean";
-                        return {
-                            id: prop.id,
-                            code: prop.code,
-                            name: prop.name,
-                            description: prop.description,
-                            type: typeName === "DiscreteNumbers" ? "Discrete" : typeName,
-                            isRequired: prop.isRequired,
-                            isResult: prop.isResult ?? false,
-                            minLimit: prop.intMinLimit ?? prop.doubleMinLimit ?? undefined,
-                            maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
-                            allowedValues: prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
-                            defaultValue: prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
-                        };
-                    })
-                }))
-            }
-        }));
-
-        if (ownerAuid !== undefined) {
-            templatesList = templatesList.filter((t) =>
-                t.owners?.some((ownerArr: number[]) => ownerArr.includes(ownerAuid))
-            );
-        }
-
-        return {
-            templates: templatesList,
-            totalCount: templatesList.length
-        };
+        // Neither field accepts an owner/filter argument on this backend, so
+        // ownership is applied by core once the (unfiltered) result comes back.
+        const data = await rawGraphQL(GET_TEMPLATE_CATALOG, { limit: 100 });
+        const templates = toTemplateCatalog(data?.evaluationTemplateEditions?.items, ownerAuid);
+        return { templates, totalCount: templates.length };
     } catch (err: any) {
         console.error("❌ Failed to fetch templates from backend:", err.message);
         throw err;

@@ -17,8 +17,20 @@ import {
 import { isReplicaCandidateFinished } from "./replicaUtils";
 import {
     ADD_COMMISSION_REPLICA_MEMBER,
+    ADD_COMMISSION_PANEL,
+    CHANGE_COMMISSION_CANDIDATE_CODE,
     COMMISSION_SETTINGS,
     CREATE_COMMISSION_REPLICA,
+    REMOVE_COMMISSION_CANDIDATE,
+    REMOVE_COMMISSION_PANEL,
+    REMOVE_COMMISSION_TEMPLATE_EDITION,
+    RENAME_COMMISSION_PANEL,
+    REORDER_COMMISSION_CANDIDATES,
+    addCommissionCandidate,
+    candidateCodeInput,
+    loadBatchPage,
+    loadBeveragePage,
+    loadSamplePage,
     REMOVE_COMMISSION_REPLICA_MEMBER,
     RENAME_COMMISSION,
     RENAME_COMMISSION_REPLICA,
@@ -362,13 +374,7 @@ export async function removeCommissionTemplateAction(commissionId: string, bever
     }
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation RemoveCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!) {
-                removeCommissionTemplateEdition(id: $id, beverageTypeId: $beverageTypeId) {
-                    id
-                }
-            }
-        `, { id: commissionId, beverageTypeId }, headers);
+        const data = await rawGraphQL(REMOVE_COMMISSION_TEMPLATE_EDITION, { id: commissionId, beverageTypeId }, headers);
 
         templatesCache.delete(commissionId);
 
@@ -1108,14 +1114,7 @@ export async function addCommissionPanelAction(commissionId: string, name: strin
     if (!trimmed) return { success: false, error: "" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation AddCommissionPanel($commissionId: ID!, $name: String!) {
-                addCommissionPanel(commissionId: $commissionId, name: $name) {
-                    id
-                    name
-                }
-            }
-        `, {
+        const data = await rawGraphQL(ADD_COMMISSION_PANEL, {
             commissionId,
             name: trimmed
         }, headers);
@@ -1132,14 +1131,7 @@ export async function renameCommissionPanelAction(commissionId: string, panelId:
     if (!trimmed) return { success: false, error: "" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation RenameCommissionPanel($commissionId: ID!, $panelId: ID!, $name: String!) {
-                renameCommissionPanel(commissionId: $commissionId, panelId: $panelId, name: $name) {
-                    id
-                    name
-                }
-            }
-        `, {
+        const data = await rawGraphQL(RENAME_COMMISSION_PANEL, {
             commissionId,
             panelId,
             name: trimmed
@@ -1155,13 +1147,7 @@ export async function removeCommissionPanelAction(commissionId: string, panelId:
     if (!isValidUuid(commissionId) || !isValidUuid(panelId)) return { success: false, error: "Invalid parameters" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation RemoveCommissionPanel($commissionId: ID!, $panelId: ID!) {
-                removeCommissionPanel(commissionId: $commissionId, panelId: $panelId) {
-                    id
-                }
-            }
-        `, {
+        const data = await rawGraphQL(REMOVE_COMMISSION_PANEL, {
             commissionId,
             panelId
         }, headers);
@@ -1174,58 +1160,9 @@ export async function removeCommissionPanelAction(commissionId: string, panelId:
 
 export async function searchBeveragesAction(search?: string, page: number = 1, limit: number = 8) {
     try {
-        const trimmed = search?.trim();
-        const offset = Math.max(0, (page - 1) * limit);
-
-        if (trimmed) {
-            const data = await rawGraphQL(`
-                query SearchBeverages($query: String!, $limit: Int!, $offset: Int!) {
-                    search(query: $query, types: [BEVERAGE], limit: $limit, offset: $offset) {
-                        items {
-                            id
-                            name
-                        }
-                    }
-                }
-            `, { query: trimmed, limit, offset });
-            const items = (data?.search?.items || []).filter((b: any) => b?.id && b?.name);
-            const hasMore = items.length === limit;
-            const totalPages = hasMore ? Math.max(page + 1, 2) : page;
-            return {
-                success: true,
-                items,
-                page,
-                limit,
-                totalPages,
-                hasMore,
-            };
-        } else {
-            const data = await rawGraphQL(`
-                query GetBeverages($limit: Int!, $offset: Int!) {
-                    beverages(limit: $limit, offset: $offset) {
-                        items {
-                            id
-                            name
-                        }
-                    }
-                    beverageCount
-                }
-            `, { limit, offset });
-            const items = (data?.beverages?.items || []).filter((b: any) => b?.id && b?.name);
-            const totalCount = data?.beverageCount || items.length;
-            const totalPages = Math.ceil(totalCount / limit);
-            return {
-                success: true,
-                items,
-                page,
-                limit,
-                totalCount,
-                totalPages,
-                hasMore: page < totalPages,
-            };
-        }
+        const result = await loadBeveragePage((query, variables) => rawGraphQL(query, variables ?? {}), search ?? "", page, limit);
+        return { success: true, limit, ...result };
     } catch (err: any) {
-        console.error("Server Action Error (searchBeveragesAction):", err);
         return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
@@ -1233,35 +1170,9 @@ export async function searchBeveragesAction(search?: string, page: number = 1, l
 export async function getBatchesForBeverageAction(beverageId: string, page: number = 1, limit: number = 8) {
     if (!isValidUuid(beverageId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
     try {
-        const offset = Math.max(0, (page - 1) * limit);
-        const data = await rawGraphQL(`
-            query GetBatches($beverageId: ID!, $limit: Int!, $offset: Int!) {
-                batches(beverageId: $beverageId, limit: $limit, offset: $offset) {
-                    items {
-                        id
-                        lotNumber
-                        volumeMl
-                        createdAt
-                        attributes
-                    }
-                }
-                batchCount(beverageId: $beverageId)
-            }
-        `, { beverageId, limit, offset });
-        const items = data?.batches?.items || [];
-        const totalCount = typeof data?.batchCount === 'number' ? data.batchCount : items.length;
-        const totalPages = Math.max(1, Math.ceil(totalCount / limit));
-        return {
-            success: true,
-            items,
-            page,
-            limit,
-            totalCount,
-            totalPages,
-            hasMore: page < totalPages,
-        };
+        const result = await loadBatchPage((query, variables) => rawGraphQL(query, variables ?? {}), beverageId, page, limit);
+        return { success: true, limit, ...result };
     } catch (err: any) {
-        console.error("Server Action Error (getBatchesForBeverageAction):", err);
         return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
@@ -1269,33 +1180,9 @@ export async function getBatchesForBeverageAction(beverageId: string, page: numb
 export async function getSamplesForBatchAction(batchId: string, page: number = 1, limit: number = 8) {
     if (!isValidUuid(batchId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
     try {
-        const offset = Math.max(0, (page - 1) * limit);
-        const data = await rawGraphQL(`
-            query GetSamples($batchId: ID!, $limit: Int!, $offset: Int!) {
-                samples(batchId: $batchId, limit: $limit, offset: $offset) {
-                    items {
-                        id
-                        volumeMl
-                        createdAt
-                    }
-                }
-                sampleCount(batchId: $batchId)
-            }
-        `, { batchId, limit, offset });
-        const items = data?.samples?.items || [];
-        const totalCount = typeof data?.sampleCount === 'number' ? data.sampleCount : items.length;
-        const totalPages = Math.max(1, Math.ceil(totalCount / limit));
-        return {
-            success: true,
-            items,
-            page,
-            limit,
-            totalCount,
-            totalPages,
-            hasMore: page < totalPages,
-        };
+        const result = await loadSamplePage((query, variables) => rawGraphQL(query, variables ?? {}), batchId, page, limit);
+        return { success: true, limit, ...result };
     } catch (err: any) {
-        console.error("Server Action Error (getSamplesForBatchAction):", err);
         return { success: false, items: [], page, limit, totalPages: 1, hasMore: false, error: err.message || "" };
     }
 }
@@ -1311,107 +1198,14 @@ export async function addCommissionCandidateAction(input: {
     }
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation AddCommissionCandidate($input: AddCommissionCandidateInput!) {
-                addCommissionCandidate(input: $input) {
-                    id
-                    panel { id }
-                    anonymizedCode
-                    sample {
-                        id
-                        volumeMl
-                        batch {
-                            id
-                            lotNumber
-                            volumeMl
-                            beverage {
-                                id
-                                name
-                            }
-                        }
-                    }
-                }
-            }
-        `, {
-            input: {
-                panelId: input.panelId,
-                sampleId: input.sampleId,
-                anonymizedCode: input.anonymizedCode ? input.anonymizedCode.trim() : null
-            }
-        }, headers);
-
-        // Auto-bind template edition if needed while commission is in DRAFT
-        try {
-            const commRes = await rawGraphQL(`
-                query CheckCommissionTemplates($id: ID!) {
-                    commission(id: $id) {
-                        id
-                        status
-                        templateEditions {
-                            id
-                            beverageType {
-                                id
-                                code
-                            }
-                        }
-                    }
-                }
-            `, { id: input.commissionId }, headers);
-
-            if (commRes?.commission?.status === 'DRAFT') {
-                const existingBevTypeIds = new Set(
-                    (commRes.commission.templateEditions || []).map((te: any) => te.beverageType?.id).filter(Boolean)
-                );
-
-                // Fetch beverage type for the sample's beverage
-                const bevId = data?.addCommissionCandidate?.sample?.batch?.beverage?.id;
-                let candidateBevTypeId: string | null = null;
-                if (bevId) {
-                    const bevRes = await rawGraphQL(`
-                        query GetBeverageType($id: ID!) {
-                            beverage(id: $id) {
-                                id
-                                type {
-                                    id
-                                    code
-                                }
-                            }
-                        }
-                    `, { id: bevId }, headers);
-                    candidateBevTypeId = bevRes?.beverage?.type?.id || null;
-                }
-
-                // If template not set for this beverage type, bind active template edition
-                if (candidateBevTypeId && !existingBevTypeIds.has(candidateBevTypeId)) {
-                    const evalTemplatesRes = await sdk.DevGetEvaluationTemplateEditions();
-                    const items = evalTemplatesRes.evaluationTemplateEditions?.items || [];
-                    const matchingEdition = items.find((i: any) => 
-                        (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && 
-                        i.template?.beverageType?.id === candidateBevTypeId &&
-                        i.categories && i.categories.length > 0
-                    ) || items.find((i: any) => (i.status === 'PUBLISHED' || i.status === 'ACTIVE') && i.categories && i.categories.length > 0) || items[0];
-
-                    if (matchingEdition) {
-                        await sdk.DevSetCommissionTemplateEdition({
-                            id: input.commissionId,
-                            beverageTypeId: candidateBevTypeId,
-                            templateEditionId: matchingEdition.id
-                        }, { headers });
-                        templatesCache.delete(input.commissionId);
-                    }
-                }
-            }
-        } catch (autoTplErr: any) {
-            console.warn("Could not auto-bind template for candidate beverage type:", autoTplErr?.message);
-        }
-
-        return {
-            success: true,
-            candidate: {
-                ...data.addCommissionCandidate,
-                panelId: data.addCommissionCandidate.panel.id,
-            },
-        };
+        // Core's, which also binds a template to a new beverage type while the commission is a draft.
+        const candidate = await addCommissionCandidate(
+            (query, variables) => rawGraphQL(query, variables ?? {}, headers),
+            input,
+            (context, error: any) => console.warn(`addCommissionCandidateAction: ${context}:`, error?.message),
+        );
+        templatesCache.delete(input.commissionId);
+        return { success: true, candidate };
     } catch (err: any) {
         console.error("Server Action Error (addCommissionCandidateAction):", err);
         return { success: false, error: err.message || "" };
@@ -1422,11 +1216,7 @@ export async function removeCommissionCandidateAction(candidateId: string) {
     if (!isValidUuid(candidateId)) return { success: false, error: "Invalid candidateId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation RemoveCommissionCandidate($candidateId: ID!) {
-                removeCommissionCandidate(candidateId: $candidateId)
-            }
-        `, { candidateId }, headers);
+        const data = await rawGraphQL(REMOVE_COMMISSION_CANDIDATE, { candidateId }, headers);
         return { success: true, result: data.removeCommissionCandidate };
     } catch (err: any) {
         console.error("Server Action Error (removeCommissionCandidateAction):", err);
@@ -1438,16 +1228,9 @@ export async function changeCommissionCandidateCodeAction(candidateId: string, a
     if (!isValidUuid(candidateId)) return { success: false, error: "Invalid candidateId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation ChangeCommissionCandidateCode($id: ID!, $anonymizedCode: String) {
-                changeCommissionCandidateCode(id: $id, anonymizedCode: $anonymizedCode) {
-                    id
-                    anonymizedCode
-                }
-            }
-        `, {
+        const data = await rawGraphQL(CHANGE_COMMISSION_CANDIDATE_CODE, {
             id: candidateId,
-            anonymizedCode: anonymizedCode ? anonymizedCode.trim() : null
+            anonymizedCode: candidateCodeInput(anonymizedCode),
         }, headers);
         return { success: true, candidate: data.changeCommissionCandidateCode };
     } catch (err: any) {
@@ -1461,13 +1244,7 @@ export async function reorderCommissionCandidatesAction(commissionId: string, pa
     if (!isValidUuid(panelId)) return { success: false, error: "Invalid panelId parameter" };
     try {
         const headers = await getActorHeaders();
-        const data = await rawGraphQL(`
-            mutation ReorderCommissionCandidates($panelId: ID!, $candidateIds: [ID!]!) {
-                reorderCommissionCandidates(panelId: $panelId, candidateIds: $candidateIds) {
-                    id
-                }
-            }
-        `, { panelId, candidateIds }, headers);
+        const data = await rawGraphQL(REORDER_COMMISSION_CANDIDATES, { panelId, candidateIds }, headers);
         return { success: true, commission: data.reorderCommissionCandidates };
     } catch (err: any) {
         console.error("Server Action Error (reorderCommissionCandidatesAction):", err);

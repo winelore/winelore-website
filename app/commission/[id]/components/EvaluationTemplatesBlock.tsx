@@ -22,69 +22,31 @@ import { useUsernames } from "@/hooks/useUsernames"
 import { removeCommissionTemplateAction, setCommissionTemplateAction } from "../../actions"
 import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
 import { getPropertyTypeLabel } from "@/app/myTemplates/TemplateCreatorModal"
+import {
+    catalogTypeChips,
+    countTemplateProperties,
+    filterCatalog,
+    formatTemplateOwners,
+    normalizeTemplateCategories,
+    templateCoverage,
+    templateOwnerAuids,
+    templatePropertyConstraints,
+    type TemplateBeverageType,
+    type TemplateCategoryView,
+    type TemplateLink,
+} from "@winelore/core/commission"
 
-export interface BeverageType {
-    id: string;
-    code: string;
-    name: string;
-}
-
-export interface TemplateEditionLink {
-    id: string;
-    beverageType: BeverageType;
-    templateEdition: any;
-}
+// The rules for templates on a commission live in core, which the app's
+// templates card renders too.
+export type BeverageType = TemplateBeverageType
+export type TemplateEditionLink = TemplateLink
 
 type CatalogTemplate = Awaited<ReturnType<typeof getEvaluationTemplatesAction>>["templates"][number]
 
-interface PropertyView {
-    key: string;
-    name: string;
-    description?: string;
-    type: string;
-    isRequired: boolean;
-    isResult: boolean;
-    minLimit?: number;
-    maxLimit?: number;
-    allowedValues?: (string | number)[];
-    defaultValue?: unknown;
-}
-
-interface CategoryView {
-    id: string;
-    name: string;
-    properties: PropertyView[];
-}
-
+type CategoryView = TemplateCategoryView
 const ITEMS_PER_PAGE = 50
-
-// Commission template editions come straight from GraphQL (aliased per-type fields, __typename),
-// while catalog editions are already flattened by getEvaluationTemplatesAction — accept both.
-function normalizeCategories(categories: any[] | null | undefined): CategoryView[] {
-    return (categories || []).map((cat: any) => ({
-        id: cat.id,
-        name: cat.name,
-        properties: (cat.properties || []).map((prop: any) => {
-            const rawType = prop.type ?? (prop.__typename ? prop.__typename.replace("Property", "") : "")
-            return {
-                key: prop.id || prop.code,
-                name: prop.name,
-                description: prop.description || undefined,
-                type: rawType === "DiscreteNumbers" ? "Discrete" : rawType,
-                isRequired: !!prop.isRequired,
-                isResult: !!prop.isResult,
-                minLimit: prop.minLimit ?? prop.intMinLimit ?? prop.doubleMinLimit ?? undefined,
-                maxLimit: prop.maxLimit ?? prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
-                allowedValues: prop.allowedValues ?? prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
-                defaultValue: prop.defaultValue ?? prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
-            }
-        }),
-    }))
-}
-
-function countProperties(categories: CategoryView[]): number {
-    return categories.reduce((sum, cat) => sum + cat.properties.length, 0)
-}
+const normalizeCategories = normalizeTemplateCategories
+const countProperties = countTemplateProperties
 
 function TemplateStructure({ categories }: { categories: CategoryView[] }) {
     const { t, tCount } = useTranslation()
@@ -101,19 +63,7 @@ function TemplateStructure({ categories }: { categories: CategoryView[] }) {
                     </div>
                     <ul className="flex flex-col gap-1.5">
                         {cat.properties.map((prop) => {
-                            const constraints: string[] = []
-                            if (prop.minLimit !== undefined || prop.maxLimit !== undefined) {
-                                constraints.push(t("commission.propertyRange", { min: prop.minLimit ?? "−∞", max: prop.maxLimit ?? "∞" }))
-                            }
-                            if (prop.allowedValues && prop.allowedValues.length > 0) {
-                                constraints.push(t("commission.propertyOptions", { values: prop.allowedValues.join(", ") }))
-                            }
-                            if (prop.defaultValue !== undefined && prop.defaultValue !== null) {
-                                const value = typeof prop.defaultValue === "boolean"
-                                    ? t(prop.defaultValue ? "common.yes" : "common.no")
-                                    : String(prop.defaultValue)
-                                constraints.push(t("commission.propertyDefault", { value }))
-                            }
+                            const constraints = templatePropertyConstraints(prop, t)
 
                             return (
                                 <li key={prop.key} className="flex flex-col rounded-xl bg-slate-50/60 border border-slate-100/80 px-2.5 py-1.5">
@@ -187,31 +137,22 @@ export function EvaluationTemplatesBlock({
     const [removingTypeId, setRemovingTypeId] = useState<string | null>(null)
 
     // Owners are AUIDs (each an int array); the first element identifies the user.
-    const ownerAuids = useMemo(() => {
-        const ids: number[] = []
-        const collect = (owners?: number[][] | null) => owners?.forEach((owner) => owner?.[0] != null && ids.push(owner[0]))
-        templateEditions.forEach((link) => collect(link.templateEdition?.template?.owners))
-        catalog?.forEach((tpl) => collect(tpl.owners))
-        return ids
-    }, [templateEditions, catalog])
-    const { usernames } = useUsernames(ownerAuids)
-    const formatOwners = (owners?: number[][] | null) =>
-        (owners || []).filter((owner) => owner?.[0] != null).map((owner) => usernames[owner[0]] || String(owner[0])).join(", ")
-
-    const assignedByType = useMemo(() => {
-        const map = new Map<string, TemplateEditionLink>()
-        templateEditions.forEach((link) => {
-            if (link.beverageType?.id) map.set(link.beverageType.id, link)
-        })
-        return map
-    }, [templateEditions])
-
-    const sortedTypes = useMemo(
-        () => [...beverageTypesInCommission].sort((a, b) => (a.name || a.code).localeCompare(b.name || b.code)),
-        [beverageTypesInCommission]
+    const ownerAuids = useMemo(
+        () => [
+            ...templateEditions.flatMap((link) => templateOwnerAuids(link.templateEdition?.template?.owners)),
+            ...(catalog ?? []).flatMap((tpl) => templateOwnerAuids(tpl.owners)),
+        ],
+        [templateEditions, catalog],
     )
-    const assignedCount = sortedTypes.filter((type) => assignedByType.get(type.id)?.templateEdition).length
-    const isFullyConfigured = sortedTypes.length > 0 && assignedCount === sortedTypes.length
+    const { usernames } = useUsernames(ownerAuids)
+    const formatOwners = (owners?: number[][] | null) => formatTemplateOwners(owners, usernames)
+
+    const coverage = useMemo(
+        () => templateCoverage(beverageTypesInCommission, templateEditions),
+        [beverageTypesInCommission, templateEditions],
+    )
+    const { assignedByType, assignedCount, fullyConfigured: isFullyConfigured } = coverage
+    const sortedTypes = coverage.types
 
     const toggleExpanded = (typeId: string) => {
         setExpandedTypeIds((prev) => {
@@ -295,33 +236,12 @@ export function EvaluationTemplatesBlock({
     const commissionTypeIds = useMemo(() => new Set(sortedTypes.map((type) => type.id)), [sortedTypes])
 
     // Filter chips: types present in this commission first, then the rest of the catalog.
-    const catalogTypes = useMemo(() => {
-        const map = new Map<string, string>()
-        catalog?.forEach((tpl) => {
-            if (tpl.beverageTypeId) map.set(tpl.beverageTypeId, tpl.beverageType)
-        })
-        return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => {
-            const aIn = commissionTypeIds.has(a.id), bIn = commissionTypeIds.has(b.id)
-            if (aIn !== bIn) return aIn ? -1 : 1
-            return a.name.localeCompare(b.name)
-        })
-    }, [catalog, commissionTypeIds])
+    const catalogTypes = useMemo(() => catalogTypeChips(catalog, commissionTypeIds), [catalog, commissionTypeIds])
 
-    const filteredCatalog = useMemo(() => {
-        const query = searchQuery.trim().toLowerCase()
-        return (catalog || [])
-            .filter((tpl) => tpl.latestEdition)
-            .filter((tpl) => typeFilter === "all" || tpl.beverageTypeId === typeFilter)
-            .filter((tpl) => !query
-                || tpl.name.toLowerCase().includes(query)
-                || tpl.beverageType.toLowerCase().includes(query)
-                || tpl.owners.some((owner) => (usernames[owner?.[0]] || String(owner?.[0] ?? "")).toLowerCase().includes(query)))
-            .sort((a, b) => {
-                const aIn = commissionTypeIds.has(a.beverageTypeId), bIn = commissionTypeIds.has(b.beverageTypeId)
-                if (aIn !== bIn) return aIn ? -1 : 1
-                return a.name.localeCompare(b.name)
-            })
-    }, [catalog, typeFilter, searchQuery, commissionTypeIds, usernames])
+    const filteredCatalog = useMemo(
+        () => filterCatalog(catalog, typeFilter, searchQuery, commissionTypeIds, (auid) => usernames[auid] || String(auid)),
+        [catalog, typeFilter, searchQuery, commissionTypeIds, usernames],
+    )
 
     const totalPages = Math.ceil(filteredCatalog.length / ITEMS_PER_PAGE)
     const paginatedCatalog = filteredCatalog.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)

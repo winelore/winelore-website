@@ -64,6 +64,11 @@ const GLYPHS = {
     crown: { ios: "crown.fill", android: "crown" }, // Crown
     graduation: { ios: "graduationcap", android: "school" }, // GraduationCap
     sliders: { ios: "slider.horizontal.3", android: "tune" }, // Sliders
+    search: { ios: "magnifyingglass", android: "search" }, // Search
+    ban: { ios: "nosign", android: "block" }, // Ban
+    lock: { ios: "lock", android: "lock" }, // Lock
+    document: { ios: "doc.text", android: "description" }, // FileText
+    chevronLeft: { ios: "chevron.left", android: "chevron_left" }, // ChevronLeft
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle
     check: { ios: "checkmark.circle", android: "check_circle" }, // CheckCircle

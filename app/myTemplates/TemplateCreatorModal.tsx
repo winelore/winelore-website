@@ -1,5 +1,6 @@
 "use client"
 
+import { templatePropertyTypeLabel } from '@winelore/core/commission'
 import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Trash2, AlertCircle, X, Star, GripVertical } from "lucide-react"
@@ -35,18 +36,8 @@ interface CategoryState {
     properties: PropertyState[]
 }
 
-const PROPERTY_TYPE_KEYS: Record<string, MessageKey> = {
-    Int: "templateCreator.typeInt",
-    Double: "templateCreator.typeDouble",
-    Discrete: "templateCreator.typeDiscrete",
-    Enum: "templateCreator.typeEnum",
-    Boolean: "templateCreator.typeBoolean",
-    Smart: "templateCreator.typeSmart",
-}
-
 export function getPropertyTypeLabel(type: string, t: (key: MessageKey) => string): string {
-    const key = PROPERTY_TYPE_KEYS[type]
-    return key ? t(key) : type
+    return templatePropertyTypeLabel(type, t)
 }
 
 function transliterate(str: string): string {

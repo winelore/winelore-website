@@ -596,6 +596,9 @@ const uk: TranslationKey = {
     sampleEvaluated: "Оцінено",
     sampleDisqualified: "Дискваліфіковано",
     samplePostponed: "Відкладено",
+    moveUp: "Перемістити вище",
+    moveDown: "Перемістити нижче",
+    sampleActions: "Дії зі зразком",
     wizard: {
       addSampleToPanel: "Додати зразок до панелі",
       panelLabel: "Панель",

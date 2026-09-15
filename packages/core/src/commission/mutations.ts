@@ -14,6 +14,7 @@ import {
     DevSubmitCompetitionForReviewDocument,
     DevSubmitCompetitionSeriesForReviewDocument,
     GetReplicaCandidatesDocument,
+    SetCommissionTemplateEditionDocument,
     StartCommissionReplicaDocument,
 } from "../gql/sdk"
 
@@ -295,3 +296,238 @@ async function bindMissingTemplates(
         await ignore(() => bind(fallback.template?.beverageType?.id || DEFAULT_BEVERAGE_TYPE_ID, fallback.id))
     }
 }
+
+// --- Panels and candidates --------------------------------------------------
+
+export const ADD_COMMISSION_PANEL = `
+  mutation AddCommissionPanel($commissionId: ID!, $name: String!) {
+      addCommissionPanel(commissionId: $commissionId, name: $name) { id name }
+  }
+`
+
+export const RENAME_COMMISSION_PANEL = `
+  mutation RenameCommissionPanel($commissionId: ID!, $panelId: ID!, $name: String!) {
+      renameCommissionPanel(commissionId: $commissionId, panelId: $panelId, name: $name) { id name }
+  }
+`
+
+export const REMOVE_COMMISSION_PANEL = `
+  mutation RemoveCommissionPanel($commissionId: ID!, $panelId: ID!) {
+      removeCommissionPanel(commissionId: $commissionId, panelId: $panelId) { id }
+  }
+`
+
+export const REMOVE_COMMISSION_CANDIDATE = `
+  mutation RemoveCommissionCandidate($candidateId: ID!) {
+      removeCommissionCandidate(candidateId: $candidateId)
+  }
+`
+
+export const CHANGE_COMMISSION_CANDIDATE_CODE = `
+  mutation ChangeCommissionCandidateCode($id: ID!, $anonymizedCode: String) {
+      changeCommissionCandidateCode(id: $id, anonymizedCode: $anonymizedCode) { id anonymizedCode }
+  }
+`
+
+export const REORDER_COMMISSION_CANDIDATES = `
+  mutation ReorderCommissionCandidates($panelId: ID!, $candidateIds: [ID!]!) {
+      reorderCommissionCandidates(panelId: $panelId, candidateIds: $candidateIds) { id }
+  }
+`
+
+const ADD_COMMISSION_CANDIDATE = `
+  mutation AddCommissionCandidate($input: AddCommissionCandidateInput!) {
+      addCommissionCandidate(input: $input) {
+          id
+          panel { id }
+          anonymizedCode
+          sample {
+              id
+              volumeMl
+              batch { id lotNumber volumeMl beverage { id name } }
+          }
+      }
+  }
+`
+
+const CHECK_COMMISSION_TEMPLATES = `
+  query CheckCommissionTemplates($id: ID!) {
+      commission(id: $id) {
+          id
+          status
+          templateEditions { id beverageType { id code } }
+      }
+  }
+`
+
+const GET_BEVERAGE_TYPE = `
+  query GetBeverageType($id: ID!) {
+      beverage(id: $id) { id type { id code } }
+  }
+`
+
+/** A code as stored: trimmed, or none. */
+export function candidateCodeInput(code: string | null | undefined): string | null {
+    return code?.trim() ? code.trim() : null
+}
+
+/**
+ * Add a sample to a panel as a candidate.
+ *
+ * While the commission is a draft, a beverage type that has no template yet
+ * gets one bound — its type's published template, else any published one —
+ * so the tasting can be scored; the web's action has always done this. That
+ * step failing does not undo the add.
+ */
+export async function addCommissionCandidate(
+    send: CommissionSend,
+    input: { commissionId: string; panelId: string; sampleId: string; anonymizedCode?: string | null },
+    onWarning?: (context: string, error: unknown) => void,
+): Promise<{ id: string; panelId: string }> {
+    const added = (
+        await send(ADD_COMMISSION_CANDIDATE, {
+            input: { panelId: input.panelId, sampleId: input.sampleId, anonymizedCode: candidateCodeInput(input.anonymizedCode) },
+        })
+    )?.addCommissionCandidate
+    if (!added) throw new Error("The candidate was not added")
+
+    try {
+        const commission = (await send(CHECK_COMMISSION_TEMPLATES, { id: input.commissionId }))?.commission
+        const beverageId = added.sample?.batch?.beverage?.id
+        if (commission?.status === "DRAFT" && beverageId) {
+            const bound = new Set((commission.templateEditions || []).map((link: any) => link.beverageType?.id).filter(Boolean))
+            const typeId: string | null = (await send(GET_BEVERAGE_TYPE, { id: beverageId }))?.beverage?.type?.id || null
+            if (typeId && !bound.has(typeId)) {
+                const items: any[] =
+                    (await send(print(DevGetEvaluationTemplateEditionsDocument)))?.evaluationTemplateEditions?.items || []
+                const usable = (item: any) => (item.status === "PUBLISHED" || item.status === "ACTIVE") && item.categories?.length > 0
+                const edition =
+                    items.find((item) => usable(item) && item.template?.beverageType?.id === typeId) || items.find(usable) || items[0]
+                if (edition) {
+                    await send(print(DevSetCommissionTemplateEditionDocument), {
+                        id: input.commissionId,
+                        beverageTypeId: typeId,
+                        templateEditionId: edition.id,
+                    })
+                }
+            }
+        }
+    } catch (error) {
+        onWarning?.("template for the new candidate", error)
+    }
+
+    return { id: added.id, panelId: added.panel?.id }
+}
+
+// --- Choosing a sample ------------------------------------------------------
+
+export const SEARCH_BEVERAGES = `
+  query SearchBeverages($query: String!, $limit: Int!, $offset: Int!) {
+      search(query: $query, types: [BEVERAGE], limit: $limit, offset: $offset) {
+          items { id name }
+      }
+  }
+`
+
+export const GET_BEVERAGES_PAGE = `
+  query GetBeverages($limit: Int!, $offset: Int!) {
+      beverages(limit: $limit, offset: $offset) { items { id name } }
+      beverageCount
+  }
+`
+
+export const GET_BATCHES_PAGE = `
+  query GetBatches($beverageId: ID!, $limit: Int!, $offset: Int!) {
+      batches(beverageId: $beverageId, limit: $limit, offset: $offset) {
+          items { id lotNumber volumeMl createdAt attributes }
+      }
+      batchCount(beverageId: $beverageId)
+  }
+`
+
+export const GET_SAMPLES_PAGE = `
+  query GetSamples($batchId: ID!, $limit: Int!, $offset: Int!) {
+      samples(batchId: $batchId, limit: $limit, offset: $offset) {
+          items { id volumeMl createdAt }
+      }
+      sampleCount(batchId: $batchId)
+  }
+`
+
+export interface WizardPage<T> {
+    items: T[]
+    page: number
+    totalPages: number
+    hasMore: boolean
+}
+
+/**
+ * One page of beverages to pick from: a search by name, or all of them. A
+ * search reports more while it fills a page, since it has no total.
+ */
+export async function loadBeveragePage(
+    send: CommissionSend,
+    search: string,
+    page: number,
+    limit: number,
+): Promise<WizardPage<{ id: string; name: string }>> {
+    const offset = Math.max(0, (page - 1) * limit)
+    const query = search.trim()
+    if (query) {
+        const items = ((await send(SEARCH_BEVERAGES, { query, limit, offset }))?.search?.items || []).filter(
+            (item: any) => item?.id && item?.name,
+        )
+        const hasMore = items.length === limit
+        return { items, page, totalPages: hasMore ? Math.max(page + 1, 2) : page, hasMore }
+    }
+    const data = await send(GET_BEVERAGES_PAGE, { limit, offset })
+    const items = (data?.beverages?.items || []).filter((item: any) => item?.id && item?.name)
+    const totalPages = Math.ceil((data?.beverageCount || items.length) / limit)
+    return { items, page, totalPages, hasMore: page < totalPages }
+}
+
+async function countedPage<T>(
+    send: CommissionSend,
+    query: string,
+    variables: Record<string, unknown>,
+    list: string,
+    count: string,
+    page: number,
+    limit: number,
+): Promise<WizardPage<T>> {
+    const data = await send(query, { ...variables, limit, offset: Math.max(0, (page - 1) * limit) })
+    const items: T[] = data?.[list]?.items || []
+    const total = typeof data?.[count] === "number" ? data[count] : items.length
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+    return { items, page, totalPages, hasMore: page < totalPages }
+}
+
+export interface WizardBatch {
+    id: string
+    lotNumber?: string | null
+    volumeMl?: number | null
+    createdAt?: string | null
+    attributes?: any
+}
+
+export interface WizardSample {
+    id: string
+    volumeMl?: number | null
+    createdAt?: string | null
+}
+
+export const loadBatchPage = (send: CommissionSend, beverageId: string, page: number, limit: number) =>
+    countedPage<WizardBatch>(send, GET_BATCHES_PAGE, { beverageId }, "batches", "batchCount", page, limit)
+
+export const loadSamplePage = (send: CommissionSend, batchId: string, page: number, limit: number) =>
+    countedPage<WizardSample>(send, GET_SAMPLES_PAGE, { batchId }, "samples", "sampleCount", page, limit)
+
+// --- Templates --------------------------------------------------------------
+
+export const REMOVE_COMMISSION_TEMPLATE_EDITION = `
+  mutation RemoveCommissionTemplateEdition($id: ID!, $beverageTypeId: ID!) {
+      removeCommissionTemplateEdition(id: $id, beverageTypeId: $beverageTypeId) { id }
+  }
+`
+
+export const SET_COMMISSION_TEMPLATE_EDITION = print(SetCommissionTemplateEditionDocument)
