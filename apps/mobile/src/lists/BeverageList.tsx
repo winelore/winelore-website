@@ -5,6 +5,7 @@ import type { DashboardBeverage } from "../dashboard/useHome"
 import { useBeverageOrigins } from "../geocoding/useBeverageOrigins"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { useDisplayNames } from "../users/useDisplayNames"
+import { useOnChanged } from "../navigation/changes"
 import { EntityList } from "./EntityList"
 import { usePagedList, type Page } from "./usePagedList"
 
@@ -12,8 +13,8 @@ interface BeverageListProps {
     title: string
     subtitle?: string
     source: (offset: number, limit: number) => Promise<Page<DashboardBeverage>>
-    /** Opens the create form; the list reloads once it closes. */
-    onCreate?: () => Promise<void>
+    /** Opens the create form; the list reloads when a beverage is created. */
+    onCreate?: () => void
     /** Reverse-geocode each beverage's origin, as the web's My Beverages does. */
     showOrigin?: boolean
     empty: { title: string; description: string }
@@ -26,6 +27,7 @@ const NO_BEVERAGES: DashboardBeverage[] = []
 export function BeverageList({ title, subtitle, source, onCreate, showOrigin, empty, error }: BeverageListProps) {
     const { t, tCount } = useTranslation()
     const list = usePagedList(source)
+    useOnChanged("beverages", list.refresh)
     const typeMap = useBeverageTypes()
     const producers = useMemo(
         () =>
@@ -50,10 +52,7 @@ export function BeverageList({ title, subtitle, source, onCreate, showOrigin, em
                 onCreate
                     ? {
                           label: t("myBeverages.createButton"),
-                          onPress: async () => {
-                              await onCreate()
-                              list.refresh()
-                          },
+                          onPress: onCreate,
                       }
                     : undefined
             }

@@ -70,9 +70,31 @@ Where a card or link goes is one table, `src/navigation/destinations.ts`.
 Commissions, competitions, beverages, all four tabs and the personal
 commission, competition, beverage, template and outcome policy lists, a
 judge's tasting summary, a template's own page and the outcome policy editor
-are native; anything not ported yet — the template editor, create forms —
-opens the same page of the website in the in-app browser. Porting a screen
-is flipping its entry from `web` to `app`.
+and the create forms are native; the one page not ported yet — the template
+editor — opens the website in the in-app browser. Porting a screen is
+flipping its entry from `web` to `app`.
+
+The create forms — competition, beverage, batch, sample — are the web's
+create pages as page sheets at the web's paths (`/competition/create`,
+`/beverage/create`, `/batch/create?beverageId=`, `/sample/create?batchId=&beverageId=`),
+each with the web's sections and its live summary beneath, as a phone stacks
+it: a competition's series (your own, filed for you, or a new one named
+there) and schedule presets; a beverage's type, your role as its producer,
+the characteristics its type asks for and its origin picked on a map; a
+batch's lot and volume with the web's presets, a vintage starting at this
+year; a sample's volume against what its batch has left. The bar holds
+Close and the action, and a sheet with changes asks before it closes. A new
+competition or beverage opens once made, as on the web; a batch or sample
+made from the beverage page reloads that page. What each asks for and sends
+is `@winelore/core` (`competition/create.ts`, `beverage/create.ts`) — which
+series a competition lands in, the type's characteristics parsed out of the
+backend's Kotlin `toString()`, the attributes' formatting, the retry without
+an attribute the backend refuses, the sample's volume check — and the web's
+actions call it. That fixed three things on the web: planned dates were
+read in the server's time zone rather than the browser's; a new beverage's
+producer was sent without an AUID, and the batch form never found your own
+beverages and always offered the whole catalogue, both from reading the
+actor from a header key that does not exist.
 
 The Map tab (`src/map/`) is the web's /map on the system's map — Apple Maps
 through `expo-maps` on iOS, Google Maps on Android — where the web draws
@@ -250,7 +272,7 @@ Not yet ported:
   recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **The template editor and the create forms.** Their links exist and open the website for now; see
+- **The template editor.** Its links exist and open the website for now; see
   `destinations.ts`. The web session
   is separate from the app's, so the first visit asks for an AXUS ID sign-in
   in the in-app browser.

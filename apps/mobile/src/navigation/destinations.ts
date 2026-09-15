@@ -61,14 +61,12 @@ export const destinations = {
     beverages: app("/beverages"),
     map: app("/map"),
 
-    // Create forms are organiser desk work and stay on the web for now.
-    createCompetition: web("/competition/create"),
-    createBeverage: web("/beverage/create"),
+    createCompetition: app("/competition/create"),
+    createBeverage: app("/beverage/create"),
     /** The web's template editor on a new template, which My Templates opens at once for `?create=1`. */
     createTemplate: web("/myTemplates?create=1"),
-    createBatch: (beverageId: string) => web(`/batch/create?beverageId=${beverageId}`),
-    createSample: (batchId: string, beverageId: string) =>
-        web(`/sample/create?batchId=${batchId}&beverageId=${beverageId}`),
+    createBatch: (beverageId: string) => app(`/batch/create?beverageId=${beverageId}`),
+    createSample: (batchId: string, beverageId: string) => app(`/sample/create?batchId=${batchId}&beverageId=${beverageId}`),
 } as const
 
 /**

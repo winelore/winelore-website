@@ -3,6 +3,7 @@ import type { DashboardCompetition } from "@winelore/core/dashboard"
 import { CompetitionCard } from "../dashboard/cards"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { useDisplayNames } from "../users/useDisplayNames"
+import { useOnChanged } from "../navigation/changes"
 import { EntityList } from "./EntityList"
 import { usePagedList, type Page } from "./usePagedList"
 
@@ -10,8 +11,8 @@ interface CompetitionListProps {
     title: string
     subtitle?: string
     source: (offset: number, limit: number) => Promise<Page<DashboardCompetition>>
-    /** Opens the create form; the list reloads once it closes. */
-    onCreate?: () => Promise<void>
+    /** Opens the create form; the list reloads when a competition is created. */
+    onCreate?: () => void
     empty: { title: string; description: string }
     error: { title: string; description: string }
 }
@@ -20,6 +21,7 @@ interface CompetitionListProps {
 export function CompetitionList({ title, subtitle, source, onCreate, empty, error }: CompetitionListProps) {
     const { t, tCount } = useTranslation()
     const list = usePagedList(source)
+    useOnChanged("competitions", list.refresh)
     const holders = useMemo(
         () => Array.from(new Set(list.items.flatMap((competition) => competition.holder.map(String)))),
         [list.items],
@@ -35,10 +37,7 @@ export function CompetitionList({ title, subtitle, source, onCreate, empty, erro
                 onCreate
                     ? {
                           label: t("myCompetitions.createButton"),
-                          onPress: async () => {
-                              await onCreate()
-                              list.refresh()
-                          },
+                          onPress: onCreate,
                       }
                     : undefined
             }

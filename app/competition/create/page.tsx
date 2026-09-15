@@ -19,17 +19,20 @@ import { AppHeader } from '@/components/AppHeader';
 import { BackLink } from '@/components/BackLink';
 import { useMobileNavTitle } from '@/lib/mobileNav';
 import { useTranslation } from '@/lib/i18n/context';
-import { getDateLocale, type MessageKey } from '@winelore/core/i18n';
+import { getDateLocale } from '@winelore/core/i18n';
+import {
+    applySchedulePreset,
+    competitionCreateErrorKey,
+    isScheduleInverted,
+    ownedSeries,
+    scheduleDuration,
+    type SeriesOption,
+} from '@winelore/core/competition';
 import {
     createCompetitionInfrastructure,
     createCompetitionSeriesAction,
     getCompetitionSeriesListAction,
 } from './actions';
-
-interface SeriesOption {
-    id: string;
-    name: string;
-}
 
 /** Sentinel <option> value for "I want a brand new series". */
 const NEW_SERIES = '__new__';
@@ -41,31 +44,8 @@ function toLocalInput(date: Date): string {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-/**
- * Backend messages are raw GraphQL strings; map the ones we recognise onto a
- * translated sentence instead of showing the user server internals.
- */
-function friendlyError(raw: string | undefined, t: (key: MessageKey) => string): string {
-    const lower = (raw || '').toLowerCase();
-    if (!lower) return t('competition.createErrorGeneric');
-    if (
-        lower.includes('failed to fetch') ||
-        lower.includes('fetch failed') ||
-        lower.includes('server responded with status') ||
-        lower.includes('network')
-    ) return t('competition.createErrorNetwork');
-    if (
-        lower.includes('seriesid') ||
-        lower.includes('series id') ||
-        lower.includes('competition series') ||
-        lower.includes('failed to convert argument value')
-    ) return t('competition.createErrorSeries');
-    if (lower.includes('name') && (lower.includes('null') || lower.includes('empty') || lower.includes('required'))) {
-        return t('competition.createErrorName');
-    }
-    if (lower.includes('authentication') || lower.includes('unauthorized')) return t('competition.createErrorAuth');
-    return t('competition.createErrorGeneric');
-}
+// Backend messages are raw GraphQL strings; core maps the recognisable ones onto a sentence.
+const friendlyError = (raw: string | undefined, t: (key: any) => string) => t(competitionCreateErrorKey(raw));
 
 function SectionHeader({ step, title, icon: Icon, hint, badge }: {
     step: number;
@@ -162,9 +142,7 @@ export default function CreateCompetitionPage() {
             .then((items) => {
                 if (cancelled) return;
                 if (!Array.isArray(items)) return;
-                const mySeries: SeriesOption[] = items.filter((series: any) =>
-                    series.owners?.flat().includes(Number(currentAuid))
-                );
+                const mySeries: SeriesOption[] = ownedSeries(items, Number(currentAuid));
                 setSeriesList(mySeries);
                 if (mySeries.length > 0) setSeriesSelection(mySeries[0].id);
             })
@@ -185,7 +163,7 @@ export default function CreateCompetitionPage() {
     const invalid = {
         name: trimmedName.length === 0,
         seriesName: seriesSelection === NEW_SERIES && newSeriesName.trim().length === 0,
-        dates: !!(startDate && endDate && endDate.getTime() <= startDate.getTime()),
+        dates: isScheduleInverted(startDate, endDate),
     };
 
     const dateFormatter = useMemo(
@@ -193,16 +171,7 @@ export default function CreateCompetitionPage() {
         [locale]
     );
 
-    const durationLabel = useMemo(() => {
-        if (!startDate || !endDate || invalid.dates) return null;
-        const diff = endDate.getTime() - startDate.getTime();
-        const days = Math.floor(diff / 86_400_000);
-        const hours = Math.floor((diff % 86_400_000) / 3_600_000);
-        const minutes = Math.floor((diff % 3_600_000) / 60_000);
-        if (days > 0) return t('time.duration', { days, hours });
-        if (hours > 0) return t('time.durationHoursMinutes', { hours, minutes });
-        return t('time.durationMinutes', { minutes });
-    }, [start, end, invalid.dates, t]); // eslint-disable-line react-hooks/exhaustive-deps
+    const durationLabel = useMemo(() => scheduleDuration(startDate, endDate, t), [start, end, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const selectedSeriesName = useMemo(() => {
         if (seriesSelection === NEW_SERIES) return newSeriesName.trim() || t('competition.createSeriesNewLabel');
@@ -211,20 +180,9 @@ export default function CreateCompetitionPage() {
     }, [seriesSelection, newSeriesName, seriesList, t]);
 
     const applyPreset = (kind: 'today' | 'tomorrow' | 'nextWeek') => {
-        const base = new Date();
-        if (kind === 'today') {
-            base.setMinutes(0, 0, 0);
-            base.setHours(base.getHours() + 1);
-        } else {
-            base.setDate(base.getDate() + (kind === 'tomorrow' ? 1 : 7));
-            base.setHours(9, 0, 0, 0);
-        }
-
-        setStart(toLocalInput(base));
-        const current = end ? new Date(end) : null;
-        if (!current || current.getTime() <= base.getTime()) {
-            setEnd(toLocalInput(new Date(base.getTime() + 8 * 3_600_000)));
-        }
+        const preset = applySchedulePreset(kind, new Date(), end ? new Date(end) : null);
+        setStart(toLocalInput(preset.start));
+        setEnd(toLocalInput(preset.end));
     };
 
     const clearSchedule = () => {
@@ -271,8 +229,9 @@ export default function CreateCompetitionPage() {
             const result = await createCompetitionInfrastructure({
                 name: trimmedName,
                 seriesId,
-                plannedStartDate: start,
-                plannedEndDate: end,
+                // As instants, from the browser: the server would read a bare local time in its own zone.
+                plannedStartDate: start ? new Date(start).toISOString() : '',
+                plannedEndDate: end ? new Date(end).toISOString() : '',
                 holders: [[currentAuid]],
             });
 

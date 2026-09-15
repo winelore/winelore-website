@@ -26,6 +26,7 @@ import {
     type BeverageTab,
 } from "@winelore/core/beverage"
 import { useTranslation } from "../i18n/LocaleProvider"
+import { useOnChanged } from "../navigation/changes"
 import { destinations, useOpenDestination } from "../navigation/destinations"
 import { palette, radius } from "../theme"
 import { Icon } from "../ui/Icon"
@@ -46,8 +47,8 @@ import { patchBeverage, useBeveragePage } from "./useBeveragePage"
  * awards.
  *
  * A producer edits it in a sheet, as the web edits it in a modal, and a
- * batch's samples open in a sheet too. Creating batches and samples is still
- * the web's, in the in-app browser; the page reloads when that closes.
+ * batch's samples open in a sheet too, and so do the create forms for a batch
+ * and a sample; the page reloads when one is made.
  */
 export function BeverageScreen({ id, tab }: { id: string; tab?: string }) {
     const { t } = useTranslation()
@@ -196,11 +197,8 @@ function Loaded({
             },
         ])
 
-    /** A web form in the in-app browser, then a fresh page for whatever it created. */
-    const openThenReload = async (destination: Parameters<typeof open>[0]) => {
-        await open(destination)
-        reload()
-    }
+    // A batch or sample created from its sheet shows here once it is made.
+    useOnChanged(`beverage:${beverage.id}`, reload)
 
     const tabs: TabOption[] = beverageTabs(specs.length).map((id) =>
         id === "specs"
@@ -252,8 +250,8 @@ function Loaded({
                 {tab === "batches" ? (
                     <BatchesTab
                         batches={batches}
-                        onCreateBatch={() => openThenReload(destinations.createBatch(beverage.id))}
-                        onAddSample={(batch) => openThenReload(destinations.createSample(batch.id, beverage.id))}
+                        onCreateBatch={() => open(destinations.createBatch(beverage.id))}
+                        onAddSample={(batch) => open(destinations.createSample(batch.id, beverage.id))}
                         onShowSamples={(batch) => {
                             Haptics.selectionAsync()
                             router.push(`/beverage/${beverage.id}/samples/${batch.id}`)

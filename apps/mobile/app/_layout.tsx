@@ -97,6 +97,11 @@ function RootStack() {
                         ...(Platform.OS === "android" ? { sheetCornerRadius: 28 } : {}),
                     }}
                 />
+                {/* The web's create pages, as page sheets over whatever opened them. */}
+                <Stack.Screen name="competition/create" options={pageSheet} />
+                <Stack.Screen name="beverage/create" options={pageSheet} />
+                <Stack.Screen name="batch/create" options={pageSheet} />
+                <Stack.Screen name="sample/create" options={pageSheet} />
                 {/* The web's outcome policy dialog, for a new policy and an existing one. */}
                 <Stack.Screen name="outcome-policy/new" options={pageSheet} />
                 <Stack.Screen name="outcome-policy/[id]" options={pageSheet} />

@@ -114,6 +114,37 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
     return data;
 }
 
+/**
+ * Send a mutation. Unlike a query, any GraphQL error fails it, with the
+ * backend's message: a mutation that comes back with errors beside its data
+ * did not do what was asked. The app's client makes the same distinction.
+ */
+export async function mutateGraphQLRaw<TResult>(
+    query: string,
+    variables?: Record<string, unknown>,
+    headers?: Record<string, string>
+): Promise<TResult> {
+    const cleanHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    for (const [key, value] of Object.entries(headers || {})) {
+        const lower = key.toLowerCase();
+        cleanHeaders[lower === 'x-actor' || lower === 'actor' ? 'X-ACTOR' : key] = value;
+    }
+
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: cleanHeaders,
+        body: JSON.stringify({ query, variables }),
+        next: { revalidate: 0 }
+    });
+
+    const { data, errors } = await parseJsonResponse(response, 'mutateGraphQLRaw');
+    if (errors?.length) {
+        logGraphQLPipelineError('mutateGraphQLRaw', errors, true);
+        throw new Error(errors[0]?.message || 'GraphQL mutation failed');
+    }
+    return data;
+}
+
 export async function fetchGraphQL<TResult, TVariables>(
     document: TypedDocumentNode<TResult, TVariables>,
     variables?: TVariables

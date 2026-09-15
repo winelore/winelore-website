@@ -1,7 +1,8 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { sdk, fetchGraphQLRaw } from '@/lib/apiClient';
+import { fetchGraphQLRaw, mutateGraphQLRaw } from '@/lib/apiClient';
+import { SampleExceedsBatchError, batchAllocation, createSample } from '@winelore/core/beverage';
 import {
     fetchBeverageTypeCharacteristics,
     type BeverageCharacteristic,
@@ -99,12 +100,7 @@ export async function getBatchDetailsAction(batchId: string): Promise<{
             return { success: false, error: 'Batch not found' };
         }
 
-        const existingSamples = res?.samples?.items || [];
-        const samplesCount = existingSamples.length;
-        const usedVolumeMl = existingSamples.reduce((sum: number, s: any) => sum + (Number(s.volumeMl) || 0), 0);
-        const remainingVolumeMl = typeof batch.volumeMl === 'number'
-            ? Math.max(0, batch.volumeMl - usedVolumeMl)
-            : null;
+        const { usedVolumeMl, remainingVolumeMl, samplesCount } = batchAllocation(batch.volumeMl, res?.samples?.items);
 
         let typeName = '';
         if (batch.beverage?.typeId) {
@@ -168,86 +164,17 @@ export async function createSampleAction(params: {
     }
 
     const headers = await getActorHeaders();
-
-    const formattedAttributes: Record<string, any> = {};
-    if (params.attributes && typeof params.attributes === 'object') {
-        for (const [key, val] of Object.entries(params.attributes)) {
-            if (val === undefined || val === null || val === '') continue;
-            if (typeof val === 'number') {
-                formattedAttributes[key] = val;
-            } else if (typeof val === 'string') {
-                if (/^-?\d+$/.test(val.trim())) {
-                    formattedAttributes[key] = parseInt(val.trim(), 10);
-                } else if (/^-?\d+\.\d+$/.test(val.trim())) {
-                    formattedAttributes[key] = parseFloat(val.trim());
-                } else if (val.toLowerCase() === 'true') {
-                    formattedAttributes[key] = true;
-                } else if (val.toLowerCase() === 'false') {
-                    formattedAttributes[key] = false;
-                } else {
-                    formattedAttributes[key] = val.trim();
-                }
-            } else {
-                formattedAttributes[key] = val;
-            }
-        }
-    }
-
-    let parsedVolumeMl: number | undefined = undefined;
-    if (params.volumeMl !== undefined && params.volumeMl !== null && params.volumeMl !== '') {
-        const num = parseInt(String(params.volumeMl), 10);
-        if (!isNaN(num) && num > 0) {
-            parsedVolumeMl = num;
-        }
-    }
-
-    // Verify against remaining batch volume if specified
-    if (parsedVolumeMl !== undefined) {
-        try {
-            const checkQuery = `
-              query CheckBatchVolumeLimit($id: ID!) {
-                batch(id: $id) {
-                  volumeMl
-                }
-                samples(batchId: $id) {
-                  items {
-                    volumeMl
-                  }
-                }
-              }
-            `;
-            const checkData = await fetchGraphQLRaw<any, any>(checkQuery, { id: params.batchId }, headers);
-            const batchVolume = checkData?.batch?.volumeMl;
-            if (typeof batchVolume === 'number' && batchVolume > 0) {
-                const existing = checkData?.samples?.items || [];
-                const currentUsed = existing.reduce((sum: number, s: any) => sum + (Number(s.volumeMl) || 0), 0);
-                if (currentUsed + parsedVolumeMl > batchVolume) {
-                    const remaining = Math.max(0, batchVolume - currentUsed);
-                    return {
-                        success: false,
-                        error: `Об'єм зразка (${parsedVolumeMl.toLocaleString()} мл) перевищує доступний залишок у партії (${remaining.toLocaleString()} мл із загальних ${batchVolume.toLocaleString()} мл).`
-                    };
-                }
-            }
-        } catch (volErr) {
-            console.warn('Batch volume verification check failed:', volErr);
-        }
-    }
-
-    const input: any = {
-        batchId: params.batchId,
-        volumeMl: parsedVolumeMl,
-        attributes: Object.keys(formattedAttributes).length > 0 ? formattedAttributes : undefined,
-    };
-
     try {
-        const res = await sdk.DevCreateSample({ input }, { headers });
-        const sampleId = res?.createSample?.id;
-        if (!sampleId) {
-            throw new Error('Failed to create sample');
-        }
+        // The volume check against the batch, the formatting and the input are core's, as in the app.
+        const sampleId = await createSample((query, variables) => mutateGraphQLRaw(query, variables, headers), params);
         return { success: true, sampleId };
     } catch (err: any) {
+        if (err instanceof SampleExceedsBatchError) {
+            return {
+                success: false,
+                error: `Об'єм зразка (${err.volumeMl.toLocaleString()} мл) перевищує доступний залишок у партії (${err.remainingMl.toLocaleString()} мл із загальних ${err.batchVolumeMl.toLocaleString()} мл).`
+            };
+        }
         console.error('Server Action Error (createSampleAction):', err);
         return { success: false, error: err.message || 'Failed to create sample' };
     }

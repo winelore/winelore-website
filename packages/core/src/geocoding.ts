@@ -85,3 +85,28 @@ export function parseNominatimRegion(data: { address?: NominatimAddress } | null
         countryName: address?.country,
     }
 }
+
+/** The origin picker's search: the best match for a place name. */
+export function nominatimSearchUrl(query: string): string {
+    return `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+}
+
+/** The origin picker's name for a chosen point, at town-and-district detail. */
+export function nominatimPlaceUrl(latitude: number, longitude: number): string {
+    return `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+}
+
+/** A chosen point, to six decimals — about ten centimetres, as the web keeps it. */
+export function roundCoordinate(value: number): number {
+    return Number.parseFloat(value.toFixed(6))
+}
+
+/** A search's first match as a point and its name, or null when there is none. */
+export function parseNominatimSearch(data: unknown): { latitude: number; longitude: number; name: string } | null {
+    const first = Array.isArray(data) ? data[0] : null
+    if (!first) return null
+    const latitude = Number.parseFloat(first.lat)
+    const longitude = Number.parseFloat(first.lon)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+    return { latitude: roundCoordinate(latitude), longitude: roundCoordinate(longitude), name: String(first.display_name ?? "") }
+}
