@@ -457,7 +457,15 @@ On iOS 27, built with Xcode 27:
   count, and no redirect — `resolveWaitDestination` agreeing with the
   server. Names resolve through AXUS on both.
 - The Wine Jumper card in a judge's room, on a commission with the game
-  enabled. It was not played: that needs a tap.
+  enabled. It was not played on the phone — that needs a tap — but the same
+  core rules were played through in the browser: standing still ends the
+  game where the tests say it does, and jumping in the window they pin
+  clears glasses and scores.
+- **The web's own wait page**, both views, against the same seeded
+  competition on a dev server with an `auid` cookie: the chair's dashboard
+  with both judges' cards and the mini-game, and a judge's own scores,
+  comment and count. This is the first time the refactored web page, its
+  core-backed action and the translated game have actually run.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end
@@ -493,9 +501,10 @@ On iOS 27, built with Xcode 27:
    the presigned URL is accepted are all still open. The same goes for
    playing the mini-game, whose rules the core tests cover but whose motion
    has not been watched.
-10. The web results, tasting summary and template pages signed in. The
-    results page's server part renders the access-denied and load-error
-    states; the rest needs a signed-in browser.
+10. The rest of the web signed in — results, tasting summary, template and
+    outcome-policy pages. The wait page was exercised with an `auid`
+    cookie against a dev server (above); the others still need a real
+    AXUS session.
 
 ## iOS 27 requires the scene life cycle
 
