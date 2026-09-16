@@ -297,6 +297,13 @@ and where a waiting judge belongs are `@winelore/core`
 web built the members list, the progress and the advance sequence inline,
 and mapped the backend's refusal messages twice.
 
+The **Wine Jumper mini-game** a commission can switch on rides along in both
+views. Its rules — speed, jump, collision, score — are `@winelore/core`'s
+`wineJumper.ts`, so the same play scores the same on either platform; only
+the control differs, the space bar on the web and the whole field on a
+phone. The web's copy had its strings hardcoded in Ukrainian and is now
+translated like everything else.
+
 **Scorecard comments** are per-property and general, each with text, a voice
 note, or both, shown only where the commission allows them. Recording is
 `expo-audio` (which the results screens already play notes with), and the
@@ -312,8 +319,6 @@ Not yet ported:
 
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
-- **The Wine Jumper mini-game**, which a commission can switch on to fill the
-  wait. It is a canvas game on the web with no native counterpart.
 
 The app was first written on Linux, where it could only be typechecked and
 bundled; it has since run on an iPhone 15 Pro on iOS 26.6 and iOS 27. What is
@@ -443,9 +448,16 @@ On iOS 27, built with Xcode 27:
   Color and Aroma), with the per-property comment fields and their record
   buttons switched on by that commission's own flags — and on sample data,
   where a computed subtotal correctly has no comment field.
-- A judge's waiting room on a live dev replica between candidates: the
-  candidates-left count from real state, and no redirect, which is
-  `resolveWaitDestination` agreeing with the server.
+- Both waiting rooms, on a dev competition seeded for the purpose
+  (`MOBILE VERIFY 979278`, two replicas over one three-sample panel). The
+  chair's: the panel and current candidate, their own confirmed card with
+  its result score and general comment, the other judge's draft with its
+  Confirm control, and an enabled Next Beverage once both were in. A
+  judge's: their own submitted scores and comment, the candidates-left
+  count, and no redirect — `resolveWaitDestination` agreeing with the
+  server. Names resolve through AXUS on both.
+- The Wine Jumper card in a judge's room, on a commission with the game
+  enabled. It was not played: that needs a tap.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end
@@ -475,12 +487,12 @@ On iOS 27, built with Xcode 27:
    (that no smart quotes creep in) and saving it; the create forms and the
    template editor filled in and saved, a map pin tapped; the files are
    core's sheets, which the tests cover.
-9. **The chair's waiting room**, and voice recording. Reaching either needs
-   the phone's user to be a member of a live replica, which means writing to
-   shared dev data. The judge's view was seen; the chair's members list,
-   advance button and confirm control were not, and no recording has been
-   made or uploaded — including whether the microphone prompt appears and
-   whether an `audio/mp4` PUT to the presigned URL is accepted.
+9. **Voice recording.** No recording has been made or uploaded from the
+   phone, because starting one needs a tap: whether the microphone prompt
+   appears, whether `expo-audio` captures, and whether an `audio/mp4` PUT to
+   the presigned URL is accepted are all still open. The same goes for
+   playing the mini-game, whose rules the core tests cover but whose motion
+   has not been watched.
 10. The web results, tasting summary and template pages signed in. The
     results page's server part renders the access-denied and load-error
     states; the rest needs a signed-in browser.

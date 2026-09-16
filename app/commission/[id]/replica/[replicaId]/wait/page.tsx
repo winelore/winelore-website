@@ -431,9 +431,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                 <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-sm sm:shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
                     {myEvaluation && hasEvaluationData(myEvaluation, flags) && (
                         <div className="p-5">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-                                {t("evaluation.submittedScores")}
-                            </p>
+                            {/* No heading here: MemberEvaluationSection labels
+                                each group of scores itself. */}
                             <MemberEvaluationSection
                                 evaluation={myEvaluation}
                                 propertyMap={propertyMap}

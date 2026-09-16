@@ -9,6 +9,7 @@ import { MemberEvaluation } from "../results/MemberEvaluation"
 import { MONOSPACE, cardShadow, continuous, palette, radius, spacing, type } from "../theme"
 import { Icon } from "../ui/Icon"
 import { useDisplayNames } from "../users/useDisplayNames"
+import { WineJumper } from "./WineJumper"
 import { useWaitRoom } from "./useWaitRoom"
 
 /**
@@ -19,7 +20,8 @@ import { useWaitRoom } from "./useWaitRoom"
  * progress — with the scores as they land — and the control to move the panel
  * on, which stays disabled until everyone is in.
  *
- * The web's Wine Jumper mini-game is not here; everything else is.
+ * Both views carry the Wine Jumper mini-game when the commission enables it,
+ * as the web does.
  */
 export function WaitScreen({ commissionId, replicaId }: { commissionId: string; replicaId: string }) {
     const { t } = useTranslation()
@@ -144,6 +146,8 @@ function HeadDashboard({
                     />
                 ))}
             </View>
+
+            {room.flags.wineJumperMiniGameEnabled ? <GameCard /> : null}
         </ScrollView>
     )
 }
@@ -300,7 +304,8 @@ function ExpertView({ room, isLoading }: { room: WaitRoomState; isLoading: boole
 
             {showsEvaluation ? (
                 <View style={styles.card}>
-                    <Text style={styles.kicker}>{t("evaluation.submittedScores")}</Text>
+                    {/* No kicker here: MemberEvaluation labels each group of
+                        scores itself, and a second heading just repeated it. */}
                     <MemberEvaluation
                         evaluation={myEvaluation}
                         propertyMap={room.propertyMap}
@@ -311,6 +316,8 @@ function ExpertView({ room, isLoading }: { room: WaitRoomState; isLoading: boole
                 </View>
             ) : null}
 
+            {room.flags.wineJumperMiniGameEnabled ? <GameCard /> : null}
+
             <View style={styles.waitingLine}>
                 <ActivityIndicator size="small" color={palette.accent} />
                 <Text style={styles.waitingLabel}>
@@ -318,6 +325,17 @@ function ExpertView({ room, isLoading }: { room: WaitRoomState; isLoading: boole
                 </Text>
             </View>
         </ScrollView>
+    )
+}
+
+/** The game in a card, titled as the web titles it. */
+function GameCard() {
+    const { t } = useTranslation()
+    return (
+        <View style={styles.card}>
+            <Text style={[styles.kicker, styles.kickerCentred]}>{t("commission.boredPlay")}</Text>
+            <WineJumper />
+        </View>
     )
 }
 
@@ -341,6 +359,7 @@ const styles = StyleSheet.create({
         textTransform: "uppercase",
         color: palette.textFaint,
     },
+    kickerCentred: { textAlign: "center" },
     candidateLine: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
     candidateLabel: { ...type.body, color: palette.textMuted },
     candidateCode: { ...type.title, fontFamily: MONOSPACE, color: palette.accentText },

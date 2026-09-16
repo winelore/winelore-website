@@ -1,99 +1,72 @@
 "use client"
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PlayCircle } from 'lucide-react';
+import {
+    JUMPER,
+    JUMPER_TICK_MS,
+    beginJump,
+    jumperTick,
+    newJumperGame,
+    type JumperState,
+} from '@winelore/core';
+import { useTranslation } from "@/lib/i18n/context";
 
+/**
+ * Wine Jumper — the mini-game a commission can switch on to fill the wait
+ * between candidates.
+ *
+ * The rules are `@winelore/core`'s `wineJumper`, shared with the app, so the
+ * same play scores the same either way. This holds the field, the keyboard and
+ * the menu; the phone's version holds a tappable field instead.
+ */
 export default function WineJumperGame({ embedded = false }: { embedded?: boolean }) {
+    const { t } = useTranslation();
+    const [game, setGame] = useState<JumperState>(newJumperGame);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isGameOver, setIsGameOver] = useState(false);
-    const [score, setScore] = useState(0);
+    // Read by the loop and the key handler without re-binding either.
+    const playing = useRef(false);
 
-    // Координати
-    const [grapeY, setGrapeY] = useState(0);
-    const [glassX, setGlassX] = useState(100);
-
-    const grapeRef = useRef<HTMLDivElement>(null);
-    const glassRef = useRef<HTMLDivElement>(null);
-
-    // Фізика стрибка
-    const [isJumping, setIsJumping] = useState(false);
-
-    // Ігровий цикл
     useEffect(() => {
-        let gameLoop: NodeJS.Timeout;
-        if (isPlaying && !isGameOver) {
-            gameLoop = setInterval(() => {
-                // Рухаємо келих вліво
-                setGlassX((prev) => {
-                    if (prev <= -10) {
-                        setScore(s => s + 1);
-                        return 100; // Повертаємо келих направо
-                    }
-                    return prev - 2; // Швидкість (збільшуй для складності)
-                });
-            }, 50);
-        }
-        return () => clearInterval(gameLoop);
-    }, [isPlaying, isGameOver]);
+        playing.current = isPlaying;
+    }, [isPlaying]);
 
-    // Гравітація виноградинки
     useEffect(() => {
-        let gravity: NodeJS.Timeout;
-        if (isPlaying && !isGameOver) {
-            gravity = setInterval(() => {
-                setGrapeY((prev) => {
-                    if (prev > 0 && !isJumping) return prev - 5; // Падаємо вниз
-                    return prev;
-                });
-            }, 30);
-        }
-        return () => clearInterval(gravity);
-    }, [isPlaying, isGameOver, isJumping]);
+        if (!isPlaying) return;
+        const timer = setInterval(() => {
+            setGame((previous) => {
+                const next = jumperTick(previous);
+                if (next.isOver && !previous.isOver) {
+                    playing.current = false;
+                    setIsPlaying(false);
+                }
+                return next;
+            });
+        }, JUMPER_TICK_MS);
+        return () => clearInterval(timer);
+    }, [isPlaying]);
 
-    // Перевірка зіткнень (Колізія)
-    useEffect(() => {
-        const checkCollision = setInterval(() => {
-            if (glassX > 10 && glassX < 20 && grapeY < 30) {
-                setIsGameOver(true);
-                setIsPlaying(false);
-            }
-        }, 50);
-        return () => clearInterval(checkCollision);
-    }, [glassX, grapeY]);
+    const jump = useCallback(() => {
+        if (!playing.current) return;
+        setGame(beginJump);
+    }, []);
 
-    const jump = () => {
-        if (!isPlaying || isGameOver || isJumping || grapeY > 0) return;
-        setIsJumping(true);
-        let jumpHeight = 0;
-        const jumpUp = setInterval(() => {
-            if (jumpHeight >= 80) { // Висота стрибка
-                clearInterval(jumpUp);
-                setIsJumping(false);
-            } else {
-                jumpHeight += 10;
-                setGrapeY(jumpHeight);
-            }
-        }, 30);
-    };
+    const startGame = useCallback(() => {
+        setGame(newJumperGame());
+        setIsPlaying(true);
+    }, []);
 
-    // Слухаємо пробіл для стрибка
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === 'Space') {
-                e.preventDefault(); // щоб сторінка не скролилась
-                jump();
-            }
+            if (e.code !== 'Space') return;
+            // Keep the page from scrolling under the player.
+            e.preventDefault();
+            jump();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isPlaying, isGameOver, isJumping, grapeY]);
+    }, [jump]);
 
-    const startGame = () => {
-        setIsPlaying(true);
-        setIsGameOver(false);
-        setScore(0);
-        setGlassX(100);
-        setGrapeY(0);
-    };
+    const showMenu = !isPlaying || game.isOver;
 
     return (
         <div
@@ -104,44 +77,41 @@ export default function WineJumperGame({ embedded = false }: { embedded?: boolea
             }`}
             onClick={jump}
         >
-            {/* Рахунок */}
             <div className="absolute top-4 right-6 font-black text-2xl text-slate-300">
-                Score: {score}
+                {t("commission.wineJumperScore", { score: game.score })}
             </div>
 
-            {/* Меню старту/програшу */}
-            {(!isPlaying || isGameOver) && (
+            {showMenu && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-                    {isGameOver && <div className="text-4xl mb-2">💥 Упс!</div>}
-                    <h3 className="text-xl font-bold text-slate-800 mb-4">
-                        {isGameOver ? `Гра закінчена. Рахунок: ${score}` : "Wine Jumper"}
+                    {game.isOver && <div className="text-4xl mb-2">💥</div>}
+                    <h3 className="text-xl font-bold text-slate-800 mb-4 text-center px-4">
+                        {game.isOver
+                            ? t("commission.wineJumperOver", { score: game.score })
+                            : t("commission.wineJumperTitle")}
                     </h3>
-                    <button onClick={(e) => { e.stopPropagation(); startGame(); }} className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-indigo-700 transition active:scale-95 text-sm whitespace-nowrap">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); startGame(); }}
+                        className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-indigo-700 transition active:scale-95 text-sm whitespace-nowrap"
+                    >
                         <PlayCircle className="w-4 h-4 shrink-0" />
-                        {isGameOver ? "Спробувати ще раз" : "Грати (Тисни Пробіл)"}
+                        {game.isOver ? t("commission.wineJumperRetry") : t("commission.wineJumperPlayHint")}
                     </button>
                 </div>
             )}
 
-            {/* Виноградинка (Гравець) */}
+            {/* The grape: the player. */}
             <div
-                ref={grapeRef}
-                className="absolute left-[15%] text-4xl transition-all duration-75"
-                style={{ bottom: `${grapeY}px` }}
+                className="absolute text-4xl transition-all duration-75"
+                style={{ bottom: `${game.grapeY}px`, left: `${JUMPER.grapeX}%` }}
             >
                 🍇
             </div>
 
-            {/* Келих вина (Перешкода) */}
-            <div
-                ref={glassRef}
-                className="absolute bottom-0 text-4xl"
-                style={{ left: `${glassX}%` }}
-            >
+            {/* The glass: the obstacle. */}
+            <div className="absolute bottom-0 text-4xl" style={{ left: `${game.glassX}%` }}>
                 🍷
             </div>
 
-            {/* Земля */}
             <div className="absolute bottom-0 w-full h-1 bg-indigo-200"></div>
         </div>
     );
