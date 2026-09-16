@@ -285,13 +285,35 @@ check, the trace id in a failure, and creating and saving are
 dialog now call. The web's own policy page saved as the action's default
 actor rather than the signed-in owner; it passes the owner now.
 
+The **waiting room** (`(home)/wait/[commissionId]/[replicaId]`) is the web's
+wait page, both of its views. A judge sees that their scorecard is in, what
+they submitted and how much of the panel is left; the chair sees every
+member's progress with their scores as they land, out-of-delta judges
+flagged, a draft confirmable in place, and the control to move the panel
+on — held until every member is in. The room's state, the chair's advance
+and where a waiting judge belongs are `@winelore/core`
+(`commission/waitRoom.ts` and `evaluation/routing.ts`'s
+`resolveWaitDestination`), which the web's page and actions now call: the
+web built the members list, the progress and the advance sequence inline,
+and mapped the backend's refusal messages twice.
+
+**Scorecard comments** are per-property and general, each with text, a voice
+note, or both, shown only where the commission allows them. Recording is
+`expo-audio` (which the results screens already play notes with), and the
+recording is uploaded on submit rather than while it is made, so a judge
+who re-records or abandons the card costs nothing. What counts as a comment
+and the order they arrive in is core's `evaluation/comments.ts`, which the
+web form now calls too; a failed upload costs the note, never the
+scorecard. The microphone needs a usage string, so `expo-audio`'s config
+plugin is in `app.config.ts` — a build after pulling this needs a
+`prebuild`.
+
 Not yet ported:
 
-- **Comments** on the scorecard — per-property and general, including voice
-  notes. `expo-audio` is installed (results play voice comments with it);
-  recording would replace the web's `MediaRecorder`.
 - **The AI tasting draft**, which posts to a Next API route the native app has
   no equivalent of yet.
+- **The Wine Jumper mini-game**, which a commission can switch on to fill the
+  wait. It is a canvas game on the web with no native counterpart.
 
 The app was first written on Linux, where it could only be typechecked and
 bundled; it has since run on an iPhone 15 Pro on iOS 26.6 and iOS 27. What is
@@ -417,6 +439,13 @@ On iOS 27, built with Xcode 27:
   sample for a batch (its total, used and remaining volume).
 - The template editor on an owner's template, its formula loaded — which
   the web's editor lost before — and on a new one.
+- The scorecard against a live dev candidate (`WINE-3`, ten properties over
+  Color and Aroma), with the per-property comment fields and their record
+  buttons switched on by that commission's own flags — and on sample data,
+  where a computed subtotal correctly has no comment field.
+- A judge's waiting room on a live dev replica between candidates: the
+  candidates-left count from real state, and no redirect, which is
+  `resolveWaitDestination` agreeing with the server.
 - Competition results for a holder, on two dev competitions: the figures,
   tabs and filter; a candidate opened onto its judges, with out-of-delta
   judges flagged; the outcome column; the comments tab; a session's end
@@ -431,23 +460,27 @@ On iOS 27, built with Xcode 27:
 3. Haptics. Every score selection fires `Haptics.selectionAsync()` and submit
    fires a notification tap — check the weight by hand, since getting it wrong
    is worse than having none.
-4. The scorecard against a live candidate. Its queries typecheck against the
-   schema and bundle, but the shape of a live template — especially a
-   SmartProperty formula tree — has not been seen.
-5. Anything on Android.
-6. The beverage page's mutations (rename, origin, producers, submit) from the
+4. Anything on Android.
+5. The beverage page's mutations (rename, origin, producers, submit) from the
    phone, kept off shared dev data; they send the same documents the web's
    actions do.
-7. Voice comments on the results page: no commission on dev has voice
-   comments enabled, so `expo-audio` playback has not been heard.
-8. The commission page's changes from the phone — readiness, the chair's
+6. Voice-comment playback. Dev commissions do have voice comments enabled,
+   but no judge has left a recording on one, so `expo-audio` playback has
+   still not been heard.
+7. The commission page's changes from the phone — readiness, the chair's
    start, settings, replicas, experts, panels, samples, codes, templates —
    kept off shared dev data; they send core's documents and sequences.
-9. Anything that needs typing or tapping on the phone: the tasting
+8. Anything that needs typing or tapping on the phone: the tasting
    summary's download and print sheet; typing in the outcome policy script
    (that no smart quotes creep in) and saving it; the create forms and the
    template editor filled in and saved, a map pin tapped; the files are
    core's sheets, which the tests cover.
+9. **The chair's waiting room**, and voice recording. Reaching either needs
+   the phone's user to be a member of a live replica, which means writing to
+   shared dev data. The judge's view was seen; the chair's members list,
+   advance button and confirm control were not, and no recording has been
+   made or uploaded — including whether the microphone prompt appears and
+   whether an `audio/mp4` PUT to the presigned URL is accepted.
 10. The web results, tasting summary and template pages signed in. The
     results page's server part renders the access-denied and load-error
     states; the rest needs a signed-in browser.

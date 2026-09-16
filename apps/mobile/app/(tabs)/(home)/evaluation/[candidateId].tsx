@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native"
 import { Stack, useLocalSearchParams } from "expo-router"
-import type { EvaluationScoreInput } from "@winelore/core/evaluation"
+import type { EvaluationCommentInput, EvaluationScoreInput } from "@winelore/core/evaluation"
 import { EvaluationScreen } from "../../../../src/evaluation/EvaluationScreen"
 import { buildEvaluationLabels } from "../../../../src/evaluation/labels"
 import { useCandidateEvaluation } from "../../../../src/evaluation/useCandidateEvaluation"
@@ -12,7 +12,7 @@ import { palette } from "../../../../src/theme"
 export default function CandidateEvaluationRoute() {
     const { candidateId } = useLocalSearchParams<{ candidateId: string }>()
     const translation = useTranslation()
-    const { state, submit } = useCandidateEvaluation(candidateId)
+    const { state, submit, uploadVoice } = useCandidateEvaluation(candidateId)
 
     const ready = state.status === "ready" ? state : null
 
@@ -27,8 +27,8 @@ export default function CandidateEvaluationRoute() {
     })
 
     const handleSubmit = useCallback(
-        async (scores: EvaluationScoreInput[]) => {
-            await submit(scores)
+        async (scores: EvaluationScoreInput[], comments: EvaluationCommentInput[]) => {
+            await submit(scores, comments)
             // Tells the sequencer this judge is done before the server agrees,
             // so the next poll routes to the waiting room rather than back here.
             recordSubmission(candidateId)
@@ -61,6 +61,8 @@ export default function CandidateEvaluationRoute() {
                 beverageName={state.beverageName}
                 visibleAttributes={state.visibleAttributes}
                 labels={buildEvaluationLabels(translation)}
+                flags={state.flags}
+                uploadVoice={uploadVoice}
                 onSubmit={handleSubmit}
             />
         </>

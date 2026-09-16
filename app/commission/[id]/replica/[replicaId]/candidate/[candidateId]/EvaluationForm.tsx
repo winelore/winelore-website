@@ -16,9 +16,12 @@ import { Slider } from "@/components/ui/slider"
 import { parseEvaluationNumericInput, roundScoreToTwoDecimals } from '@winelore/core';
 import type { NumericInputErrorReason } from '@winelore/core';
 import {
+    GENERAL_COMMENT_KEY,
+    buildCommentsPayload,
     buildInitialValues,
     buildPropertyByCode,
     buildScoresPayload,
+    cachedComments,
     computeSmartValues,
     countRatedProperties,
     getRatableProperties,
@@ -597,42 +600,22 @@ export default function EvaluationForm({
         try {
             const scores = buildScoresPayload(values, propertyByCode, smartPropertyCodes)
 
-            // Collect per-property comments when enabled
-            let perPropertyComments: Array<{
-                propertyId: string;
-                text?: string;
-                voiceUrl?: string;
-                sortOrder: number
-            }> = []
-            if (propertyCommentsEnabled) {
-                const propKeys = new Set([
-                    ...Object.keys(commentValues).filter(k => commentValues[k].trim().length > 0),
-                    ...(voiceCommentsEnabled
-                        ? Object.keys(voiceBlobs).filter(k => k !== "general")
-                        : []),
-                ])
-
-                let sortIndex = 0
-                perPropertyComments = await Promise.all(
-                    [...propKeys].map(async (propId) => {
-                        const text = commentValues[propId]?.trim() || undefined
-                        const blob = voiceCommentsEnabled ? voiceBlobs[propId] : undefined
-                        const voiceUrl = blob ? await uploadVoice(blob, propId) : undefined
-                        return {propertyId: propId, text, voiceUrl, sortOrder: sortIndex++}
-                    })
-                )
+            // What counts as a comment, and the order they arrive in, is core's
+            // rule — shared with the app, so both submit the same payload.
+            const drafts: Record<string, { text?: string; voice?: Blob }> = {}
+            for (const key of new Set([...Object.keys(commentValues), ...Object.keys(voiceBlobs)])) {
+                drafts[key] = { text: commentValues[key], voice: voiceBlobs[key] }
+            }
+            drafts[GENERAL_COMMENT_KEY] = {
+                text: generalComment,
+                voice: voiceBlobs[GENERAL_COMMENT_KEY],
             }
 
-            const generalBlob = voiceCommentsEnabled ? voiceBlobs["general"] : undefined
-            const generalVoiceUrl = generalBlob ? await uploadVoice(generalBlob, "general") : undefined
-            const hasGeneral = generalComment.trim() || generalVoiceUrl
-            const comments = hasGeneral
-                ? [...perPropertyComments, {
-                    text: generalComment.trim() || undefined,
-                    voiceUrl: generalVoiceUrl,
-                    sortOrder: perPropertyComments.length
-                }]
-                : perPropertyComments
+            const comments = await buildCommentsPayload<Blob>(drafts, {
+                flags: { propertyCommentsEnabled, voiceCommentsEnabled },
+                propertyOrder: categories.flatMap((category) => category.properties.map((property) => property.id)),
+                upload: uploadVoice,
+            })
 
             const result = await submitEvaluationAction(candidateId, scores, comments)
             if (!result.success) {
@@ -677,14 +660,7 @@ export default function EvaluationForm({
                 candidateId,
                 isComplete: true,
                 scores: submitted?.scores ?? scores,
-                comments: comments.map((comment, index) => ({
-                    id: `local-${index}`,
-                    propertyId: "propertyId" in comment && comment.propertyId != null
-                        ? String(comment.propertyId)
-                        : null,
-                    text: comment.text,
-                    voiceUrl: comment.voiceUrl,
-                })),
+                comments: cachedComments(comments),
             })
 
             setSuccess(true)

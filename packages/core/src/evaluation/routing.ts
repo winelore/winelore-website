@@ -120,6 +120,53 @@ export function resolveEvaluationEntry(
     return { kind: "wait" }
 }
 
+export interface WaitRoutingState {
+    replicaStatus: string | null | undefined
+    isPanelFinished: boolean
+    currentCandidateId: string | null | undefined
+    /** Whether this judge has already submitted for `currentCandidateId`. */
+    hasCompletedCurrentCandidate: boolean
+    /**
+     * The candidate this screen has been waiting on, or null on the first poll.
+     *
+     * Kept across polls so the chair advancing is detectable: the id changing
+     * is what sends a waiting judge to the next scorecard.
+     */
+    waitingOnCandidateId: string | null
+    recentSubmission?: { candidateId: string; isComplete?: boolean } | null
+}
+
+/**
+ * Where a judge sitting in the waiting room belongs.
+ *
+ * Unlike an open scorecard there is nothing to stay on, so the question is
+ * only whether the session has moved: ended, finished this panel, or offered a
+ * candidate this judge has not scored. A judge who has scored the current
+ * candidate waits on, however long the rest of the panel takes.
+ */
+export function resolveWaitDestination(state: WaitRoutingState): EvaluationDestination {
+    if (state.replicaStatus === "COMPLETED") return { kind: "results" }
+    if (state.isPanelFinished) return { kind: "panelSummary" }
+
+    const { currentCandidateId } = state
+    if (!currentCandidateId) return { kind: "wait" }
+
+    const submittedCurrent =
+        state.hasCompletedCurrentCandidate ||
+        (state.recentSubmission?.candidateId === currentCandidateId &&
+            state.recentSubmission?.isComplete !== false)
+
+    if (!submittedCurrent) return { kind: "candidate", candidateId: currentCandidateId }
+
+    // Scored it already — but if the chair has moved on since, the new
+    // candidate is someone else's to offer and this judge follows.
+    if (state.waitingOnCandidateId && state.waitingOnCandidateId !== currentCandidateId) {
+        return { kind: "candidate", candidateId: currentCandidateId }
+    }
+
+    return { kind: "wait" }
+}
+
 export type PanelSummaryDestination =
     /** Stay on the summary. */
     | { kind: "stay"; panelId: string }

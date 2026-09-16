@@ -73,6 +73,7 @@ const GLYPHS = {
     hash: { ios: "number", android: "tag" }, // Hash
     star: { ios: "star", android: "star" }, // Star
     more: { ios: "ellipsis.circle", android: "more_horiz" }, // MoreHorizontal
+    microphone: { ios: "mic", android: "mic" }, // Mic
     starFill: { ios: "star.fill", android: "star" },
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle

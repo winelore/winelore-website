@@ -3,15 +3,30 @@ import {
     isAlreadySubmittedError,
     selectEvaluationCategories,
     selectVisibleAttributes,
+    voiceUploadFileName,
     type EvaluationCategory,
+    type EvaluationCommentInput,
     type EvaluationScoreInput,
     type VisibleAttribute,
 } from "@winelore/core/evaluation"
 import {
     GET_COMMISSION_TEMPLATES_DEEP_QUERY,
+    type CompetitionFeatureFlags,
     type GetCommissionTemplatesDeepResult,
 } from "@winelore/core"
-import { fetchGraphQLRaw, sdk } from "../api/client"
+import { getCompetitionFeatureFlags } from "@winelore/core/commission"
+import { File } from "expo-file-system"
+import { fetchGraphQLRaw, mutateGraphQLRaw, sdk } from "../api/client"
+import type { VoiceRecording } from "./useVoiceRecorder"
+
+const PRESIGN_AUDIO_UPLOAD = `
+    mutation GetAudioUploadUrl($fileName: String!, $contentType: String!) {
+        getPresignedAudioUploadUrl(fileName: $fileName, contentType: $contentType) {
+            uploadUrl
+            fileUrl
+        }
+    }
+`
 
 export type CandidateEvaluationState =
     | { status: "loading" }
@@ -24,6 +39,7 @@ export type CandidateEvaluationState =
           beverageName: string | null
           categories: EvaluationCategory[]
           visibleAttributes: VisibleAttribute[]
+          flags: CompetitionFeatureFlags
       }
 
 /**
@@ -84,6 +100,7 @@ export function useCandidateEvaluation(candidateId: string) {
                         ...selectVisibleAttributes(batch?.attributes, visible?.batch),
                         ...selectVisibleAttributes(sample?.attributes, visible?.sample),
                     ],
+                    flags: getCompetitionFeatureFlags(commission),
                 })
             } catch (err) {
                 if (!active) return
@@ -108,10 +125,45 @@ export function useCandidateEvaluation(candidateId: string) {
      * returns, exactly as the web form does. Anything else propagates for the
      * screen to show.
      */
-    const submit = useCallback(
-        async (scores: EvaluationScoreInput[]) => {
+    /**
+     * Put a recording where the backend can serve it: ask for a presigned URL,
+     * then PUT the file itself. The same two steps the web form takes.
+     *
+     * Undefined on any failure, so a submit carries the text and loses only
+     * the note — losing the whole scorecard to a flaky upload would be worse.
+     */
+    const uploadVoice = useCallback(
+        async (recording: VoiceRecording, key: string): Promise<string | undefined> => {
             try {
-                const result = await sdk.SubmitEvaluation({ input: { candidateId, scores } })
+                const presigned = await mutateGraphQLRaw<{
+                    getPresignedAudioUploadUrl: { uploadUrl: string; fileUrl: string } | null
+                }>(PRESIGN_AUDIO_UPLOAD, {
+                    fileName: voiceUploadFileName(key, recording.contentType),
+                    contentType: recording.contentType,
+                })
+                const target = presigned?.getPresignedAudioUploadUrl
+                if (!target) return undefined
+
+                // A voice comment is seconds of AAC, so reading it whole is
+                // cheap and keeps the PUT a plain one — S3 presigned URLs sign
+                // the method and headers, not a multipart body.
+                const response = await fetch(target.uploadUrl, {
+                    method: "PUT",
+                    headers: { "Content-Type": recording.contentType },
+                    body: await new File(recording.uri).arrayBuffer(),
+                })
+                return response.ok ? target.fileUrl : undefined
+            } catch {
+                return undefined
+            }
+        },
+        [],
+    )
+
+    const submit = useCallback(
+        async (scores: EvaluationScoreInput[], comments: EvaluationCommentInput[] = []) => {
+            try {
+                const result = await sdk.SubmitEvaluation({ input: { candidateId, scores, comments } })
                 const evaluation = result?.submitEvaluation
                 if (evaluation?.id && (evaluation.status !== "CONFIRMED" || !evaluation.isComplete)) {
                     await sdk.ConfirmEvaluation({ id: evaluation.id })
@@ -125,5 +177,5 @@ export function useCandidateEvaluation(candidateId: string) {
         [candidateId],
     )
 
-    return { state, submit }
+    return { state, submit, uploadVoice }
 }

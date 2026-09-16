@@ -48,12 +48,17 @@ const settingMutation = (key: CommissionSetting) =>
 import { buildPropertyMapFromCommissionTemplates } from '@winelore/core';
 import type { PropertyMeta } from '@winelore/core';
 import {
+    AdvancePanelError,
+    advancePanel,
     emptyTastingSummary,
+    emptyWaitRoom,
     loadMyTastingSummary,
+    loadWaitRoom,
     replicaCandidatesInTastingOrder,
     type MyTastingSummaryData,
     type SummaryCommission,
     type TastingSummarySource,
+    type WaitRoomCommission,
 } from '@winelore/core/commission';
 
 export type { MyTastingSummaryData } from '@winelore/core/commission';
@@ -484,166 +489,69 @@ async function getActorHeaders(): Promise<Record<string, string>> {
 }
 
 
-function getCompetitionFeatureFlags(competition: {
-    wineJumperMiniGameEnabled?: boolean;
-    voiceCommentsEnabled?: boolean;
-    propertyCommentsEnabled?: boolean;
-} | null | undefined) {
-    return {
-        wineJumperMiniGameEnabled: competition?.wineJumperMiniGameEnabled ?? false,
-        voiceCommentsEnabled: competition?.voiceCommentsEnabled ?? false,
-        propertyCommentsEnabled: competition?.propertyCommentsEnabled ?? false,
-    };
-}
-
 export async function getWaitDataAction(commissionId: string, replicaId: string) {
-    const emptyFeatureFlags = getCompetitionFeatureFlags(null);
+    const empty = emptyWaitRoom();
     const emptyResult = {
-        members: [] as any[],
-        currentCandidateId: null as string | null,
-        currentCandidateCode: null as string | null,
-        currentCandidateBeverageName: null as string | null,
-        allCandidatesEvaluated: false,
-        evaluations: [] as any[],
-        propertyMap: {} as Record<string, PropertyMeta>,
-        totalCandidates: 0,
-        currentCandidateIndex: -1,
-        candidatesLeft: 0,
-        candidatesLeftAfterCurrent: 0,
-        myEvaluation: null as any,
-        hasCompletedCurrentCandidate: false,
+        ...empty,
+        ...empty.flags,
         myTastingSummary: null as MyTastingSummaryData | null,
-        replicaStatus: null as string | null,
-        isPanelFinished: false,
-        currentPanelName: "",
-        currentPanelId: null as string | null,
-        currentReplicaPanelId: null as string | null,
         nextPanelId: null as string | null,
         nextPanelFirstCandidateId: null as string | null,
-        ...emptyFeatureFlags,
     };
 
     if (!isValidUuid(commissionId) || !isValidUuid(replicaId)) {
         return emptyResult;
     }
     try {
+        const cookieStore = await cookies();
+        const actorAuid = cookieStore.get("auid")?.value ?? null;
+
+        // The room itself is core's, so the chair's dashboard and the app's
+        // show the same progress from the same server state.
         const result = await sdk.GetCommission({ id: commissionId });
         const commission = result.commission;
         if (!commission) return emptyResult;
 
-        const featureFlags = getCompetitionFeatureFlags(commission);
+        const room = await loadWaitRoom(
+            {
+                commission: async () => commission as WaitRoomCommission,
+                templates: (id) => getCommissionTemplatesWithResultMarkers(id),
+                evaluations: (candidateId) => getEvaluationsForCandidateAction(candidateId),
+                myEvaluation: (candidateId) => getMyEvaluationForCandidateAction(candidateId),
+            },
+            commissionId,
+            replicaId,
+            actorAuid,
+        );
 
-        // Find the specific replica
+        // Which panel runs next is the panel summary's question, not the room's.
         const replica = (commission.replicas || []).find((r: any) => r.id === replicaId);
-        if (!replica) return emptyResult;
-
-        // Members of this replica only
-        const members = (replica.members || []).map((m: any) => ({
-            ...m,
-            auid: Array.isArray(m.auid) ? m.auid.flat() : m.auid,
-        }));
-
-        const replicaPanels = replica.replicaPanels || [];
-        const currentPanel = replicaPanels.find((panel: any) => panel.id === replica.currentPanelId) || null;
-        const replicaCandidates = replicaPanels.flatMap((panel: any) => panel.replicaCandidates || []);
-        const currentCandidateId = currentPanel?.currentCandidateId || null;
-        const currentCandidateObj = (currentPanel?.replicaCandidates || []).find((rc: any) => rc.id === currentCandidateId);
-        const currentPanelName = currentPanel?.panel?.name || "Panel";
-        const currentPanelCandidates = currentPanel?.replicaCandidates || [];
-
-        const totalCandidates = currentPanelCandidates.length;
-        const evaluatedCount = currentPanelCandidates.filter((rc: any) => isReplicaCandidateFinished(rc.status)).length;
-        const currentCandidateIndex = currentCandidateId
-            ? currentPanelCandidates.findIndex((rc: any) => rc.id === currentCandidateId)
+        const replicaPanels = replica?.replicaPanels || [];
+        const currentPanelIndex = room.currentReplicaPanelId
+            ? replicaPanels.findIndex((panel: any) => panel.id === room.currentReplicaPanelId)
             : -1;
-
-        const rawCandidateCode = currentCandidateObj?.candidate?.anonymizedCode;
-        const currentCandidateCode = (rawCandidateCode && rawCandidateCode.trim())
-            ? rawCandidateCode.trim()
-            : (currentCandidateIndex >= 0 ? `#${currentCandidateIndex + 1}` : (currentCandidateId ? `#${currentCandidateId.slice(0, 8)}` : null));
-        const currentCandidateBeverageName = (currentCandidateObj?.candidate as any)?.sample?.batch?.beverage?.name || null;
-
-        const candidatesLeft = totalCandidates - evaluatedCount;
-        const candidatesLeftAfterCurrent = currentCandidateIndex >= 0
-            ? totalCandidates - currentCandidateIndex - 1
-            : candidatesLeft;
-
-        const isPanelFinished = currentPanel?.status === "COMPLETED";
-
-        const allCandidatesEvaluated = replicaPanels.length > 0
-            && replicaPanels.every((panel: any) => panel.status === "COMPLETED");
-
-        const currentPanelIndex = currentPanel ? replicaPanels.findIndex((panel: any) => panel.id === currentPanel.id) : -1;
-        const nextPanel = replicaPanels.slice(currentPanelIndex + 1).find((panel: any) => panel.status === "NOT_STARTED") || null;
-
-        let evaluations: any[] = [];
-        const propertyMap: Record<string, PropertyMeta> = {};
-        let myCurrentCandidateEvaluation: any = null;
-
-        if (currentCandidateId) {
-            try {
-                // Fetch evaluations, template details, and my current evaluation in parallel
-                const [evalsRes, templateResult, myCurrentEvalRes] = await Promise.all([
-                    getEvaluationsForCandidateAction(currentCandidateId),
-                    getCommissionTemplatesWithResultMarkers(commissionId),
-                    getMyEvaluationForCandidateAction(currentCandidateId),
-                ]);
-
-                evaluations = evalsRes || [];
-                myCurrentCandidateEvaluation = myCurrentEvalRes;
-
-                Object.assign(propertyMap, buildPropertyMapFromCommissionTemplates(templateResult));
-            } catch (err: any) {
-                console.error("Failed to fetch evaluations or template details for wait page:", err);
-            }
-        }
-
-        const cookieStore = await cookies();
-        const actorAuid = cookieStore.get("auid")?.value;
-        const myMember = actorAuid ? members.find((m: any) => memberMatchesActor(m.auid, actorAuid)) : null;
-
-        let myEvaluation = myCurrentCandidateEvaluation;
-        if (!myEvaluation && myMember) {
-            myEvaluation = findEvaluationForMember(evaluations, myMember.auid);
-        }
-        if (!myEvaluation && actorAuid) {
-            myEvaluation = findEvaluationForMember(evaluations, actorAuid);
-        }
-        const hasCompletedCurrentCandidate = myEvaluation?.isComplete === true;
+        const nextPanel = replicaPanels
+            .slice(currentPanelIndex + 1)
+            .find((panel: any) => panel.status === "NOT_STARTED") || null;
 
         let myTastingSummary: MyTastingSummaryData | null = null;
-        if (replica.status === "COMPLETED") {
+        if (room.replicaStatus === "COMPLETED") {
             try {
                 myTastingSummary = await fetchMyTastingSummary(replicaId, commission);
             } catch (err: any) {
                 console.error("Failed to fetch expert tasting summary:", err);
-                myTastingSummary = emptyTastingSummary(featureFlags, commission.name || undefined);
+                myTastingSummary = emptyTastingSummary(room.flags, commission.name || undefined);
             }
         }
 
         return {
-            members,
-            currentCandidateId,
-            currentCandidateCode,
-            currentCandidateBeverageName,
-            allCandidatesEvaluated,
-            evaluations,
-            propertyMap: myTastingSummary?.propertyMap ?? propertyMap,
-            totalCandidates,
-            currentCandidateIndex,
-            candidatesLeft,
-            candidatesLeftAfterCurrent,
-            myEvaluation: myEvaluation ?? null,
-            hasCompletedCurrentCandidate,
+            ...room,
+            // The wait page and the panel summary read these flat.
+            ...room.flags,
+            propertyMap: myTastingSummary?.propertyMap ?? room.propertyMap,
             myTastingSummary,
-            replicaStatus: replica.status || null,
-            isPanelFinished,
-            currentPanelName,
-            currentPanelId: currentPanel?.panel?.id || null,
-            currentReplicaPanelId: currentPanel?.id || null,
-            nextPanelId: nextPanel?.id || null,
+            nextPanelId: nextPanel?.panel?.id || null,
             nextPanelFirstCandidateId: nextPanel?.replicaCandidates?.[0]?.id || null,
-            ...featureFlags,
         };
     } catch (err: any) {
         console.error("Server Action Error (getWaitDataAction):", err);
@@ -697,52 +605,40 @@ export async function markCandidateEvaluatedAction(replicaId: string, candidateI
         // so the actor headers must be forwarded just like for the other mutations.
         const headers = await getActorHeaders();
 
-        // 1. Mark the current candidate as evaluated. This only flips the candidate's
-        //    status; it does NOT move the replica's current candidate pointer.
-        const data = await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id: candidateId }, { headers });
-
-        const candidatesResponse = await sdk.GetReplicaCandidates({ replicaId });
-        const currentPanel = candidatesResponse.commissionReplica?.replicaPanels.find((panel: any) =>
-            panel.replicaCandidates.some((candidate: any) => candidate.id === candidateId),
+        // The sequence itself is core's, shared with the app.
+        const { nextCandidateId } = await advancePanel(
+            {
+                markEvaluated: async (id) => {
+                    await sdk.MarkCommissionReplicaCandidateAsEvaluated({ id }, { headers });
+                },
+                panels: async (id) => {
+                    const response = await sdk.GetReplicaCandidates({ replicaId: id });
+                    return response.commissionReplica?.replicaPanels ?? [];
+                },
+                setCurrentCandidate: async (id, panelId, currentCandidateId) => {
+                    await rawGraphQL(
+                        SET_REPLICA_PANEL_CURRENT_CANDIDATE_MUTATION,
+                        { id, panelId, currentCandidateId },
+                        headers,
+                    );
+                },
+                completePanel: async (id, panelId) => {
+                    await rawGraphQL(`
+                        mutation CompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {
+                            completeCommissionReplicaPanel(id: $id, panelId: $panelId) { id currentPanelId }
+                        }
+                    `, { id, panelId }, headers);
+                },
+            },
+            replicaId,
+            candidateId,
         );
-        if (!currentPanel) throw new Error("Replica panel not found for candidate");
-        const currentCandidateIndex = currentPanel.replicaCandidates.findIndex((candidate: any) => candidate.id === candidateId);
-        const nextCandidate = currentPanel.chaoticCurrentCandidateChangesEnabled
-            ? currentPanel.replicaCandidates.find((candidate: any) => candidate.status === "PENDING")
-            : currentPanel.replicaCandidates[currentCandidateIndex + 1];
 
-        const nextCandidateId = nextCandidate?.id ?? null;
-
-        if (nextCandidateId) {
-            // Sequential mode requires an exact N -> N+1 transition. Chaotic mode
-            // may instead select any remaining pending candidate.
-            await rawGraphQL(
-                SET_REPLICA_PANEL_CURRENT_CANDIDATE_MUTATION,
-                { id: replicaId, panelId: currentPanel.id, currentCandidateId: nextCandidateId },
-                headers,
-            );
-        } else {
-            // Do not clear currentCandidateId on the last candidate: in sequential
-            // mode null maps to index -1 and is rejected. Completing the panel keeps
-            // the last candidate pointer while changing only the panel lifecycle.
-            await rawGraphQL(`
-                mutation CompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {
-                    completeCommissionReplicaPanel(id: $id, panelId: $panelId) { id currentPanelId }
-                }
-            `, { id: replicaId, panelId: currentPanel.id }, headers);
-        }
-
-        return { ...data.markCommissionReplicaCandidateAsEvaluated, nextCandidateId };
+        return { nextCandidateId };
     } catch (err: any) {
         console.error("Server Action Error (markCandidateEvaluatedAction):", err);
-        const msg = String(err?.message || err);
-        if (msg.includes("replica members") || msg.includes("confirmed evaluations") || msg.includes("PARTIAL_EVALUATION")) {
-            throw new Error("PARTIAL_EVALUATION_REQUIRED");
-        }
-        if (msg.includes("CandidateNotNextInSequence") || msg.includes("not next in sequence") || msg.includes("transition strictly to the next candidate")) {
-            throw new Error("SEQUENTIAL_ORDER_VIOLATION");
-        }
-        throw new Error(err.message || "Failed to mark candidate as evaluated");
+        // Server actions only carry a message across, so the key travels as one.
+        throw new Error(err instanceof AdvancePanelError ? err.key : err?.message || "Failed to mark candidate as evaluated");
     }
 }
 

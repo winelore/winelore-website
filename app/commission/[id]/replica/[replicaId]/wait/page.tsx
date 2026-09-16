@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, use, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
 import { Users, Wine, Loader2, ArrowRight, AlertTriangle } from "lucide-react"
@@ -15,8 +14,9 @@ import {
     markCandidateEvaluatedAction,
     confirmEvaluationAction,
 } from "../../../../actions"
-import { findEvaluationForMember, normalizeAuids, annotateEvaluationsWithDelta, formatSignedDiff } from '@winelore/core';
-import type { PropertyMeta } from '@winelore/core';
+import { formatSignedDiff } from '@winelore/core';
+import { advancePanelErrorKey, emptyWaitRoom, type WaitRoomProgress, type WaitRoomState } from '@winelore/core/commission';
+import { resolveWaitDestination } from '@winelore/core/evaluation';
 import {
     clearCachedWaitEvaluation,
     readCachedWaitEvaluation,
@@ -32,32 +32,21 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const router = useRouter();
     const { t, tCount } = useTranslation();
     const [auid, setAuid] = useState<number | null>(null);
-    const [role, setRole] = useState<string>("EXPERT");
-    const [members, setMembers] = useState<any[]>([]);
-    const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(null);
-    const [currentCandidateCode, setCurrentCandidateCode] = useState<string | null>(null);
-    const [currentCandidateBeverageName, setCurrentCandidateBeverageName] = useState<string | null>(null);
+    const [room, setRoom] = useState<WaitRoomState>(() => emptyWaitRoom());
     const [isSwitching, setIsSwitching] = useState(false);
-    const [evaluations, setEvaluations] = useState<any[]>([]);
-    const [propertyMap, setPropertyMap] = useState<Record<string, PropertyMeta>>({});
-    const [candidatesLeft, setCandidatesLeft] = useState<number>(0);
-    const [candidatesLeftAfterCurrent, setCandidatesLeftAfterCurrent] = useState<number>(0);
-    const [myEvaluation, setMyEvaluation] = useState<any | null>(null);
-    const [wineJumperMiniGameEnabled, setWineJumperMiniGameEnabled] = useState(false);
-    const [voiceCommentsEnabled, setVoiceCommentsEnabled] = useState(false);
-    const [propertyCommentsEnabled, setPropertyCommentsEnabled] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
-    const [currentPanelName, setCurrentPanelName] = useState<string>("");
+    // The evaluation cached at submit, until the server reports it back.
+    const [cachedEvaluation, setCachedEvaluation] = useState<any | null>(null);
 
-    const currentCandidateIdRef = useRef<string | null>(null);
-    useEffect(() => {
-        currentCandidateIdRef.current = currentCandidateId;
-    }, [currentCandidateId]);
+    // The candidate this screen has been waiting on, so the chair advancing
+    // is detectable across polls.
+    const waitingOnRef = useRef<string | null>(null);
 
     // Fetch usernames for commission members
-    const allMemberAuids = useMemo(() => {
-        return Array.from(new Set(members.flatMap(m => normalizeAuids(m.auid))));
-    }, [members]);
+    const allMemberAuids = useMemo(
+        () => Array.from(new Set(room.members.flatMap((member) => member.auids))),
+        [room.members],
+    );
     const { usernames } = useUsernames(allMemberAuids);
 
     // 1. Read AUID from cookie and restore cached evaluation from submit
@@ -71,11 +60,11 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
 
         const cached = readCachedWaitEvaluation(commissionId, replicaId);
         if (cached) {
-            setMyEvaluation(cached);
+            setCachedEvaluation(cached);
         }
     }, [commissionId, replicaId, router]);
 
-    // 2. Polling loop every 10 ms with in-flight and unmount guards
+    // 2. Polling loop with in-flight and unmount guards
     useEffect(() => {
         if (auid === null || isRedirecting) return;
 
@@ -86,73 +75,51 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             if (!isMounted || isRedirecting || isFetching) return;
             isFetching = true;
             try {
-                const { members: commMembers, currentCandidateId: newCandidateId, currentCandidateCode: newCandidateCode, currentCandidateBeverageName: newCandidateBeverageName, evaluations: newEvaluations, propertyMap: newPropertyMap, candidatesLeft: newCandidatesLeft, candidatesLeftAfterCurrent: newCandidatesLeftAfterCurrent, myEvaluation: newMyEvaluation, hasCompletedCurrentCandidate, wineJumperMiniGameEnabled: newWineJumperEnabled, voiceCommentsEnabled: newVoiceCommentsEnabled, propertyCommentsEnabled: newPropertyCommentsEnabled, isPanelFinished: newIsPanelFinished, currentPanelName: newPanelName, currentPanelId: newPanelId, replicaStatus: newReplicaStatus } =
-                    await getWaitDataAction(commissionId, replicaId);
-
+                const data = await getWaitDataAction(commissionId, replicaId);
                 if (!isMounted || isRedirecting) return;
 
-                if (newReplicaStatus === "COMPLETED") {
-                    setIsRedirecting(true);
-                    window.location.href = `/commission/${commissionId}/results`;
-                    return;
-                }
+                setRoom(data);
 
-                setMembers(commMembers);
-                setEvaluations(newEvaluations || []);
-                setPropertyMap(newPropertyMap || {});
-                setWineJumperMiniGameEnabled(newWineJumperEnabled);
-                setVoiceCommentsEnabled(newVoiceCommentsEnabled);
-                setPropertyCommentsEnabled(newPropertyCommentsEnabled);
-                setCurrentPanelName(newPanelName || "");
-                const commentFlags = {
-                    propertyCommentsEnabled: newPropertyCommentsEnabled,
-                    voiceCommentsEnabled: newVoiceCommentsEnabled,
-                };
-                if (newMyEvaluation && hasEvaluationData(newMyEvaluation, commentFlags)) {
-                    setMyEvaluation(newMyEvaluation);
+                if (data.myEvaluation && hasEvaluationData(data.myEvaluation, data.flags)) {
                     clearCachedWaitEvaluation(commissionId, replicaId);
-                } else if (newMyEvaluation) {
-                    setMyEvaluation(newMyEvaluation);
-                }
-                setCandidatesLeft(newCandidatesLeft ?? 0);
-                setCandidatesLeftAfterCurrent(newCandidatesLeftAfterCurrent ?? 0);
-
-                // Find current user's role
-                const me = commMembers.find((m: any) => auid !== null && (Array.isArray(m.auid) ? m.auid.includes(auid) : m.auid === auid));
-                if (me) setRole(me.role);
-
-                if (newIsPanelFinished && newPanelId) {
-                    setIsRedirecting(true);
-                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
-                    return;
+                    setCachedEvaluation(null);
                 }
 
-                if (!newCandidateId) {
-                    return;
-                }
-
+                // Where a waiting judge belongs is core's rule, shared with the
+                // app, so both are sent to the same place by the same state.
                 const cached = readCachedWaitEvaluation(commissionId, replicaId);
-                const hasFreshSubmitCache =
-                    cached?.candidateId === newCandidateId && cached?.isComplete !== false;
+                const destination = resolveWaitDestination({
+                    replicaStatus: data.replicaStatus,
+                    isPanelFinished: data.isPanelFinished,
+                    currentCandidateId: data.currentCandidateId,
+                    hasCompletedCurrentCandidate: data.hasCompletedCurrentCandidate,
+                    waitingOnCandidateId: waitingOnRef.current,
+                    recentSubmission: cached
+                        ? { candidateId: cached.candidateId, isComplete: cached.isComplete }
+                        : null,
+                });
 
-                if (!hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
-                    setIsRedirecting(true);
-                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
-                    return;
+                const base = `/commission/${commissionId}`;
+                switch (destination.kind) {
+                    case "results":
+                        setIsRedirecting(true);
+                        window.location.href = `${base}/results`;
+                        return;
+                    case "panelSummary":
+                        if (!data.currentPanelId) break;
+                        setIsRedirecting(true);
+                        window.location.href = `${base}/replica/${replicaId}/panel-summary`;
+                        return;
+                    case "candidate":
+                        setIsRedirecting(true);
+                        window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`;
+                        return;
+                    case "wait":
+                        break;
                 }
 
-                // If candidate changed (HEAD advanced) — redirect everyone to evaluation
-                if (currentCandidateIdRef.current && currentCandidateIdRef.current !== newCandidateId) {
-                    setIsRedirecting(true);
-                    window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${newCandidateId}`;
-                    return;
-                }
-
-                setCurrentCandidateId(newCandidateId);
-                setCurrentCandidateCode(newCandidateCode);
-                setCurrentCandidateBeverageName(newCandidateBeverageName || null);
+                waitingOnRef.current = data.currentCandidateId;
                 setIsSwitching(false);
-
             } catch (err) {
                 console.error("Polling error", err);
             } finally {
@@ -168,21 +135,27 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         };
     }, [commissionId, replicaId, auid, isRedirecting]);
 
-    const heads = members.filter(m => m.role === "HEAD");
-    const experts = members.filter(m => m.role === "EXPERT" || m.role === "TRAINEE_EXPERT");
-    const commentFlags = { propertyCommentsEnabled, voiceCommentsEnabled };
-    const evaluationsOutlierMap = useMemo(() => {
-        return annotateEvaluationsWithDelta(evaluations, propertyMap);
-    }, [evaluations, propertyMap]);
-    const canAdvanceToNextBeverage =
-        Boolean(currentCandidateId) &&
-        members.length > 0 &&
-        members.every((member) => findEvaluationForMember(evaluations, member.auid)?.isComplete === true);
-    const isLastBeverageInPanel = Boolean(currentCandidateId) && candidatesLeft === 1;
+    const {
+        progress,
+        propertyMap,
+        flags,
+        currentCandidateId,
+        currentCandidateCode,
+        currentCandidateBeverageName,
+        currentPanelName,
+        candidatesLeft,
+        candidatesLeftAfterCurrent,
+    } = room;
+    const { wineJumperMiniGameEnabled, propertyCommentsEnabled, voiceCommentsEnabled } = flags;
+    const heads = progress.filter((row) => row.member.isHead);
+    const experts = progress.filter((row) => !row.member.isHead);
+    const myEvaluation = room.myEvaluation ?? cachedEvaluation;
+    const nameOf = (row: WaitRoomProgress) =>
+        row.member.auids.map((id) => usernames[id] || id).join(", ");
 
     // HEAD action: advance to next beverage
     const handleNextBeverage = async () => {
-        if (!canAdvanceToNextBeverage || isSwitching || !currentCandidateId) return;
+        if (!room.canAdvance || isSwitching || !currentCandidateId) return;
         setIsSwitching(true);
         try {
             const result = await markCandidateEvaluatedAction(replicaId, currentCandidateId);
@@ -193,14 +166,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             // For a regular beverage transition, polling detects the new candidate.
         } catch (err: any) {
             console.error(err);
-            const msg = err?.message || "";
-            if (msg === "PARTIAL_EVALUATION_REQUIRED") {
-                toast.error(t("commission.partialEvaluationRequiredError"));
-            } else if (msg === "SEQUENTIAL_ORDER_VIOLATION") {
-                toast.error(t("commission.sequentialOrderError"));
-            } else {
-                toast.error(t("commission.markEvaluatedErrorGeneric"));
-            }
+            toast.error(t(advancePanelErrorKey(err?.message || "")));
             setIsSwitching(false);
         }
     };
@@ -210,14 +176,20 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             const res = await confirmEvaluationAction(evaluationId);
             if (res.success) {
                 toast.success(t("evaluation.confirmSuccess"));
-                setEvaluations((prev) =>
-                    prev.map((ev) =>
-                        ev.id === evaluationId ? { ...ev, status: "CONFIRMED", isComplete: true } : ev
-                    )
-                );
-                setMyEvaluation((prev: any) =>
-                    prev?.id === evaluationId ? { ...prev, status: "CONFIRMED", isComplete: true } : prev
-                );
+                // The next poll brings the confirmed evaluation back; nudging
+                // it now only keeps the button from re-appearing in between.
+                setRoom((prev) => ({
+                    ...prev,
+                    progress: prev.progress.map((row) =>
+                        row.evaluation?.id === evaluationId
+                            ? { ...row, isCompleted: true, evaluation: { ...row.evaluation, status: "CONFIRMED", isComplete: true } }
+                            : row,
+                    ),
+                    myEvaluation:
+                        prev.myEvaluation?.id === evaluationId
+                            ? { ...prev.myEvaluation, status: "CONFIRMED", isComplete: true }
+                            : prev.myEvaluation,
+                }));
             } else {
                 toast.error(res.error || t("evaluation.submitError"));
             }
@@ -225,6 +197,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             toast.error(err?.message || t("evaluation.submitError"));
         }
     };
+
+    const role = room.myRole;
 
     if (role === "HEAD") {
         return (
@@ -272,14 +246,14 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </div>
                         <button
                             onClick={handleNextBeverage}
-                            disabled={!canAdvanceToNextBeverage || isSwitching}
+                            disabled={!room.canAdvance || isSwitching}
                             className="px-8 py-3.5 rounded-xl font-bold text-white transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
                         >
                             {isSwitching ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    {isLastBeverageInPanel
+                                    {room.isLastCandidateInPanel
                                         ? t("commission.finishPanel")
                                         : t("commission.nextBeverage")}
                                     <ArrowRight className="w-5 h-5" />
@@ -293,21 +267,18 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         <div className={`${wineJumperMiniGameEnabled ? "xl:col-span-2" : "w-full"} bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100`}>
                             <h2 className="text-lg font-bold flex items-center gap-2 mb-6 text-slate-800">
                                 <Users className="text-indigo-500 w-5 h-5" />
-                                {tCount("commission.commissionMembers", members.length)}
+                                {tCount("commission.commissionMembers", room.members.length)}
                             </h2>
                             <div className="space-y-3">
-                                {members.length === 0 && (
+                                {room.members.length === 0 && (
                                     <p className="text-slate-400 text-sm">{t("commission.loadingMembers")}</p>
                                 )}
                                 
                                 {/* 1. Render Heads */}
-                                {heads.map((headMember, i) => {
-                                    const headAuidsStr = normalizeAuids(headMember.auid).map(id => usernames[id] || id).join(", ");
-                                    const headKeyAuid = normalizeAuids(headMember.auid)[0] ?? i;
-
-                                    const evaluation = findEvaluationForMember(evaluations, headMember.auid);
-
-                                    const isCompleted = evaluation?.isComplete || false;
+                                {heads.map((row, i) => {
+                                    const headAuidsStr = nameOf(row);
+                                    const headKeyAuid = row.member.auids[0] ?? i;
+                                    const { evaluation, isCompleted } = row;
 
                                     return (
                                         <div key={`${currentCandidateId}-head-${headKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 space-y-3">
@@ -346,14 +317,10 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                 })}
 
                                 {/* 2. Render Experts */}
-                                {experts.map((expert, i) => {
-                                    const expertAuidsStr = normalizeAuids(expert.auid).map(id => usernames[id] || id).join(", ");
-                                    const expertKeyAuid = normalizeAuids(expert.auid)[0] ?? i;
-
-                                    const evaluation = findEvaluationForMember(evaluations, expert.auid);
-
-                                    const isCompleted = evaluation?.isComplete || false;
-                                    const outlierInfo = evaluation ? evaluationsOutlierMap.get(evaluation) : null;
+                                {experts.map((row, i) => {
+                                    const expertAuidsStr = nameOf(row);
+                                    const expertKeyAuid = row.member.auids[0] ?? i;
+                                    const { evaluation, isCompleted, outlier: outlierInfo } = row;
                                     const isOutlier = Boolean(outlierInfo?.isOutlier);
 
                                     return (
@@ -368,13 +335,13 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="font-semibold text-slate-700">
-                                                        {expertAuidsStr} {expert.role === "TRAINEE_EXPERT" ? `(${t("commission.roleTrainee")})` : ""}
+                                                        {expertAuidsStr} {row.member.isTrainee ? `(${t("commission.roleTrainee")})` : ""}
                                                     </span>
                                                     {isOutlier && (
                                                         <span
                                                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
                                                             title={t("commission.results.outOfDeltaTooltip", {
-                                                                score: evaluation?.scores?.find((s: any) => propertyMap[s.code]?.isResult)?.value ?? "-",
+                                                                score: evaluation?.scores?.find((s) => propertyMap[s.code]?.isResult)?.value ?? "-",
                                                                 diff: formatSignedDiff(outlierInfo?.signedDiff),
                                                                 avg: outlierInfo?.preAvg != null ? outlierInfo.preAvg.toFixed(1) : "-",
                                                                 threshold: 5,
@@ -399,7 +366,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                                 )}
                                             </div>
                                             
-                                            {evaluation && hasEvaluationData(evaluation, commentFlags) && (
+                                            {evaluation && hasEvaluationData(evaluation, flags) && (
                                                 <MemberEvaluationSection
                                                     evaluation={evaluation}
                                                     propertyMap={propertyMap}
@@ -460,9 +427,9 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     )}
                 </div>
 
-                {(myEvaluation && hasEvaluationData(myEvaluation, commentFlags)) || wineJumperMiniGameEnabled ? (
+                {(myEvaluation && hasEvaluationData(myEvaluation, flags)) || wineJumperMiniGameEnabled ? (
                 <div className="w-full max-w-2xl mb-8 bg-white rounded-[2rem] shadow-sm sm:shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-left">
-                    {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && (
+                    {myEvaluation && hasEvaluationData(myEvaluation, flags) && (
                         <div className="p-5">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
                                 {t("evaluation.submittedScores")}
@@ -478,7 +445,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                         </div>
                     )}
 
-                    {myEvaluation && hasEvaluationData(myEvaluation, commentFlags) && wineJumperMiniGameEnabled && (
+                    {myEvaluation && hasEvaluationData(myEvaluation, flags) && wineJumperMiniGameEnabled && (
                         <div className="border-t border-slate-100" />
                     )}
 

@@ -280,8 +280,10 @@ export function MemberEvaluationSection({
     onConfirmEvaluation,
 }: {
     evaluation: {
-        id?: string;
-        status?: string;
+        // Core's normalized evaluation uses null for "not set"; the raw server
+        // shapes this is also given use undefined.
+        id?: string | null;
+        status?: string | null;
         scores?: Array<{ code: string; value: string }>;
         comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }>;
     };

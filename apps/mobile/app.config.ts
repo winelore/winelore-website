@@ -72,7 +72,21 @@ const config: ExpoConfig = {
     },
     // withSceneLifecycle: iOS 27 will not launch an app without UIScene
     // support, which SDK 57's template lacks. Drop it on moving to SDK 58.
-    plugins: ["expo-router", "expo-secure-store", "expo-web-browser", "./plugins/withSceneLifecycle"],
+    plugins: [
+        "expo-router",
+        "expo-secure-store",
+        "expo-web-browser",
+        // Voice comments on the scorecard need the microphone, and iOS kills an
+        // app that asks for it without a usage string.
+        [
+            "expo-audio",
+            {
+                microphonePermission:
+                    "Winelore uses the microphone to record voice comments on a tasting scorecard.",
+            },
+        ],
+        "./plugins/withSceneLifecycle",
+    ],
     // experiments.typedRoutes is deliberately off. Turning it on makes the CLI
     // load @expo/router-server, which resolves expo-router from its own nested
     // location under node_modules/expo/ and cannot see a workspace-nested copy,

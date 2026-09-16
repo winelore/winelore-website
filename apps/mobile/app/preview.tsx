@@ -28,11 +28,15 @@ export default function PreviewRoute() {
                 beverageName="Riesling Reserve"
                 visibleAttributes={sampleAttributes}
                 labels={buildEvaluationLabels(translation)}
-                onSubmit={async (scores) => {
+                // Both on, so the comment fields and the recorder are here to
+                // be tried on a device — which is what this screen is for.
+                flags={{ propertyCommentsEnabled: true, voiceCommentsEnabled: true }}
+                uploadVoice={async (recording) => recording.uri}
+                onSubmit={async (scores, comments) => {
                     // No backend in preview: pause so the submitting state and
                     // the success haptic are both observable.
                     await new Promise((resolve) => setTimeout(resolve, 600))
-                    console.log("[preview] scores", scores)
+                    console.log("[preview] scores", scores, "comments", comments)
                 }}
             />
         </>

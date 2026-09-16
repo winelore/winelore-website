@@ -32,12 +32,15 @@ export function useEvaluationForm(categories: EvaluationCategory[], candidateId:
     const [numericErrors, setNumericErrors] = useState<
         Record<string, NumericInputErrorReason | null>
     >({})
+    const [comments, setComments] = useState<Record<string, string>>({})
 
-    // A new candidate is a fresh scorecard; never carry one judge's scores over.
+    // A new candidate is a fresh scorecard; never carry one judge's scores or
+    // comments over.
     useEffect(() => {
         setValues(buildInitialValues(categories))
         setNumericDrafts({})
         setNumericErrors({})
+        setComments({})
     }, [candidateId, categories])
 
     const setValue = useCallback((code: string, value: unknown) => {
@@ -110,9 +113,27 @@ export function useEvaluationForm(categories: EvaluationCategory[], candidateId:
         [values, propertyByCode, smartPropertyCodes],
     )
 
+    /**
+     * Comment text, keyed by property id and by GENERAL_COMMENT_KEY — the same
+     * keying the web form uses, so both build the same payload from core's
+     * `buildCommentsPayload`. Recordings are keyed alongside, in the recorder.
+     */
+    const setComment = useCallback((key: string, text: string) => {
+        setComments((previous) => ({ ...previous, [key]: text }))
+    }, [])
+
+    /** Property ids in the order they appear, so comments arrive in that order. */
+    const propertyOrder = useMemo(
+        () => categories.flatMap((category) => category.properties.map((property) => property.id)),
+        [categories],
+    )
+
     return {
         values,
         setValue,
+        comments,
+        setComment,
+        propertyOrder,
         numericDrafts,
         numericErrors,
         setNumericDraft,

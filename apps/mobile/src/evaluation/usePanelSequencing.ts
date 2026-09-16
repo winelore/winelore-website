@@ -17,14 +17,19 @@ const POLL_INTERVAL_MS = 3000
  * deliberately not persisted: it exists only to cover the seconds between a
  * successful submit and the server reflecting it.
  */
-let recentSubmission: { candidateId: string; isComplete?: boolean } | null = null
+let lastSubmission: { candidateId: string; isComplete?: boolean } | null = null
 
 export function recordSubmission(candidateId: string) {
-    recentSubmission = { candidateId, isComplete: true }
+    lastSubmission = { candidateId, isComplete: true }
 }
 
 export function clearRecordedSubmission() {
-    recentSubmission = null
+    lastSubmission = null
+}
+
+/** The waiting room reads the same record, for the same few seconds. */
+export function recentSubmission() {
+    return lastSubmission
 }
 
 /**
@@ -106,7 +111,7 @@ export function usePanelSequencing({
                         hasCompletedCurrentCandidate:
                             activeCandidate?.status === "EVALUATED" ||
                             activeCandidate?.status === "DISQUALIFIED",
-                        recentSubmission,
+                        recentSubmission: lastSubmission,
                     }),
                 )
             } catch {
