@@ -7,7 +7,8 @@ import Cookies from "js-cookie"
 import Link from "next/link"
 import TemplateCreatorModal, { getPropertyTypeLabel } from "./TemplateCreatorModal"
 import { useSearchParams } from "next/navigation"
-import { ListPageShell, ListPageHeader, StateCard } from "@/components/list"
+import { ListPageShell, ListPageHeader, StateCard, Pagination } from "@/components/list"
+import { useRouter, usePathname } from "next/navigation"
 
 interface Property {
     id: string
@@ -41,14 +42,26 @@ interface Template {
     latestEdition?: TemplateEdition
 }
 
-export default function MyTemplatesClientView({ initialTemplates, totalCount, hasError = false }: { initialTemplates: Template[], totalCount?: number, hasError?: boolean }) {
+export default function MyTemplatesClientView({ initialTemplates, totalCount, totalPages = 1, currentPage = 1, hasError = false }: { initialTemplates: Template[], totalCount?: number, totalPages?: number, currentPage?: number, hasError?: boolean }) {
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null) // WIN-65: зберігаємо ID шаблону, який редагуємо
     const { t, tCount } = useTranslation()
     const searchParams = useSearchParams()
+    const router = useRouter()
+    const pathname = usePathname()
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
     const [currentAuid, setCurrentAuid] = useState<number>(0)
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        setIsLoading(false)
+    }, [initialTemplates])
+
+    const handleJumpToPage = (pageNumber: number) => {
+        setIsLoading(true)
+        router.push(`${pathname}?page=${pageNumber}`)
+    }
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -97,7 +110,7 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
     const myTemplates = templates
 
     return (
-        <ListPageShell activeTab="none">
+        <ListPageShell activeTab="none" isLoading={isLoading}>
             <ListPageHeader
                 titleIcon={<Layers className="w-8 h-8 text-indigo-600" />}
                 title={t("myTemplates.title")}
@@ -248,6 +261,8 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                     <StateCard variant="empty" icon={Layers} title={t("myTemplates.notFound")} description={t("myTemplates.createFirst")} />
                 )}
             </div>
+
+            <Pagination currentPage={currentPage} totalPages={totalPages} isLoading={isLoading} onPageChange={handleJumpToPage} />
 
             {isModalOpen && (
                 <TemplateCreatorModal
