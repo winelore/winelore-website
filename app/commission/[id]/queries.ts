@@ -1,4 +1,4 @@
-import { gql } from '@/src/gql';
+import { gql } from '@winelore/core/gql';
 
 export const GET_COMMISSION = gql(`
   query GetCommission($id: ID!) {

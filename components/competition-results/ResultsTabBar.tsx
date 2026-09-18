@@ -1,8 +1,9 @@
 "use client"
 
 import { useTranslation } from "@/lib/i18n/context"
+import type { ResultsTab } from "@winelore/core/results"
 
-export type ResultsTab = "overview" | "commissions" | "expertScores" | "comments" | "awards"
+export type { ResultsTab } from "@winelore/core/results"
 
 interface ResultsTabBarProps {
     activeTab: ResultsTab

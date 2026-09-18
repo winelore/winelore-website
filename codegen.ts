@@ -28,18 +28,18 @@ const schemaUrl = process.env.CODEGEN_GRAPHQL_SCHEMA || process.env.GRAPHQL_ENDP
 
 const config: CodegenConfig = {
     generates: {
-        './src/gql/': {
+        './packages/core/src/gql/': {
             schema: schemaUrl,
-            documents: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}', '!src/gql/**/*.{ts,tsx}'],
+            documents: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}', 'packages/core/src/**/*.{ts,tsx}', '!packages/core/src/gql/**/*.{ts,tsx}'],
             preset: 'client',
             plugins: [],
             presetConfig: {
                 gqlTagName: 'gql',
             }
         },
-        './src/gql/sdk.ts': {
+        './packages/core/src/gql/sdk.ts': {
             schema: schemaUrl,
-            documents: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}', '!src/gql/**/*.{ts,tsx}'],
+            documents: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}', 'packages/core/src/**/*.{ts,tsx}', '!packages/core/src/gql/**/*.{ts,tsx}'],
             preset: 'import-types',
             presetConfig: {
                 typesPath: './graphql',
@@ -49,9 +49,9 @@ const config: CodegenConfig = {
                 'typescript-generic-sdk'
             ]
         },
-        ...(!process.env.CODEGEN_SKIP_AXUS ? { './src/gql/axus/sdk.ts': {
+        ...(!process.env.CODEGEN_SKIP_AXUS ? { './packages/core/src/gql/axus/sdk.ts': {
             schema: process.env.NEXT_PUBLIC_AXUS_GRAPHQL_ENDPOINT,
-            documents: ['src/gql/axus/operations.graphql'],
+            documents: ['packages/core/src/gql/axus/operations.graphql'],
             plugins: [
                 'typescript-operations',
                 'typescript-generic-sdk'

@@ -10,6 +10,7 @@ import { useTranslation } from "@/lib/i18n/context"
 import { MapPin, LayoutList, Tag, Wine } from "lucide-react"
 import { getWaitDataAction } from "../../../../../actions"
 import { readCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
+import { resolveEvaluationDestination } from "@winelore/core/evaluation"
 import { BackLink } from "@/components/BackLink"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 
@@ -85,50 +86,32 @@ export default function CandidateEvaluationClientView({
         const data = await getWaitDataAction(commissionId, replicaId)
         if (!isMounted || isRedirecting || isFormSubmitting) return
 
-        // 1. Replica completed -> redirect every participant to the shared results
-        if (data.replicaStatus === "COMPLETED") {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/results`
-          return
-        }
+        const destination = resolveEvaluationDestination({
+          viewingCandidateId: candidateId,
+          replicaStatus: data.replicaStatus,
+          isPanelFinished: data.isPanelFinished,
+          currentCandidateId: data.currentCandidateId,
+          hasCompletedCurrentCandidate: data.hasCompletedCurrentCandidate,
+          recentSubmission: readCachedWaitEvaluation(commissionId, replicaId),
+        })
 
-        // 2. Panel finished -> redirect to panel-summary
-        if (data.isPanelFinished) {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`
-          return
-        }
+        if (destination.kind === "stay") return
 
-        const cached = readCachedWaitEvaluation(commissionId, replicaId)
-        const hasFreshSubmitCache =
-          cached?.candidateId === data.currentCandidateId && cached?.isComplete !== false
-
-        // 3. Active candidate changed to a different candidate
-        if (data.currentCandidateId && data.currentCandidateId !== candidateId) {
-          setIsRedirecting(true)
-          if (!data.hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
-            window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${data.currentCandidateId}`
-          } else {
-            window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-          }
-          return
-        }
-
-        // 4. Expert completed evaluation for current candidate (e.g. submitted in another tab)
-        if (
-          data.currentCandidateId === candidateId &&
-          (data.hasCompletedCurrentCandidate || hasFreshSubmitCache)
-        ) {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-          return
-        }
-
-        // 5. No candidate currently active
-        if (!data.currentCandidateId) {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-          return
+        setIsRedirecting(true)
+        const base = `/commission/${commissionId}`
+        switch (destination.kind) {
+          case "results":
+            window.location.href = `${base}/results`
+            return
+          case "panelSummary":
+            window.location.href = `${base}/replica/${replicaId}/panel-summary`
+            return
+          case "candidate":
+            window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`
+            return
+          case "wait":
+            window.location.href = `${base}/replica/${replicaId}/wait`
+            return
         }
       } catch (err) {
         console.error("Polling redirect error:", err)

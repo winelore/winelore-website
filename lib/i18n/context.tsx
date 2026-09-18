@@ -12,8 +12,8 @@ import {
   formatDateTime,
   formatShortDateTime,
   type MessageKey,
-} from "./index"
-import { DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from "./types"
+} from '@winelore/core/i18n'
+import { DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from '@winelore/core/i18n/types'
 
 interface LocaleContextValue {
   locale: Locale

@@ -1,11 +1,22 @@
 "use client"
 
+import {
+    blankCategory,
+    blankProperty,
+    changeProperty,
+    checkTemplate,
+    duplicatePropertyCodes,
+    renameFormulaVariable,
+    templatePropertyTypeLabel,
+    type EditorCategory,
+    type EditorProperty,
+} from '@winelore/core/commission'
 import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Trash2, AlertCircle, X, Star, GripVertical } from "lucide-react"
-import { createGlobalTemplateAction, updateGlobalTemplateAction, getBeverageTypesAction, getTemplateByIdAction } from "./actions"
+import { createGlobalTemplateAction, updateGlobalTemplateAction, getBeverageTypesAction, getTemplateForEditorAction } from "./actions"
 import { useTranslation } from "@/lib/i18n/context"
-import type { MessageKey } from "@/lib/i18n"
+import type { MessageKey } from '@winelore/core/i18n'
 
 interface TemplateCreatorModalProps {
     isOpen: boolean
@@ -14,169 +25,12 @@ interface TemplateCreatorModalProps {
     initialTemplateId?: string | null
 }
 
-interface PropertyState {
-    id: string
-    name: string
-    code: string
-    type: "Boolean" | "Int" | "Double" | "Discrete" | "Enum" | "Smart"
-    description: string
-    isRequired: boolean
-    isResult: boolean
-    defaultValue: string
-    minLimit?: number
-    maxLimit?: number
-    allowedValuesStr: string
-    expressionStr: string
-}
-
-interface CategoryState {
-    id: string
-    name: string
-    properties: PropertyState[]
-}
-
-const PROPERTY_TYPE_KEYS: Record<string, MessageKey> = {
-    Int: "templateCreator.typeInt",
-    Double: "templateCreator.typeDouble",
-    Discrete: "templateCreator.typeDiscrete",
-    Enum: "templateCreator.typeEnum",
-    Boolean: "templateCreator.typeBoolean",
-    Smart: "templateCreator.typeSmart",
-}
+// The editor's rules — codes, formulas, the checks before saving — are core's, which the app's editor uses too.
+type PropertyState = EditorProperty
+type CategoryState = EditorCategory
 
 export function getPropertyTypeLabel(type: string, t: (key: MessageKey) => string): string {
-    const key = PROPERTY_TYPE_KEYS[type]
-    return key ? t(key) : type
-}
-
-function transliterate(str: string): string {
-    const map: Record<string, string> = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'h', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ye', 'ж': 'zh', 'з': 'z',
-        'и': 'y', 'і': 'i', 'ї': 'yi', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p',
-        'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
-        'ь': '', 'ю': 'yu', 'я': 'ya',
-        'ы': 'y', 'э': 'e', 'ё': 'yo', 'ъ': ''
-    }
-    return str.toLowerCase().split('').map(char => map[char] || char).join('')
-}
-
-function parseExpression(input: string): any {
-    const tokens: { type: string; value: string }[] = []
-    let i = 0
-
-    input = input.replace(/\s+/g, "")
-
-    while (i < input.length) {
-        const char = input[i]
-        if (/[0-9.]/.test(char)) {
-            let numStr = ""
-            while (i < input.length && /[0-9.]/.test(input[i])) {
-                numStr += input[i]
-                i++
-            }
-            tokens.push({ type: "NUMBER", value: numStr })
-        } else if (/[a-zA-Z_]/.test(char)) {
-            let idStr = ""
-            while (i < input.length && /[a-zA-Z0-9_]/.test(input[i])) {
-                idStr += input[i]
-                i++
-            }
-            tokens.push({ type: "IDENTIFIER", value: idStr })
-        } else if ("+-*/()".includes(char)) {
-            tokens.push({ type: char, value: char })
-            i++
-        } else {
-            throw new Error(`Invalid character in expression: "${char}"`)
-        }
-    }
-
-    let tokenIdx = 0
-    function peek() { return tokens[tokenIdx] || null }
-    function next() { return tokens[tokenIdx++] }
-
-    function parseExpr(): any {
-        let left = parseTerm()
-        let current = peek()
-        while (current && (current.type === "+" || current.type === "-")) {
-            const opToken = next()
-            const right = parseTerm()
-            left = { type: opToken.type === "+" ? "ADD" : "SUBTRACT", left, right }
-            current = peek()
-        }
-        return left
-    }
-
-    function parseTerm(): any {
-        let left = parseFactor()
-        let current = peek()
-        while (current && (current.type === "*" || current.type === "/")) {
-            const opToken = next()
-            const right = parseFactor()
-            left = { type: opToken.type === "*" ? "MULTIPLY" : "DIVIDE", left, right }
-            current = peek()
-        }
-        return left
-    }
-
-    function parseFactor(): any {
-        const token = next()
-        if (!token) throw new Error("Unexpected end of expression")
-        if (token.type === "NUMBER") return { type: "CONSTANT", constantValue: token.value }
-        if (token.type === "IDENTIFIER") return { type: "VARIABLE", variableCode: token.value }
-        if (token.type === "(") {
-            const expr = parseExpr()
-            const closing = next()
-            if (!closing || closing.type !== ")") throw new Error("Expected closing parenthesis ')'")
-            return expr
-        }
-        throw new Error(`Unexpected token "${token.value}"`)
-    }
-
-    const ast = parseExpr()
-    if (tokenIdx < tokens.length) {
-        throw new Error(
-            `Unexpected trailing characters: "${tokens.slice(tokenIdx).map(t => t.value).join("")}"`
-        )
-    }
-    return ast
-}
-
-function astToString(ast: any): string {
-    if (!ast) return ""
-    const type = ast.type || ast.__typename
-    if (type === "VariableExpression" || type === "VARIABLE") {
-        return ast.code || ast.variableCode || ""
-    }
-    if (type === "ConstantExpression" || type === "CONSTANT") {
-        return String(ast.value ?? ast.constantValue ?? "")
-    }
-    const leftStr = astToString(ast.left)
-    const rightStr = astToString(ast.right)
-    let op = ""
-    switch (type) {
-        case "ADD": op = "+"; break;
-        case "SUBTRACT": op = "-"; break;
-        case "MULTIPLY": op = "*"; break;
-        case "DIVIDE": op = "/"; break;
-        default: op = "+"; break;
-    }
-    if (leftStr && rightStr) {
-        return `(${leftStr} ${op} ${rightStr})`
-    }
-    return leftStr || rightStr || ""
-}
-
-function computeDuplicateCodes(categories: CategoryState[]): Set<string> {
-    const seen = new Map<string, number>()
-    for (const cat of categories) {
-        for (const p of cat.properties) {
-            const c = p.code.trim()
-            if (c) seen.set(c, (seen.get(c) || 0) + 1)
-        }
-    }
-    const dups = new Set<string>()
-    seen.forEach((count, code) => { if (count > 1) dups.add(code) })
-    return dups
+    return templatePropertyTypeLabel(type, t)
 }
 
 export default function TemplateCreatorModal({
@@ -218,11 +72,11 @@ export default function TemplateCreatorModal({
                 setBeverageTypes(types)
                 
                 if (initialTemplateId) {
-                    getTemplateByIdAction(initialTemplateId).then((data) => {
+                    getTemplateForEditorAction(initialTemplateId).then((data) => {
                         if (data) {
                             setTemplateName(data.name)
-                            
-                            const matchedType = types.find(t => t.id === (data as any).beverageTypeId)
+
+                            const matchedType = types.find(t => t.id === data.beverageTypeId)
                                 ?? types.find(t => t.name === data.beverageType || t.code === data.beverageType)
                             if (matchedType) {
                                 setSelectedBeverageTypeId(matchedType.id)
@@ -230,29 +84,8 @@ export default function TemplateCreatorModal({
                                 setSelectedBeverageTypeId(types[0].id)
                             }
 
-                            const edition = data.latestEdition
-                            if (edition && edition.categories) {
-                                const mappedCategories: CategoryState[] = edition.categories.map((cat: any, cIdx: number) => ({
-                                    id: cat.id || `cat_loaded_${cIdx}_${Date.now()}`,
-                                    name: cat.name,
-                                    properties: cat.properties.map((p: any, pIdx: number) => ({
-                                        id: p.id || `prop_loaded_${cIdx}_${pIdx}_${Date.now()}`,
-                                        name: p.name,
-                                        code: p.code,
-                                        type: p.type as any,
-                                        description: p.description || "",
-                                        isRequired: p.isRequired ?? true,
-                                        // isResult, minLimit, maxLimit, allowedValues — нормалізовані в actions.ts
-                                        isResult: !!(p.isResult ?? false),
-                                        defaultValue: p.defaultValue !== undefined && p.defaultValue !== null ? String(p.defaultValue) : "",
-                                        minLimit: p.minLimit !== undefined && p.minLimit !== null ? Number(p.minLimit) : undefined,
-                                        maxLimit: p.maxLimit !== undefined && p.maxLimit !== null ? Number(p.maxLimit) : undefined,
-                                        allowedValuesStr: Array.isArray(p.allowedValues) ? p.allowedValues.join(", ") : "",
-                                        expressionStr: p.expressionRaw || (p.expression ? astToString(p.expression) : "")
-                                    }))
-                                }))
-                                setCategories(mappedCategories)
-                            }
+                            // With its formulas, which the template page's queries leave out.
+                            setCategories(data.categories)
                         }
                     }).catch(err => {
                         setErrorMsg(t("templateCreator.loadEditError"))
@@ -261,41 +94,16 @@ export default function TemplateCreatorModal({
                     setTemplateName("")
                     if (types.length > 0) setSelectedBeverageTypeId(types[0].id)
                     
-                    const initialCatId = `cat_${Date.now()}`
-                    const initialPropId = `prop_${Date.now()}`
-                    
-                    setCategories([
-                        { 
-                            id: initialCatId, 
-                            name: "", 
-                            properties: [
-                                {
-                                    id: initialPropId,
-                                    name: "",
-                                    code: "",
-                                    type: "Int",
-                                    description: "",
-                                    isRequired: true,
-                                    isResult: false,
-                                    defaultValue: "",
-                                    allowedValuesStr: "",
-                                    expressionStr: "",
-                                    minLimit: undefined,
-                                    maxLimit: undefined,
-                                }
-                            ] 
-                        }
-                    ])
+                    setCategories([blankCategory(true)])
                 }
             })
         }
     }, [isOpen, initialTemplateId])
 
-    const duplicateCodes = computeDuplicateCodes(categories)
+    const duplicateCodes = duplicatePropertyCodes(categories)
 
     const handleAddCategory = () => {
-        const id = `cat_${Date.now()}`
-        setCategories(prev => [...prev, { id, name: "", properties: [] }])
+        setCategories(prev => [...prev, blankCategory()])
     }
 
     const handleRemoveCategory = (catId: string) => {
@@ -307,21 +115,7 @@ export default function TemplateCreatorModal({
     }
 
     const handleAddProperty = (catId: string) => {
-        const id = `prop_${Date.now()}`
-        const newProp: PropertyState = {
-            id,
-            name: "",
-            code: "",
-            type: "Int",
-            description: "",
-            isRequired: true,
-            isResult: false,
-            defaultValue: "",
-            allowedValuesStr: "",
-            expressionStr: "",
-            minLimit: undefined,
-            maxLimit: undefined,
-        }
+        const newProp = blankProperty()
         setCategories(prev =>
             prev.map(c => c.id === catId ? { ...c, properties: [...c.properties, newProp] } : c)
         )
@@ -337,36 +131,9 @@ export default function TemplateCreatorModal({
     }
 
     const handlePropertyChange = (catId: string, propId: string, fields: Partial<PropertyState>) => {
-        setCategories(prev => prev.map(c => {
-            if (c.id !== catId) return c
-            return {
-                ...c,
-                properties: c.properties.map(p => {
-                    if (p.id !== propId) return p
-                    const updated = { ...p, ...fields }
-
-                    if (fields.name !== undefined) {
-                        updated.code = transliterate(fields.name)
-                            .replace(/[^a-z0-9_]/g, "_")
-                            .replace(/_+/g, "_")
-                            .replace(/^_+|_+$/g, "")
-                    }
-
-                    if (fields.type !== undefined) {
-                        updated.defaultValue = ""
-                        updated.allowedValuesStr = ""
-                        updated.expressionStr = ""
-                        if (fields.type !== "Int" && fields.type !== "Double") {
-                            updated.minLimit = undefined
-                            updated.maxLimit = undefined
-                        }
-                        if (fields.type === "Smart") {
-                            updated.isRequired = true
-                        }
-                    }
-                    return updated
-                })
-            }
+        setCategories(prev => prev.map(c => c.id !== catId ? c : {
+            ...c,
+            properties: c.properties.map(p => p.id === propId ? changeProperty(p, fields) : p),
         }))
     }
 
@@ -376,16 +143,7 @@ export default function TemplateCreatorModal({
 
     const handleCodeCommit = (propId: string, newCode: string) => {
         const oldCode = prevCodeRef.current.get(propId)
-        if (!oldCode || oldCode === newCode || !oldCode.trim() || !newCode.trim()) return
-
-        setCategories(prev => prev.map(cat => ({
-            ...cat,
-            properties: cat.properties.map(p => {
-                if (p.type !== "Smart" || !p.expressionStr) return p
-                const regex = new RegExp(`\\b${oldCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g")
-                return { ...p, expressionStr: p.expressionStr.replace(regex, newCode) }
-            })
-        })))
+        if (oldCode) setCategories(prev => renameFormulaVariable(prev, oldCode, newCode))
         prevCodeRef.current.delete(propId)
     }
 
@@ -394,156 +152,25 @@ export default function TemplateCreatorModal({
         setErrorPropIds(new Set())
         setErrorCatIds(new Set())
 
-        if (!templateName.trim()) {
-            setErrorMsg(t("templateCreator.nameRequiredError"))
+        const check = checkTemplate(templateName, categories, t)
+        if (!check.ok) {
+            setErrorPropIds(check.propertyIds)
+            setErrorCatIds(check.categoryIds)
+            setErrorMsg(check.message)
             return
         }
-        if (categories.length === 0) {
-            setErrorMsg(t("templateCreator.categoryCountError"))
-            return
-        }
-
-        const codesSet = new Set<string>()
-        const formattedCategories: { name: string; properties: any[] }[] = []
-        const newErrorPropIds = new Set<string>()
-        const newErrorCatIds = new Set<string>()
-
-        try {
-            for (const cat of categories) {
-                if (!cat.name.trim()) {
-                    newErrorCatIds.add(cat.id)
-                    throw new Error(t("templateCreator.categoryNameRequiredError"))
-                }
-                if (cat.properties.length === 0) {
-                    newErrorCatIds.add(cat.id)
-                    throw new Error(t("templateCreator.categoryNoPropertiesError", { name: cat.name }))
-                }
-
-                const propertiesInput: any[] = []
-
-                for (const p of cat.properties) {
-                    if (!p.name.trim()) {
-                        newErrorPropIds.add(p.id)
-                        throw new Error(t("templateCreator.propertyNameRequiredError", { category: cat.name }))
-                    }
-                    if (!p.code.trim()) {
-                        newErrorPropIds.add(p.id)
-                        throw new Error(t("templateCreator.propertyCodeRequiredError", { name: p.name }))
-                    }
-                    if (codesSet.has(p.code)) {
-                        newErrorPropIds.add(p.id)
-                        for (const cat2 of categories) {
-                            for (const p2 of cat2.properties) {
-                                if (p2.code === p.code && p2.id !== p.id) newErrorPropIds.add(p2.id)
-                            }
-                        }
-                        throw new Error(t("templateCreator.duplicateCodeError", { code: p.code }))
-                    }
-                    codesSet.add(p.code)
-
-                    const propInput: any = {
-                        type: p.type,
-                        code: p.code,
-                        name: p.name,
-                        description: p.description || null,
-                        isRequired: p.type === "Smart" ? true : p.isRequired,
-                        isResult: p.isResult,
-                        defaultValue: p.defaultValue || null
-                    }
-
-                    if (p.type === "Int" || p.type === "Double") {
-                        if (p.minLimit === undefined || p.maxLimit === undefined) {
-                            newErrorPropIds.add(p.id)
-                            throw new Error(t("templateCreator.limitsRequiredError", { name: p.name }))
-                        }
-                        if (Number(p.minLimit) >= Number(p.maxLimit)) {
-                            newErrorPropIds.add(p.id)
-                            throw new Error(t("templateCreator.minMaxInvalidError", { name: p.name }))
-                        }
-                        propInput.minLimit = Number(p.minLimit)
-                        propInput.maxLimit = Number(p.maxLimit)
-                    }
-
-                    if (p.type === "Discrete") {
-                        if (!p.allowedValuesStr.trim()) {
-                            newErrorPropIds.add(p.id)
-                            throw new Error(t("templateCreator.discreteValuesRequiredError", { name: p.name }))
-                        }
-                        const allowedList = p.allowedValuesStr
-                            .split(",")
-                            .map(v => v.trim())
-                            .filter(Boolean)
-                            .map(Number)
-                        if (allowedList.some(isNaN)) {
-                            newErrorPropIds.add(p.id)
-                            throw new Error(t("templateCreator.discreteValuesInvalidError", { name: p.name }))
-                        }
-                        propInput.allowedValues = allowedList.map(String)
-                    }
-
-                    if (p.type === "Enum") {
-                        if (!p.allowedValuesStr.trim()) {
-                            newErrorPropIds.add(p.id)
-                            throw new Error(t("templateCreator.enumValuesRequiredError", { name: p.name }))
-                        }
-                        propInput.allowedValues = p.allowedValuesStr
-                            .split(",")
-                            .map(v => v.trim().toUpperCase())
-                            .filter(Boolean)
-                    }
-
-                    if (p.type === "Smart") {
-                        if (!p.expressionStr.trim()) {
-                            newErrorPropIds.add(p.id)
-                            throw new Error(t("templateCreator.formulaEmptyError", { name: p.name }))
-                        }
-                        try {
-                            const ast = parseExpression(p.expressionStr)
-                            const checkVariables = (node: any) => {
-                                if (!node) return
-                                if (node.type === "VARIABLE") {
-                                    if (!codesSet.has(node.variableCode)) {
-                                        throw new Error(t("templateCreator.formulaUnknownVarError", { variable: node.variableCode }))
-                                    }
-                                }
-                                checkVariables(node.left)
-                                checkVariables(node.right)
-                            }
-                            checkVariables(ast)
-                            propInput.expression = ast
-                        } catch (parseErr: any) {
-                            newErrorPropIds.add(p.id)
-                            throw new Error(t("templateCreator.formulaError", { name: p.name, error: parseErr.message }))
-                        }
-                    }
-
-                    propertiesInput.push(propInput)
-                }
-
-                formattedCategories.push({ name: cat.name, properties: propertiesInput })
-            }
-
-            const hasResult = formattedCategories.some(cat =>
-                cat.properties.some((p: any) => p.isResult === true)
-            )
-            if (!hasResult) {
-                throw new Error(t("templateCreator.resultRequiredError"))
-            }
-        } catch (validationErr: any) {
-            setErrorPropIds(newErrorPropIds)
-            setErrorCatIds(newErrorCatIds)
-            setErrorMsg(validationErr.message)
-            return
-        }
+        const formattedCategories = check.categories
 
         setIsSaving(true)
         try {
             if (initialTemplateId) {
+                // As the signed-in owner; this used to fall back to the action's default actor.
                 await updateGlobalTemplateAction(
                     initialTemplateId,
                     templateName,
                     formattedCategories,
-                    selectedBeverageTypeId
+                    selectedBeverageTypeId,
+                    currentAuid
                 )
             } else {
                 await createGlobalTemplateAction(

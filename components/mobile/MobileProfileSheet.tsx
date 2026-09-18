@@ -13,7 +13,7 @@ import {
     isMenuLinkActive,
 } from "@/components/wine-lore-main"
 import { useTranslation } from "@/lib/i18n/context"
-import { LOCALE_LABELS, LOCALES } from "@/lib/i18n/types"
+import { LOCALE_LABELS, LOCALES } from '@winelore/core/i18n/types'
 
 interface MobileProfileSheetProps {
     open: boolean

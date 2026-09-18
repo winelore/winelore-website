@@ -9,8 +9,8 @@ import {
     hasEvaluationData,
     MemberEvaluationSection,
 } from "./EvaluationCommentsDisplay"
-import type { ExpertBeverageSummaryEntry, MyTastingSummaryData } from "./expertRanking"
-import { formatPropertyScoreValue } from "@/lib/formatPropertyScore"
+import { tastingSummaryProducerAuids, type ExpertBeverageSummaryEntry, type MyTastingSummaryData } from "@winelore/core/commission"
+import { formatPropertyScoreValue } from '@winelore/core'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -137,10 +137,7 @@ export function MyTastingSummary({
     const [isExporting, setIsExporting] = useState(false)
     const [exportProgress, setExportProgress] = useState("")
 
-    const allProducerAuids = useMemo(
-        () => Array.from(new Set(entries?.flatMap((entry) => entry.producerAuids) ?? [])),
-        [entries],
-    )
+    const allProducerAuids = useMemo(() => tastingSummaryProducerAuids(entries), [entries])
     const { usernames } = useUsernames(allProducerAuids)
 
     const resolveProducerName = (producerAuids: string[]) => {

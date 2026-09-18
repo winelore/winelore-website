@@ -10,6 +10,21 @@ import {
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import {
+    commissionBeverageTypes,
+    commissionHolderNames,
+    commissionStepIndex,
+    currentCandidateCode,
+    defaultCommissionReplica,
+    formatCommissionTiming,
+    memberInitials,
+    replicasForSelector,
+    resolveLobbyState,
+    sortMembersByRole,
+    type CommissionMember,
+    type CommissionPageData,
+    type CommissionReplica,
+} from '@winelore/core/commission';
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import {
@@ -46,7 +61,7 @@ import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
 import { EvaluationTemplatesBlock, type BeverageType, type TemplateEditionLink } from "./components/EvaluationTemplatesBlock"
 import { BackLink } from "@/components/BackLink"
-import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
+import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from '@winelore/core';
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -77,7 +92,7 @@ function getAvatarGradient(auid: number): string {
 function MemberAvatar({ auid, role, username, className }: { auid: number[]; role: string; username?: string; className?: string }) {
     const primaryAuid = auid[0] || 0
     const gradient = getAvatarGradient(primaryAuid)
-    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : (primaryAuid ? `${primaryAuid}`.slice(-2) : "?")
+    const initials = memberInitials(username, primaryAuid)
 
     return (
         <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm shrink-0 border border-white/10 ${className}`}>
@@ -99,12 +114,7 @@ function StatusSteps({ status }: { status: string }) {
         { id: "completed", label: t("commission.stepCompleted"), description: t("commission.stepCompletedDesc") }
     ]
 
-    let currentStepIdx = 0
-    if (status === "STARTED") {
-        currentStepIdx = 1
-    } else if (status === "COMPLETED") {
-        currentStepIdx = 2
-    }
+    const currentStepIdx = commissionStepIndex(status)
 
     return (
         <div className="w-full bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 mb-4">
@@ -142,65 +152,12 @@ function StatusSteps({ status }: { status: string }) {
     )
 }
 
-interface Member {
-    id: string;
-    auid: number[];
-    role: "HEAD" | "EXPERT" | "TRAINEE_EXPERT";
-    isReady: boolean;
-}
-
-interface Replica {
-    id: string;
-    name: string;
-    type: "STANDARD" | "TRAINEE";
-    status: string;
-    currentPanelId?: string | null;
-    chaoticCurrentPanelChangesEnabled?: boolean;
-    replicaPanels: {
-        id: string;
-        status: string;
-        currentCandidateId?: string | null;
-        chaoticCurrentCandidateChangesEnabled: boolean;
-        panel?: { id: string; name: string };
-        replicaCandidates?: { id: string; status: string; candidate?: { id: string } | null }[];
-    }[];
-    members: Member[];
-    candidateCount: number;
-    replicaCandidates: {
-        id: string;
-        status: string;
-        candidate?: {
-            id: string;
-            anonymizedCode: string | null;
-            beverageType?: BeverageType;
-        } | null;
-    }[];
-    currentCandidateId?: string | null;
-}
-
-interface InitialData {
-    id: string;
-    name: string;
-    status: string;
-    plannedStartAt: string | null;
-    plannedEndAt: string | null;
-    startedAt: string | null;
-    endedAt: string | null;
-    candidateCount: number;
-    partialCandidateEvaluationEnabled?: boolean;
-    wineJumperMiniGameEnabled?: boolean;
-    voiceCommentsEnabled?: boolean;
-    propertyCommentsEnabled?: boolean;
-    beverageOriginDuringEvaluationEnabled?: boolean;
-    competition: {
-        id: string;
-        name: string;
-        holders: number[];
-        evaluationTemplateEdition?: any;
-    };
+// The page's data is shaped by core's toCommissionPage, which the app's
+// commission screen renders too.
+type Member = CommissionMember
+type Replica = CommissionReplica
+type InitialData = Omit<CommissionPageData, "panels" | "templateEditions"> & {
     templateEditions?: TemplateEditionLink[];
-    replicas: Replica[];
-    members: Member[];
     panels?: CommissionPanel[];
     candidates?: Candidate[];
 }
@@ -240,34 +197,10 @@ export default function CommissionClientView({
     const [memberPendingRemoval, setMemberPendingRemoval] = useState<string | null>(null)
     const initialData = localData
 
-    const beverageTypesInCommission = useMemo(() => {
-        const typesMap = new Map<string, BeverageType>()
-
-        // 1. Беремо типи з уже призначених шаблонів (щоб вони відображалися навіть якщо немає напоїв)
-        if (initialData.templateEditions) {
-            initialData.templateEditions.forEach(te => {
-                if (te.beverageType) typesMap.set(te.beverageType.id, te.beverageType)
-            })
-        }
-
-        // 2. Беремо типи з доданих напоїв (якщо вони є).
-        // До старту комісії репліки ще не мають кандидатів, тому читаємо також кандидатів з панелей.
-        localData.panels?.forEach(panel => {
-            panel.candidates?.forEach(candidate => {
-                if (candidate.beverageType) {
-                    typesMap.set(candidate.beverageType.id, candidate.beverageType)
-                }
-            })
-        })
-        localData.replicas.forEach(r => {
-            r.replicaCandidates.forEach(rc => {
-                if (rc.candidate?.beverageType) {
-                    typesMap.set(rc.candidate.beverageType.id, rc.candidate.beverageType)
-                }
-            })
-        })
-        return Array.from(typesMap.values())
-    }, [localData.panels, localData.replicas, initialData.templateEditions])
+    const beverageTypesInCommission = useMemo(
+        () => commissionBeverageTypes(localData as CommissionPageData) as BeverageType[],
+        [localData],
+    )
 
     const refreshCommissionData = async () => {
         try {
@@ -550,9 +483,8 @@ export default function CommissionClientView({
     };
 
     // Detect user's active replica
-    const activeReplica = localReplicas.find(r =>
-        r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
-    ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
+    const auidKey = currentAuid === null ? null : String(currentAuid)
+    const activeReplica = defaultCommissionReplica(localReplicas, auidKey)
 
     const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
 
@@ -588,9 +520,7 @@ export default function CommissionClientView({
         setLocalData(propInitialData)
         if (propInitialData.replicas) {
             setLocalReplicas(propInitialData.replicas)
-            const active = propInitialData.replicas.find(r =>
-                r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
-            ) || propInitialData.replicas.find(r => r.type === "STANDARD") || propInitialData.replicas[0] || null
+            const active = defaultCommissionReplica(propInitialData.replicas, currentAuid === null ? null : String(currentAuid))
             if (active && !selectedReplicaId) {
                 setSelectedReplicaId(active.id)
             }
@@ -615,9 +545,7 @@ export default function CommissionClientView({
         }
     }, [localMembers, currentAuid])
 
-    const creatorNames = initialData.competition.holders.length > 0
-        ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
-        : t("common.unknownCreator")
+    const creatorNames = commissionHolderNames(initialData.competition.holders, usernames, t("common.unknownCreator"))
 
     const isHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
 
@@ -636,52 +564,7 @@ export default function CommissionClientView({
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
 
-        const updateTime = () => {
-            if (initialData.status === "STARTED" && initialData.startedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-                const formattedTime = hours > 0
-                    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-
-                setTimeDisplay(formattedTime)
-            } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const end = new Date(initialData.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-                setTimeDisplay(hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes }))
-            } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
-                const start = new Date(initialData.plannedStartAt).getTime()
-                const now = new Date().getTime()
-                const diff = start - now
-
-                if (diff <= 0) {
-                    setTimeDisplay(t("time.startingSoon"))
-                } else {
-                    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-                    if (days > 0) {
-                        setTimeDisplay(t("time.inDaysHours", { days, hours }))
-                    } else {
-                        setTimeDisplay(t("time.inHoursMinutes", { hours, minutes }))
-                    }
-                }
-            } else {
-                setTimeDisplay("")
-            }
-        }
+        const updateTime = () => setTimeDisplay(formatCommissionTiming(initialData, t))
 
         updateTime()
         if (initialData.status === "STARTED") {
@@ -759,11 +642,17 @@ export default function CommissionClientView({
     const candidateCount = (localData.candidates?.length ?? localData.candidateCount ?? 0)
     const hasCandidates = candidateCount > 0
     const hasMembers = localMembers.length > 0
-    const isEveryoneReady = hasMembers && localMembers.every(m => m.isReady)
-    const myStatus = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
-    const amIReady = myStatus?.isReady || false
-    const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
-    const nonReadyCount = localMembers.filter(m => !m.isReady).length
+    // Shared with the mobile lobby. Membership matches through normalizeAuids,
+    // which flattens the nested auid arrays a plain `includes` would miss.
+    const lobby = resolveLobbyState(
+        selectedReplica ? { ...selectedReplica, members: localMembers } : null,
+        currentAuid === null ? null : String(currentAuid),
+        candidateCount,
+    )
+    const isEveryoneReady = lobby.isEveryoneReady
+    const amIReady = lobby.amIReady
+    const isPreStart = lobby.isPreStart
+    const nonReadyCount = lobby.notReadyCount
 
     const handleStartCommission = async () => {
         if (!selectedReplica || isMutating) return
@@ -807,10 +696,7 @@ export default function CommissionClientView({
         }
     }
 
-    const sortedMembers = [...localMembers].sort((a, b) => {
-        const roleOrder = { HEAD: 1, EXPERT: 2, TRAINEE_EXPERT: 3 }
-        return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)
-    })
+    const sortedMembers = sortMembersByRole(localMembers)
 
     const currentCommissionStatus = localData.status || initialData.status
     const competitionResultsHref = `/competition/${localData.competition.id}/results?commission=${localData.id}`
@@ -1025,7 +911,7 @@ export default function CommissionClientView({
                                 )}
 
                                 <div className="flex flex-col gap-2">
-                                    {[...localReplicas].sort((a, b) => (a.members?.length || 0) - (b.members?.length || 0)).map((r) => {
+                                    {replicasForSelector(localReplicas).map((r) => {
                                         const isSelected = r.id === selectedReplicaId
                                         const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
                                         
@@ -1847,10 +1733,7 @@ export default function CommissionClientView({
                                             </div>
                                         </div>
                                         {selectedReplica?.currentCandidateId && (() => {
-                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const candIndex = selectedReplica.replicaCandidates.findIndex(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const rawCode = currentCandidateObj?.candidate?.anonymizedCode;
-                                            const code = (rawCode && rawCode.trim()) ? rawCode.trim() : (candIndex >= 0 ? `#${candIndex + 1}` : t("common.na"));
+                                            const code = currentCandidateCode(selectedReplica, t("common.na"));
                                             return (
                                                 <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
                                                     <span>{t("commission.currentCandidate", { code })}</span>
@@ -1859,7 +1742,7 @@ export default function CommissionClientView({
                                             );
                                         })()}
                                         <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
+                                            onClick={() => selectedReplica && router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
                                         >
                                             {t("commission.enterTastingSession")} →

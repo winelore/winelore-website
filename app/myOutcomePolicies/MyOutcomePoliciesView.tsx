@@ -5,7 +5,7 @@ import Cookies from "js-cookie"
 import { ScrollText, Calendar, ChevronLeft, ChevronRight, Loader2, Plus, Pencil } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
-import { getDateLocale } from "@/lib/i18n"
+import { getDateLocale } from '@winelore/core/i18n'
 import { AppHeader } from "@/components/AppHeader"
 import { ListPageHeader } from "@/components/list"
 import OutcomePolicyCreatorModal from "./OutcomePolicyCreatorModal"

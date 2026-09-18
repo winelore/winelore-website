@@ -12,6 +12,7 @@ import {
     getOutcomePolicyByIdAction,
     getOutcomePolicyNamesAction,
 } from "./actions"
+import { DEFAULT_OUTCOME_POLICY_SCRIPT, isDuplicatePolicyName, policyErrorTraceId } from "@winelore/core"
 
 interface OutcomePolicyCreatorModalProps {
     isOpen: boolean
@@ -20,17 +21,7 @@ interface OutcomePolicyCreatorModalProps {
     initialPolicyId?: string | null
 }
 
-const DEFAULT_SCRIPT = "// outcome policy script\n"
-
-// Backend errors currently arrive as plain strings like "INTERNAL_ERROR for
-// <traceId>". We can't reliably tell *why* it failed (the backend doesn't
-// distinguish e.g. a name conflict from any other 500), but we can at least
-// pull out the trace id so the user has something concrete to report.
-function extractTraceId(message: string | undefined | null): string | null {
-    if (!message) return null
-    const match = message.match(/for\s+([a-zA-Z0-9-]{6,})\s*$/)
-    return match ? match[1] : null
-}
+const DEFAULT_SCRIPT = DEFAULT_OUTCOME_POLICY_SCRIPT
 
 export default function OutcomePolicyCreatorModal({
                                                       isOpen,
@@ -79,10 +70,7 @@ export default function OutcomePolicyCreatorModal({
 
     const trimmedName = policyName.trim()
     const isDuplicateName = useMemo(
-        () =>
-            !initialPolicyId &&
-            trimmedName.length > 0 &&
-            existingNames.some((n) => n.trim().toLowerCase() === trimmedName.toLowerCase()),
+        () => !initialPolicyId && isDuplicatePolicyName(trimmedName, existingNames),
         [initialPolicyId, trimmedName, existingNames]
     )
 
@@ -109,7 +97,7 @@ export default function OutcomePolicyCreatorModal({
             onClose()
             router.refresh()
         } catch (saveErr: any) {
-            const traceId = extractTraceId(saveErr?.message)
+            const traceId = policyErrorTraceId(saveErr?.message)
             setErrorMsg(
                 traceId
                     ? t("outcomePolicyModal.saveErrorWithId", { id: traceId })

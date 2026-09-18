@@ -13,77 +13,31 @@ import {
 } from "../../../../../actions"
 import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
-import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
-import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
+import { parseEvaluationNumericInput, roundScoreToTwoDecimals } from '@winelore/core';
+import type { NumericInputErrorReason } from '@winelore/core';
+import {
+    GENERAL_COMMENT_KEY,
+    buildCommentsPayload,
+    buildInitialValues,
+    buildPropertyByCode,
+    buildScoresPayload,
+    cachedComments,
+    computeSmartValues,
+    countRatedProperties,
+    getRatableProperties,
+    getSmartPropertyCodes,
+    isAlreadySubmittedError,
+    isBooleanSmartProperty,
+    isEvaluationSubmittable,
+    isNotCurrentCandidateError,
+    isScoringComplete,
+    orderPropertiesForDisplay,
+    type EvaluationCategory,
+    type EvaluationProperty,
+} from '@winelore/core/evaluation';
 import { Mic, Square, Trash2, Wand2 } from "lucide-react"
 import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
-interface EvaluationProperty {
-    __typename: "BooleanProperty" | "IntProperty" | "DoubleProperty" | "EnumProperty" | "DiscreteNumbersProperty" | "SmartProperty"
-    id: string
-    code: string
-    name: string
-    description?: string | null
-    isRequired: boolean
-    isResult?: boolean | null
-    boolDefaultValue?: boolean | null
-    intMinLimit?: number | null
-    intMaxLimit?: number | null
-    intDefaultValue?: number | null
-    doubleMinLimit?: number | null
-    doubleMaxLimit?: number | null
-    doubleDefaultValue?: number | null
-    enumAllowedValues?: string[] | null
-    enumDefaultValue?: string | null
-    discreteAllowedValues?: number[] | null
-    discreteDefaultValue?: number | null
-    expression?: any | null
-}
-
-interface EvaluationCategory {
-    id: string
-    name: string
-    properties: EvaluationProperty[]
-}
-
-const BOOLEAN_OPERATORS = new Set([
-    "GREATER_THAN",
-    "GREATER_THAN_OR_EQUAL",
-    "GREATER_OR_EQUAL",
-    "LESS_THAN",
-    "LESS_THAN_OR_EQUAL",
-    "LESS_OR_EQUAL",
-    "EQUAL",
-    "EQUALS",
-    "NOT_EQUAL",
-    "AND",
-    "OR",
-])
-
-function buildPropertyByCode(categories: EvaluationCategory[]): Map<string, EvaluationProperty> {
-    const map = new Map<string, EvaluationProperty>()
-    categories.forEach((category) => {
-        category.properties.forEach((prop) => map.set(prop.code, prop))
-    })
-    return map
-}
-
-function isBooleanSmartProperty(
-    prop: EvaluationProperty,
-    propertyByCode: Map<string, EvaluationProperty>,
-): boolean {
-    const expression = prop.expression
-    if (!expression) return false
-    if (BOOLEAN_OPERATORS.has(expression.type)) return true
-    const isVariable =
-        expression.__typename === "VariableExpression" || expression.type === "VARIABLE"
-    if (isVariable && expression.code) {
-        return propertyByCode.get(expression.code)?.__typename === "BooleanProperty"
-    }
-    return false
-}
-
-import { evaluateAST } from "@/lib/evaluationExpression"
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
     const backendTranslated = useBackendTranslation(translatedLabel)
@@ -321,41 +275,7 @@ export default function EvaluationForm({
 }) {
     const router = useRouter()
     const {t, formatEnumLabel, locale} = useTranslation()
-    const [values, setValues] = useState<Record<string, any>>(() => {
-        const initial: Record<string, any> = {}
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                switch (prop.__typename) {
-                    case "BooleanProperty":
-                        if (prop.boolDefaultValue !== null && prop.boolDefaultValue !== undefined) {
-                            initial[prop.code] = prop.boolDefaultValue
-                        }
-                        break
-                    case "IntProperty":
-                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
-                            initial[prop.code] = prop.intDefaultValue
-                        }
-                        break
-                    case "DoubleProperty":
-                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
-                            initial[prop.code] = prop.doubleDefaultValue
-                        }
-                        break
-                    case "EnumProperty":
-                        if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
-                            initial[prop.code] = prop.enumDefaultValue
-                        }
-                        break
-                    case "DiscreteNumbersProperty":
-                        if (prop.discreteDefaultValue !== null && prop.discreteDefaultValue !== undefined) {
-                            initial[prop.code] = prop.discreteDefaultValue
-                        }
-                        break
-                }
-            })
-        })
-        return initial
-    })
+    const [values, setValues] = useState<Record<string, any>>(() => buildInitialValues(categories))
     const [commentValues, setCommentValues] = useState<Record<string, string>>({})
     const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({})
     const [numericErrors, setNumericErrors] = useState<Record<string, NumericInputErrorReason | null>>({})
@@ -385,39 +305,7 @@ export default function EvaluationForm({
     }, [])
 
     useEffect(() => {
-        const initial: Record<string, any> = {}
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                switch (prop.__typename) {
-                    case "BooleanProperty":
-                        if (prop.boolDefaultValue !== null && prop.boolDefaultValue !== undefined) {
-                            initial[prop.code] = prop.boolDefaultValue
-                        }
-                        break
-                    case "IntProperty":
-                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
-                            initial[prop.code] = prop.intDefaultValue
-                        }
-                        break
-                    case "DoubleProperty":
-                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
-                            initial[prop.code] = prop.doubleDefaultValue
-                        }
-                        break
-                    case "EnumProperty":
-                        if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
-                            initial[prop.code] = prop.enumDefaultValue
-                        }
-                        break
-                    case "DiscreteNumbersProperty":
-                        if (prop.discreteDefaultValue !== null && prop.discreteDefaultValue !== undefined) {
-                            initial[prop.code] = prop.discreteDefaultValue
-                        }
-                        break
-                }
-            })
-        })
-        setValues(initial)
+        setValues(buildInitialValues(categories))
         setCommentValues({})
         setNumericDrafts({})
         setNumericErrors({})
@@ -582,123 +470,31 @@ export default function EvaluationForm({
 
     const propertyByCode = useMemo(() => buildPropertyByCode(categories), [categories])
 
-    const computedSmartValues = useMemo(() => {
-        const smartProps: EvaluationProperty[] = []
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                if (prop.__typename === "SmartProperty" && prop.expression) {
-                    smartProps.push(prop)
-                }
-            })
-        })
+    const computedSmartValues = useMemo(
+        () => computeSmartValues(categories, values),
+        [categories, values],
+    )
 
-        const smartMap: Record<string, number> = {}
+    const smartPropertyCodes = useMemo(() => getSmartPropertyCodes(categories), [categories])
 
-        // Resolve iteratively so a smart property can depend on another smart property.
-        // Each pass feeds already-computed smart values back into the lookup; we stop once
-        // no new value is produced (at most one pass per smart property).
-        for (let pass = 0; pass <= smartProps.length; pass++) {
-            let changed = false
-            for (const prop of smartProps) {
-                if (smartMap[prop.code] !== undefined) continue
-                const result = evaluateAST(prop.expression, {...values, ...smartMap})
-                if (result !== null) {
-                    smartMap[prop.code] = result
-                    changed = true
-                }
-            }
-            if (!changed) break
-        }
+    const hasNumericError = Object.values(numericErrors).some(Boolean)
 
-        return smartMap
-    }, [categories, values])
+    const isFormValid = useMemo(
+        () => isEvaluationSubmittable(categories, values, hasNumericError),
+        [categories, values, hasNumericError],
+    )
 
-    const smartPropertyCodes = useMemo(() => {
-        const codes = new Set<string>()
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                if (prop.__typename === "SmartProperty") {
-                    codes.add(prop.code)
-                }
-            })
-        })
-        return codes
-    }, [categories])
-
-    const isFormValid = useMemo(() => {
-        if (Object.values(numericErrors).some(Boolean)) return false
-
-        for (const category of categories) {
-            for (const prop of category.properties) {
-                const val = values[prop.code]
-
-                if (prop.__typename === "SmartProperty") continue
-
-                if (prop.isRequired) {
-                    if (val === undefined || val === null || val === "") {
-                        return false
-                    }
-                }
-
-                if (val !== undefined && val !== null && val !== "") {
-                    if (prop.__typename === "IntProperty") {
-                        if (prop.intMinLimit !== null && prop.intMinLimit !== undefined && val < prop.intMinLimit) return false
-                        if (prop.intMaxLimit !== null && prop.intMaxLimit !== undefined && val > prop.intMaxLimit) return false
-                    }
-                    if (prop.__typename === "DoubleProperty") {
-                        if (prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined && val < prop.doubleMinLimit) return false
-                        if (prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined && val > prop.doubleMaxLimit) return false
-                    }
-                }
-            }
-        }
-        return true
-    }, [categories, values, numericErrors])
-
-    const isAllScoringComplete = useMemo(() => {
-        // Must not have active numeric parsing or range errors
-        if (Object.values(numericErrors).some(Boolean)) return false
-        let numericPropsCount = 0
-        for (const category of categories) {
-            for (const prop of category.properties) {
-                // SmartProperty is formula-calculated by backend/frontend, skip it
-                if (prop.__typename === "SmartProperty") continue
-                const isNumeric =
-                    prop.__typename === "IntProperty" ||
-                    prop.__typename === "DoubleProperty" ||
-                    prop.__typename === "DiscreteNumbersProperty"
-                if (isNumeric) {
-                    numericPropsCount++
-                    const val = values[prop.code]
-                    if (val === undefined || val === null || val === "" || typeof val !== "number" || isNaN(val)) {
-                        return false
-                    }
-                    if (prop.__typename === "IntProperty") {
-                        if (prop.intMinLimit !== null && prop.intMinLimit !== undefined && val < prop.intMinLimit) return false
-                        if (prop.intMaxLimit !== null && prop.intMaxLimit !== undefined && val > prop.intMaxLimit) return false
-                    }
-                    if (prop.__typename === "DoubleProperty") {
-                        if (prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined && val < prop.doubleMinLimit) return false
-                        if (prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined && val > prop.doubleMaxLimit) return false
-                    }
-                } else if (prop.isRequired) {
-                    const val = values[prop.code]
-                    if (val === undefined || val === null || val === "") return false
-                }
-            }
-        }
-        return numericPropsCount > 0 ? true : isFormValid
-    }, [categories, values, numericErrors, isFormValid])
+    const isAllScoringComplete = useMemo(
+        () => isScoringComplete(categories, values, hasNumericError),
+        [categories, values, hasNumericError],
+    )
 
     // Drives the progress readout in the phone action bar.
-    const ratableProperties = useMemo(
-        () => categories.flatMap((category) => category.properties).filter((prop) => prop.__typename !== "SmartProperty"),
-        [categories],
+    const ratableProperties = useMemo(() => getRatableProperties(categories), [categories])
+    const ratedCount = useMemo(
+        () => countRatedProperties(categories, values),
+        [categories, values],
     )
-    const ratedCount = ratableProperties.filter((prop) => {
-        const val = values[prop.code]
-        return val !== undefined && val !== null && val !== ""
-    }).length
 
     const handleGenerateAIComment = async () => {
         if (isGeneratingAI || !isAllScoringComplete) return
@@ -802,65 +598,29 @@ export default function EvaluationForm({
         setError(null)
         setSuccess(false)
         try {
-            const scores = Object.entries(values)
-                .filter(([code, val]) => val !== undefined && val !== null && !smartPropertyCodes.has(code))
-                .map(([code, val]) => {
-                    const prop = propertyByCode.get(code)
-                    const value =
-                        prop?.__typename === "DoubleProperty" && typeof val === "number"
-                            ? roundScoreToTwoDecimals(val).toFixed(2)
-                            : String(val)
-                    return { code, value }
-                })
+            const scores = buildScoresPayload(values, propertyByCode, smartPropertyCodes)
 
-            // Collect per-property comments when enabled
-            let perPropertyComments: Array<{
-                propertyId: string;
-                text?: string;
-                voiceUrl?: string;
-                sortOrder: number
-            }> = []
-            if (propertyCommentsEnabled) {
-                const propKeys = new Set([
-                    ...Object.keys(commentValues).filter(k => commentValues[k].trim().length > 0),
-                    ...(voiceCommentsEnabled
-                        ? Object.keys(voiceBlobs).filter(k => k !== "general")
-                        : []),
-                ])
-
-                let sortIndex = 0
-                perPropertyComments = await Promise.all(
-                    [...propKeys].map(async (propId) => {
-                        const text = commentValues[propId]?.trim() || undefined
-                        const blob = voiceCommentsEnabled ? voiceBlobs[propId] : undefined
-                        const voiceUrl = blob ? await uploadVoice(blob, propId) : undefined
-                        return {propertyId: propId, text, voiceUrl, sortOrder: sortIndex++}
-                    })
-                )
+            // What counts as a comment, and the order they arrive in, is core's
+            // rule — shared with the app, so both submit the same payload.
+            const drafts: Record<string, { text?: string; voice?: Blob }> = {}
+            for (const key of new Set([...Object.keys(commentValues), ...Object.keys(voiceBlobs)])) {
+                drafts[key] = { text: commentValues[key], voice: voiceBlobs[key] }
+            }
+            drafts[GENERAL_COMMENT_KEY] = {
+                text: generalComment,
+                voice: voiceBlobs[GENERAL_COMMENT_KEY],
             }
 
-            const generalBlob = voiceCommentsEnabled ? voiceBlobs["general"] : undefined
-            const generalVoiceUrl = generalBlob ? await uploadVoice(generalBlob, "general") : undefined
-            const hasGeneral = generalComment.trim() || generalVoiceUrl
-            const comments = hasGeneral
-                ? [...perPropertyComments, {
-                    text: generalComment.trim() || undefined,
-                    voiceUrl: generalVoiceUrl,
-                    sortOrder: perPropertyComments.length
-                }]
-                : perPropertyComments
+            const comments = await buildCommentsPayload<Blob>(drafts, {
+                flags: { propertyCommentsEnabled, voiceCommentsEnabled },
+                propertyOrder: categories.flatMap((category) => category.properties.map((property) => property.id)),
+                upload: uploadVoice,
+            })
 
             const result = await submitEvaluationAction(candidateId, scores, comments)
             if (!result.success) {
                 const msg = result.error || ""
-                if (
-                    msg.includes("already submitted") ||
-                    msg.includes("not pending") ||
-                    msg.includes("REPLICA_CANDIDATE_EVALUATION_ENDED") ||
-                    msg.includes("EVALUATION_ALREADY_EXISTS") ||
-                    msg.includes("Replica is not started") ||
-                    msg.includes("REPLICA_NOT_STARTED")
-                ) {
+                if (isAlreadySubmittedError(msg)) {
                     try {
                         await confirmMyEvaluationForCandidateAction(candidateId);
                     } catch (confirmErr) {
@@ -879,7 +639,7 @@ export default function EvaluationForm({
                     return
                 }
 
-                if (msg.includes("current active candidate")) {
+                if (isNotCurrentCandidateError(msg)) {
                     setError(t("evaluation.onlyCurrentCandidate"))
                 } else {
                     setError(msg || t("evaluation.submitError"))
@@ -900,14 +660,7 @@ export default function EvaluationForm({
                 candidateId,
                 isComplete: true,
                 scores: submitted?.scores ?? scores,
-                comments: comments.map((comment, index) => ({
-                    id: `local-${index}`,
-                    propertyId: "propertyId" in comment && comment.propertyId != null
-                        ? String(comment.propertyId)
-                        : null,
-                    text: comment.text,
-                    voiceUrl: comment.voiceUrl,
-                })),
+                comments: cachedComments(comments),
             })
 
             setSuccess(true)
@@ -939,10 +692,7 @@ export default function EvaluationForm({
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4 items-start w-full">
                 {categories.map((category, index) => {
                     const isLastCategory = index === categories.length - 1
-                    const orderedProperties = [
-                        ...category.properties.filter((prop) => prop.isResult !== true),
-                        ...category.properties.filter((prop) => prop.isResult === true),
-                    ]
+                    const orderedProperties = orderPropertiesForDisplay(category)
 
                     return (
                         <div key={category.id}

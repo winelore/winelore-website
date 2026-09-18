@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql";
+import { gql } from '@winelore/core/gql';
 
 export const UPDATE_OUTCOME_POLICY_EDITION_SCRIPT = gql(`
   mutation UpdateOutcomePolicyEditionScript($id: ID!, $scriptCode: String!) {

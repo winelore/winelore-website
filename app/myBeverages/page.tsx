@@ -4,6 +4,8 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { fetchGraphQL } from "@/lib/apiClient"
 import { getGeographicInfo } from "@/lib/geocoding"
+import { beverageOriginParts } from "@winelore/core"
+import { withBeverageType } from "@winelore/core/dashboard"
 import { GET_MY_BEVERAGES } from "./queries"
 import { getBeverageTypesAction } from "@/app/myTemplates/actions"
 import MyBeveragesClientView from "./MyBeveragesClientView"
@@ -39,35 +41,12 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
         myBeverages = await Promise.all(
             rawBeverages.map(async (bev: any) => {
                 const origin = bev.origin;
-                let originParts: string[] = [];
-                if (origin && typeof origin.latitude === "number" && typeof origin.longitude === "number") {
-                    const info = await getGeographicInfo(origin.latitude, origin.longitude);
-                    if (info) {
-                        originParts = [info.country, info.district].filter(Boolean) as string[];
-                    }
-                }
-
-                // Parse attributes for color to keep type formatting happy
-                let colorVal = "WINE";
-                if (bev.attributes) {
-                    if (typeof bev.attributes === "object" && bev.attributes !== null) {
-                        colorVal = (bev.attributes as any).color || "WINE";
-                    } else if (typeof bev.attributes === "string") {
-                        try {
-                            const parsed = JSON.parse(bev.attributes);
-                            if (parsed && parsed.color) {
-                                colorVal = parsed.color;
-                            }
-                        } catch (e) {
-                            const match = bev.attributes.match(/color=([^,\}]+)/);
-                            if (match) {
-                                colorVal = match[1].trim().replace(/^["']|["']$/g, "");
-                            }
-                        }
-                    }
-                }
-
-                return { ...bev, type: colorVal, originParts };
+                const hasOrigin = origin && typeof origin.latitude === "number" && typeof origin.longitude === "number";
+                const originParts = hasOrigin
+                    ? beverageOriginParts(await getGeographicInfo(origin.latitude, origin.longitude))
+                    : [];
+                // Shared with the mobile list, including reading an untyped beverage as wine.
+                return { ...withBeverageType(bev, "WINE"), originParts };
             })
         );
     } catch (error) {

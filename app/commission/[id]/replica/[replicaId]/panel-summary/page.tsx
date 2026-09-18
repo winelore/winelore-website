@@ -13,7 +13,7 @@ import {
     getWaitDataAction,
     startNextPanelAction,
 } from "../../../../actions"
-import { normalizeAuids } from "../../../../auidUtils"
+import { normalizeAuids } from '@winelore/core'
 import WaitPanelResults from "../wait/WaitPanelResults"
 import { BackLink } from "@/components/BackLink"
 

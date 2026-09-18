@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // @winelore/core ships TypeScript source; Next must compile it like app code.
+  transpilePackages: ['@winelore/core'],
   typescript: {
     ignoreBuildErrors: true,
   },

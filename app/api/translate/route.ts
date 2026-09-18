@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import type { Locale } from "@/lib/i18n/types"
+import type { Locale } from '@winelore/core/i18n/types'
 
 const serverCache = new Map<string, string>()
 

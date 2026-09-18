@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { parseJwt } from "@/lib/pkce";
+import { shouldRefreshAccessToken, secondsSinceExpiry } from "@winelore/core/auth";
 import { refreshTokens } from "@/lib/authRefresh";
-
+import { AUTH_COOKIE_NAMES, writeSessionCookies } from "@/lib/authCookies";
 import { isProd } from "@/lib/isProd";
+
+/**
+ * A refresh that fails while the access token expired only moments ago is far
+ * more likely to be a concurrent request that already rotated the token than a
+ * revoked session. Inside this window we keep the cookies rather than signing
+ * the user out mid-tasting.
+ */
+const REFRESH_RACE_WINDOW_SECONDS = 60;
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -19,105 +27,52 @@ export async function proxy(request: NextRequest) {
   }
 
   const refreshToken = request.cookies.get("axus_refresh_token")?.value;
+  if (!refreshToken) return NextResponse.next();
+
   const accessToken = request.cookies.get("axus_access_token")?.value;
   const auid = request.cookies.get("auid")?.value;
 
-  let shouldRefresh = false;
+  // Missing identity cookies mean the session is incomplete regardless of the
+  // access token's own expiry.
+  const shouldRefresh = !accessToken || !auid || shouldRefreshAccessToken(accessToken);
+  if (!shouldRefresh) return NextResponse.next();
 
-  if (refreshToken) {
-    if (!accessToken || !auid) {
-      shouldRefresh = true;
-    } else {
-      try {
-        const payload = parseJwt(accessToken);
-        if (payload && payload.exp) {
-          const currentTime = Math.floor(Date.now() / 1000);
-          // If token expires in less than 5 minutes (300 seconds), refresh it
-          if (payload.exp - currentTime < 300) {
-            shouldRefresh = true;
-          }
-        } else {
-          shouldRefresh = true;
-        }
-      } catch (e) {
-        shouldRefresh = true;
-      }
-    }
-  }
+  try {
+    const session = await refreshTokens(refreshToken);
 
-  if (shouldRefresh && refreshToken) {
-    try {
-      const refreshed = await refreshTokens(refreshToken);
+    // Rebuild the Cookie header from the refreshed values so that this same
+    // request — not just the next one — sees the new session via next/headers.
+    request.cookies.set("auid", session.auid);
+    request.cookies.set("username", session.username);
+    request.cookies.set("displayName", session.displayName);
+    request.cookies.set("axus_access_token", session.accessToken);
+    request.cookies.set("axus_refresh_token", session.refreshToken);
 
-      // Rebuild Cookie header string from request.cookies so that next/headers cookies() gets them
-      request.cookies.set("auid", String(refreshed.auid));
-      request.cookies.set("username", String(refreshed.username));
-      request.cookies.set("displayName", String(refreshed.displayName));
-      request.cookies.set("axus_access_token", refreshed.accessToken);
-      request.cookies.set("axus_refresh_token", refreshed.refreshToken);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(
+      "cookie",
+      request.cookies.getAll().map((c) => `${c.name}=${c.value}`).join("; "),
+    );
 
-      const cookieString = request.cookies.getAll().map(c => `${c.name}=${c.value}`).join("; ");
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("cookie", cookieString);
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    writeSessionCookies(response.cookies, session);
+    return response;
+  } catch (error) {
+    console.error("Failed to refresh tokens in middleware:", error);
 
-      const response = NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        }
-      });
+    const expiredFor = secondsSinceExpiry(accessToken);
+    const lostRace = expiredFor !== null && expiredFor < REFRESH_RACE_WINDOW_SECONDS;
 
-      // Set cookies on response so browser stores them
-      const cookieOptions = {
-        sameSite: "lax" as const,
-        secure: false,
-        path: "/",
-      };
-
-      response.cookies.set("auid", String(refreshed.auid), { ...cookieOptions, maxAge: refreshed.expiresIn });
-      response.cookies.set("username", String(refreshed.username), { ...cookieOptions, maxAge: refreshed.expiresIn });
-      response.cookies.set("displayName", String(refreshed.displayName), { ...cookieOptions, maxAge: refreshed.expiresIn });
-      response.cookies.set("axus_access_token", refreshed.accessToken, { ...cookieOptions, httpOnly: true, maxAge: refreshed.expiresIn });
-      response.cookies.set("axus_refresh_token", refreshed.refreshToken, { ...cookieOptions, httpOnly: true, maxAge: refreshed.refreshTokenExpiresIn });
-
-      return response;
-    } catch (error) {
-      console.error("Failed to refresh tokens in middleware:", error);
-
-      // Check if the access token in the request is already expired by a significant margin (e.g. more than 1 minute)
-      // If it is NOT expired by much (or not expired at all), it might be a race condition from a concurrent request that just refreshed it.
-      // In that case, we do NOT delete the cookies to prevent logging out the user.
-      let shouldDeleteCookies = true;
-      if (accessToken) {
-        try {
-          const payload = parseJwt(accessToken);
-          if (payload && payload.exp) {
-            const currentTime = Math.floor(Date.now() / 1000);
-            const expiredAge = currentTime - payload.exp;
-            // If the token expired less than 60 seconds ago, it is likely a race condition.
-            if (expiredAge < 60) {
-              shouldDeleteCookies = false;
-              console.warn("Possible token refresh race condition detected. Retaining cookies.");
-            }
-          }
-        } catch (e) {
-          // If JWT parsing fails, it's a truly invalid token, so we should delete cookies.
-        }
-      }
-
-      // If refresh fails (e.g. token revoked/expired), clean up the invalid cookies so the user is logged out
-      const response = NextResponse.next();
-      if (shouldDeleteCookies) {
-        response.cookies.delete("auid");
-        response.cookies.delete("username");
-        response.cookies.delete("displayName");
-        response.cookies.delete("axus_access_token");
-        response.cookies.delete("axus_refresh_token");
-      }
+    const response = NextResponse.next();
+    if (lostRace) {
+      console.warn("Possible token refresh race condition detected. Retaining cookies.");
       return response;
     }
-  }
 
-  return NextResponse.next();
+    // The refresh token is genuinely dead — clear the session.
+    for (const name of AUTH_COOKIE_NAMES) response.cookies.delete(name);
+    return response;
+  }
 }
 
 export const config = {

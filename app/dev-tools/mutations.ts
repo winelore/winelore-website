@@ -1,4 +1,4 @@
-import { gql } from '@/src/gql';
+import { gql } from '@winelore/core/gql';
 
 export const DevApproveCompetitionMutation = gql(`
   mutation DevApproveCompetition($id: ID!) {
