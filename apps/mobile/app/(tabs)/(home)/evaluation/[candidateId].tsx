@@ -36,26 +36,36 @@ export default function CandidateEvaluationRoute() {
         [submit, candidateId],
     )
 
+    // The code heads the card instead, as the commission page does. Set while
+    // loading too: a bar that starts large leaves the card's inset sized for
+    // it, an empty band above the heading once the bar shrinks.
+    const header = <Stack.Screen options={{ title: "", headerLargeTitle: false }} />
+
     if (state.status === "loading" || isLeaving) {
         return (
-            <View style={styles.centered}>
-                <ActivityIndicator />
-            </View>
+            <>
+                {header}
+                <View style={styles.centered}>
+                    <ActivityIndicator />
+                </View>
+            </>
         )
     }
 
     if (state.status === "error") {
         return (
-            <View style={styles.centered}>
-                <Text style={styles.error}>{state.message}</Text>
-            </View>
+            <>
+                {header}
+                <View style={styles.centered}>
+                    <Text style={styles.error}>{state.message}</Text>
+                </View>
+            </>
         )
     }
 
     return (
         <>
-            {/* The code heads the card instead, as the commission page does. */}
-            <Stack.Screen options={{ title: "", headerLargeTitle: false }} />
+            {header}
             <EvaluationScreen
                 categories={state.categories}
                 candidateId={candidateId}

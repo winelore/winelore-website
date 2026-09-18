@@ -360,15 +360,67 @@ const CHECK_COMMISSION_TEMPLATES = `
   }
 `
 
+// A beverage names its type by id only; the type's own query has the code.
 const GET_BEVERAGE_TYPE = `
   query GetBeverageType($id: ID!) {
-      beverage(id: $id) { id type { id code } }
+      beverage(id: $id) { id typeId }
+  }
+`
+
+const GET_CANDIDATE_CODE_CONTEXT = `
+  query GetCandidateCodeContext($commissionId: ID!, $sampleId: ID!) {
+      commission(id: $commissionId) { id panels { id candidates { id anonymizedCode } } }
+      sample(id: $sampleId) { id batch { id beverage { id typeId } } }
+  }
+`
+
+const GET_BEVERAGE_TYPE_CODE = `
+  query GetBeverageTypeCode($id: ID!) {
+      beverageType(id: $id) { id code }
   }
 `
 
 /** A code as stored: trimmed, or none. */
 export function candidateCodeInput(code: string | null | undefined): string | null {
     return code?.trim() ? code.trim() : null
+}
+
+/**
+ * The code a candidate gets when none is typed: the type's initial and the
+ * number after the highest one already in the commission, from 101 — so
+ * "W-101", then "W-102" — and never one the commission already uses.
+ */
+export function nextCandidateCode(existingCodes: Array<string | null | undefined>, typeCode?: string | null): string {
+    const prefix = typeCode?.trim().charAt(0).toUpperCase() || "C"
+    const taken = new Set(existingCodes.map((code) => code?.trim().toUpperCase()).filter(Boolean))
+    let number = 100
+    for (const code of existingCodes) {
+        const digits = code?.trim().match(/(\d+)$/)
+        if (digits) number = Math.max(number, Number(digits[1]))
+    }
+    let code: string
+    do {
+        number += 1
+        code = `${prefix}-${number}`
+    } while (taken.has(code))
+    return code
+}
+
+/** A generated code for a new candidate, or none if what it needs won't load. */
+async function generateCandidateCode(
+    send: CommissionSend,
+    commissionId: string,
+    sampleId: string,
+): Promise<{ code: string; typeId: string | null }> {
+    const data = await send(GET_CANDIDATE_CODE_CONTEXT, { commissionId, sampleId })
+    const codes: string[] = (data?.commission?.panels ?? []).flatMap((panel: any) =>
+        (panel?.candidates ?? []).map((candidate: any) => candidate?.anonymizedCode),
+    )
+    const typeId: string | null = data?.sample?.batch?.beverage?.typeId ?? null
+    const typeCode: string | null = typeId
+        ? ((await send(GET_BEVERAGE_TYPE_CODE, { id: typeId }))?.beverageType?.code ?? null)
+        : null
+    return { code: nextCandidateCode(codes, typeCode), typeId }
 }
 
 /**
@@ -384,9 +436,24 @@ export async function addCommissionCandidate(
     input: { commissionId: string; panelId: string; sampleId: string; anonymizedCode?: string | null },
     onWarning?: (context: string, error: unknown) => void,
 ): Promise<{ id: string; panelId: string }> {
+    // The backend keeps a blank code blank, so the "auto-generated if empty"
+    // the form promises happens here. Failing to work one out only leaves it
+    // blank, to be set from the panel.
+    let anonymizedCode = candidateCodeInput(input.anonymizedCode)
+    let knownTypeId: string | null = null
+    if (!anonymizedCode) {
+        try {
+            const generated = await generateCandidateCode(send, input.commissionId, input.sampleId)
+            anonymizedCode = generated.code
+            knownTypeId = generated.typeId
+        } catch (error) {
+            onWarning?.("code for the new candidate", error)
+        }
+    }
+
     const added = (
         await send(ADD_COMMISSION_CANDIDATE, {
-            input: { panelId: input.panelId, sampleId: input.sampleId, anonymizedCode: candidateCodeInput(input.anonymizedCode) },
+            input: { panelId: input.panelId, sampleId: input.sampleId, anonymizedCode },
         })
     )?.addCommissionCandidate
     if (!added) throw new Error("The candidate was not added")
@@ -396,7 +463,8 @@ export async function addCommissionCandidate(
         const beverageId = added.sample?.batch?.beverage?.id
         if (commission?.status === "DRAFT" && beverageId) {
             const bound = new Set((commission.templateEditions || []).map((link: any) => link.beverageType?.id).filter(Boolean))
-            const typeId: string | null = (await send(GET_BEVERAGE_TYPE, { id: beverageId }))?.beverage?.type?.id || null
+            const typeId: string | null =
+                knownTypeId || (await send(GET_BEVERAGE_TYPE, { id: beverageId }))?.beverage?.typeId || null
             if (typeId && !bound.has(typeId)) {
                 const items: any[] =
                     (await send(print(DevGetEvaluationTemplateEditionsDocument)))?.evaluationTemplateEditions?.items || []

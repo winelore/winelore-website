@@ -120,6 +120,10 @@ test("the chair may advance only once every member is in — not merely every ev
     // would let the panel move on without them.
     assert.equal(build([HEAD, ANN, BOB]).canAdvance, false)
     assert.equal(build([HEAD, ANN]).canAdvance, true)
+    // Once everyone has scored it the current candidate is no longer left,
+    // though the panel still counts it until the chair moves on.
+    assert.deepEqual([build([HEAD, ANN, BOB]).candidatesLeft, build([HEAD, ANN]).candidatesLeft], [2, 1])
+    assert.equal(build([HEAD, ANN]).isLastCandidateInPanel, false)
     // A draft that was never confirmed is not complete either.
     const drafted = buildWaitRoom({
         commission: commissionWith({ members: [HEAD, ANN] }),

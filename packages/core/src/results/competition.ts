@@ -197,17 +197,48 @@ export async function loadCompetitionResults(
         commissionSummaryRows.push(rows.summaryRow)
     }
 
+    const codes = Array.from(outcomePropertyCodes)
     return {
         competitionName,
-        overviewRows,
+        overviewRows: rankOverviewRows(overviewRows, codes),
         commissionSummaryRows,
         expertScoreRows,
         commentRows,
         awardRows,
-        outcomePropertyCodes: Array.from(outcomePropertyCodes),
+        outcomePropertyCodes: codes,
         outcomePropertyNames,
         propertyMap,
     }
+}
+
+/**
+ * Candidates best first, so the "#" beside each is its place: by the first
+ * outcome the policy produces, then the next on a tie. A candidate without a
+ * number yet (no policy, or still being tasted) follows the ranked ones, and
+ * otherwise the commissions' own order is kept.
+ */
+export function rankOverviewRows(
+    rows: CompetitionOverviewRow[],
+    outcomeCodes: string[],
+): CompetitionOverviewRow[] {
+    const numeric = (row: CompetitionOverviewRow, code: string) => {
+        const value = Number.parseFloat(row.outcomes[code] ?? "")
+        return Number.isFinite(value) ? value : null
+    }
+    return rows
+        .map((row, order) => ({ row, order }))
+        .sort((a, b) => {
+            for (const code of outcomeCodes) {
+                const left = numeric(a.row, code)
+                const right = numeric(b.row, code)
+                if (left === right) continue
+                if (left === null) return 1
+                if (right === null) return -1
+                return right - left
+            }
+            return a.order - b.order
+        })
+        .map(({ row }) => row)
 }
 
 async function loadCommission(

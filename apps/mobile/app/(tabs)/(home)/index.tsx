@@ -1,6 +1,18 @@
-import { useMemo, useState } from "react"
-import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native"
+import { useMemo, useRef, useState } from "react"
+import {
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+    type LayoutChangeEvent,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
+} from "react-native"
 import { Stack, useRouter } from "expo-router"
+import { useHeaderHeight } from "expo-router/react-navigation"
 import * as Haptics from "expo-haptics"
 import { dashboardUsernameAuids } from "@winelore/core/dashboard"
 import { BeverageCard, CommissionCard, CompetitionCard, TemplateCard } from "../../../src/dashboard/cards"
@@ -27,6 +39,9 @@ export default function HomeScreen() {
     const open = useOpenDestination()
     const { data, reload } = useHome()
     const [isRefreshing, setIsRefreshing] = useState(false)
+    const headerHeight = useHeaderHeight()
+    const titleBottom = useRef(0)
+    const [titleShown, setTitleShown] = useState(false)
 
     const competitions = data.competitions.status === "ready" ? data.competitions.items : []
     const beverages = data.beverages.status === "ready" ? data.beverages.items : []
@@ -52,27 +67,33 @@ export default function HomeScreen() {
             hitSlop={8}
             style={({ pressed }) => pressed && styles.pressed}
         >
-            <Avatar size={Platform.OS === "ios" ? 34 : 36} style={styles.headerAvatar} />
+            <Avatar size={36} style={styles.headerAvatar} />
         </Pressable>
     )
 
+    // The bar's own title takes over once the large one has scrolled away.
+    const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const shown = event.nativeEvent.contentOffset.y + headerHeight > titleBottom.current
+        if (shown !== titleShown) setTitleShown(shown)
+    }
+
     return (
         <>
-            <Stack.Screen
-                options={{
-                    title: t("common.home"),
-                    // iOS 26 would otherwise sit the avatar in a glass capsule;
-                    // an account avatar stands on its own, as in the App Store.
-                    unstable_headerRightItems: () => [
-                        { type: "custom", element: profileButton, hidesSharedBackground: true },
-                    ],
-                    headerRight: () => profileButton,
-                }}
-            />
+            {Platform.OS === "ios" ? (
+                // The App Store and Music put the account on the large title's
+                // own row, trailing it, and let both scroll away together. A
+                // native large title takes no views beside it, so this one is
+                // drawn in the page and the bar keeps only the inline title.
+                <Stack.Screen options={{ title: titleShown ? t("common.home") : "", headerLargeTitle: false }} />
+            ) : (
+                <Stack.Screen options={{ title: t("common.home"), headerRight: () => profileButton }} />
+            )}
             <ScrollView
                 style={styles.screen}
                 contentContainerStyle={styles.content}
                 contentInsetAdjustmentBehavior="automatic"
+                onScroll={Platform.OS === "ios" ? onScroll : undefined}
+                scrollEventThrottle={16}
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefreshing}
@@ -82,6 +103,21 @@ export default function HomeScreen() {
                     />
                 }
             >
+                {Platform.OS === "ios" ? (
+                    <View
+                        style={styles.titleRow}
+                        onLayout={(event: LayoutChangeEvent) => {
+                            const { y, height } = event.nativeEvent.layout
+                            titleBottom.current = y + height
+                        }}
+                    >
+                        <Text style={styles.largeTitle} accessibilityRole="header" numberOfLines={1}>
+                            {t("common.home")}
+                        </Text>
+                        {profileButton}
+                    </View>
+                ) : null}
+
                 <View style={styles.banner}>
                     <Text style={styles.bannerTitle}>{t("dashboard.welcomeTitle")}</Text>
                     <Text style={styles.bannerSubtitle}>{t("dashboard.welcomeSubtitle")}</Text>
@@ -150,6 +186,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: palette.background },
     content: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32, gap: 28 },
+    // UIKit's large title: 34 pt bold, the avatar centred on its line.
+    titleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        // The page's gap is for sections; the title sits closer to the first.
+        marginBottom: -14,
+    },
+    largeTitle: { flexShrink: 1, fontSize: 34, lineHeight: 41, fontWeight: "700", letterSpacing: 0.4, color: palette.text },
     pressed: { opacity: 0.6 },
     headerAvatar: {
         borderWidth: 1,

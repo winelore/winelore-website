@@ -163,7 +163,10 @@ export interface WaitRoomState {
 
     totalCandidates: number
     currentCandidateIndex: number
-    /** Candidates in this panel still to be scored, the current one included. */
+    /**
+     * Candidates in this panel still to be scored: the current one counts
+     * until every member has scored it, though the chair has not moved on.
+     */
     candidatesLeft: number
     candidatesLeftAfterCurrent: number
     isLastCandidateInPanel: boolean
@@ -259,9 +262,9 @@ export function buildWaitRoom(input: {
 
     const totalCandidates = panelCandidates.length
     const evaluatedCount = panelCandidates.filter((entry) => isReplicaCandidateFinished(entry.status)).length
-    const candidatesLeft = totalCandidates - evaluatedCount
+    const unfinishedCount = totalCandidates - evaluatedCount
     const candidatesLeftAfterCurrent =
-        currentCandidateIndex >= 0 ? totalCandidates - currentCandidateIndex - 1 : candidatesLeft
+        currentCandidateIndex >= 0 ? totalCandidates - currentCandidateIndex - 1 : unfinishedCount
 
     // A blank code is as good as none: fall back to the tasting position, then
     // to a short id, so the chair always has something to read out.
@@ -286,6 +289,12 @@ export function buildWaitRoom(input: {
             outlier: (evaluation && outliers.get(evaluation)) || null,
         }
     })
+
+    const canAdvance = Boolean(currentCandidateId) && members.length > 0 && progress.every((row) => row.isCompleted)
+    // The current candidate stays unfinished on the server until the chair
+    // advances, but once everyone has scored it it is no longer "left".
+    const currentIsScored = canAdvance && currentCandidate !== null && !isReplicaCandidateFinished(currentCandidate.status)
+    const candidatesLeft = unfinishedCount - (currentIsScored ? 1 : 0)
 
     const me = input.actorAuid
         ? members.find((member) => memberMatchesActor(member.auids, input.actorAuid!))
@@ -312,7 +321,7 @@ export function buildWaitRoom(input: {
         currentCandidateIndex,
         candidatesLeft,
         candidatesLeftAfterCurrent,
-        isLastCandidateInPanel: Boolean(currentCandidateId) && candidatesLeft === 1,
+        isLastCandidateInPanel: Boolean(currentCandidateId) && unfinishedCount === 1,
         evaluations,
         propertyMap: input.propertyMap,
         myEvaluation,
@@ -321,10 +330,7 @@ export function buildWaitRoom(input: {
         isPanelFinished: currentPanel?.status === "COMPLETED",
         allCandidatesEvaluated:
             replicaPanels.length > 0 && replicaPanels.every((panel) => panel.status === "COMPLETED"),
-        canAdvance:
-            Boolean(currentCandidateId) &&
-            members.length > 0 &&
-            progress.every((row) => row.isCompleted),
+        canAdvance,
         flags,
     }
 }

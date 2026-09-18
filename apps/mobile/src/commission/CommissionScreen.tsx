@@ -273,6 +273,11 @@ function Loaded({
                 contentContainerStyle={styles.content}
                 contentInsetAdjustmentBehavior="automatic"
                 keyboardShouldPersistTaps="handled"
+                // The inline forms (a replica's name, a panel's) focus as they
+                // open; this lifts the field above the keyboard, as the
+                // competition page does.
+                keyboardDismissMode="interactive"
+                automaticallyAdjustKeyboardInsets
                 onScroll={onScroll}
                 scrollEventThrottle={16}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent} colors={[palette.accent]} />}

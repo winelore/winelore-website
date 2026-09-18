@@ -16,6 +16,7 @@ import {
     expertBreakdown,
     loadCompetitionResults,
     overviewRowDetails,
+    rankOverviewRows,
     resolveCompetitionResultsScope,
     resultPersonAuids,
     resultPersonName,
@@ -384,4 +385,25 @@ test("backend texts come from the static table, ignoring case", () => {
     assert.equal(lookupBackendText("  aroma ", "uk"), "Аромат")
     assert.equal(lookupBackendText("Not a known property", "uk"), null)
     assert.equal(lookupBackendText("", "uk"), null)
+})
+
+test("candidates rank best first, unscored ones after in their own order", () => {
+    const row = (code: string, outcomes: Record<string, string>) =>
+        ({ code, outcomes }) as unknown as CompetitionOverviewRow
+    const ranked = rankOverviewRows(
+        [
+            row("A", { total: "-" }),
+            row("B", { total: "86.00", medal: "2" }),
+            row("C", { total: "100.00" }),
+            row("D", {}),
+            row("E", { total: "86.00", medal: "3" }),
+        ],
+        ["total", "medal"],
+    )
+    assert.deepEqual(ranked.map((r) => r.code), ["C", "E", "B", "A", "D"])
+    // With no outcome at all the commissions' order stands.
+    assert.deepEqual(
+        rankOverviewRows([row("X", {}), row("Y", {})], []).map((r) => r.code),
+        ["X", "Y"],
+    )
 })

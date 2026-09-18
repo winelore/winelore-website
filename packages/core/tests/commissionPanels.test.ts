@@ -12,6 +12,7 @@ import {
     filterCatalog,
     loadBeveragePage,
     moveCandidate,
+    nextCandidateCode,
     normalizeTemplateCategories,
     panelEntries,
     panelsProgress,
@@ -140,7 +141,7 @@ test("adding a sample to a draft binds a template for a new beverage type", asyn
             return { addCommissionCandidate: { id: "c1", panel: { id: "p1" }, sample: { batch: { beverage: { id: "bev" } } } } }
         }
         if (name === "CheckCommissionTemplates") return { commission: { status: "DRAFT", templateEditions: [{ beverageType: { id: "bt-other" } }] } }
-        if (name === "GetBeverageType") return { beverage: { type: { id: "bt-wine" } } }
+        if (name === "GetBeverageType") return { beverage: { id: "bev", typeId: "bt-wine" } }
         if (name === "DevGetEvaluationTemplateEditions")
             return {
                 evaluationTemplateEditions: {
@@ -168,7 +169,33 @@ test("a failed template bind does not undo the add", async () => {
     const warnings: string[] = []
     const added = await addCommissionCandidate(send, { commissionId: "c", panelId: "p1", sampleId: "s1" }, (context) => warnings.push(context))
     assert.equal(added.id, "c1")
-    assert.equal(warnings.length, 1)
+    assert.deepEqual(warnings, ["code for the new candidate", "template for the new candidate"])
+})
+
+test("a blank code becomes the type's next one in the commission", async () => {
+    const send = async (query: string, variables?: Record<string, unknown>): Promise<any> => {
+        const name = /(?:query|mutation)\s+(\w+)/.exec(query)?.[1] ?? "?"
+        if (name === "GetCandidateCodeContext")
+            return {
+                commission: { panels: [{ candidates: [{ anonymizedCode: "W-101" }, { anonymizedCode: null }] }, { candidates: [{ anonymizedCode: "W104" }] }] },
+                sample: { batch: { beverage: { typeId: "bt-wine" } } },
+            }
+        if (name === "GetBeverageTypeCode") return { beverageType: { code: "WINE" } }
+        if (name === "AddCommissionCandidate") {
+            assert.equal((variables as any).input.anonymizedCode, "W-105")
+            return { addCommissionCandidate: { id: "c1", panel: { id: "p1" }, sample: { batch: { beverage: { id: "bev" } } } } }
+        }
+        return {}
+    }
+    const added = await addCommissionCandidate(send, { commissionId: "comm", panelId: "p1", sampleId: "s1", anonymizedCode: "  " })
+    assert.equal(added.id, "c1")
+})
+
+test("generated codes start at 101 and skip ones in use", () => {
+    assert.equal(nextCandidateCode([], "CIDER"), "C-101")
+    assert.equal(nextCandidateCode([], null), "C-101")
+    assert.equal(nextCandidateCode(["A", "W-7"], "wine"), "W-101")
+    assert.equal(nextCandidateCode(["w-102", "X101"], "WINE"), "W-103")
 })
 
 test("a beverage search pages on while it fills pages; a listing uses the total", async () => {
