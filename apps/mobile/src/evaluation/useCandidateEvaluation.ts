@@ -17,6 +17,7 @@ import {
 import { getCompetitionFeatureFlags } from "@winelore/core/commission"
 import { File } from "expo-file-system"
 import { fetchGraphQLRaw, mutateGraphQLRaw, sdk } from "../api/client"
+import { getStoredSession } from "../auth/session"
 import type { VoiceRecording } from "./useVoiceRecorder"
 
 const PRESIGN_AUDIO_UPLOAD = `
@@ -162,11 +163,15 @@ export function useCandidateEvaluation(candidateId: string) {
 
     const submit = useCallback(
         async (scores: EvaluationScoreInput[], comments: EvaluationCommentInput[] = []) => {
+            // The backend records a score against the actor, not the bearer
+            // token, so both writes name the judge as the web's action does.
+            const auid = (await getStoredSession())?.auid
+            const options = auid ? { headers: { "x-actor": auid } } : undefined
             try {
-                const result = await sdk.SubmitEvaluation({ input: { candidateId, scores, comments } })
+                const result = await sdk.SubmitEvaluation({ input: { candidateId, scores, comments } }, options)
                 const evaluation = result?.submitEvaluation
                 if (evaluation?.id && (evaluation.status !== "CONFIRMED" || !evaluation.isComplete)) {
-                    await sdk.ConfirmEvaluation({ id: evaluation.id })
+                    await sdk.ConfirmEvaluation({ id: evaluation.id }, options)
                 }
             } catch (err) {
                 const message = err instanceof Error ? err.message : ""

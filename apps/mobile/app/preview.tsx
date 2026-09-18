@@ -21,10 +21,11 @@ export default function PreviewRoute() {
 
     return (
         <>
-            <Stack.Screen options={{ title: "Sample 0417" }} />
+            <Stack.Screen options={{ title: "", headerLargeTitle: false }} />
             <EvaluationScreen
                 categories={sampleCategories}
                 candidateId="preview"
+                candidateCode="Sample 0417"
                 beverageName="Riesling Reserve"
                 visibleAttributes={sampleAttributes}
                 labels={buildEvaluationLabels(translation)}

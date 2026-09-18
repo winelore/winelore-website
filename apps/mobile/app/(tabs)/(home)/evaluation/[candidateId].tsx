@@ -54,10 +54,12 @@ export default function CandidateEvaluationRoute() {
 
     return (
         <>
-            <Stack.Screen options={{ title: state.candidateCode }} />
+            {/* The code heads the card instead, as the commission page does. */}
+            <Stack.Screen options={{ title: "", headerLargeTitle: false }} />
             <EvaluationScreen
                 categories={state.categories}
                 candidateId={candidateId}
+                candidateCode={state.candidateCode}
                 beverageName={state.beverageName}
                 visibleAttributes={state.visibleAttributes}
                 labels={buildEvaluationLabels(translation)}

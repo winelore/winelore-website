@@ -40,6 +40,8 @@ export interface EvaluationScreenLabels {
 interface EvaluationScreenProps {
     categories: EvaluationCategory[]
     candidateId: string
+    /** The anonymized code, the card's heading as on the web. */
+    candidateCode: string
     beverageName?: string | null
     visibleAttributes?: Array<{ label: string; value: string }>
     labels: EvaluationScreenLabels
@@ -57,6 +59,7 @@ interface EvaluationScreenProps {
 export function EvaluationScreen({
     categories,
     candidateId,
+    candidateCode,
     beverageName,
     visibleAttributes = [],
     labels,
@@ -143,9 +146,12 @@ export function EvaluationScreen({
                 // Let a judge tap a score directly while the keyboard is open,
                 // instead of needing a dismiss tap first.
                 keyboardShouldPersistTaps="handled"
+                // A comment is multiline, so return adds a line rather than
+                // closing the keyboard: dragging the card away closes it.
+                keyboardDismissMode="interactive"
                 contentInsetAdjustmentBehavior="automatic"
             >
-                <Header beverageName={beverageName} visibleAttributes={visibleAttributes} />
+                <Header candidateCode={candidateCode} beverageName={beverageName} visibleAttributes={visibleAttributes} />
 
                 {categories.map((category) => (
                     <View key={category.id} style={styles.category}>
@@ -209,19 +215,24 @@ export function EvaluationScreen({
 }
 
 /**
- * The candidate code is the navigation bar's large title, so it is not repeated
- * here — only what the title cannot carry.
+ * The candidate code heads the card, not the navigation bar: the scorecard
+ * opens on a spinner, and a large title set up before its scroll view exists
+ * stays pinned over the scrolling card instead of collapsing.
  */
 function Header({
+    candidateCode,
     beverageName,
     visibleAttributes,
 }: {
+    candidateCode: string
     beverageName?: string | null
     visibleAttributes: Array<{ label: string; value: string }>
 }) {
-    if (!beverageName && visibleAttributes.length === 0) return null
     return (
         <View style={styles.header}>
+            <Text style={styles.code} accessibilityRole="header">
+                {candidateCode}
+            </Text>
             {beverageName ? <Text style={styles.beverage}>{beverageName}</Text> : null}
             {visibleAttributes.length > 0 ? (
                 <View style={styles.attributes}>
@@ -241,6 +252,7 @@ const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: palette.background },
     content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
     header: { gap: spacing.xs },
+    code: { ...type.largeTitle, color: palette.text },
     beverage: { ...type.title, color: palette.text },
     attributes: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
     attribute: {
