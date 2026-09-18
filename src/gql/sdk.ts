@@ -180,6 +180,12 @@ export type CreateSampleInput = {
   volumeMl?: number | null | undefined;
 };
 
+/** When judges may discuss a candidate. */
+export type DiscussionPolicy =
+  | 'AFTER_EVALUATION'
+  | 'ALWAYS'
+  | 'DISABLED';
+
 export type EvaluatedPropertyScoreInput = {
   code: string;
   value?: string | null | undefined;
@@ -378,7 +384,7 @@ export type GetCommissionQueryVariables = Exact<{
 }>;
 
 
-export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, partialCandidateEvaluationEnabled: boolean, plannedDates: { start: string | null, end: string | null } | null, evaluationVisibleAttributes: { beverage: Array<string>, batch: Array<string>, sample: Array<string> }, panels: Array<{ id: string, name: string, candidates: Array<{ id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, lotNumber: string | null, attributes: unknown, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: unknown, producers: Array<{ auid: Array<number> | null, producerId: string | null }> } } } }> }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentPanelId: string | null, chaoticCurrentPanelChangesEnabled: boolean, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string } } }> }> }> } | null };
+export type GetCommissionQuery = { commission: { id: string, name: string, status: Types.CommissionStatus, startedAt: string | null, endedAt: string | null, createdAt: string, wineJumperMiniGameEnabled: boolean, voiceCommentsEnabled: boolean, propertyCommentsEnabled: boolean, beverageOriginDuringEvaluationEnabled: boolean, partialCandidateEvaluationEnabled: boolean, discussionPolicy: Types.DiscussionPolicy, plannedDates: { start: string | null, end: string | null } | null, evaluationVisibleAttributes: { beverage: Array<string>, batch: Array<string>, sample: Array<string> }, panels: Array<{ id: string, name: string, candidates: Array<{ id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string }, sample: { id: string, volumeMl: number | null, batch: { id: string, lotNumber: string | null, attributes: unknown, beverage: { id: string, name: string, status: Types.BeverageStatus, attributes: unknown, producers: Array<{ auid: Array<number> | null, producerId: string | null }> } } } }> }>, competition: { id: string, name: string, holders: Array<Array<number>> }, replicas: Array<{ id: string, name: string | null, type: Types.CommissionReplicaType, status: Types.CommissionReplicaStatus, currentPanelId: string | null, chaoticCurrentPanelChangesEnabled: boolean, members: Array<{ id: string, auid: Array<number>, role: Types.CommissionReplicaMemberRole, isReady: boolean }>, replicaPanels: Array<{ id: string, status: Types.CommissionReplicaPanelStatus, currentCandidateId: string | null, chaoticCurrentCandidateChangesEnabled: boolean, panel: { id: string, name: string }, replicaCandidates: Array<{ id: string, status: Types.CommissionReplicaCandidateStatus, candidate: { id: string, anonymizedCode: string | null, beverageType: { id: string, code: string, name: string } } }> }> }> } | null };
 
 export type GetCommissionTemplatesQueryVariables = Exact<{
   id: string | number;
@@ -556,6 +562,14 @@ export type GetEvaluationsForCandidateQueryVariables = Exact<{
 
 
 export type GetEvaluationsForCandidateQuery = { evaluationsByReplicaCandidate: { items: Array<{ id: string, status: string, evaluatorAuid: Array<number>, isComplete: boolean, templateEdition: { id: string }, scores: Array<{ code: string, value: string | null }>, comments: Array<{ id: string, propertyId: string | null, text: string | null, voiceUrl: string | null }> }> } };
+
+export type SetCommissionDiscussionPolicyMutationVariables = Exact<{
+  id: string | number;
+  policy: Types.DiscussionPolicy;
+}>;
+
+
+export type SetCommissionDiscussionPolicyMutation = { setCommissionDiscussionPolicy: { id: string, discussionPolicy: Types.DiscussionPolicy } };
 
 export type GetCompetitionPageQueryVariables = Exact<{
   id: string | number;
@@ -1187,6 +1201,7 @@ export const GetCommissionDocument = gql`
     propertyCommentsEnabled
     beverageOriginDuringEvaluationEnabled
     partialCandidateEvaluationEnabled
+    discussionPolicy
     panels {
       id
       name
@@ -1750,6 +1765,14 @@ export const GetEvaluationsForCandidateDocument = gql`
         voiceUrl
       }
     }
+  }
+}
+    `;
+export const SetCommissionDiscussionPolicyDocument = gql`
+    mutation SetCommissionDiscussionPolicy($id: ID!, $policy: DiscussionPolicy!) {
+  setCommissionDiscussionPolicy(id: $id, policy: $policy) {
+    id
+    discussionPolicy
   }
 }
     `;
@@ -2348,6 +2371,9 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     GetEvaluationsForCandidate(variables: Types.GetEvaluationsForCandidateQueryVariables, options?: C): Promise<Types.GetEvaluationsForCandidateQuery> {
       return requester<Types.GetEvaluationsForCandidateQuery, Types.GetEvaluationsForCandidateQueryVariables>(GetEvaluationsForCandidateDocument, variables, options) as Promise<Types.GetEvaluationsForCandidateQuery>;
+    },
+    SetCommissionDiscussionPolicy(variables: Types.SetCommissionDiscussionPolicyMutationVariables, options?: C): Promise<Types.SetCommissionDiscussionPolicyMutation> {
+      return requester<Types.SetCommissionDiscussionPolicyMutation, Types.SetCommissionDiscussionPolicyMutationVariables>(SetCommissionDiscussionPolicyDocument, variables, options) as Promise<Types.SetCommissionDiscussionPolicyMutation>;
     },
     GetCompetitionPage(variables: Types.GetCompetitionPageQueryVariables, options?: C): Promise<Types.GetCompetitionPageQuery> {
       return requester<Types.GetCompetitionPageQuery, Types.GetCompetitionPageQueryVariables>(GetCompetitionPageDocument, variables, options) as Promise<Types.GetCompetitionPageQuery>;

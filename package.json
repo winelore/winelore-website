@@ -75,6 +75,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@babel/runtime": "^8.0.5",
     "@graphql-codegen/cli": "^7.1.2",
     "@graphql-codegen/client-preset": "^6.0.1",
     "@graphql-codegen/import-types-preset": "^4.0.1",
