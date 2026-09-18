@@ -157,6 +157,8 @@ const en = {
     regionsInView_few: "{{count}} wine regions in view",
     regionsInView_plural: "{{count}} wine regions in view",
     noRegionsInView: "No mapped wine regions in view",
+    unavailableTitle: "The map is not available in this build",
+    unavailableDesc: "Maps on Android need a Google Maps key this build was made without. Everything else works as usual.",
   },
   competition: {
     notFoundTitle: "Competition not found",

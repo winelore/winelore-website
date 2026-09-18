@@ -14,6 +14,7 @@ import {
 } from "@winelore/core"
 import { sdk } from "../api/client"
 import { useTranslation } from "../i18n/LocaleProvider"
+import { MapUnavailable, mapAvailable } from "./availability"
 import { palette } from "../theme"
 import { useSelectedRegions } from "./selection"
 import { useWineRegions } from "./useWineRegions"
@@ -161,6 +162,8 @@ export function MapScreen() {
                         onCameraMove={onCameraMove}
                         onMarkerClick={openBeverage}
                     />
+                ) : !mapAvailable ? (
+                    <MapUnavailable />
                 ) : (
                     <GoogleMaps.View
                         style={StyleSheet.absoluteFill}
@@ -173,12 +176,14 @@ export function MapScreen() {
                     />
                 )}
                 {/* The web's legend: how many mapped regions the view holds. */}
-                <View pointerEvents="none" style={[styles.legend, { top: insets.top + 8 }]}>
-                    <View style={styles.legendSwatch} />
-                    <Text style={styles.legendLabel}>
-                        {inView.length > 0 ? tCount("map.regionsInView", inView.length) : t("map.noRegionsInView")}
-                    </Text>
-                </View>
+                {mapAvailable ? (
+                    <View pointerEvents="none" style={[styles.legend, { top: insets.top + 8 }]}>
+                        <View style={styles.legendSwatch} />
+                        <Text style={styles.legendLabel}>
+                            {inView.length > 0 ? tCount("map.regionsInView", inView.length) : t("map.noRegionsInView")}
+                        </Text>
+                    </View>
+                ) : null}
             </View>
         </>
     )

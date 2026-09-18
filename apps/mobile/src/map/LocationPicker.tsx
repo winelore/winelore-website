@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics"
 import { AppleMaps, GoogleMaps } from "expo-maps"
 import { nominatimPlaceUrl, nominatimSearchUrl, parseNominatimSearch, roundCoordinate } from "@winelore/core"
 import { useTranslation } from "../i18n/LocaleProvider"
+import { MapUnavailable, mapAvailable } from "./availability"
 import { MONOSPACE, continuous, palette, radius } from "../theme"
 import { FormInput } from "../ui/Form"
 import { Icon } from "../ui/Icon"
@@ -120,6 +121,8 @@ export function LocationPicker({ value, onChange, disabled }: { value: Point | n
                             if (typeof latitude === "number" && typeof longitude === "number") choose({ latitude, longitude })
                         }}
                     />
+                ) : !mapAvailable ? (
+                    <MapUnavailable />
                 ) : (
                     <GoogleMaps.View
                         ref={google}
@@ -133,10 +136,12 @@ export function LocationPicker({ value, onChange, disabled }: { value: Point | n
                         }}
                     />
                 )}
-                <View pointerEvents="none" style={styles.hint}>
-                    <Icon name="location" size={13} color={palette.accent} />
-                    <Text style={styles.hintLabel}>{value ? t("beverage.mapHintSelected") : t("beverage.mapHintEmpty")}</Text>
-                </View>
+                {mapAvailable ? (
+                    <View pointerEvents="none" style={styles.hint}>
+                        <Icon name="location" size={13} color={palette.accent} />
+                        <Text style={styles.hintLabel}>{value ? t("beverage.mapHintSelected") : t("beverage.mapHintEmpty")}</Text>
+                    </View>
+                ) : null}
             </View>
 
             {value ? (

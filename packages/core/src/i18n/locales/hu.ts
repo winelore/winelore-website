@@ -157,6 +157,8 @@ const hu = {
       regionsInView_few: "{{count}} borrégió a nézetben",
       regionsInView_plural: "{{count}} borrégió a nézetben",
       noRegionsInView: "Nincs térképezett borrégió a nézetben",
+      unavailableTitle: "A térkép ebben a verzióban nem érhető el",
+      unavailableDesc: "Az Androidos térképhez Google Maps-kulcs kell, amely nélkül ez a verzió készült. Minden más a megszokott módon működik.",
     },
     competition: {
         notFoundTitle: "A verseny nem található",

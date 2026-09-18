@@ -49,6 +49,13 @@ function webOrigin(): string | undefined {
     }
 }
 
+/**
+ * Google Maps on Android will not draw without an API key in the manifest, and
+ * a map view without one takes the whole app down. Set one to get the map on
+ * Android; without it the app shows a notice where the map would be.
+ */
+const googleMapsApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY || rootEnv.GOOGLE_MAPS_ANDROID_API_KEY || undefined
+
 const config: ExpoConfig = {
     name: "Winelore",
     slug: "winelore",
@@ -69,6 +76,7 @@ const config: ExpoConfig = {
     },
     android: {
         package: "com.thewinelore.winelore",
+        ...(googleMapsApiKey ? { config: { googleMaps: { apiKey: googleMapsApiKey } } } : {}),
     },
     // withSceneLifecycle: iOS 27 will not launch an app without UIScene
     // support, which SDK 57's template lacks. Drop it on moving to SDK 58.
@@ -112,6 +120,7 @@ const config: ExpoConfig = {
             "NEXT_PUBLIC_GRAPHQL_ENDPOINT",
         ),
         EXPO_PUBLIC_WEB_ORIGIN: webOrigin(),
+        googleMapsEnabled: Boolean(googleMapsApiKey),
     },
 }
 

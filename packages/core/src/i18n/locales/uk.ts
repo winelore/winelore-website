@@ -159,6 +159,8 @@ const uk: TranslationKey = {
     regionsInView_few: "{{count}} винні регіони у полі зору",
     regionsInView_plural: "{{count}} винних регіонів у полі зору",
     noRegionsInView: "У полі зору немає нанесених винних регіонів",
+    unavailableTitle: "Карта недоступна в цій збірці",
+    unavailableDesc: "Картам на Android потрібен ключ Google Maps, без якого зроблено цю збірку. Усе інше працює як зазвичай.",
   },
   competition: {
     notFoundTitle: "Конкурс не знайдено",
