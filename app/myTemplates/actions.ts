@@ -3,13 +3,37 @@
 import { fetchGraphQLRaw, mutateGraphQLRaw } from '../../lib/apiClient';
 import { revalidatePath } from 'next/cache';
 import {
-    GET_TEMPLATE_CATALOG,
     createEvaluationTemplate,
     loadTemplateDetail,
     loadTemplateForEditor,
     saveEvaluationTemplate,
-    toTemplateCatalog,
+    toCatalogEdition,
 } from '@winelore/core/commission';
+
+// An edition's fields as core's toCatalogEdition reads them.
+const TEMPLATE_EDITION_FIELDS = `
+    id
+    version
+    status
+    categories {
+        id
+        name
+        properties {
+            __typename
+            id
+            code
+            name
+            description
+            isRequired
+            isResult
+            ... on IntProperty { intMinLimit: minLimit intMaxLimit: maxLimit intDefaultValue: defaultValue }
+            ... on DoubleProperty { doubleMinLimit: minLimit doubleMaxLimit: maxLimit doubleDefaultValue: defaultValue }
+            ... on DiscreteNumbersProperty { discreteAllowedValues: allowedValues discreteDefaultValue: defaultValue }
+            ... on EnumProperty { enumAllowedValues: allowedValues enumDefaultValue: defaultValue }
+            ... on BooleanProperty { boolDefaultValue: defaultValue }
+        }
+    }
+`;
 
 // Was pointed at a stale Railway host over plain HTTP as its ultimate
 // fallback; now shares the same endpoint resolution (and transport) as
@@ -48,13 +72,56 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
     }
 }
 
-export async function getEvaluationTemplatesAction(ownerAuid?: number) {
+export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: number = 100, offset: number = 0) {
     try {
-        // Neither field accepts an owner/filter argument on this backend, so
-        // ownership is applied by core once the (unfiltered) result comes back.
-        const data = await rawGraphQL(GET_TEMPLATE_CATALOG, { limit: 100 });
-        const templates = toTemplateCatalog(data?.evaluationTemplateEditions?.items, ownerAuid);
-        return { templates, totalCount: templates.length };
+        // A page of templates, filtered and counted by the backend; the
+        // owner check below stays in case a backend ignores the filter.
+        const query = `
+            query GetEvaluationTemplates($limit: Int, $offset: Int${ownerAuid !== undefined ? ", $owner: [Int!], $filter: EvaluationTemplateFilterInput" : ""}) {
+                evaluationTemplates(limit: $limit, offset: $offset${ownerAuid !== undefined ? ", filter: $filter" : ""}) {
+                    items {
+                        id
+                        name
+                        owners
+                        beverageType { id code name }
+                        status
+                        createdAt
+                        editions(limit: 1) {
+                            ${TEMPLATE_EDITION_FIELDS}
+                        }
+                    }
+                }
+                evaluationTemplateCount${ownerAuid !== undefined ? "(owner: $owner)" : ""}
+            }
+        `;
+
+        const variables: Record<string, unknown> = { limit, offset };
+        if (ownerAuid !== undefined) {
+            variables.owner = [ownerAuid];
+            variables.filter = { owners: [[ownerAuid]] };
+        }
+
+        const data = await rawGraphQL(query, variables);
+        let templates = (data?.evaluationTemplates?.items || []).map((template: any) => {
+            const latestEdition = template.editions?.[0];
+            return {
+                id: template.id,
+                name: template.name,
+                owners: (template.owners as number[][] | null) ?? [],
+                beverageType: template.beverageType?.name ?? template.beverageType?.code ?? "",
+                beverageTypeId: template.beverageType?.id ?? "",
+                status: template.status,
+                createdAt: template.createdAt,
+                // Only the latest edition is fetched; the list does not show the count.
+                totalEditions: 1,
+                latestEdition: latestEdition ? toCatalogEdition(latestEdition) : null,
+            };
+        });
+        if (ownerAuid !== undefined) {
+            templates = templates.filter((t: any) => t.owners?.some((owner: number[]) => owner.includes(ownerAuid)));
+        }
+
+        return { templates, totalCount: data?.evaluationTemplateCount || 0 };
     } catch (err: any) {
         console.error("❌ Failed to fetch templates from backend:", err.message);
         throw err;
