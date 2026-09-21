@@ -304,15 +304,19 @@ export default function EvaluationForm({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    const prevCandidateIdRef = useRef(candidateId)
     useEffect(() => {
-        setValues(buildInitialValues(categories))
-        setCommentValues({})
-        setNumericDrafts({})
-        setNumericErrors({})
-        setGeneralComment("")
-        setError(null)
-        setSuccess(false)
-        setIsSubmitting(false)
+        if (prevCandidateIdRef.current !== candidateId) {
+            prevCandidateIdRef.current = candidateId
+            setValues(buildInitialValues(categories))
+            setCommentValues({})
+            setNumericDrafts({})
+            setNumericErrors({})
+            setGeneralComment("")
+            setError(null)
+            setSuccess(false)
+            setIsSubmitting(false)
+        }
     }, [candidateId, categories])
 
     const startRecording = async (key: string) => {

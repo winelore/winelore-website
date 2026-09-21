@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Plus, Terminal, Trash2, Database } from 'lucide-react';
-import { getCompetitionsListAction } from './actions';
+import { getCompetitionsListAction, switchDevActorAction } from './actions';
+import { normalizeAuids } from '@winelore/core';
 import type { SeederFormData, CommissionConfig, PanelConfig, ReplicaConfig } from '@/lib/seeder';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useRouter } from 'next/navigation';
@@ -83,8 +84,6 @@ export function DevToolsClientView() {
   }, [logs]);
 
   useEffect(() => {
-    // Reset AUID to the default tester account (ID 2) when visiting dev-tools
-    document.cookie = 'auid=2; path=/';
     fetchCompetitions();
   }, []);
 
@@ -148,15 +147,24 @@ export function DevToolsClientView() {
     }
   };
 
-  const handleLoginAs = (auid: number, commissionId?: string, replicaId?: string) => {
-    document.cookie = `auid=${auid}; path=/`;
-    document.cookie = `actor=${auid}; path=/`;
-    
-    if (commissionId) {
-      // Append replicaId if available
-        router.push(`/commission/${commissionId}`);
-    } else {
-      toast.success(`Ви успішно увійшли як експерт з AUID ${auid}.`);
+  const handleLoginAs = async (rawAuid: any, commissionId?: string, replicaId?: string) => {
+    const auidStr = normalizeAuids(rawAuid)[0] || String(rawAuid);
+    try {
+      await switchDevActorAction(auidStr);
+      document.cookie = `auid=${auidStr}; path=/`;
+      document.cookie = `actor=${auidStr}; path=/`;
+      document.cookie = `username=; path=/; max-age=0`;
+      document.cookie = `displayName=; path=/; max-age=0`;
+      
+      if (commissionId) {
+        const url = replicaId ? `/commission/${commissionId}?replicaId=${replicaId}` : `/commission/${commissionId}`;
+        window.location.href = url;
+      } else {
+        toast.success(`Ви успішно увійшли як експерт з AUID ${auidStr}.`);
+        window.location.reload();
+      }
+    } catch (e: any) {
+      toast.error(`Помилка зміни актора: ${e.message}`);
     }
   };
 

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { use, useEffect, useMemo, useState } from "react"
+import React, { use, useEffect, useMemo, useState, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
@@ -16,6 +16,8 @@ import {
 import { normalizeAuids } from '@winelore/core'
 import WaitPanelResults from "../wait/WaitPanelResults"
 import { BackLink } from "@/components/BackLink"
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
+
 
 type PanelSummaryData = Awaited<ReturnType<typeof getWaitDataAction>>
 
@@ -28,68 +30,69 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
     const [isAdvancing, setIsAdvancing] = useState(false)
     const [loadError, setLoadError] = useState(false)
 
-    useEffect(() => {
+    const isFetchingRef = useRef(false)
+    const summaryPanelIdRef = useRef<string | null>(null)
+
+    const loadSummary = useCallback(async () => {
         if (!Cookies.get("auid")) {
             router.replace("/auth/login")
             return
         }
 
-        let mounted = true
-        let isFetching = false
-        let summaryPanelId: string | null = null
+        if (isFetchingRef.current) return
+        isFetchingRef.current = true
 
-        const loadSummary = async () => {
-            if (!mounted || isFetching) return
-            isFetching = true
-            try {
-                const nextData = await getWaitDataAction(commissionId, replicaId)
-                if (!mounted) return
+        try {
+            const nextData = await getWaitDataAction(commissionId, replicaId)
 
-                if (nextData.replicaStatus === "COMPLETED") {
-                    window.location.href = `/commission/${commissionId}/results`
-                    return
-                }
+            if (nextData.replicaStatus === "COMPLETED") {
+                window.location.href = `/commission/${commissionId}/results`
+                return
+            }
 
-                if (!nextData.currentPanelId) {
-                    router.replace(`/commission/${commissionId}`)
-                    return
-                }
+            if (!nextData.currentPanelId) {
+                router.replace(`/commission/${commissionId}`)
+                return
+            }
 
-                if (summaryPanelId === null) {
-                    if (!nextData.isPanelFinished) {
-                        const destination = nextData.currentCandidateId
-                            ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
-                            : `/commission/${commissionId}/replica/${replicaId}/wait`
-                        router.replace(destination)
-                        return
-                    }
-                    summaryPanelId = nextData.currentPanelId
-                } else if (nextData.currentPanelId !== summaryPanelId || !nextData.isPanelFinished) {
+            if (summaryPanelIdRef.current === null) {
+                if (!nextData.isPanelFinished) {
                     const destination = nextData.currentCandidateId
                         ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
                         : `/commission/${commissionId}/replica/${replicaId}/wait`
-                    window.location.href = destination
+                    router.replace(destination)
                     return
                 }
-
-                setData(nextData)
-                setLoadError(false)
-            } catch (error) {
-                console.error("Failed to load panel summary", error)
-                if (mounted) setLoadError(true)
-            } finally {
-                isFetching = false
-                if (mounted) setIsLoading(false)
+                summaryPanelIdRef.current = nextData.currentPanelId
+            } else if (nextData.currentPanelId !== summaryPanelIdRef.current || !nextData.isPanelFinished) {
+                const destination = nextData.currentCandidateId
+                    ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
+                    : `/commission/${commissionId}/replica/${replicaId}/wait`
+                window.location.href = destination
+                return
             }
-        }
 
-        loadSummary()
-        const interval = window.setInterval(loadSummary, 3000)
-        return () => {
-            mounted = false
-            window.clearInterval(interval)
+            setData(nextData)
+            setLoadError(false)
+        } catch (error) {
+            console.error("Failed to load panel summary", error)
+            setLoadError(true)
+        } finally {
+            isFetchingRef.current = false
+            setIsLoading(false)
         }
     }, [commissionId, replicaId, router])
+
+    useEffect(() => {
+        loadSummary()
+    }, [loadSummary])
+
+    useEvaluationLiveUpdates({
+        commissionId,
+        replicaId,
+        onUpdate: loadSummary,
+        enabled: !isAdvancing,
+    })
 
     const role = useMemo(() => {
         const actorAuid = Cookies.get("auid")
