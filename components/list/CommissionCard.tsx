@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Activity, Trophy } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
+import { commissionTimingTicks, formatCommissionTiming } from "@winelore/core/dashboard"
 import { EntityCard, type EntityCardDensity, type EntityCardMeta } from "./EntityCard"
 import { commissionStatusAppearance } from "./statusAppearance"
 
@@ -27,32 +28,16 @@ export function CommissionCard({ commission, density = "comfortable" }: Commissi
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout
-
-        const duration = (diffMs: number) => {
-            const diff = Math.max(0, diffMs)
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-            if (days > 0) return t("time.duration", { days, hours })
-            if (hours > 0) return t("time.durationHoursMinutes", { hours, minutes })
-            return t("time.durationMinutes", { minutes })
-        }
-
-        const updateTime = () => {
-            if (commission.status === "STARTED" && commission.startedAt) {
-                const diff = Math.max(0, Date.now() - new Date(commission.startedAt).getTime())
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-                setTimeStr(diff < 1000 * 60 * 60 ? `${duration(diff)} ${seconds}s` : duration(diff))
-            } else if (commission.status === "COMPLETED" && commission.startedAt && commission.endedAt) {
-                const diff = new Date(commission.endedAt).getTime() - new Date(commission.startedAt).getTime()
-                setTimeStr(t("time.lasted", { time: duration(diff) }))
-            } else {
-                setTimeStr("")
-            }
-        }
+        const updateTime = () =>
+            setTimeStr(
+                formatCommissionTiming(
+                    { status: commission.status, startedAt: commission.startedAt, endedAt: commission.endedAt },
+                    t,
+                ),
+            )
 
         updateTime()
-        if (commission.status === "STARTED") {
+        if (commissionTimingTicks(commission.status)) {
             intervalId = setInterval(updateTime, 1000)
         }
         return () => clearInterval(intervalId)

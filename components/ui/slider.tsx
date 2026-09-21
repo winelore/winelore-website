@@ -72,7 +72,7 @@ function Slider({
       max={max}
       step={step}
       className={cn(
-        'relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
+        'relative flex w-full touch-none items-center select-none pointer-coarse:py-2.5 data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
         className,
       )}
       {...props}
@@ -92,7 +92,7 @@ function Slider({
       </SliderPrimitive.Track>
 
       {showTicks && (
-        <div className="absolute left-[14px] right-[14px] top-1/2 w-[calc(100%-28px)] h-8 pointer-events-none select-none z-0">
+        <div className="absolute left-[14px] right-[14px] top-1/2 w-[calc(100%-28px)] pointer-coarse:left-[18px] pointer-coarse:right-[18px] pointer-coarse:w-[calc(100%-36px)] h-8 pointer-events-none select-none z-0">
           {ticks.map((tickVal) => {
             const percentage = ((tickVal - min) / (max - min)) * 100
             const isMajor = Number(((tickVal - min) % majorStep).toFixed(1)) === 0 || tickVal === min || tickVal === max
@@ -129,7 +129,7 @@ function Slider({
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          className="border-slate-200 ring-indigo-500/20 block w-7 h-4.5 z-50! shrink-0 rounded-full border bg-white! shadow-md transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing"
+          className="border-slate-200 ring-indigo-500/20 block w-7 h-4.5 pointer-coarse:w-9 pointer-coarse:h-6 z-50! shrink-0 rounded-full border bg-white! shadow-md transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing"
         />
       ))}
     </SliderPrimitive.Root>

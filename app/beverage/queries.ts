@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql"
+import { gql } from '@winelore/core/gql'
 
 // Every mutation below returns the full Beverage so the client can refresh
 // its local state directly from the mutation response instead of refetching.

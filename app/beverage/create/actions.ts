@@ -1,8 +1,10 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { sdk, fetchGraphQLRaw } from '@/lib/apiClient';
+import { sdk, fetchGraphQLRaw, mutateGraphQLRaw } from '@/lib/apiClient';
 import { getBeverageTypesAction } from '@/app/myTemplates/actions';
+import { createBeverage } from '@winelore/core/beverage';
+import { fetchBeverageTypeCharacteristics, type BeverageCharacteristic } from '@/lib/beverageCharacteristics';
 
 async function getActorHeaders(): Promise<Record<string, string>> {
     const cookieStore = await cookies();
@@ -10,100 +12,15 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     if (!auid) {
         throw new Error('Unauthorized: Please sign in');
     }
-    return { actor: auid, 'x-actor': auid };
+    return { 'X-ACTOR': auid };
 }
 
-const isUuid = (str: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
-
-export interface BeverageCharacteristic {
-    id: string;
-    code: string;
-    name: string;
-    typeName: string;
-    isRequired: boolean;
-    allowedValues?: string[];
-    minLimit?: number;
-    maxLimit?: number;
-}
-
-function parsePropertySchemas(raw: string) {
-    if (!raw) return { BEVERAGE: [], BATCH: [], SAMPLE: [] };
-    const result: { BEVERAGE: any[]; BATCH: any[]; SAMPLE: any[] } = { BEVERAGE: [], BATCH: [], SAMPLE: [] };
-
-    const beverageMatch = raw.match(/BEVERAGE=\[([\s\S]*?)\](?:, BATCH=|\})/);
-    if (beverageMatch && beverageMatch[1]) {
-        result.BEVERAGE = parsePropertyList(beverageMatch[1]);
-    }
-
-    const batchMatch = raw.match(/BATCH=\[([\s\S]*?)\](?:, SAMPLE=|\})/);
-    if (batchMatch && batchMatch[1]) {
-        result.BATCH = parsePropertyList(batchMatch[1]);
-    }
-
-    const sampleMatch = raw.match(/SAMPLE=\[([\s\S]*?)\](?:\})/);
-    if (sampleMatch && sampleMatch[1]) {
-        result.SAMPLE = parsePropertyList(sampleMatch[1]);
-    }
-
-    return result;
-}
-
-function parsePropertyList(str: string) {
-    if (!str.trim()) return [];
-    const items: any[] = [];
-    const itemRegex = /(\w+PropertyResponse)\((.*?)\)(?=, \w+PropertyResponse|\s*$)/g;
-    let match: RegExpExecArray | null;
-    while ((match = itemRegex.exec(str)) !== null) {
-        const typeName = match[1];
-        const fieldsStr = match[2];
-        const prop: Record<string, any> = { typeName };
-        const fieldRegex = /(\w+)=((?:\[.*?\]|[^,]+))/g;
-        let fieldMatch: RegExpExecArray | null;
-        while ((fieldMatch = fieldRegex.exec(fieldsStr)) !== null) {
-            const key = fieldMatch[1];
-            let val: any = fieldMatch[2].trim();
-            if (val === 'null') {
-                val = null;
-            } else if (val.startsWith('[') && val.endsWith(']')) {
-                val = val.slice(1, -1).split(',').map((s: string) => s.trim()).filter(Boolean);
-            }
-            prop[key] = val;
-        }
-        items.push(prop);
-    }
-    return items;
-}
+export type { BeverageCharacteristic };
 
 export async function getBeverageTypeCharacteristicsAction(typeId: string): Promise<BeverageCharacteristic[]> {
     if (!typeId) return [];
     try {
-        const headers = await getActorHeaders();
-        const query = `
-          query GetEditions($typeId: ID!) {
-            beverageTypeEditionsByType(typeId: $typeId) {
-              id
-              version
-              status
-              propertySchemas
-            }
-          }
-        `;
-        const res = await fetchGraphQLRaw<any, any>(query, { typeId }, headers);
-        const editions = res?.beverageTypeEditionsByType || [];
-        const activeEdition = editions.find((e: any) => e.status === 'ACTIVE') || editions[0];
-        if (!activeEdition || !activeEdition.propertySchemas) return [];
-
-        const parsed = parsePropertySchemas(activeEdition.propertySchemas);
-        return (parsed.BEVERAGE || []).map((prop: any) => ({
-            id: prop.id || prop.code,
-            code: prop.code,
-            name: prop.name || prop.code,
-            typeName: prop.typeName || '',
-            isRequired: prop.isRequired === 'true' || prop.isRequired === true,
-            allowedValues: Array.isArray(prop.allowedValues) ? prop.allowedValues : undefined,
-            minLimit: prop.minLimit != null ? Number(prop.minLimit) : undefined,
-            maxLimit: prop.maxLimit != null ? Number(prop.maxLimit) : undefined,
-        }));
+        return await fetchBeverageTypeCharacteristics(typeId, 'BEVERAGE', await getActorHeaders());
     } catch (err) {
         console.error('Failed to fetch beverage type characteristics:', err);
         return [];
@@ -119,8 +36,7 @@ export async function createBeverageAction(params: {
     attributes?: Record<string, any>;
     origin?: { latitude: number; longitude: number } | null;
 }) {
-    const trimmedName = params.name.trim();
-    if (!trimmedName) {
+    if (!params.name.trim()) {
         throw new Error('Beverage name is required');
     }
     if (!params.typeId) {
@@ -128,12 +44,6 @@ export async function createBeverageAction(params: {
     }
 
     const headers = await getActorHeaders();
-    const rawActor = headers.actor;
-    const isActorUuid = isUuid(rawActor);
-    const actorAuid = !isActorUuid ? parseInt(rawActor, 10) : null;
-
-    const producerRole: 'MAKER' | 'BOTTLER' = params.role === 'BOTTLER' ? 'BOTTLER' : 'MAKER';
-
     const attributes: Record<string, any> = { ...(params.attributes || {}) };
     if (params.color && params.color.trim()) {
         attributes.color = params.color.trim().toUpperCase();
@@ -142,47 +52,15 @@ export async function createBeverageAction(params: {
         attributes.style = params.style.trim().toUpperCase();
     }
 
-    const producerInput = isActorUuid
-        ? { producerId: rawActor, role: producerRole }
-        : { auid: actorAuid !== null && !isNaN(actorAuid) ? [actorAuid] : undefined, role: producerRole };
-
-    const input: any = {
-        name: trimmedName,
-        typeId: params.typeId,
-        producers: [producerInput],
-    };
-
-    if (Object.keys(attributes).length > 0) {
-        input.attributes = attributes;
-    }
-
-    if (params.origin && typeof params.origin.latitude === 'number' && typeof params.origin.longitude === 'number') {
-        input.origin = {
-            latitude: params.origin.latitude,
-            longitude: params.origin.longitude,
-        };
-    }
-
     try {
-        let res;
-        try {
-            res = await sdk.DevCreateBeverage({ input }, { headers });
-        } catch (firstErr: any) {
-            const errMsg = (firstErr?.message || '').toLowerCase();
-            if (errMsg.includes('unknown:') && input.attributes) {
-                if (errMsg.includes('color')) delete input.attributes.color;
-                if (errMsg.includes('style')) delete input.attributes.style;
-                if (Object.keys(input.attributes).length === 0) delete input.attributes;
-                res = await sdk.DevCreateBeverage({ input }, { headers });
-            } else {
-                throw firstErr;
-            }
-        }
-
-        const beverageId = res?.createBeverage?.id;
-        if (!beverageId) {
-            throw new Error('Failed to create beverage');
-        }
+        // The input and the retry without refused attributes are core's, as in the app.
+        // The actor is the X-ACTOR header; this used to read a key the headers do not
+        // have, and so sent the new beverage's producer without an auid.
+        const beverageId = await createBeverage(
+            (query, variables) => mutateGraphQLRaw(query, variables, headers),
+            { name: params.name, typeId: params.typeId, role: params.role === 'BOTTLER' ? 'BOTTLER' : 'MAKER', attributes, origin: params.origin },
+            headers['X-ACTOR'],
+        );
         return { success: true, beverageId };
     } catch (err: any) {
         console.error('Server Action Error (createBeverageAction):', err);

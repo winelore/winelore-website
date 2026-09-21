@@ -5,79 +5,39 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText, useBackendTranslation } from "@/lib/i18n/TranslatedText"
-import { submitEvaluationAction, getVoiceUploadUrlAction } from "../../../../../actions"
+import {
+    submitEvaluationAction,
+    getVoiceUploadUrlAction,
+    confirmEvaluationAction,
+    confirmMyEvaluationForCandidateAction,
+} from "../../../../../actions"
 import { writeCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { Slider } from "@/components/ui/slider"
-import { roundScoreToTwoDecimals } from "@/lib/formatPropertyScore"
-import { parseEvaluationNumericInput, type NumericInputErrorReason } from "@/lib/evaluationNumericInput"
-import { Mic, Square, Trash2 } from "lucide-react"
+import { parseEvaluationNumericInput, roundScoreToTwoDecimals } from '@winelore/core';
+import type { NumericInputErrorReason } from '@winelore/core';
+import {
+    GENERAL_COMMENT_KEY,
+    buildCommentsPayload,
+    buildInitialValues,
+    buildPropertyByCode,
+    buildScoresPayload,
+    cachedComments,
+    computeSmartValues,
+    countRatedProperties,
+    getRatableProperties,
+    getSmartPropertyCodes,
+    isAlreadySubmittedError,
+    isBooleanSmartProperty,
+    isEvaluationSubmittable,
+    isNotCurrentCandidateError,
+    isScoringComplete,
+    orderPropertiesForDisplay,
+    type EvaluationCategory,
+    type EvaluationProperty,
+} from '@winelore/core/evaluation';
+import { Mic, Square, Trash2, Wand2 } from "lucide-react"
+import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
-interface EvaluationProperty {
-    __typename: "BooleanProperty" | "IntProperty" | "DoubleProperty" | "EnumProperty" | "DiscreteNumbersProperty" | "SmartProperty"
-    id: string
-    code: string
-    name: string
-    description?: string | null
-    isRequired: boolean
-    isResult?: boolean | null
-    boolDefaultValue?: boolean | null
-    intMinLimit?: number | null
-    intMaxLimit?: number | null
-    intDefaultValue?: number | null
-    doubleMinLimit?: number | null
-    doubleMaxLimit?: number | null
-    doubleDefaultValue?: number | null
-    enumAllowedValues?: string[] | null
-    enumDefaultValue?: string | null
-    discreteAllowedValues?: number[] | null
-    discreteDefaultValue?: number | null
-    expression?: any | null
-}
-
-interface EvaluationCategory {
-    id: string
-    name: string
-    properties: EvaluationProperty[]
-}
-
-const BOOLEAN_OPERATORS = new Set([
-    "GREATER_THAN",
-    "GREATER_THAN_OR_EQUAL",
-    "GREATER_OR_EQUAL",
-    "LESS_THAN",
-    "LESS_THAN_OR_EQUAL",
-    "LESS_OR_EQUAL",
-    "EQUAL",
-    "EQUALS",
-    "NOT_EQUAL",
-    "AND",
-    "OR",
-])
-
-function buildPropertyByCode(categories: EvaluationCategory[]): Map<string, EvaluationProperty> {
-    const map = new Map<string, EvaluationProperty>()
-    categories.forEach((category) => {
-        category.properties.forEach((prop) => map.set(prop.code, prop))
-    })
-    return map
-}
-
-function isBooleanSmartProperty(
-    prop: EvaluationProperty,
-    propertyByCode: Map<string, EvaluationProperty>,
-): boolean {
-    const expression = prop.expression
-    if (!expression) return false
-    if (BOOLEAN_OPERATORS.has(expression.type)) return true
-    const isVariable =
-        expression.__typename === "VariableExpression" || expression.type === "VARIABLE"
-    if (isVariable && expression.code) {
-        return propertyByCode.get(expression.code)?.__typename === "BooleanProperty"
-    }
-    return false
-}
-
-import { evaluateAST } from "@/lib/evaluationExpression"
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
     const backendTranslated = useBackendTranslation(translatedLabel)
@@ -145,7 +105,7 @@ function DiscreteNumbersInput({
     }, [allowedValues])
 
     const bubbleButtonClass = (selected: boolean) =>
-        `min-w-[2.25rem] h-9 px-2.5 rounded-full text-xs font-bold border transition-colors ${
+        `min-w-10 h-10 sm:min-w-[2.25rem] sm:h-9 px-2.5 rounded-full text-sm sm:text-xs font-bold border transition-colors ${
             selected
                 ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -165,7 +125,8 @@ function DiscreteNumbersInput({
                 ))}
             </div>
             {useBubbles ? (
-                <div className="flex flex-wrap gap-2 justify-end">
+                // Phones: the bubbles share the full row, like a segmented control.
+                <div className="flex flex-wrap gap-2 justify-end max-md:[&>button]:flex-1">
                     {sortedValues.map((opt) => (
                         <button
                             key={opt}
@@ -184,7 +145,7 @@ function DiscreteNumbersInput({
                         const val = e.target.value
                         onChange(val === "" ? undefined : Number(val))
                     }}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                    className="w-full h-11 sm:h-auto px-3 sm:py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
                 >
                     <option value="">{selectPlaceholder}</option>
                     {sortedValues.map((opt) => (
@@ -224,7 +185,7 @@ function VoiceCommentButton({
                 type="button"
                 onClick={onStop}
                 title={t("evaluation.voiceStop")}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors shrink-0"
             >
                 <span className="w-2 h-2 rounded-sm bg-white animate-pulse" />
                 <span className="font-mono">{timeStr}</span>
@@ -239,7 +200,7 @@ function VoiceCommentButton({
                 type="button"
                 onClick={onDiscard}
                 title={t("evaluation.voiceDiscard")}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-semibold hover:bg-rose-100 hover:text-rose-600 transition-colors shrink-0 group"
+                className="flex items-center gap-1 px-3 py-2.5 sm:px-2 sm:py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-semibold hover:bg-rose-100 hover:text-rose-600 transition-colors shrink-0 group"
             >
                 <Mic className="w-3.5 h-3.5" />
                 <Trash2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -253,9 +214,9 @@ function VoiceCommentButton({
             onClick={onStart}
             disabled={disabled}
             title={t("evaluation.voiceRecord")}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-2.5 sm:p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
         >
-            <Mic className="w-4 h-4" />
+            <Mic className="w-5 h-5 sm:w-4 sm:h-4" />
         </button>
     )
 }
@@ -294,6 +255,9 @@ export default function EvaluationForm({
     candidateId,
     commissionId,
     replicaId,
+    candidateCode,
+    beverageName,
+    visibleAttributes,
     propertyCommentsEnabled,
     voiceCommentsEnabled,
     onSubmittingChange,
@@ -302,51 +266,21 @@ export default function EvaluationForm({
     candidateId: string
     commissionId: string
     replicaId: string
+    candidateCode?: string
+    beverageName?: string | null
+    visibleAttributes?: { label: string; value: string }[]
     propertyCommentsEnabled: boolean
     voiceCommentsEnabled: boolean
     onSubmittingChange?: (submitting: boolean) => void
 }) {
     const router = useRouter()
-    const {t, formatEnumLabel} = useTranslation()
-    const [values, setValues] = useState<Record<string, any>>(() => {
-        const initial: Record<string, any> = {}
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                switch (prop.__typename) {
-                    case "BooleanProperty":
-                        if (prop.boolDefaultValue !== null && prop.boolDefaultValue !== undefined) {
-                            initial[prop.code] = prop.boolDefaultValue
-                        }
-                        break
-                    case "IntProperty":
-                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
-                            initial[prop.code] = prop.intDefaultValue
-                        }
-                        break
-                    case "DoubleProperty":
-                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
-                            initial[prop.code] = prop.doubleDefaultValue
-                        }
-                        break
-                    case "EnumProperty":
-                        if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
-                            initial[prop.code] = prop.enumDefaultValue
-                        }
-                        break
-                    case "DiscreteNumbersProperty":
-                        if (prop.discreteDefaultValue !== null && prop.discreteDefaultValue !== undefined) {
-                            initial[prop.code] = prop.discreteDefaultValue
-                        }
-                        break
-                }
-            })
-        })
-        return initial
-    })
+    const {t, formatEnumLabel, locale} = useTranslation()
+    const [values, setValues] = useState<Record<string, any>>(() => buildInitialValues(categories))
     const [commentValues, setCommentValues] = useState<Record<string, string>>({})
     const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({})
     const [numericErrors, setNumericErrors] = useState<Record<string, NumericInputErrorReason | null>>({})
     const [generalComment, setGeneralComment] = useState("")
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
@@ -371,39 +305,7 @@ export default function EvaluationForm({
     }, [])
 
     useEffect(() => {
-        const initial: Record<string, any> = {}
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                switch (prop.__typename) {
-                    case "BooleanProperty":
-                        if (prop.boolDefaultValue !== null && prop.boolDefaultValue !== undefined) {
-                            initial[prop.code] = prop.boolDefaultValue
-                        }
-                        break
-                    case "IntProperty":
-                        if (prop.intDefaultValue !== null && prop.intDefaultValue !== undefined) {
-                            initial[prop.code] = prop.intDefaultValue
-                        }
-                        break
-                    case "DoubleProperty":
-                        if (prop.doubleDefaultValue !== null && prop.doubleDefaultValue !== undefined) {
-                            initial[prop.code] = prop.doubleDefaultValue
-                        }
-                        break
-                    case "EnumProperty":
-                        if (prop.enumDefaultValue !== null && prop.enumDefaultValue !== undefined) {
-                            initial[prop.code] = prop.enumDefaultValue
-                        }
-                        break
-                    case "DiscreteNumbersProperty":
-                        if (prop.discreteDefaultValue !== null && prop.discreteDefaultValue !== undefined) {
-                            initial[prop.code] = prop.discreteDefaultValue
-                        }
-                        break
-                }
-            })
-        })
-        setValues(initial)
+        setValues(buildInitialValues(categories))
         setCommentValues({})
         setNumericDrafts({})
         setNumericErrors({})
@@ -434,8 +336,8 @@ export default function EvaluationForm({
             mr.onstop = () => {
                 const recordedType = mr.mimeType || mimeType || "audio/mp4"
                 const blob = new Blob(audioChunksRef.current, { type: recordedType })
-                setVoiceBlobs(prev => ({ ...prev, [key]: blob }))
                 const url = URL.createObjectURL(blob)
+                setVoiceBlobs(prev => ({ ...prev, [key]: blob }))
                 setVoicePreviewUrls(prev => {
                     if (prev[key]) URL.revokeObjectURL(prev[key])
                     return { ...prev, [key]: url }
@@ -568,144 +470,162 @@ export default function EvaluationForm({
 
     const propertyByCode = useMemo(() => buildPropertyByCode(categories), [categories])
 
-    const computedSmartValues = useMemo(() => {
-        const smartProps: EvaluationProperty[] = []
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                if (prop.__typename === "SmartProperty" && prop.expression) {
-                    smartProps.push(prop)
+    const computedSmartValues = useMemo(
+        () => computeSmartValues(categories, values),
+        [categories, values],
+    )
+
+    const smartPropertyCodes = useMemo(() => getSmartPropertyCodes(categories), [categories])
+
+    const hasNumericError = Object.values(numericErrors).some(Boolean)
+
+    const isFormValid = useMemo(
+        () => isEvaluationSubmittable(categories, values, hasNumericError),
+        [categories, values, hasNumericError],
+    )
+
+    const isAllScoringComplete = useMemo(
+        () => isScoringComplete(categories, values, hasNumericError),
+        [categories, values, hasNumericError],
+    )
+
+    // Drives the progress readout in the phone action bar.
+    const ratableProperties = useMemo(() => getRatableProperties(categories), [categories])
+    const ratedCount = useMemo(
+        () => countRatedProperties(categories, values),
+        [categories, values],
+    )
+
+    const handleGenerateAIComment = async () => {
+        if (isGeneratingAI || !isAllScoringComplete) return
+        setIsGeneratingAI(true)
+        try {
+            const categoryScores: TastingCategoryScore[] = categories.map((cat) => {
+                let catScore = 0
+                let catMax = 0
+                const propScores: TastingPropertyScore[] = []
+                cat.properties.forEach((prop) => {
+                    if (prop.__typename === "SmartProperty") {
+                        const smartVal = computedSmartValues[prop.code]
+                        if (typeof smartVal === "number" && !isNaN(smartVal)) {
+                            propScores.push({ name: prop.name, score: smartVal, maxScore: 100 })
+                        }
+                        return
+                    }
+                    let maxVal = 0
+                    if (prop.__typename === "IntProperty" && prop.intMaxLimit != null) maxVal = prop.intMaxLimit
+                    else if (prop.__typename === "DoubleProperty" && prop.doubleMaxLimit != null) maxVal = prop.doubleMaxLimit
+                    else if (prop.__typename === "DiscreteNumbersProperty" && prop.discreteAllowedValues?.length) {
+                        maxVal = Math.max(...prop.discreteAllowedValues)
+                    }
+                    const rawVal = values[prop.code]
+                    const numVal = typeof rawVal === "number" ? rawVal : parseFloat(rawVal)
+                    if (!isNaN(numVal)) {
+                        catScore += numVal
+                        catMax += maxVal
+                        propScores.push({
+                            name: prop.name,
+                            score: numVal,
+                            maxScore: maxVal || numVal,
+                        })
+                    }
+                })
+                return {
+                    name: cat.name,
+                    score: catScore,
+                    maxScore: catMax,
+                    properties: propScores,
                 }
             })
-        })
-
-        const smartMap: Record<string, number> = {}
-
-        // Resolve iteratively so a smart property can depend on another smart property.
-        // Each pass feeds already-computed smart values back into the lookup; we stop once
-        // no new value is produced (at most one pass per smart property).
-        for (let pass = 0; pass <= smartProps.length; pass++) {
-            let changed = false
-            for (const prop of smartProps) {
-                if (smartMap[prop.code] !== undefined) continue
-                const result = evaluateAST(prop.expression, {...values, ...smartMap})
-                if (result !== null) {
-                    smartMap[prop.code] = result
-                    changed = true
-                }
-            }
-            if (!changed) break
-        }
-
-        return smartMap
-    }, [categories, values])
-
-    const smartPropertyCodes = useMemo(() => {
-        const codes = new Set<string>()
-        categories.forEach(category => {
-            category.properties.forEach(prop => {
-                if (prop.__typename === "SmartProperty") {
-                    codes.add(prop.code)
-                }
+            let totalScore: number | null = null
+            categories.forEach((cat) => {
+                cat.properties.forEach((p) => {
+                    if (p.isResult) {
+                        const val = computedSmartValues[p.code] ?? values[p.code]
+                        if (val != null && !isNaN(Number(val))) {
+                            totalScore = Number(val)
+                        }
+                    }
+                })
             })
-        })
-        return codes
-    }, [categories])
-
-    const isFormValid = useMemo(() => {
-        if (Object.values(numericErrors).some(Boolean)) return false
-
-        for (const category of categories) {
-            for (const prop of category.properties) {
-                const val = values[prop.code]
-
-                if (prop.__typename === "SmartProperty") continue
-
-                if (prop.isRequired) {
-                    if (val === undefined || val === null || val === "") {
-                        return false
-                    }
-                }
-
-                if (val !== undefined && val !== null && val !== "") {
-                    if (prop.__typename === "IntProperty") {
-                        if (prop.intMinLimit !== null && prop.intMinLimit !== undefined && val < prop.intMinLimit) return false
-                        if (prop.intMaxLimit !== null && prop.intMaxLimit !== undefined && val > prop.intMaxLimit) return false
-                    }
-                    if (prop.__typename === "DoubleProperty") {
-                        if (prop.doubleMinLimit !== null && prop.doubleMinLimit !== undefined && val < prop.doubleMinLimit) return false
-                        if (prop.doubleMaxLimit !== null && prop.doubleMaxLimit !== undefined && val > prop.doubleMaxLimit) return false
-                    }
-                }
+            const attributesMap: Record<string, string> = {}
+            if (visibleAttributes && visibleAttributes.length > 0) {
+                visibleAttributes.forEach((attr) => {
+                    attributesMap[attr.label] = attr.value
+                })
             }
+            const payload: TastingPayload = {
+                locale: (locale as "en" | "uk" | "hu") || "en",
+                beverageType: beverageName || "Wine",
+                candidateCode: candidateCode || undefined,
+                totalScore,
+                maxTotalScore: 100,
+                categories: categoryScores,
+                attributes: attributesMap,
+            }
+            const response = await fetch("/api/generate-comment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+            if (!response.ok || !response.body) {
+                const errJson = await response.json().catch(() => ({}))
+                throw new Error(errJson.error || "Failed to generate AI comment")
+            }
+            setGeneralComment("")
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let accumulated = ""
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                const chunk = decoder.decode(value, { stream: true })
+                accumulated += chunk
+                setGeneralComment(accumulated)
+            }
+            toast.success(t("evaluation.aiDraftGenerated"))
+        } catch (err: any) {
+            console.error("AI Comment Generation error:", err)
+            toast.error(err.message || t("evaluation.aiDraftFailed"))
+        } finally {
+            setIsGeneratingAI(false)
         }
-        return true
-    }, [categories, values, numericErrors])
+    }
 
-    const handleSubmit = async () => {
+            const handleSubmit = async () => {
         setIsSubmitting(true)
         onSubmittingChange?.(true)
         setError(null)
         setSuccess(false)
         try {
-            const scores = Object.entries(values)
-                .filter(([code, val]) => val !== undefined && val !== null && !smartPropertyCodes.has(code))
-                .map(([code, val]) => {
-                    const prop = propertyByCode.get(code)
-                    const value =
-                        prop?.__typename === "DoubleProperty" && typeof val === "number"
-                            ? roundScoreToTwoDecimals(val).toFixed(2)
-                            : String(val)
-                    return { code, value }
-                })
+            const scores = buildScoresPayload(values, propertyByCode, smartPropertyCodes)
 
-            // Collect per-property comments when enabled
-            let perPropertyComments: Array<{
-                propertyId: string;
-                text?: string;
-                voiceUrl?: string;
-                sortOrder: number
-            }> = []
-            if (propertyCommentsEnabled) {
-                const propKeys = new Set([
-                    ...Object.keys(commentValues).filter(k => commentValues[k].trim().length > 0),
-                    ...(voiceCommentsEnabled
-                        ? Object.keys(voiceBlobs).filter(k => k !== "general")
-                        : []),
-                ])
-
-                let sortIndex = 0
-                perPropertyComments = await Promise.all(
-                    [...propKeys].map(async (propId) => {
-                        const text = commentValues[propId]?.trim() || undefined
-                        const blob = voiceCommentsEnabled ? voiceBlobs[propId] : undefined
-                        const voiceUrl = blob ? await uploadVoice(blob, propId) : undefined
-                        return {propertyId: propId, text, voiceUrl, sortOrder: sortIndex++}
-                    })
-                )
+            // What counts as a comment, and the order they arrive in, is core's
+            // rule — shared with the app, so both submit the same payload.
+            const drafts: Record<string, { text?: string; voice?: Blob }> = {}
+            for (const key of new Set([...Object.keys(commentValues), ...Object.keys(voiceBlobs)])) {
+                drafts[key] = { text: commentValues[key], voice: voiceBlobs[key] }
+            }
+            drafts[GENERAL_COMMENT_KEY] = {
+                text: generalComment,
+                voice: voiceBlobs[GENERAL_COMMENT_KEY],
             }
 
-            const generalBlob = voiceCommentsEnabled ? voiceBlobs["general"] : undefined
-            const generalVoiceUrl = generalBlob ? await uploadVoice(generalBlob, "general") : undefined
-            const hasGeneral = generalComment.trim() || generalVoiceUrl
-            const comments = hasGeneral
-                ? [...perPropertyComments, {
-                    text: generalComment.trim() || undefined,
-                    voiceUrl: generalVoiceUrl,
-                    sortOrder: perPropertyComments.length
-                }]
-                : perPropertyComments
+            const comments = await buildCommentsPayload<Blob>(drafts, {
+                flags: { propertyCommentsEnabled, voiceCommentsEnabled },
+                propertyOrder: categories.flatMap((category) => category.properties.map((property) => property.id)),
+                upload: uploadVoice,
+            })
 
             const result = await submitEvaluationAction(candidateId, scores, comments)
             if (!result.success) {
                 const msg = result.error || ""
-                if (
-                    msg.includes("already submitted") ||
-                    msg.includes("not pending") ||
-                    msg.includes("REPLICA_CANDIDATE_EVALUATION_ENDED") ||
-                    msg.includes("EVALUATION_ALREADY_EXISTS") ||
-                    msg.includes("Replica is not started") ||
-                    msg.includes("REPLICA_NOT_STARTED")
-                ) {
+                if (isAlreadySubmittedError(msg)) {
+                    try {
+                        await confirmMyEvaluationForCandidateAction(candidateId);
+                    } catch (confirmErr) {
+                        console.warn("Auto-confirm existing evaluation error:", confirmErr);
+                    }
                     writeCachedWaitEvaluation(commissionId, replicaId, {
                         candidateId,
                         isComplete: true,
@@ -719,7 +639,7 @@ export default function EvaluationForm({
                     return
                 }
 
-                if (msg.includes("current active candidate")) {
+                if (isNotCurrentCandidateError(msg)) {
                     setError(t("evaluation.onlyCurrentCandidate"))
                 } else {
                     setError(msg || t("evaluation.submitError"))
@@ -728,18 +648,19 @@ export default function EvaluationForm({
             }
 
             const submitted = result.evaluation
+            if (submitted?.id && (submitted?.status !== "CONFIRMED" || !submitted?.isComplete)) {
+                try {
+                    await confirmEvaluationAction(submitted.id);
+                } catch (confirmErr) {
+                    console.warn("Client fallback auto-confirm error:", confirmErr);
+                }
+            }
+
             writeCachedWaitEvaluation(commissionId, replicaId, {
                 candidateId,
-                isComplete: submitted?.isComplete ?? true,
+                isComplete: true,
                 scores: submitted?.scores ?? scores,
-                comments: comments.map((comment, index) => ({
-                    id: `local-${index}`,
-                    propertyId: "propertyId" in comment && comment.propertyId != null
-                        ? String(comment.propertyId)
-                        : null,
-                    text: comment.text,
-                    voiceUrl: comment.voiceUrl,
-                })),
+                comments: cachedComments(comments),
             })
 
             setSuccess(true)
@@ -771,14 +692,11 @@ export default function EvaluationForm({
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4 items-start w-full">
                 {categories.map((category, index) => {
                     const isLastCategory = index === categories.length - 1
-                    const orderedProperties = [
-                        ...category.properties.filter((prop) => prop.isResult !== true),
-                        ...category.properties.filter((prop) => prop.isResult === true),
-                    ]
+                    const orderedProperties = orderPropertiesForDisplay(category)
 
                     return (
                         <div key={category.id}
-                             className="border border-slate-100 rounded-2xl p-4 bg-slate-50/30 w-full flex flex-col h-full">
+                             className="border border-slate-100 rounded-2xl p-3 sm:p-4 bg-white md:bg-slate-50/30 w-full flex flex-col h-full">
                             <h2 className="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">
                                 <TranslatedText text={category.name}/>
                             </h2>
@@ -792,7 +710,7 @@ export default function EvaluationForm({
                                     return (
                                         <React.Fragment key={prop.id}>
                                             <div
-                                                className={`flex flex-col gap-2.5 p-2.5 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
+                                                className={`flex flex-col gap-2.5 p-3 sm:p-2.5 rounded-xl border shadow-xs ${isResult ? "border-indigo-200 bg-indigo-50/80 shadow-indigo-100/60 ring-1 ring-indigo-100" : "border-slate-100 bg-white"}`}>
                                                 <div
                                                     className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                                                     <div className="flex-1">
@@ -816,18 +734,18 @@ export default function EvaluationForm({
 
                                                     <div className="w-full md:w-64 flex justify-end">
                                                         {prop.__typename === "BooleanProperty" && (
-                                                            <div className="flex gap-2">
+                                                            <div className="flex gap-2 max-md:w-full max-md:[&>button]:flex-1">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleValueChange(prop.code, true)}
-                                                                    className={`px-4 py-1 rounded-lg text-xs font-bold border transition-colors ${currentValue === true ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                                                    className={`h-10 sm:h-auto px-6 sm:px-4 sm:py-1 rounded-lg text-sm sm:text-xs font-bold border transition-colors ${currentValue === true ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                                                 >
                                                                     {t("common.yes")}
                                                                 </button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleValueChange(prop.code, false)}
-                                                                    className={`px-4 py-1 rounded-lg text-xs font-bold border transition-colors ${currentValue === false ? "bg-rose-600 border-rose-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                                                    className={`h-10 sm:h-auto px-6 sm:px-4 sm:py-1 rounded-lg text-sm sm:text-xs font-bold border transition-colors ${currentValue === false ? "bg-rose-600 border-rose-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                                                 >
                                                                     {t("common.no")}
                                                                 </button>
@@ -857,7 +775,7 @@ export default function EvaluationForm({
                                                                             value={inputDisplayValue}
                                                                             onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
                                                                             onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
-                                                                            className={`w-full px-3 py-1 border rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${inputErrorClass}`}
+                                                                            className={`w-full h-11 sm:h-auto px-3 sm:py-1 border rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${inputErrorClass}`}
                                                                             placeholder={t("evaluation.enterValue")}
                                                                         />
                                                                         {numericErrorMessage && (
@@ -938,7 +856,7 @@ export default function EvaluationForm({
                                                                             value={inputDisplayValue}
                                                                             onChange={(e) => handleNumericInputChange(prop.code, e.target.value, isDouble)}
                                                                             onBlur={(e) => commitNumericValue(prop.code, e.target.value, isDouble, normalizeNumericValue)}
-                                                                            className={`w-14 px-1 py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : !hasValue ? "border-dashed border-amber-400 bg-amber-50 text-amber-600 placeholder:text-amber-400" : "border-slate-200 bg-white text-slate-800"}`}
+                                                                            className={`w-16 h-10 sm:w-14 sm:h-auto px-1 sm:py-0.5 text-center border rounded-lg text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors ${hasInputIssue ? "border-rose-500 bg-rose-50 text-rose-700" : !hasValue ? "border-dashed border-amber-400 bg-amber-50 text-amber-600 placeholder:text-amber-400" : "border-slate-200 bg-white text-slate-800"}`}
                                                                             placeholder={t("evaluation.val")}
                                                                         />
                                                                     </div>
@@ -970,7 +888,7 @@ export default function EvaluationForm({
                                                                     const val = e.target.value
                                                                     handleValueChange(prop.code, val === "" ? undefined : val)
                                                                 }}
-                                                                className="w-full px-3 py-1 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                                                                className="w-full h-11 sm:h-auto px-3 sm:py-1 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
                                                             >
                                                                 <option value="">{t("evaluation.selectOption")}</option>
                                                                 {prop.enumAllowedValues?.map((opt) => (
@@ -1013,7 +931,7 @@ export default function EvaluationForm({
                                                         value={commentValues[prop.id] ?? ""}
                                                         onChange={(e) => handleCommentChange(prop.id, e.target.value)}
                                                         placeholder={t("evaluation.addComment")}
-                                                        className="flex-1 px-3 py-1 border border-slate-100 rounded-lg text-[11px] text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 bg-slate-50/60 resize-none transition-colors"
+                                                        className="flex-1 px-3 py-2 sm:py-1 border border-slate-100 rounded-lg text-[11px] text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 bg-slate-50/60 resize-none transition-colors"
                                                     />
                                                             {voiceCommentsEnabled && (
                                                                 <VoiceCommentButton
@@ -1046,10 +964,26 @@ export default function EvaluationForm({
                             {isLastCategory && (
                                 <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4">
                                     <div className="flex flex-col gap-1.5">
-                                        <h2 className="text-[13px] font-bold text-slate-700">
-                                            {t("evaluation.generalCommentLabel")}
-                                        </h2>
-                                        <div className="flex items-end gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <label
+                                                htmlFor="general-comment-input"
+                                                className="text-[13px] font-bold text-slate-700 select-none"
+                                            >
+                                                {t("evaluation.generalCommentLabel")}
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={handleGenerateAIComment}
+                                                disabled={isGeneratingAI || !isAllScoringComplete}
+                                                className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs cursor-pointer active:scale-[0.98]"
+                                                title={!isAllScoringComplete ? t("evaluation.aiScoreAllRequired") : t("evaluation.aiGenerateDraft")}
+                                            >
+                                                <Wand2
+                                                    className={`w-3.5 h-3.5 text-indigo-600 shrink-0 ${isGeneratingAI ? "animate-spin" : ""}`}/>
+                                                <span>{isGeneratingAI ? t("evaluation.aiGenerating") : t("evaluation.aiGenerateDraft")}</span>
+                                            </button>
+                                        </div>
+                                            <div className="flex items-end gap-2">
                                         <textarea
                                             rows={2}
                                             value={generalComment}
@@ -1078,6 +1012,7 @@ export default function EvaluationForm({
                                         )}
                                     </div>
 
+                                    <div className="hidden md:flex flex-col gap-4">
                                     {isFormValid ? (
                                         <button
                                             type="button"
@@ -1108,11 +1043,46 @@ export default function EvaluationForm({
                                             {t("evaluation.submitSuccess")}
                                         </div>
                                     )}
+                                    </div>
                                 </div>
                             )}
                         </div>
                     )
                 })}
+            </div>
+
+            {/* Phones: a bottom action bar that stays in reach while scrolling the whole form. */}
+            <div className="md:hidden sticky bottom-0 z-30 -mx-4 border-t border-slate-200/70 bg-white/85 px-4 pt-3 pb-safe-4 backdrop-blur-xl backdrop-saturate-150">
+                {error && (
+                    <p className="mb-2 text-center text-xs font-semibold text-rose-600">{error}</p>
+                )}
+                {success && (
+                    <p className="mb-2 text-center text-xs font-semibold text-emerald-600 animate-pulse">{t("evaluation.submitSuccess")}</p>
+                )}
+                <div className="flex items-center gap-4">
+                    {ratableProperties.length > 0 && (
+                        <div className="flex w-24 shrink-0 flex-col gap-1.5">
+                            <span className="text-xs font-semibold leading-tight text-slate-500">
+                                {t("evaluation.ratedProgress", { done: ratedCount, total: ratableProperties.length })}
+                            </span>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                                <div
+                                    className={`h-full rounded-full transition-[width] duration-300 ${ratedCount === ratableProperties.length ? "bg-emerald-500" : "bg-indigo-600"}`}
+                                    style={{ width: `${(ratedCount / ratableProperties.length) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={!isFormValid || isSubmitting || success}
+                        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 text-[15px] font-bold text-white shadow-md shadow-indigo-600/20 transition-all active:scale-[0.98] active:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+                    >
+                        {isSubmitting && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                        <span>{t("evaluation.submit")}</span>
+                    </button>
+                </div>
             </div>
         </div>
     )

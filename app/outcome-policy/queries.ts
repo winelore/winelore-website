@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql";
+import { gql } from '@winelore/core/gql';
 
 export const GET_OUTCOME_POLICY_DETAIL = gql(`
     query GetOutcomePolicyDetail($id: ID!) {

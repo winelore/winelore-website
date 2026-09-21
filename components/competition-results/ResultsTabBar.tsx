@@ -1,8 +1,9 @@
 "use client"
 
 import { useTranslation } from "@/lib/i18n/context"
+import type { ResultsTab } from "@winelore/core/results"
 
-export type ResultsTab = "overview" | "commissions" | "expertScores" | "comments" | "awards"
+export type { ResultsTab } from "@winelore/core/results"
 
 interface ResultsTabBarProps {
     activeTab: ResultsTab
@@ -22,7 +23,7 @@ export function ResultsTabBar({ activeTab, onTabChange, counts }: ResultsTabBarP
     ]
 
     return (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             {tabs.map((tab) => (
                 <button
                     key={tab.id}

@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation"
 import { Trophy, Wine, User, Timer, CheckCircle, Calendar, Layers, PlayCircle, Pencil, X, Save, Plus, Check, Send, Download } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { useMobileNavAction, useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
-import { getDateLocale } from "@/lib/i18n"
 import Link from "next/link"
 import {
     startCompetitionAction,
@@ -19,25 +19,24 @@ import {
     createCommission
 } from "../actions"
 import { BackLink } from "@/components/BackLink"
-import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
+import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from '@winelore/core';
+import {
+    competitionStepIndex,
+    competitionTimingTicks,
+    defaultCommissionName,
+    formatCompetitionPageTiming,
+    formatCompetitionSessionTiming,
+    googleCalendarUrl,
+    holderAvatarIndex,
+    holderInitials,
+    isCompetitionHolder,
+    quickCommission,
+    type CompetitionPageCommission,
+    type CompetitionPageData,
+} from '@winelore/core/competition';
 
-function getGoogleCalendarUrl(name: string, details: string, plannedStartAt: string, plannedEndAt: string | null): string {
-    const start = new Date(plannedStartAt)
-    const end = plannedEndAt ? new Date(plannedEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000)
-
-    const formatCalDate = (date: Date) => {
-        return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
-    }
-
-    const dates = `${formatCalDate(start)}/${formatCalDate(end)}`
-    const text = encodeURIComponent(name)
-    const encodedDetails = encodeURIComponent(details)
-
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${encodedDetails}`
-}
-
-function getAvatarGradient(auid: number): string {
-    const gradients = [
+// Indexed by `holderAvatarIndex`, shared with the mobile app's own table.
+const AVATAR_GRADIENTS = [
         "from-pink-500 via-rose-500 to-red-500",
         "from-indigo-500 via-purple-500 to-pink-500",
         "from-blue-500 via-teal-500 to-emerald-500",
@@ -46,14 +45,11 @@ function getAvatarGradient(auid: number): string {
         "from-cyan-500 via-blue-500 to-indigo-500",
         "from-emerald-400 via-teal-500 to-cyan-500",
         "from-fuchsia-500 via-purple-600 to-pink-600",
-    ]
-    const idx = Math.abs(auid) % gradients.length
-    return gradients[idx]
-}
+]
 
 function HolderAvatar({ auid, username, className }: { auid: number; username?: string; className?: string }) {
-    const gradient = getAvatarGradient(auid)
-    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : `${auid}`.slice(-2)
+    const gradient = AVATAR_GRADIENTS[holderAvatarIndex(auid)]
+    const initials = holderInitials(username, auid)
     return (
         <div className={`flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[10px] shadow-sm shrink-0 border border-white/10 ${className}`}>
             <span>{initials}</span>
@@ -69,15 +65,10 @@ function StatusSteps({ status }: { status: string }) {
         { id: "completed", label: t("competition.stepCompleted"), description: t("competition.stepCompletedDesc") }
     ]
 
-    let currentStepIdx = 0
-    if (status === "STARTED") {
-        currentStepIdx = 1
-    } else if (status === "COMPLETED") {
-        currentStepIdx = 2
-    }
+    const currentStepIdx = competitionStepIndex(status)
 
     return (
-        <div className="w-full bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50">
+        <div className="w-full bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {steps.map((step, idx) => {
                     const isCompleted = idx < currentStepIdx
@@ -118,49 +109,12 @@ function CommissionCard({ comm }: { comm: Commission }) {
     const { t, formatStatus, locale } = useTranslation()
 
     useEffect(() => {
-        let intervalId: NodeJS.Timeout;
-
-        const updateTime = () => {
-            if (comm.status === "STARTED" && comm.startedAt) {
-                const start = new Date(comm.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
-                setTimeStr(`${time} ${seconds}s`)
-            } else if (comm.status === "COMPLETED" && comm.startedAt && comm.endedAt) {
-                const start = new Date(comm.startedAt).getTime()
-                const end = new Date(comm.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
-                setTimeStr(t("time.lasted", { time }))
-            } else if (comm.status === "PLANNED" && comm.plannedStartAt) {
-                const date = new Date(comm.plannedStartAt)
-                const formattedDate = new Intl.DateTimeFormat(getDateLocale(locale), {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                }).format(date)
-                setTimeStr(t("time.plannedFor", { date: formattedDate }))
-            } else {
-                setTimeStr("")
-            }
-        }
-
+        const updateTime = () => setTimeStr(formatCompetitionSessionTiming(comm, t, locale))
         updateTime()
-
-        if (comm.status === "STARTED") {
-            intervalId = setInterval(updateTime, 1000)
-        }
-
+        if (!competitionTimingTicks(comm.status)) return
+        const intervalId = setInterval(updateTime, 1000)
         return () => clearInterval(intervalId)
-    }, [comm.status, comm.startedAt, comm.endedAt, comm.plannedStartAt, t, locale])
+    }, [comm, t, locale])
 
     return (
         <Link
@@ -202,44 +156,9 @@ function CommissionCard({ comm }: { comm: Commission }) {
 // ====================================================================
 // INTERFACES
 // ====================================================================
-type CompetitionStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PLANNED" | "STARTED" | "COMPLETED" | "CANCELLED"
-type CommissionStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "PLANNED" | "STARTED" | "COMPLETED" | "CANCELLED"
-
-interface Series {
-    id: string
-    name: string
-    status: string
-}
-
-interface Commission {
-    id: string;
-    competitionId?: string;
-    name: string;
-    status?: string;
-    plannedStartAt?: string | null;
-    plannedEndAt?: string | null;
-    startedAt?: string | null;
-    endedAt?: string | null;
-    plannedStartDate?: string;
-    plannedEndDate?: string;
-    wineJumperMiniGameEnabled?: boolean;
-    voiceCommentsEnabled?: boolean;
-    propertyCommentsEnabled?: boolean;
-    beverageOriginDuringEvaluationEnabled?: boolean;
-}
-
-interface InitialData {
-    id: string
-    name: string
-    status: CompetitionStatus
-    startedAt: string | null
-    plannedStartAt: string | null
-    plannedEndAt: string | null
-    endedAt: string | null
-    series: Series
-    holders: number[]
-    commissions: Commission[]
-}
+// Shaped by `toCompetitionPage` in core, which the mobile app renders too.
+type Commission = CompetitionPageCommission
+type InitialData = CompetitionPageData
 
 export default function CompetitionClientView({
                                                   initialData: propInitialData,
@@ -325,24 +244,14 @@ export default function CompetitionClientView({
     }
 
     const openAddCommission = () => {
-        setNewCommissionName(`Commission ${initialData.commissions.length + 1}`)
+        setNewCommissionName(defaultCommissionName(initialData.commissions.length))
         setIsAddingCommission(true)
     }
 
     const handleAddCommission = async () => {
-        const finalName = newCommissionName.trim() || `Commission ${initialData.commissions.length + 1}`
         setIsMutating(true)
         try {
-            const res = await createCommission({
-                competitionId: initialData.id,
-                name: finalName,
-                plannedStartDate: initialData.plannedStartAt || undefined,
-                plannedEndDate: initialData.plannedEndAt || undefined,
-                wineJumperMiniGameEnabled: false,
-                voiceCommentsEnabled: false,
-                propertyCommentsEnabled: true,
-                beverageOriginDuringEvaluationEnabled: false,
-            })
+            const res = await createCommission(quickCommission(initialData, newCommissionName))
 
             if (res.success) {
                 setIsAddingCommission(false)
@@ -431,64 +340,25 @@ export default function CompetitionClientView({
     }
 
     useEffect(() => {
-        let intervalId: NodeJS.Timeout;
-
-        const updateTime = () => {
-            if (initialData.status === "STARTED" && initialData.startedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-                const formattedTime = hours > 0
-                    ? `${hours}h ${minutes}m ${seconds}s`
-                    : `${minutes}m ${seconds}s`
-
-                setTimeDisplay(formattedTime)
-
-            } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const end = new Date(initialData.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-                const time = hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes })
-                setTimeDisplay(t("time.lasted", { time }))
-
-            } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
-                const date = new Date(initialData.plannedStartAt)
-                const formattedDate = new Intl.DateTimeFormat(getDateLocale(locale), {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                }).format(date)
-                setTimeDisplay(t("time.plannedFor", { date: formattedDate }))
-
-            } else {
-                setTimeDisplay("")
-            }
-        }
-
+        const updateTime = () => setTimeDisplay(formatCompetitionPageTiming(initialData, t, locale))
         updateTime()
-
-        if (initialData.status === "STARTED") {
-            intervalId = setInterval(updateTime, 1000)
-        }
-
+        if (!competitionTimingTicks(initialData.status)) return
+        const intervalId = setInterval(updateTime, 1000)
         return () => clearInterval(intervalId)
-    }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
+    }, [initialData, t, locale])
 
-    const isHolder = currentAuid !== null && initialData.holders.includes(currentAuid)
+    const isHolder = isCompetitionHolder(initialData.holders, currentAuid)
+
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(initialData.name)
+    // Phones: the header row with the results button is hidden; the button lives in the nav bar.
+    useMobileNavAction({ href: `/competition/${initialData.id}/results`, label: t("competition.resultsButton"), icon: Trophy })
 
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="app-screen bg-slate-50/50">
             <AppHeader activeTab="competitions" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex items-center justify-between">
+            <main className="app-main px-4 pt-1 pb-6 md:p-8 flex flex-col items-center">
+                <div className="w-full max-w-7xl mb-4 hidden md:flex items-center justify-between">
                     <BackLink href="/myCompetitions" label={t("commission.backToCompetitions")} />
 
                     <Link
@@ -509,7 +379,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {/* Series Details */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex items-center gap-4 order-3 lg:order-none">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 flex items-center gap-4 order-3 lg:order-none">
                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-inner">
                                     <Layers className="h-6 w-6" />
                                 </div>
@@ -524,7 +394,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {/* Timeline and Dates */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-4 lg:order-none">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 order-4 lg:order-none">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-indigo-500" />
@@ -593,7 +463,7 @@ export default function CompetitionClientView({
                                             )}
                                             {!isEditingDates && initialData.status === "PLANNED" && initialData.plannedStartAt && (
                                                 <a
-                                                    href={getGoogleCalendarUrl(
+                                                    href={googleCalendarUrl(
                                                         initialData.name,
                                                         t("competition.calendarDetails", { name: initialData.name }),
                                                         initialData.plannedStartAt,
@@ -660,7 +530,7 @@ export default function CompetitionClientView({
                         {/* Right Column: Info & Commissions List */}
                         <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
                             {/* Competition Header Card */}
-                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
+                            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                                 <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                                 <div className="flex items-start justify-between gap-4 mb-6">
@@ -710,7 +580,7 @@ export default function CompetitionClientView({
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
+                                                    <h2 ref={navTitleRef} className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
                                                         {initialData.name}
                                                     </h2>
                                                     {isHolder && (
@@ -774,7 +644,7 @@ export default function CompetitionClientView({
                             </div>
 
                             {initialData.status === "DRAFT" && isHolder && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
+                                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 md:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                         {t("competition.actionsControls")}
                                     </h3>
@@ -804,7 +674,7 @@ export default function CompetitionClientView({
                             )}
 
                             {initialData.status === "PLANNED" && (
-                                <div className="bg-white border border-slate-100 rounded-[32px] p-6 md:p-8 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
+                                <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 md:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                         {t("competition.actionsControls")}
                                     </h3>
@@ -850,8 +720,8 @@ export default function CompetitionClientView({
                             )}
 
                             {/* Commissions list */}
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-6 lg:order-none">
-                                <div className="flex items-center justify-between mb-6">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-6 lg:order-none">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                             <Wine className="w-5 h-5 text-indigo-500" />
@@ -861,7 +731,7 @@ export default function CompetitionClientView({
                                             {t("competition.commissionsSubtitle")}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
                                             {t("common.total")}: {initialData.commissions.length}
                                         </span>

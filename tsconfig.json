@@ -25,6 +25,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@winelore/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@winelore/core/*": [
+        "./packages/core/src/*"
       ]
     }
   },
@@ -36,6 +42,8 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "apps/**",
+    "packages/core/tests/**"
   ]
 }

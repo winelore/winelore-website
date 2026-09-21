@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic"
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { fetchGraphQL } from "@/lib/apiClient"
-import { GET_COMMISSIONS } from "@/app/queries"
+import { fetchGraphQLRaw } from "@/lib/apiClient"
+import { GET_DASHBOARD_COMMISSIONS, selectCommissionsForUser } from "@winelore/core/dashboard"
 import MyCommissionsClientView from "./MyCommissionsClientView"
 
 export default async function MyCommissionsPage({searchParams, }: {
@@ -28,23 +28,23 @@ export default async function MyCommissionsPage({searchParams, }: {
     let rawCommissions: any[] = [];
     let hasError = false;
     try {
+        let allCommissions: any[] = [];
         let currentOffset = 0;
         let hasMore = true;
         while (hasMore) {
-            const commData: any = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
+            const commData: any = await fetchGraphQLRaw(GET_DASHBOARD_COMMISSIONS, { limit: 100, offset: currentOffset });
             const items = commData.commissions?.items || [];
-            const userItems = items.filter((comm: any) =>
-                comm.replicas?.some((r: any) =>
-                    r.members?.some((m: any) => m.auid?.includes(currentAuid))
-                )
-            );
-            rawCommissions = rawCommissions.concat(userItems);
+            allCommissions = allCommissions.concat(items);
             if (items.length < 100) {
                 hasMore = false;
             } else {
                 currentOffset += 100;
             }
         }
+        // Shared with the dashboard and the mobile app; matches nested auid
+        // arrays that a plain `includes` would miss. No status filter here —
+        // this list is the judge's whole history.
+        rawCommissions = selectCommissionsForUser(allCommissions, String(currentAuid));
     } catch (error) {
         console.error("Failed to fetch commissions:", error);
         hasError = true;

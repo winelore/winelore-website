@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n/context"
-import { Plus, Calendar, Settings, Layers, CheckCircle2, Pencil, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Calendar, Settings, Layers, CheckCircle2, Pencil, ChevronDown } from "lucide-react"
 import Cookies from "js-cookie"
+import Link from "next/link"
 import TemplateCreatorModal, { getPropertyTypeLabel } from "./TemplateCreatorModal"
 import { useSearchParams } from "next/navigation"
-import { ListPageShell, ListPageHeader, StateCard } from "@/components/list"
+import { ListPageShell, ListPageHeader, StateCard, Pagination } from "@/components/list"
+import { catalogTemplateCounts } from "@winelore/core/commission"
+import { useRouter, usePathname } from "next/navigation"
 
 interface Property {
     id: string
@@ -40,14 +43,26 @@ interface Template {
     latestEdition?: TemplateEdition
 }
 
-export default function MyTemplatesClientView({ initialTemplates, totalCount, hasError = false }: { initialTemplates: Template[], totalCount?: number, hasError?: boolean }) {
+export default function MyTemplatesClientView({ initialTemplates, totalCount, totalPages = 1, currentPage = 1, hasError = false }: { initialTemplates: Template[], totalCount?: number, totalPages?: number, currentPage?: number, hasError?: boolean }) {
     const [templates, setTemplates] = useState<Template[]>(initialTemplates)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null) // WIN-65: зберігаємо ID шаблону, який редагуємо
     const { t, tCount } = useTranslation()
     const searchParams = useSearchParams()
+    const router = useRouter()
+    const pathname = usePathname()
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
     const [currentAuid, setCurrentAuid] = useState<number>(0)
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        setIsLoading(false)
+    }, [initialTemplates])
+
+    const handleJumpToPage = (pageNumber: number) => {
+        setIsLoading(true)
+        router.push(`${pathname}?page=${pageNumber}`)
+    }
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -56,6 +71,14 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
             if (!isNaN(parsed)) setCurrentAuid(parsed)
         }
     }, [])
+
+    // `?create=1` opens the editor on a new template — how the app hands its create button over.
+    useEffect(() => {
+        if (searchParams.get("create") === "1") {
+            setEditingTemplateId(null)
+            setIsModalOpen(true)
+        }
+    }, [searchParams])
 
     useEffect(() => {
         const templateIdParam = searchParams.get("templateId")
@@ -96,7 +119,7 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
     const myTemplates = templates
 
     return (
-        <ListPageShell activeTab="none">
+        <ListPageShell activeTab="none" isLoading={isLoading}>
             <ListPageHeader
                 titleIcon={<Layers className="w-8 h-8 text-indigo-600" />}
                 title={t("myTemplates.title")}
@@ -123,17 +146,17 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                     const edition = template.latestEdition
                     const uniqueKey = `${template.id}-${edition?.version || 0}`
                     const isExpanded = expandedTemplateId === uniqueKey
-                    const propertiesCount = edition?.categories.reduce((acc, cat) => acc + cat.properties.length, 0) || 0
+                    const { properties: propertiesCount } = catalogTemplateCounts(template)
 
                     return (
                         <div
                             key={uniqueKey}
-                            className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-xl shadow-slate-200/45 transition-all hover:shadow-2xl hover:shadow-slate-350/50"
+                            className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[28px] overflow-hidden shadow-sm sm:shadow-xl shadow-slate-200/45 transition-all hover:shadow-2xl hover:shadow-slate-350/50"
                         >
                             {/* Main Row */}
                             <div
                                 onClick={() => toggleExpandTemplate(uniqueKey)}
-                                className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
+                                className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl shrink-0 mt-1">
@@ -141,21 +164,25 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                                     </div>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
+                                            <Link
+                                                href={`/templates/${template.id}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-lg font-bold text-slate-800 tracking-tight hover:text-indigo-600 transition-colors truncate"
+                                            >
                                                 {template.name}
-                                            </h3>
+                                            </Link>
                                         </div>
 
-                                        <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
+                                        <div className="flex items-center gap-x-3 gap-y-1 sm:gap-4 mt-2 text-xs font-semibold text-slate-500 flex-wrap">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3.5 h-3.5" />
-                                                {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString()}
+                                                {t("myTemplates.createdAt")}: {new Date(template.createdAt).toLocaleDateString("en-CA")}
                                             </span>
-                                            <span className="text-slate-300">|</span>
+                                            <span className="hidden sm:inline text-slate-300">|</span>
                                             <span>{t("myTemplates.type")}: <span className="text-slate-700 uppercase font-bold">{template.beverageType}</span></span>
-                                            <span className="text-slate-300">|</span>
+                                            <span className="hidden sm:inline text-slate-300">|</span>
                                             <span>{t("myTemplates.categories")}: <span className="text-indigo-600 font-bold">{edition?.categories.length || 0}</span></span>
-                                            <span className="text-slate-300">|</span>
+                                            <span className="hidden sm:inline text-slate-300">|</span>
                                             <span>{t("myTemplates.totalScores")}: <span className="text-indigo-600 font-bold">{propertiesCount}</span></span>
                                         </div>
                                     </div>
@@ -185,14 +212,14 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                                     </button>
 
                                     <div className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-colors">
-                                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                        <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Expanded Structure */}
                             {isExpanded && edition && (
-                                <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/15">
+                                <div className="animate-expand-in px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/15">
                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
                                         <Settings className="w-4 h-4 text-indigo-500" />
                                         {t("myTemplates.evaluationStructure")}
@@ -243,6 +270,8 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, ha
                     <StateCard variant="empty" icon={Layers} title={t("myTemplates.notFound")} description={t("myTemplates.createFirst")} />
                 )}
             </div>
+
+            <Pagination currentPage={currentPage} totalPages={totalPages} isLoading={isLoading} onPageChange={handleJumpToPage} />
 
             {isModalOpen && (
                 <TemplateCreatorModal

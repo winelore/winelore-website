@@ -1,4 +1,4 @@
-import { gql } from '@/src/gql';
+import { gql } from '@winelore/core/gql';
 
 export const GET_DASHBOARD_COMPETITIONS = gql(`
   query GetDashboardCompetitions($limit: Int, $cursor: ID, $offset: Int) {

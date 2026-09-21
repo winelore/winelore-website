@@ -19,6 +19,7 @@ import {
 
 import { AppHeader } from '@/components/AppHeader';
 import { BackLink } from '@/components/BackLink';
+import { useMobileNavTitle } from '@/lib/mobileNav';
 import { useTranslation } from '@/lib/i18n/context';
 import {
     createBeverageAction,
@@ -102,7 +103,7 @@ function CustomSelect({
             </button>
 
             {isOpen && !disabled && !loading && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl shadow-slate-200/80 backdrop-blur-md transition-all duration-200">
+                <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl shadow-slate-200/80 backdrop-blur-md transition-all duration-200 origin-top animate-scale-up">
                     {options.map((option) => {
                         const isSelected = option.value === value;
                         return (
@@ -370,11 +371,13 @@ export default function CreateBeveragePage() {
                 : 'border-slate-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20'
         }`;
 
-    return (
-        <div className="flex h-screen flex-col bg-slate-50/50 text-slate-800">
-            <AppHeader activeTab="beverages" />
+    const titleRef = useMobileNavTitle<HTMLHeadingElement>(t('beverage.createTitle', { defaultValue: 'Створити напій' }));
 
-            <main className="flex-1 overflow-auto px-4 py-6 sm:px-6 sm:py-8">
+    return (
+        <div className="app-screen bg-slate-50/50 text-slate-800">
+            <AppHeader activeTab="beverages" showMobileTabBar={false} />
+
+            <main className="app-main px-4 pt-2 pb-safe-4 sm:px-6 sm:py-8">
                 <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
                     <BackLink href="/myBeverages" label={t('beverage.backToMyBeverages', { defaultValue: 'До моїх напоїв' })} />
 
@@ -383,7 +386,7 @@ export default function CreateBeveragePage() {
                             <Wine className="h-7 w-7" />
                         </div>
                         <div className="min-w-0">
-                            <h1 className="truncate text-2xl font-extrabold tracking-tight text-slate-800 sm:text-3xl">
+                            <h1 ref={titleRef} className="truncate text-2xl font-extrabold tracking-tight text-slate-800 sm:text-3xl">
                                 {t('beverage.createTitle', { defaultValue: 'Створити напій' })}
                             </h1>
                             <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
@@ -406,7 +409,7 @@ export default function CreateBeveragePage() {
                             className="overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-xl shadow-slate-200/50"
                         >
                             {/* 1 — Basic Information */}
-                            <section className="flex flex-col gap-5 p-6 sm:p-8">
+                            <section className="flex flex-col gap-5 p-5 sm:p-8">
                                 <SectionHeader
                                     step={1}
                                     title={t('beverage.createSectionBasics', { defaultValue: 'Основна інформація' })}
@@ -486,7 +489,7 @@ export default function CreateBeveragePage() {
                             {/* 2 — Characteristics (Optional) — Dynamic backend characteristics */}
                             {(characteristicsLoading || characteristics.length > 0) && (
                                 <>
-                                    <section className="flex flex-col gap-5 p-6 sm:p-8">
+                                    <section className="flex flex-col gap-5 p-5 sm:p-8">
                                         <SectionHeader
                                             step={2}
                                             title={t('beverage.createSectionCharacteristics', { defaultValue: 'Характеристики напою' })}
@@ -616,7 +619,7 @@ export default function CreateBeveragePage() {
                             )}
 
                             {/* Geographic Origin (Optional) — Interactive Map */}
-                            <section className="flex flex-col gap-5 p-6 sm:p-8">
+                            <section className="flex flex-col gap-5 p-5 sm:p-8">
                                 <SectionHeader
                                     step={characteristics.length > 0 ? 3 : 2}
                                     title={t('beverage.createSectionOrigin', { defaultValue: 'Географічне походження' })}
@@ -633,7 +636,7 @@ export default function CreateBeveragePage() {
                             </section>
 
                             {/* Action Bar */}
-                            <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                            <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50 px-5 py-4 sm:py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                                 <div className="min-w-0 flex-1">
                                     {submitError && (
                                         <p className="flex items-start gap-1.5 text-xs font-semibold text-rose-600">
@@ -642,7 +645,7 @@ export default function CreateBeveragePage() {
                                         </p>
                                     )}
                                 </div>
-                                <div className="flex shrink-0 items-center justify-end gap-3">
+                                <div className="flex shrink-0 items-center justify-end gap-3 max-sm:[&>button]:h-12 max-sm:[&>button]:justify-center max-sm:[&>button]:text-sm max-sm:[&>button:last-child]:flex-1 max-sm:[&>button]:whitespace-nowrap">
                                     <button
                                         type="button"
                                         onClick={() => router.push('/myBeverages')}

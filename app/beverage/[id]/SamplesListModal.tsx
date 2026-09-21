@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
     Calendar,
@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/i18n/context';
+import { usePresence } from '@/hooks/usePresence';
+import { filterSamples, SAMPLE_SEARCH_THRESHOLD } from '@winelore/core/beverage';
 
 export interface BatchSampleItem {
     id: string;
@@ -41,10 +43,16 @@ interface SamplesListModalProps {
 export function SamplesListModal({
     isOpen,
     onClose,
-    batch,
+    batch: batchProp,
     beverageId,
 }: SamplesListModalProps) {
     const { t, formatDateTime } = useTranslation();
+    // The parent clears the batch as it closes the modal; keep showing the last
+    // one while the sheet animates out.
+    const lastBatchRef = useRef(batchProp);
+    if (batchProp) lastBatchRef.current = batchProp;
+    const batch = batchProp ?? lastBatchRef.current;
+    const { mounted, closing } = usePresence(isOpen && !!batchProp);
     const [searchQuery, setSearchQuery] = useState('');
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -60,16 +68,7 @@ export function SamplesListModal({
     const remainingVolume = batchVolume !== null ? Math.max(0, batchVolume - totalSamplesVolume) : null;
     const isExhausted = remainingVolume !== null && remainingVolume <= 0;
 
-    const filteredSamples = useMemo(() => {
-        if (!searchQuery.trim()) return samples;
-        const q = searchQuery.toLowerCase().trim();
-        return samples.filter((s) => {
-            const shortId = s.id.slice(-6).toLowerCase();
-            const fullId = s.id.toLowerCase();
-            const vol = s.volumeMl ? String(s.volumeMl) : '';
-            return shortId.includes(q) || fullId.includes(q) || vol.includes(q);
-        });
-    }, [samples, searchQuery]);
+    const filteredSamples = useMemo(() => filterSamples(samples, searchQuery), [samples, searchQuery]);
 
     const handleCopyId = (id: string) => {
         navigator.clipboard.writeText(id);
@@ -78,14 +77,14 @@ export function SamplesListModal({
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    if (!isOpen || !batch) return null;
+    if (!mounted || !batch) return null;
 
     const lotDisplay = batch.lotNumber || `ID: ${batch.id.slice(-6).toUpperCase()}`;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div data-closing={closing || undefined} className="sheet-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-                className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                className="sheet-panel relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Modal Header */}
@@ -137,7 +136,7 @@ export function SamplesListModal({
                             </span>
                             <span className={totalSamplesVolume > batchVolume ? 'text-rose-600 font-bold' : 'text-slate-500'}>
                                 {remainingVolume !== null && (
-                                    <>Залишок: <strong className={isExhausted ? 'text-rose-600' : 'text-indigo-700'}>{remainingVolume.toLocaleString()} мл</strong></>
+                                    <>{t('sample.batchVolumeRemaining')}: <strong className={isExhausted ? 'text-rose-600' : 'text-indigo-700'}>{remainingVolume.toLocaleString()} {t('common.milliliters')}</strong></>
                                 )}
                             </span>
                         </div>
@@ -157,7 +156,7 @@ export function SamplesListModal({
                 )}
 
                 {/* Search input if samples count > 4 */}
-                {samples.length > 4 && (
+                {samples.length > SAMPLE_SEARCH_THRESHOLD && (
                     <div className="px-6 pt-4 pb-2 shrink-0">
                         <div className="relative">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -188,7 +187,7 @@ export function SamplesListModal({
                             const shortCode = sample.id.slice(-6).toUpperCase();
                             const isCopied = copiedId === sample.id;
                             const volStr = sample.volumeMl
-                                ? `${sample.volumeMl.toLocaleString()} мл`
+                                ? `${sample.volumeMl.toLocaleString()} ${t('common.milliliters')}`
                                 : t('common.standard', { defaultValue: 'Стандарт' });
 
                             return (

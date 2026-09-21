@@ -163,3 +163,441 @@
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ------------------------------------------------------------------ *
+ * Native (iOS-style) mobile shell.
+ *
+ * Below the md breakpoint the app behaves like a native app: the page
+ * scrolls the document (so tap-status-bar-to-top and Safari's toolbar
+ * collapse work), a translucent nav bar sticks to the top and a tab bar
+ * is pinned to the bottom. From md up nothing here changes the desktop
+ * layout, which keeps its fixed header and inner scroll container.
+ * ------------------------------------------------------------------ */
+@theme {
+  --animate-sheet-up: sheet-up 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-navbar-height: 44px;
+  --mobile-tabbar-height: 50px;
+  /* Space the bottom tab bar takes up; 0 wherever there is no tab bar. */
+  --app-bottom-inset: 0px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer base {
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    /* Kills the double-tap-to-zoom delay without disabling pinch zoom.
+       In the base layer so a touch-none/touch-pan-* utility still wins. */
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  body:has([data-mobile-tabbar]) {
+    --app-bottom-inset: calc(var(--mobile-tabbar-height) + var(--safe-bottom));
+    padding-bottom: var(--app-bottom-inset);
+  }
+
+  /* The keyboard covers the tab bar in native apps; in Safari a fixed bar
+     would instead float above the keyboard, so tuck it away while typing. */
+  body:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"], [type="file"]), textarea, [contenteditable="true"]):focus) [data-mobile-tabbar] {
+    transform: translateY(110%);
+  }
+}
+
+/* iOS Safari zooms the page when focusing a field whose text is smaller than
+   16px. Unlayered so it beats the text-xs/text-sm utilities on the fields. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"], [type="file"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Full-viewport screen: document-scrolling column on phones, fixed-height
+   frame with an inner scroll container (.app-main) from md up. */
+@utility app-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--app-bottom-inset));
+  @media (width >= 48rem) {
+    height: 100dvh;
+    min-height: 0;
+  }
+}
+
+/* A page that is always as tall as its content (document scroll everywhere). */
+@utility min-h-app {
+  min-height: calc(100dvh - var(--app-bottom-inset));
+}
+
+/* The inner scroll container of an .app-screen — only scrolls from md up. */
+@utility app-main {
+  flex: 1 1 0%;
+  min-height: 0;
+  @media (width >= 48rem) {
+    overflow: auto;
+  }
+}
+
+@utility pt-safe {
+  padding-top: var(--safe-top);
+}
+
+@utility pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+
+@utility pb-safe-4 {
+  padding-bottom: calc(var(--safe-bottom) + 1rem);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Native-feeling press feedback for tappable cards/rows on touch devices. */
+@utility pressable {
+  transition-property: transform, opacity, background-color, box-shadow, border-color, color;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  @media (hover: none) {
+    &:active {
+      transform: scale(0.975);
+    }
+  }
+}
+
+/* Centered modal on desktop, bottom sheet on phones. Applied to the overlay
+   and the panel of the hand-rolled modals. Deliberately unlayered (plain
+   classes, not @utility) so on phones they win over the panel's own
+   rounded-/max-h-/padding utilities regardless of utility ordering. */
+@media (max-width: 39.99rem) {
+  .sheet-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sheet-panel {
+    max-width: none;
+    max-height: calc(100dvh - var(--safe-top) - 12px);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-bottom-width: 0;
+    padding-bottom: var(--safe-bottom);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: sheet-up 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Page transitions (React <ViewTransition>, see PageTransition.tsx).
+ *
+ * Phones: a UINavigationController-style push/pop — the incoming page
+ * slides over the outgoing one, which drifts a third of the way and dims.
+ * Desktop: a short slide + fade. Tabs crossfade. The app chrome (nav bar,
+ * tab bar, desktop header) is captured on its own and stays put.
+ * ------------------------------------------------------------------ */
+:root {
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --page-bg: color-mix(in oklab, var(--color-slate-50) 50%, white);
+}
+
+/* Full page loads (plain <a> links, redirects) get a quick crossfade too. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-group(root) {
+  animation-duration: 250ms;
+}
+
+/* Page snapshots are painted over a solid ground: the pages themselves use a
+   translucent bg-slate-50/50, which would let the other page show through. */
+::view-transition-old(.page-push-out),
+::view-transition-new(.page-push-in),
+::view-transition-old(.page-pop-out),
+::view-transition-new(.page-pop-in),
+::view-transition-old(.page-fade-out),
+::view-transition-new(.page-fade-in) {
+  background-color: var(--page-bg);
+}
+
+/* Whoever is "on top" of the stack is drawn above the other page. */
+::view-transition-group(.page-push-in),
+::view-transition-group(.page-pop-out) {
+  z-index: 2;
+}
+::view-transition-group(.page-push-out),
+::view-transition-group(.page-pop-in) {
+  z-index: 1;
+}
+
+::view-transition-new(.page-push-in) {
+  animation: 460ms var(--ease-ios) both page-slide-from-right;
+  box-shadow: -10px 0 30px rgb(15 23 42 / 0.08);
+}
+::view-transition-old(.page-push-out) {
+  animation: 460ms var(--ease-ios) both page-recede-left;
+}
+::view-transition-old(.page-pop-out) {
+  animation: 420ms var(--ease-ios) both page-slide-to-right;
+  box-shadow: -10px 0 30px rgb(15 23 42 / 0.08);
+}
+::view-transition-new(.page-pop-in) {
+  animation: 420ms var(--ease-ios) both page-emerge-from-left;
+}
+
+::view-transition-old(.page-fade-out) {
+  animation: 160ms ease-out both page-fade reverse;
+}
+::view-transition-new(.page-fade-in) {
+  animation: 220ms ease-out 40ms both page-fade;
+}
+
+@keyframes page-slide-from-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes page-slide-to-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+@keyframes page-recede-left {
+  from { transform: translateX(0); filter: brightness(1); }
+  to { transform: translateX(-30%); filter: brightness(0.92); }
+}
+@keyframes page-emerge-from-left {
+  from { transform: translateX(-30%); filter: brightness(0.92); }
+  to { transform: translateX(0); filter: brightness(1); }
+}
+@keyframes page-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes page-nudge {
+  from { transform: translateX(var(--page-nudge, 0)); }
+  to { transform: translateX(0); }
+}
+
+/* Desktop: sliding a whole wide page across the screen reads as heavy, so
+   forward/back become a short directional nudge with a crossfade. */
+@media (width >= 48rem) {
+  ::view-transition-new(.page-push-in) {
+    --page-nudge: 32px;
+    box-shadow: none;
+    animation: 200ms ease-out 80ms both page-fade, 380ms var(--ease-ios) both page-nudge;
+  }
+  ::view-transition-old(.page-push-out) {
+    --page-nudge: -32px;
+    animation: 140ms ease-in both page-fade reverse, 380ms var(--ease-ios) both page-nudge reverse;
+  }
+  ::view-transition-new(.page-pop-in) {
+    --page-nudge: -32px;
+    animation: 200ms ease-out 80ms both page-fade, 380ms var(--ease-ios) both page-nudge;
+  }
+  ::view-transition-old(.page-pop-out) {
+    --page-nudge: 32px;
+    box-shadow: none;
+    animation: 140ms ease-in both page-fade reverse, 380ms var(--ease-ios) both page-nudge reverse;
+  }
+}
+
+/* Anchored chrome. The nav bar crossfades its contents (back label, title);
+   the tab bar and desktop header are identical on both pages and just stay. */
+[data-mobile-navbar] {
+  view-transition-name: app-navbar;
+}
+[data-mobile-tabbar] {
+  view-transition-name: app-tabbar;
+}
+[data-app-header] {
+  view-transition-name: app-header;
+}
+::view-transition-group(app-navbar),
+::view-transition-group(app-tabbar),
+::view-transition-group(app-header) {
+  z-index: 10;
+}
+::view-transition-group(app-navbar) {
+  animation-duration: 260ms;
+}
+::view-transition-group(app-tabbar),
+::view-transition-group(app-header),
+::view-transition-new(app-tabbar),
+::view-transition-new(app-header) {
+  animation: none;
+}
+::view-transition-old(app-tabbar),
+::view-transition-old(app-header) {
+  display: none;
+}
+
+/* Browser back/forward: no replayed slide (iOS swipe-back animates itself). */
+:root[data-nav-pop]::view-transition-group(*),
+:root[data-nav-pop]::view-transition-old(*),
+:root[data-nav-pop]::view-transition-new(*) {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* Loading skeleton → real content: the page's content eases in as the
+   skeleton goes (app/loading.tsx sets the flag while it unmounts). */
+@keyframes content-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+:root[data-route-reveal] main {
+  animation: content-reveal 280ms var(--ease-ios) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-route-reveal] main {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Micro-interactions.
+ * ------------------------------------------------------------------ */
+
+/* Every interactive element eases its hover/focus colour changes by default.
+   Base layer, so any transition-* utility on an element still wins. */
+@layer base {
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  summary {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, box-shadow, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+}
+
+/* Shimmering placeholder block for loading states. */
+@utility skeleton {
+  background-color: var(--color-slate-100);
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in oklab, white 70%, transparent) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+/* The icon of a tab that just became active gives a small spring, like
+   SF Symbols' bounce effect in an iOS tab bar. */
+@theme {
+  --animate-tab-pop: tab-pop 420ms var(--ease-ios) backwards;
+  --animate-expand-in: expand-in 260ms var(--ease-ios) backwards;
+  /* Full-screen modal presented from the bottom (iOS fullScreenCover). */
+  --animate-cover-up: sheet-up 460ms var(--ease-ios) backwards;
+}
+
+@keyframes tab-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.82); }
+  70% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* Content revealed by an expand/collapse toggle. */
+@keyframes expand-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Attribute selectors so variant-prefixed classes (max-md:animate-…) match too. */
+  .skeleton,
+  .sheet-panel,
+  [class*="animate-tab-pop"],
+  [class*="animate-expand-in"],
+  [class*="animate-cover-up"],
+  [class*="animate-fade-in-slide"],
+  [class*="animate-scale-up"] {
+    animation: none !important;
+  }
+}
+
+/* Hand-rolled modals animating out (usePresence sets data-closing). */
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes dialog-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
+}
+@keyframes sheet-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+.sheet-overlay[data-closing] {
+  pointer-events: none;
+  animation: overlay-out 240ms ease-in both;
+}
+.sheet-overlay[data-closing] > .sheet-panel {
+  animation: dialog-out 200ms ease-in both;
+}
+@media (max-width: 39.99rem) {
+  .sheet-overlay[data-closing] > .sheet-panel {
+    animation: sheet-down 240ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-overlay[data-closing],
+  .sheet-overlay[data-closing] > .sheet-panel {
+    animation: none;
+  }
+}

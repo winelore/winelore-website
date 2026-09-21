@@ -23,7 +23,7 @@ function MapClickHandler({
     onSelectLocation: (lat: number, lng: number) => void;
 }) {
     useMapEvents({
-        click(e) {
+        click(e: any) {
             onSelectLocation(e.latlng.lat, e.latlng.lng);
         },
     });
@@ -202,7 +202,7 @@ export default function LocationPickerMapInner({
                             icon={markerIcon}
                             draggable={!disabled}
                             eventHandlers={{
-                                dragend: (e) => {
+                                dragend: (e: any) => {
                                     const latlng = e.target.getLatLng();
                                     handleMapClick(latlng.lat, latlng.lng);
                                 },

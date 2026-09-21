@@ -22,6 +22,7 @@ import {
     addCommissionCandidateAction
 } from "../../actions"
 import { useTranslation } from "@/lib/i18n/context"
+import { usePresence } from "@/hooks/usePresence"
 
 interface BeverageItem {
     id: string
@@ -322,11 +323,13 @@ export function CandidateWizardModal({
         }
     }
 
-    if (!isOpen) return null
+    // Stays mounted briefly after closing so the sheet/dialog can animate out.
+    const { mounted, closing } = usePresence(isOpen)
+    if (!mounted) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-xl overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
+        <div data-closing={closing || undefined} className="sheet-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="sheet-panel relative w-full max-w-xl overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-3">

@@ -1,13 +1,52 @@
 "use server"
 
-import { sdk, fetchGraphQLRaw } from '../../lib/apiClient';
+import { fetchGraphQLRaw, mutateGraphQLRaw } from '../../lib/apiClient';
 import { revalidatePath } from 'next/cache';
+import {
+    createEvaluationTemplate,
+    loadTemplateDetail,
+    loadTemplateForEditor,
+    saveEvaluationTemplate,
+    toCatalogEdition,
+} from '@winelore/core/commission';
+
+// An edition's fields as core's toCatalogEdition reads them.
+const TEMPLATE_EDITION_FIELDS = `
+    id
+    version
+    status
+    categories {
+        id
+        name
+        properties {
+            __typename
+            id
+            code
+            name
+            description
+            isRequired
+            isResult
+            ... on IntProperty { intMinLimit: minLimit intMaxLimit: maxLimit intDefaultValue: defaultValue }
+            ... on DoubleProperty { doubleMinLimit: minLimit doubleMaxLimit: maxLimit doubleDefaultValue: defaultValue }
+            ... on DiscreteNumbersProperty { discreteAllowedValues: allowedValues discreteDefaultValue: defaultValue }
+            ... on EnumProperty { enumAllowedValues: allowedValues enumDefaultValue: defaultValue }
+            ... on BooleanProperty { boolDefaultValue: defaultValue }
+        }
+    }
+`;
 
 // Was pointed at a stale Railway host over plain HTTP as its ultimate
 // fallback; now shares the same endpoint resolution (and transport) as
 // every other caller — see lib/graphqlEndpoint.ts.
 async function rawGraphQL(query: string, variables?: Record<string, any>) {
     return fetchGraphQLRaw<any, Record<string, any> | undefined>(query, variables);
+}
+
+/** Reads as usual; a mutation fails on any error, with the backend's message. */
+async function strictSend(query: string, variables: Record<string, unknown>, headers?: Record<string, string>) {
+    return query.trimStart().startsWith('mutation')
+        ? mutateGraphQLRaw<any>(query, variables, headers)
+        : fetchGraphQLRaw<any, Record<string, unknown>>(query, variables, headers);
 }
 
 export async function getBeverageTypesAction(): Promise<{ id: string; code: string; name: string }[]> {
@@ -33,153 +72,56 @@ export async function getBeverageTypesAction(): Promise<{ id: string; code: stri
     }
 }
 
-export async function getEvaluationTemplatesAction(ownerAuid?: number) {
+export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: number = 100, offset: number = 0) {
     try {
+        // A page of templates, filtered and counted by the backend; the
+        // owner check below stays in case a backend ignores the filter.
         const query = `
-            query GetEvaluationTemplateEditions($limit: Int) {
-                evaluationTemplateEditions(limit: $limit) {
+            query GetEvaluationTemplates($limit: Int, $offset: Int${ownerAuid !== undefined ? ", $owner: [Int!], $filter: EvaluationTemplateFilterInput" : ""}) {
+                evaluationTemplates(limit: $limit, offset: $offset${ownerAuid !== undefined ? ", filter: $filter" : ""}) {
                     items {
                         id
-                        version
+                        name
+                        owners
+                        beverageType { id code name }
                         status
-                        template {
-                            id
-                            name
-                            owners
-                            beverageType {
-                                id
-                                code
-                                name
-                            }
-                            status
-                            createdAt
-                        }
-                        categories {
-                            id
-                            name
-                            properties {
-                                __typename
-                                id
-                                code
-                                name
-                                description
-                                isRequired
-                                isResult
-                                ... on IntProperty {
-                                    intMinLimit: minLimit
-                                    intMaxLimit: maxLimit
-                                    intDefaultValue: defaultValue
-                                }
-                                ... on DoubleProperty {
-                                    doubleMinLimit: minLimit
-                                    doubleMaxLimit: maxLimit
-                                    doubleDefaultValue: defaultValue
-                                }
-                                ... on DiscreteNumbersProperty {
-                                    discreteAllowedValues: allowedValues
-                                    discreteDefaultValue: defaultValue
-                                }
-                                ... on EnumProperty {
-                                    enumAllowedValues: allowedValues
-                                    enumDefaultValue: defaultValue
-                                }
-                                ... on BooleanProperty {
-                                    boolDefaultValue: defaultValue
-                                }
-                                ... on SmartProperty {
-                                    expression {
-                                        __typename
-                                        type
-                                        ... on ConstantExpression { value }
-                                        ... on VariableExpression { code }
-                                        ... on BinaryExpression {
-                                            left {
-                                                __typename
-                                                type
-                                                ... on ConstantExpression { value }
-                                                ... on VariableExpression { code }
-                                            }
-                                            right {
-                                                __typename
-                                                type
-                                                ... on ConstantExpression { value }
-                                                ... on VariableExpression { code }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        createdAt
+                        editions(limit: 1) {
+                            ${TEMPLATE_EDITION_FIELDS}
                         }
                     }
                 }
-                evaluationTemplateCount
+                evaluationTemplateCount${ownerAuid !== undefined ? "(owner: $owner)" : ""}
             }
         `;
-        // Note: neither field accepts an owner/filter argument on this backend, so
-        // ownership is applied below once the (unfiltered) result comes back.
-        const variables: any = { limit: 100 };
+
+        const variables: Record<string, unknown> = { limit, offset };
+        if (ownerAuid !== undefined) {
+            variables.owner = [ownerAuid];
+            variables.filter = { owners: [[ownerAuid]] };
+        }
+
         const data = await rawGraphQL(query, variables);
-        const items = data?.evaluationTemplateEditions?.items || [];
-        const latestTemplatesMap = new Map<string, any>();
-        for (const item of items) {
-            if (!item.template) continue;
-            const templateId = item.template.id;
-            const existing = latestTemplatesMap.get(templateId);
-            if (!existing || item.version > existing.version) {
-                latestTemplatesMap.set(templateId, item);
-            }
-        }
-        // Map editions to templates
-        const templates = Array.from(latestTemplatesMap.values()).map((item: any) => ({
-            id: item.template.id,
-            name: item.template.name,
-            owners: (item.template.owners as number[][] | null) ?? [],
-            beverageType: item.template.beverageType?.name ?? item.template.beverageType?.code ?? "",
-            beverageTypeId: item.template.beverageType?.id ?? "",
-            status: item.template.status,
-            createdAt: item.template.createdAt,
-            latestEdition: {
-                id: item.id,
-                version: item.version,
-                status: item.status,
-                categories: item.categories.map((cat: any) => ({
-                    id: cat.id,
-                    name: cat.name,
-                    properties: cat.properties.map((prop: any) => {
-                        const typeName = prop.__typename ? prop.__typename.replace("Property", "") : "Boolean";
-                        return {
-                            id: prop.id,
-                            code: prop.code,
-                            name: prop.name,
-                            description: prop.description,
-                            type: typeName === "DiscreteNumbers" ? "Discrete" : typeName,
-                            isRequired: prop.isRequired,
-                            isResult: prop.isResult ?? false,
-                            minLimit: prop.intMinLimit ?? prop.doubleMinLimit ?? undefined,
-                            maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? undefined,
-                            allowedValues: prop.discreteAllowedValues ?? prop.enumAllowedValues ?? undefined,
-                            defaultValue: prop.intDefaultValue ?? prop.doubleDefaultValue ?? prop.discreteDefaultValue ?? prop.enumDefaultValue ?? prop.boolDefaultValue ?? undefined,
-                            expression: prop.expression ?? undefined,
-                        };
-                    })
-                }))
-            }
-        }));
-
-        if (ownerAuid) {
-            const ownedTemplates = templates.filter((tpl) =>
-                tpl.owners.some((ownerGroup: number[]) => ownerGroup.includes(ownerAuid))
-            );
+        let templates = (data?.evaluationTemplates?.items || []).map((template: any) => {
+            const latestEdition = template.editions?.[0];
             return {
-                templates: ownedTemplates,
-                totalCount: ownedTemplates.length
+                id: template.id,
+                name: template.name,
+                owners: (template.owners as number[][] | null) ?? [],
+                beverageType: template.beverageType?.name ?? template.beverageType?.code ?? "",
+                beverageTypeId: template.beverageType?.id ?? "",
+                status: template.status,
+                createdAt: template.createdAt,
+                // Only the latest edition is fetched; the list does not show the count.
+                totalEditions: 1,
+                latestEdition: latestEdition ? toCatalogEdition(latestEdition) : null,
             };
+        });
+        if (ownerAuid !== undefined) {
+            templates = templates.filter((t: any) => t.owners?.some((owner: number[]) => owner.includes(ownerAuid)));
         }
 
-        return {
-            templates,
-            totalCount: data?.evaluationTemplateCount || 0
-        };
+        return { templates, totalCount: data?.evaluationTemplateCount || 0 };
     } catch (err: any) {
         console.error("❌ Failed to fetch templates from backend:", err.message);
         throw err;
@@ -193,34 +135,9 @@ export async function createGlobalTemplateAction(
     beverageTypeId: string
 ) {
     try {
-        console.log(`🚀 Creating global template "${templateName}"...`);
-        
-        const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
-        const templateRes = await sdk.CreateEvaluationTemplate({
-            input: {
-                name: templateName,
-                beverageTypeId,
-                owners: [[ownerAuid]]
-            }
-        }, { headers: actorHeaders });
-        const templateId = templateRes.createEvaluationTemplate.id;
-        console.log(`  Created template: ${templateId}`);
-
-        const editionRes = await sdk.CreateEvaluationTemplateEdition({
-            input: {
-                templateId,
-                version: 1,
-                categories
-            }
-        }, { headers: actorHeaders });
-        const editionId = editionRes.createEvaluationTemplateEdition.id;
-        console.log(`  Created template edition: ${editionId}`);
-
-        await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
-        console.log(`  Activated template edition: ${editionId}`);
-
+        // The sequence is core's, which the app's template editor runs too.
+        const { templateId, editionId } = await createEvaluationTemplate(strictSend, templateName, categories, ownerAuid, beverageTypeId);
         revalidatePath('/myTemplates');
-
         return { success: true, templateId, editionId };
     } catch (err: any) {
         console.error("❌ Failed to create template on backend:", err.message);
@@ -228,56 +145,41 @@ export async function createGlobalTemplateAction(
     }
 }
 
-export async function getTemplateByIdAction(id: string) {
+/** A template as the editor opens it: its latest edition with its formulas, which the detail leaves out. */
+export async function getTemplateForEditorAction(templateId: string) {
+    return loadTemplateForEditor(strictSend, templateId);
+}
+
+export async function getEvaluationTemplateDetailAction(templateId: string) {
     try {
-        const allTemplates = await getEvaluationTemplatesAction();
-        const template = allTemplates.templates.find((t: any) => t.id === id);
-        
-        if (!template) {
-            throw new Error(`Template with ID ${id} not found`);
-        }
+        // Shaped by core, which the app's template page loads through too.
+        const template = await loadTemplateDetail(rawGraphQL, templateId, (err: any) =>
+            console.warn("⚠️ evaluationTemplateEditionsByTemplate failed, falling back to full editions scan:", err?.message),
+        );
+        if (!template) throw new Error(`Template with ID ${templateId} not found`);
         return template;
     } catch (err: any) {
-        console.error(`❌ Failed to fetch template by id (${id}):`, err.message);
+        console.error(`❌ Failed to fetch template detail by id (${templateId}):`, err.message);
         throw err;
     }
+}
+
+export async function getTemplateByIdAction(id: string) {
+    return getEvaluationTemplateDetailAction(id);
 }
 
 export async function updateGlobalTemplateAction(
     templateId: string,
     templateName: string,
     categories: any[],
-    beverageTypeId?: string,
+    _beverageTypeId?: string,
     ownerAuid: number = 1
 ) {
     try {
-        console.log(`🔄 Updating global template "${templateId}"...`);
-        const actorHeaders = { 'X-ACTOR': String(ownerAuid) };
-
-        // Note: beverageTypeId is intentionally not sent — there's no mutation
-        // to change it after creation, and the editor keeps that field locked
-        // for existing templates for the same reason.
-        await sdk.ChangeEvaluationTemplateName({ id: templateId, newName: templateName }, { headers: actorHeaders });
-
-        const currentTemplate = await getTemplateByIdAction(templateId);
-        const nextVersion = (currentTemplate?.latestEdition?.version || 1) + 1;
-
-        const editionRes = await sdk.CreateEvaluationTemplateEdition({
-            input: {
-                templateId,
-                version: nextVersion,
-                categories
-            }
-        }, { headers: actorHeaders });
-        
-        const editionId = editionRes.createEvaluationTemplateEdition.id;
-        console.log(`  Created new template edition: ${editionId} (v${nextVersion})`);
-
-        await sdk.ActivateEvaluationTemplateEdition({ id: editionId }, { headers: actorHeaders });
-        console.log(`  Activated new template edition: ${editionId}`);
-
+        // The name in place, then the next edition, activated — core's, as in the app. The
+        // beverage type is not sent: there is no mutation to change it after creation.
+        const { editionId } = await saveEvaluationTemplate(strictSend, templateId, templateName, categories, ownerAuid);
         revalidatePath('/myTemplates');
-
         return { success: true, templateId, editionId };
     } catch (err: any) {
         console.error("❌ Failed to update template on backend:", err.message);

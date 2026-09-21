@@ -5,24 +5,20 @@ import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
 import { useUsernames } from "@/hooks/useUsernames";
-import { normalizeAuids } from "../../../../auidUtils";
+import { normalizeAuids, aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue, calculateDeltaOutliers, formatSignedDiff, buildOutcomePropertyMap } from '@winelore/core';
+import type { PropertyMeta, TemplateEdition } from '@winelore/core';
 import { MemberEvaluationSection } from "../../../../EvaluationCommentsDisplay";
-import { aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore";
-import { calculateDeltaOutliers, formatSignedDiff } from "@/lib/deltaOutliers";
 import {
     getReplicaBeverageOutcome,
     resolveReplicaBeverageOutcomes,
     type OverallOutcomeByProperty,
     aggregateOverallFromReplicas,
-} from "@/lib/outcomePolicy/resolveBeverageOutcomes";
-import { buildOutcomePropertyMap } from "@/lib/outcomePolicy/outcomePropertyMap";
+} from '@winelore/core';
 import { isReplicaCandidateFinished } from "../../../../replicaUtils";
 import {
     hasEvaluationTotalScore,
     parseEvaluationTotal,
-} from "@/lib/evaluationTotals";
-import type { PropertyMeta } from "../../../../propertyMap";
-import type { TemplateEdition } from "@/lib/evaluationScores";
+} from '@winelore/core';
 import { getPanelResultsAction } from "./actions";
 interface WaitPanelResultsProps {
     commissionId: string;
@@ -410,7 +406,7 @@ export default function WaitPanelResults({
         return <TranslatedText text={label} />;
     }
     return (
-        <section className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
+        <section className="bg-white border border-slate-100 rounded-2xl shadow-sm sm:shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <h2 className="text-lg font-bold text-slate-800">

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import { X, Search, Crown, Users, Check, AlertCircle, Loader2, UserPlus } from "lucide-react"
 import { searchUserByUsernameAction, addCommissionReplicaMemberAction } from "../../actions"
 import { useTranslation } from "@/lib/i18n/context"
+import { usePresence } from "@/hooks/usePresence"
 
 function getAvatarGradient(auid: number): string {
     const gradients = [
@@ -87,7 +88,9 @@ export function AddMemberModal({
         return () => clearTimeout(timer)
     }, [usernameInput, t])
 
-    if (!isOpen) return null
+    // Stays mounted briefly after closing so the sheet/dialog can animate out.
+    const { mounted, closing } = usePresence(isOpen)
+    if (!mounted) return null
 
     const handleAddMember = async () => {
         if (!foundUser) return
@@ -109,8 +112,8 @@ export function AddMemberModal({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-lg overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up">
+        <div data-closing={closing || undefined} className="sheet-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="sheet-panel relative w-full max-w-lg overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-3">

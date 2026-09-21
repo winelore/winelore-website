@@ -1,7 +1,8 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { sdk, fetchGraphQLRaw } from '@/lib/apiClient';
+import { fetchGraphQLRaw, mutateGraphQLRaw } from '@/lib/apiClient';
+import { createBatch, loadBeverageChoices } from '@winelore/core/beverage';
 import {
     fetchBeverageTypeCharacteristics,
     type BeverageCharacteristic,
@@ -13,7 +14,7 @@ async function getActorHeaders(): Promise<Record<string, string>> {
     if (!auid) {
         throw new Error('Unauthorized: Please sign in');
     }
-    return { actor: auid, 'x-actor': auid };
+    return { 'X-ACTOR': auid };
 }
 
 export interface BeverageSimpleInfo {
@@ -28,68 +29,13 @@ export interface BeverageSimpleInfo {
 export async function getMyBeveragesAction(): Promise<BeverageSimpleInfo[]> {
     try {
         const headers = await getActorHeaders();
-        const auid = headers.actor;
-        const auidNum = parseInt(auid, 10);
-
-        let query = `
-          query GetMyBeveragesList($filter: BeverageFilterInput, $limit: Int!) {
-            beverages(filter: $filter, limit: $limit) {
-              items {
-                id
-                name
-                typeId
-                status
-              }
-            }
-          }
-        `;
-
-        let items: any[] = [];
-        let isOwn = true;
-
-        if (!isNaN(auidNum)) {
-            try {
-                const res = await fetchGraphQLRaw<any, any>(
-                    query,
-                    { filter: { producers: [[auidNum]] }, limit: 100 },
-                    headers
-                );
-                items = res?.beverages?.items || [];
-            } catch (filterErr) {
-                console.warn('Filter by producer failed, falling back to all beverages:', filterErr);
-            }
-        }
-
-        // If user has no beverages yet, fallback to all available beverages so they can test
-        if (items.length === 0) {
-            isOwn = false;
-            const fallbackQuery = `
-              query GetAllBeverages($limit: Int!) {
-                beverages(limit: $limit) {
-                  items {
-                    id
-                    name
-                    typeId
-                    status
-                  }
-                }
-              }
-            `;
-            try {
-                const res = await fetchGraphQLRaw<any, any>(fallbackQuery, { limit: 100 }, headers);
-                items = res?.beverages?.items || [];
-            } catch (fallbackErr) {
-                console.warn('Fallback query failed:', fallbackErr);
-            }
-        }
-
-        return items.map((b: any) => ({
-            id: b.id,
-            name: b.name,
-            typeId: b.typeId,
-            status: b.status,
-            isOwn,
-        }));
+        // The user's own beverages, or the catalogue when they have none — core's rule, as in
+        // the app. This used to read the actor from a key the headers do not have, so it never
+        // found the user's own and always offered the whole catalogue.
+        return await loadBeverageChoices(
+            (query, variables) => fetchGraphQLRaw<any, any>(query, variables, headers),
+            parseInt(headers['X-ACTOR'], 10),
+        );
     } catch (err) {
         console.error('Failed to fetch beverages for user:', err);
         return [];
@@ -182,69 +128,9 @@ export async function createBatchAction(params: {
     }
 
     const headers = await getActorHeaders();
-
-    const formattedAttributes: Record<string, any> = {};
-    if (params.attributes && typeof params.attributes === 'object') {
-        for (const [key, val] of Object.entries(params.attributes)) {
-            if (val === undefined || val === null || val === '') continue;
-            // Handle known numeric types like vintage, alcoholByVolume
-            if (key === 'vintage') {
-                const parsedInt = parseInt(String(val), 10);
-                if (!isNaN(parsedInt)) {
-                    formattedAttributes[key] = parsedInt;
-                }
-            } else if (key === 'alcoholByVolume' || key === 'abv' || key === 'alcohol') {
-                let parsedFloat = parseFloat(String(val));
-                if (!isNaN(parsedFloat)) {
-                    if (Number.isInteger(parsedFloat)) {
-                        parsedFloat = parsedFloat + 0.00001;
-                    }
-                    formattedAttributes[key] = parsedFloat;
-                }
-            } else if (typeof val === 'number') {
-                formattedAttributes[key] = val;
-            } else if (typeof val === 'string') {
-                // Try number if matches
-                if (/^-?\d+$/.test(val.trim())) {
-                    formattedAttributes[key] = parseInt(val.trim(), 10);
-                } else if (/^-?\d+\.\d+$/.test(val.trim())) {
-                    formattedAttributes[key] = parseFloat(val.trim());
-                } else if (val.toLowerCase() === 'true') {
-                    formattedAttributes[key] = true;
-                } else if (val.toLowerCase() === 'false') {
-                    formattedAttributes[key] = false;
-                } else {
-                    formattedAttributes[key] = val.trim();
-                }
-            } else {
-                formattedAttributes[key] = val;
-            }
-        }
-    }
-
-    let parsedVolumeMl: number | undefined = undefined;
-    if (params.volumeMl !== undefined && params.volumeMl !== null && params.volumeMl !== '') {
-        const num = parseInt(String(params.volumeMl), 10);
-        if (!isNaN(num) && num > 0) {
-            parsedVolumeMl = num;
-        }
-    }
-
-    const trimmedLotNumber = params.lotNumber ? params.lotNumber.trim() : undefined;
-
-    const input: any = {
-        beverageId: params.beverageId,
-        lotNumber: trimmedLotNumber || undefined,
-        volumeMl: parsedVolumeMl,
-        attributes: Object.keys(formattedAttributes).length > 0 ? formattedAttributes : undefined,
-    };
-
     try {
-        const res = await sdk.DevCreateBatch({ input }, { headers });
-        const batchId = res?.createBatch?.id;
-        if (!batchId) {
-            throw new Error('Failed to create batch');
-        }
+        // The attributes' formatting and the input are core's, as in the app.
+        const batchId = await createBatch((query, variables) => mutateGraphQLRaw(query, variables, headers), params);
         return { success: true, batchId };
     } catch (err: any) {
         console.error('Server Action Error (createBatchAction):', err);

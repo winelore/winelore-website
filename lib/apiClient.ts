@@ -2,7 +2,7 @@
 import { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
-import { getSdk } from '../src/gql/sdk';
+import { getSdk } from '@winelore/core/gql/sdk';
 import { getGraphQLEndpoint } from './graphqlEndpoint';
 
 const GRAPHQL_ENDPOINT = getGraphQLEndpoint();
@@ -13,6 +13,7 @@ function isNotFoundError(err: any): boolean {
     const code = err.extensions?.code;
     const groupCode = err.extensions?.groupCode;
     const classification = err.extensions?.classification;
+    if (code === 'REPLICA_MEMBER_NOT_FOUND') return false;
     return (
         code === 'EVALUATION_NOT_FOUND' ||
         code === 'COMMISSION_NOT_FOUND' ||
@@ -73,9 +74,27 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
     variables?: TVariables,
     headers?: Record<string, string>
 ): Promise<TResult> {
+    const cleanHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+    if (headers) {
+        let actor: string | undefined;
+        for (const [k, v] of Object.entries(headers)) {
+            const lowerKey = k.toLowerCase();
+            if (lowerKey === 'x-actor' || lowerKey === 'actor') {
+                actor = v;
+            } else {
+                cleanHeaders[k] = v;
+            }
+        }
+        if (actor !== undefined) {
+            cleanHeaders['X-ACTOR'] = actor;
+        }
+    }
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...headers },
+        headers: cleanHeaders,
         body: JSON.stringify({ query, variables }),
         next: { revalidate: 0 }
     });
@@ -92,6 +111,37 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
         }
     }
 
+    return data;
+}
+
+/**
+ * Send a mutation. Unlike a query, any GraphQL error fails it, with the
+ * backend's message: a mutation that comes back with errors beside its data
+ * did not do what was asked. The app's client makes the same distinction.
+ */
+export async function mutateGraphQLRaw<TResult>(
+    query: string,
+    variables?: Record<string, unknown>,
+    headers?: Record<string, string>
+): Promise<TResult> {
+    const cleanHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    for (const [key, value] of Object.entries(headers || {})) {
+        const lower = key.toLowerCase();
+        cleanHeaders[lower === 'x-actor' || lower === 'actor' ? 'X-ACTOR' : key] = value;
+    }
+
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: cleanHeaders,
+        body: JSON.stringify({ query, variables }),
+        next: { revalidate: 0 }
+    });
+
+    const { data, errors } = await parseJsonResponse(response, 'mutateGraphQLRaw');
+    if (errors?.length) {
+        logGraphQLPipelineError('mutateGraphQLRaw', errors, true);
+        throw new Error(errors[0]?.message || 'GraphQL mutation failed');
+    }
     return data;
 }
 
@@ -147,13 +197,27 @@ const requester = async <R, V>(
     vars?: V,
     options?: RequesterOptions
 ): Promise<R> => {
+    let actor = DEFAULT_ACTOR;
+    const cleanHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (options?.headers) {
+        for (const [k, v] of Object.entries(options.headers)) {
+            const lowerKey = k.toLowerCase();
+            if (lowerKey === 'x-actor' || lowerKey === 'actor') {
+                actor = v;
+            } else {
+                cleanHeaders[k] = v;
+            }
+        }
+    }
+
+    cleanHeaders['X-ACTOR'] = actor;
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-ACTOR': DEFAULT_ACTOR,
-            ...options?.headers
-        },
+        headers: cleanHeaders,
         body: JSON.stringify({
             query: print(doc),
             variables: vars,
