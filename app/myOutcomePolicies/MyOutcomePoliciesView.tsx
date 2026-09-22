@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import { ScrollText, Calendar, ChevronLeft, ChevronRight, Loader2, Plus, Pencil } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
+import Link from "next/link"
 import { useTranslation } from "@/lib/i18n/context"
 import { getDateLocale } from '@winelore/core/i18n'
 import { AppHeader } from "@/components/AppHeader"
@@ -61,9 +62,13 @@ function OutcomePolicyRow({ policy, onEdit }: { policy: OutcomePolicy; onEdit: (
                         <ScrollText className="w-6 h-6" />
                     </div>
                     <div className="min-w-0">
-                        <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
+                        <Link
+                            href={`/outcome-policy/${policy.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-lg font-bold text-slate-800 tracking-tight hover:text-indigo-600 transition-colors truncate block"
+                        >
                             {policy.name}
-                        </h3>
+                        </Link>
                         <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-2 text-xs font-semibold text-slate-500">
                             <Calendar className="w-3.5 h-3.5" />
                             {t("myOutcomePolicies.createdAt")}: {formattedDate}
