@@ -13,6 +13,13 @@ export interface SSEClientOptions {
     onError?: (error: unknown) => void
     initialRetryMs?: number
     maxRetryMs?: number
+    /**
+     * Skip the native EventSource branch and use the XMLHttpRequest streaming
+     * transport. Required on React Native whenever custom headers must be sent:
+     * the EventSource API cannot attach headers (including Authorization or
+     * Last-Event-ID on the initial request).
+     */
+    forceXhrTransport?: boolean
 }
 
 export interface SSEClient {
@@ -23,6 +30,9 @@ export interface SSEClient {
  * Universal Server-Sent Events client for React Native and web.
  * Uses native EventSource if available; falls back to an incremental
  * streaming XMLHttpRequest transport with automatic reconnection and backoff.
+ *
+ * The XHR transport is always used when custom headers are provided or
+ * `forceXhrTransport` is set, because EventSource cannot send headers.
  */
 export function createSSEClient(options: SSEClientOptions): SSEClient {
     let closed = false
@@ -31,8 +41,13 @@ export function createSSEClient(options: SSEClientOptions): SSEClient {
     const maxRetryDelay = options.maxRetryMs ?? 15000
     let lastEventId: string | undefined
 
-    // 1. Browser or polyfilled environment with EventSource
-    if (typeof globalThis.EventSource !== "undefined") {
+    const useXhrTransport =
+        options.forceXhrTransport === true ||
+        (options.headers !== undefined && Object.keys(options.headers).length > 0) ||
+        typeof globalThis.EventSource === "undefined"
+
+    // 1. Browser or polyfilled environment with EventSource (headerless only)
+    if (!useXhrTransport && typeof globalThis.EventSource !== "undefined") {
         let eventSource: EventSource | null = null
 
         try {

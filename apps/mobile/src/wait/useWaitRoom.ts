@@ -13,7 +13,7 @@ import { resolveWaitDestination } from "@winelore/core/evaluation"
 import { fetchGraphQLRaw, sdk } from "../api/client"
 import { getStoredSession } from "../auth/session"
 import { recentSubmission } from "../evaluation/usePanelSequencing"
-import { useLiveUpdates } from "../events"
+import { useEvaluationLiveUpdates } from "../events"
 
 /** Fallback polling interval when live SSE updates are active. */
 const FALLBACK_POLL_INTERVAL_MS = 15_000
@@ -105,7 +105,7 @@ export function useWaitRoom(commissionId: string, replicaId: string): WaitRoomHa
         }
     }, [commissionId, replicaId, router])
 
-    useLiveUpdates({
+    useEvaluationLiveUpdates({
         commissionId,
         replicaId,
         onUpdate: poll,

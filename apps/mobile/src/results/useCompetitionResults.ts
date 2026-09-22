@@ -7,7 +7,6 @@ import {
     GET_COMMISSION_COMPETITION,
     GET_COMMISSION_RESULTS,
     GET_COMPETITION_RESULTS_SCOPE,
-    RESULTS_REFRESH_MS,
     cachedFetch,
     loadCompetitionResults,
     resolveCompetitionResultsScope,
@@ -17,7 +16,7 @@ import {
 } from "@winelore/core/results"
 import { fetchGraphQLRaw, sdk } from "../api/client"
 import { getStoredSession } from "../auth/session"
-import { useLiveUpdates } from "../events"
+import { useEvaluationLiveUpdates } from "../events"
 
 export type ResultsScopeState =
     | { status: "loading" }
@@ -118,8 +117,9 @@ function sourceFor(auid: string | null): CompetitionResultsSource {
 /**
  * Every visible commission's rows, built by core from the same fetches the
  * web's server action makes. While the competition has not completed they
- * refresh every three seconds, as the web page does — here only while the
- * screen is in front. A refresh that fails keeps what is shown.
+ * refresh on live SSE events with a relaxed 15s fallback poll, as the web
+ * page does — here only while the screen is in front. A refresh that fails
+ * keeps what is shown.
  */
 export function useResultsData(competition: CompetitionPageData, auid: string | null) {
     const [context, setContext] = useState<CompetitionExportContext | null>(null)
@@ -162,9 +162,21 @@ export function useResultsData(competition: CompetitionPageData, auid: string | 
         }, []),
     )
 
-    useLiveUpdates({
+    // A live event invalidates the short-lived evaluation/award caches first,
+    // like the web's fresh server-action refetch — otherwise an SSE-triggered
+    // reload inside the 15s TTL would just re-read stale cache entries.
+    const handleLiveUpdate = useCallback(() => {
+        evaluations.clear()
+        beverageAwards.clear()
+        load()
+    }, [load])
+
+    // No commissionId/replicaId scope: results aggregate every visible
+    // commission, so any evaluation, outcome, replica, or commission event is
+    // relevant — matching isEvaluationRelevantEvent's accept-all empty context.
+    useEvaluationLiveUpdates({
         enabled: !completed && isFocused,
-        onUpdate: load,
+        onUpdate: handleLiveUpdate,
         fallbackIntervalMs: 15_000,
     })
 

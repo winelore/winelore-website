@@ -1,11 +1,17 @@
 import { print, type DocumentNode } from "graphql"
+import Constants from "expo-constants"
 import { getSdk } from "@winelore/core/gql/sdk"
 import { getValidAccessToken } from "../auth/session"
 
 const DEFAULT_GRAPHQL_ENDPOINT = "https://winelore-dev.thewinelore.com/graphql"
 
 function getEndpoint(): string {
-    return process.env.EXPO_PUBLIC_GRAPHQL_ENDPOINT || DEFAULT_GRAPHQL_ENDPOINT
+    const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined
+    return (
+        process.env.EXPO_PUBLIC_GRAPHQL_ENDPOINT ||
+        extra?.EXPO_PUBLIC_GRAPHQL_ENDPOINT ||
+        DEFAULT_GRAPHQL_ENDPOINT
+    )
 }
 
 export interface RequesterOptions {

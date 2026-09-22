@@ -4,7 +4,7 @@ import {
     resolveEvaluationDestination,
 } from "@winelore/core/evaluation"
 import { sdk } from "../api/client"
-import { useLiveUpdates } from "../events"
+import { useEvaluationLiveUpdates } from "../events"
 
 /** Fallback polling interval when live SSE updates are active. */
 const FALLBACK_POLL_INTERVAL_MS = 15_000
@@ -88,6 +88,12 @@ export function usePanelSequencing({
             })
 
             if (destination.kind !== "stay") {
+                // Same guard as the web's CandidateEvaluationClientView: a
+                // "candidate" destination for the card already on screen is a
+                // stay, not a navigation.
+                if (destination.kind === "candidate" && destination.candidateId === candidateId) {
+                    return
+                }
                 leavingRef.current = true
                 setIsLeaving(true)
                 switch (destination.kind) {
@@ -112,7 +118,7 @@ export function usePanelSequencing({
         }
     }, [commissionId, replicaId, candidateId, enabled, router])
 
-    useLiveUpdates({
+    useEvaluationLiveUpdates({
         commissionId,
         replicaId,
         onUpdate: check,

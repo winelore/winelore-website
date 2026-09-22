@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { usePathname, useRouter } from "next/navigation"
@@ -32,12 +32,12 @@ import {
 import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
 import { MemberEvaluationSection } from "@/app/commission/EvaluationCommentsDisplay"
 import { formatPropertyScoreValue, formatSignedDiff } from '@winelore/core';
 import type { CompetitionPageData } from '@winelore/core/competition'
 import {
     ALL_COMMISSIONS,
-    RESULTS_REFRESH_MS,
     competitionResultsFilename,
     expertBreakdown,
     overviewRowDetails,
@@ -138,7 +138,10 @@ export default function CompetitionResultsClientView({
         resultPersonName(auidStr, usernames, t("commission.results.unknownProducer"))
 
     // Load results data on server action call
-    const loadResultsData = async (isBackgroundRefresh = false) => {
+    const loadResultsData = useCallback(async (isBackgroundRefresh = false) => {
+        // Like the mobile results screen's focus gate: a hidden tab skips
+        // background refreshes; the next visible poll or SSE event catches up.
+        if (isBackgroundRefresh && typeof document !== "undefined" && document.hidden) return
         if (!isBackgroundRefresh) {
             setIsLoadingData(true)
             setLoadingProgress(t("competition.preparingExport"))
@@ -170,35 +173,30 @@ export default function CompetitionResultsClientView({
                 setLoadingProgress("")
             }
         }
-    }
+    }, [initialData.commissions, initialData.name, locale, t])
 
     useEffect(() => {
         void loadResultsData()
-    }, [])
+    }, [loadResultsData])
 
-    // Auto-update every 3 seconds if competition is active/in progress (safely locked to prevent promise stacking)
-    useEffect(() => {
-        if (initialData.status === "COMPLETED") return
+    // Live updates via SSE with a relaxed 15s fallback poll while the
+    // competition is still running — the same mechanism as the mobile results
+    // screen. No commissionId/replicaId scope: results aggregate every visible
+    // commission, so any evaluation, outcome, replica, or commission event
+    // refetches.
+    const refreshInFlightRef = React.useRef(false)
+    const handleLiveUpdate = useCallback(() => {
+        if (refreshInFlightRef.current) return
+        refreshInFlightRef.current = true
+        void loadResultsData(true).finally(() => {
+            refreshInFlightRef.current = false
+        })
+    }, [loadResultsData])
 
-        let isMounted = true
-        let isPolling = false
-
-        const poll = async () => {
-            if (!isMounted || isPolling) return
-            isPolling = true
-            try {
-                await loadResultsData(true)
-            } finally {
-                isPolling = false
-            }
-        }
-
-        const intervalId = setInterval(poll, RESULTS_REFRESH_MS)
-        return () => {
-            isMounted = false
-            clearInterval(intervalId)
-        }
-    }, [initialData.status])
+    useEvaluationLiveUpdates({
+        onUpdate: handleLiveUpdate,
+        enabled: initialData.status !== "COMPLETED",
+    })
 
     // Toggle expanded row for candidate details
     const toggleRowExpanded = (rowId: string) => {

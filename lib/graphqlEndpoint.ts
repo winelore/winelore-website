@@ -1,6 +1,8 @@
+import { DEFAULT_EVENTS_ENDPOINT, resolveEventsEndpointFromGraphql } from "@winelore/core/events";
+
 export const DEFAULT_GRAPHQL_ENDPOINT = "https://winelore-dev.thewinelore.com/graphql"
 export const DEFAULT_AXUS_GRAPHQL_ENDPOINT = "https://axusid.thewinelore.com/graphql"
-export const DEFAULT_EVENTS_ENDPOINT = "https://winelore-dev.thewinelore.com/api/v1/events"
+export { DEFAULT_EVENTS_ENDPOINT }
 
 export function getGraphQLEndpoint() {
     return process.env.GRAPHQL_ENDPOINT
@@ -18,12 +20,7 @@ export function getEventsEndpoint() {
     if (process.env.EVENTS_ENDPOINT) return process.env.EVENTS_ENDPOINT
     if (process.env.NEXT_PUBLIC_EVENTS_ENDPOINT) return process.env.NEXT_PUBLIC_EVENTS_ENDPOINT
 
-    const gqlEndpoint = getGraphQLEndpoint()
-    if (gqlEndpoint.includes("/graphql")) {
-        return gqlEndpoint.replace(/\/graphql\/?$/, "/api/v1/events")
-    }
-
-    return DEFAULT_EVENTS_ENDPOINT
+    return resolveEventsEndpointFromGraphql(getGraphQLEndpoint(), DEFAULT_EVENTS_ENDPOINT)
 }
 
 

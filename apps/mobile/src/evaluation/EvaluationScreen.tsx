@@ -112,10 +112,34 @@ export function EvaluationScreen({
                 throw new Error(errJson.error || labels.aiDraftFailed)
             }
 
-            const text = await response.text()
-            if (text) {
-                form.setComment(GENERAL_COMMENT_KEY, text)
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            // The web form streams the draft token-by-token; React Native's
+            // fetch may not expose a reader, so stream when available and
+            // fall back to reading the whole body as text.
+            const bodyWithReader = response.body as unknown as {
+                getReader?: () => { read(): Promise<{ done: boolean; value?: Uint8Array }> }
+            } | null
+            const reader = bodyWithReader?.getReader?.()
+            if (reader) {
+                const decoder = new TextDecoder()
+                let accumulated = ""
+                form.setComment(GENERAL_COMMENT_KEY, "")
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+                    if (value) {
+                        accumulated += decoder.decode(value, { stream: true })
+                        form.setComment(GENERAL_COMMENT_KEY, accumulated)
+                    }
+                }
+                if (accumulated) {
+                    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                }
+            } else {
+                const text = await response.text()
+                if (text) {
+                    form.setComment(GENERAL_COMMENT_KEY, text)
+                    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                }
             }
         } catch (err) {
             const message = err instanceof Error ? err.message : labels.aiDraftFailed
@@ -254,7 +278,12 @@ export function EvaluationScreen({
                         <Text style={styles.categoryName}>{t("evaluation.generalCommentLabel")}</Text>
                         <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={labels.aiGenerateDraft}
+                            accessibilityLabel={
+                                form.scoringComplete ? labels.aiGenerateDraft : labels.aiScoreAllRequired
+                            }
+                            accessibilityHint={
+                                form.scoringComplete ? undefined : labels.aiScoreAllRequired
+                            }
                             disabled={isGeneratingAI || !form.scoringComplete}
                             onPress={handleGenerateAIComment}
                             style={({ pressed }) => [

@@ -7,7 +7,7 @@ import {
 import { normalizeAuids } from "@winelore/core"
 import { sdk } from "../api/client"
 import { getStoredSession } from "../auth/session"
-import { useLiveUpdates } from "../events"
+import { useEvaluationLiveUpdates } from "../events"
 
 /** Fallback polling interval when live SSE updates are active. */
 const FALLBACK_POLL_INTERVAL_MS = 15_000
@@ -124,7 +124,7 @@ export function usePanelSummary(commissionId: string, replicaId: string) {
         }
     }, [commissionId, replicaId, router])
 
-    useLiveUpdates({
+    useEvaluationLiveUpdates({
         commissionId,
         replicaId,
         onUpdate: load,

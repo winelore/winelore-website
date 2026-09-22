@@ -1,9 +1,10 @@
 import Constants from "expo-constants"
-
-const DEFAULT_EVENTS_ENDPOINT = "https://winelore-dev.thewinelore.com/api/v1/events"
+import { DEFAULT_EVENTS_ENDPOINT, resolveEventsEndpointFromGraphql } from "@winelore/core/events"
 
 /**
  * Resolves the SSE events endpoint URL for real-time live updates on mobile.
+ * Derivation matches the web (`lib/graphqlEndpoint.ts`) via the shared core
+ * helper; only the env/extra lookup is platform-specific.
  */
 export function getEventsEndpoint(): string {
     const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined
@@ -14,9 +15,5 @@ export function getEventsEndpoint(): string {
         process.env.EXPO_PUBLIC_GRAPHQL_ENDPOINT ||
         extra?.EXPO_PUBLIC_GRAPHQL_ENDPOINT ||
         "https://winelore-dev.thewinelore.com/graphql"
-    if (gql.includes("/graphql")) {
-        return gql.replace(/\/graphql\/?$/, "/api/v1/events")
-    }
-
-    return DEFAULT_EVENTS_ENDPOINT
+    return resolveEventsEndpointFromGraphql(gql, DEFAULT_EVENTS_ENDPOINT)
 }
