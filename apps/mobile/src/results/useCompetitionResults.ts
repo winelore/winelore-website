@@ -17,6 +17,7 @@ import {
 } from "@winelore/core/results"
 import { fetchGraphQLRaw, sdk } from "../api/client"
 import { getStoredSession } from "../auth/session"
+import { useLiveUpdates } from "../events"
 
 export type ResultsScopeState =
     | { status: "loading" }
@@ -152,13 +153,20 @@ export function useResultsData(competition: CompetitionPageData, auid: string | 
     }, [load])
 
     const completed = competition.status === "COMPLETED"
+    const [isFocused, setIsFocused] = useState(true)
+
     useFocusEffect(
         useCallback(() => {
-            if (completed) return
-            const timer = setInterval(load, RESULTS_REFRESH_MS)
-            return () => clearInterval(timer)
-        }, [completed, load]),
+            setIsFocused(true)
+            return () => setIsFocused(false)
+        }, []),
     )
+
+    useLiveUpdates({
+        enabled: !completed && isFocused,
+        onUpdate: load,
+        fallbackIntervalMs: 15_000,
+    })
 
     return { context, loading, lastRefreshedAt, reload: load }
 }

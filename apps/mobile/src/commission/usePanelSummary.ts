@@ -7,8 +7,10 @@ import {
 import { normalizeAuids } from "@winelore/core"
 import { sdk } from "../api/client"
 import { getStoredSession } from "../auth/session"
+import { useLiveUpdates } from "../events"
 
-const POLL_INTERVAL_MS = 3000
+/** Fallback polling interval when live SSE updates are active. */
+const FALLBACK_POLL_INTERVAL_MS = 15_000
 
 export interface PanelSummaryView {
     panelId: string
@@ -122,10 +124,15 @@ export function usePanelSummary(commissionId: string, replicaId: string) {
         }
     }, [commissionId, replicaId, router])
 
+    useLiveUpdates({
+        commissionId,
+        replicaId,
+        onUpdate: load,
+        fallbackIntervalMs: FALLBACK_POLL_INTERVAL_MS,
+    })
+
     useEffect(() => {
         load()
-        const timer = setInterval(load, POLL_INTERVAL_MS)
-        return () => clearInterval(timer)
     }, [load])
 
     return { state, isAdvancing, setIsAdvancing, markLeaving: () => (leaving.current = true) }
