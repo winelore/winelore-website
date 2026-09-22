@@ -1,0 +1,492 @@
+asyncapi: '3.0.0'
+info:
+  title: WineLore live event notifications
+  version: 0.1.0
+  description: |
+    Public v0 change notifications. The service sends Server-Sent Events over an
+    HTTP GET stream. Only event metadata is exposed; internal domain payloads
+    are not part of this API. There is no authentication, filtering, replay, or
+    delivery guarantee in v0. Clients should refetch their GraphQL view after
+    notifications and on reconnect.
+defaultContentType: application/json
+channels:
+  events:
+    address: /api/v1/events
+    x-sse:
+      responseContentType: text/event-stream
+      eventNameTemplate: '{aggregateType}.{eventType}'
+      idField: id
+      keepaliveComment: keepalive
+    description: |
+      One SSE stream for all published domain events. The SSE id equals payload.id,
+      and the SSE event name is <aggregateType>.<eventType>. Comment-only
+      keepalives are not messages and are sent every 15 seconds.
+    messages:
+      awardtype:
+        name: AwardTypeNotification
+        description: Notifications for AwardType events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: awardtype
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+                    - NameChangedEvent
+                    - OwnerAddedEvent
+                    - OwnerRemovedEvent
+                    - StatusChangedEvent
+      awardtypeedition:
+        name: AwardTypeEditionNotification
+        description: Notifications for AwardTypeEdition events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: awardtypeedition
+                eventType:
+                  type: string
+                  enum:
+                    - AwardsUpdatedEvent
+                    - CreatedEvent
+                    - StatusChangedEvent
+      batch:
+        name: BatchNotification
+        description: Notifications for Batch events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: batch
+                eventType:
+                  type: string
+                  enum:
+                    - AttributesChangedEvent
+                    - CreatedEvent
+                    - LotNumberChangedEvent
+                    - VolumeChangedEvent
+      beverage:
+        name: BeverageNotification
+        description: Notifications for Beverage events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: beverage
+                eventType:
+                  type: string
+                  enum:
+                    - ApprovedEvent
+                    - AttributesChangedEvent
+                    - CreatedEvent
+                    - NameChangedEvent
+                    - OriginChangedEvent
+                    - ProducerDetailsAddedEvent
+                    - ProducerDetailsRemovedEvent
+                    - PublishedEvent
+                    - SubmittedForReviewEvent
+                    - SuspendedEvent
+      beverageawardassignment:
+        name: BeverageAwardAssignmentNotification
+        description: Notifications for BeverageAwardAssignment events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: beverageawardassignment
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+      beveragetype:
+        name: BeverageTypeNotification
+        description: Notifications for BeverageType events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: beveragetype
+                eventType:
+                  type: string
+                  enum:
+                    - ActiveEditionSetEvent
+                    - CodeChangedEvent
+                    - CreatedEvent
+                    - NameChangedEvent
+                    - StatusChangedEvent
+      beveragetypeedition:
+        name: BeverageTypeEditionNotification
+        description: Notifications for BeverageTypeEdition events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: beveragetypeedition
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+                    - PropertiesUpdatedEvent
+                    - StatusChangedEvent
+      commission:
+        name: CommissionNotification
+        description: Notifications for Commission events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: commission
+                eventType:
+                  type: string
+                  enum:
+                    - AwardTypeEditionRemovedEvent
+                    - AwardTypeEditionSetEvent
+                    - BeverageOriginDuringEvaluationChangedEvent
+                    - CompletedEvent
+                    - CreatedEvent
+                    - DiscussionPolicyChangedEvent
+                    - EvaluationVisibleAttributesChangedEvent
+                    - OutcomePolicyEditionRemovedEvent
+                    - OutcomePolicyEditionSetEvent
+                    - PartialCandidateEvaluationChangedEvent
+                    - PlannedDatesChangedEvent
+                    - PropertyCommentsChangedEvent
+                    - RenamedEvent
+                    - StartedEvent
+                    - StatusChangedEvent
+                    - TemplateEditionRemovedEvent
+                    - TemplateEditionSetEvent
+                    - VoiceCommentsChangedEvent
+                    - WineJumperMiniGameChangedEvent
+      commissionreplica:
+        name: CommissionReplicaNotification
+        description: Notifications for CommissionReplica events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: commissionreplica
+                eventType:
+                  type: string
+                  enum:
+                    - ChaoticCurrentPanelChangesChangedEvent
+                    - CompletedEvent
+                    - CreatedEvent
+                    - CurrentPanelChangedEvent
+                    - MemberAddedEvent
+                    - MemberReadinessChangedEvent
+                    - MemberRemovedEvent
+                    - RenamedEvent
+                    - ReplicaCandidateStatusChangedEvent
+                    - ReplicaPanelChaoticCurrentCandidateChangesChangedEvent
+                    - ReplicaPanelCurrentCandidateChangedEvent
+                    - ReplicaPanelStatusChangedEvent
+                    - StartedEvent
+                    - StatusChangedEvent
+      competition:
+        name: CompetitionNotification
+        description: Notifications for Competition events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: competition
+                eventType:
+                  type: string
+                  enum:
+                    - CompletedEvent
+                    - CreatedEvent
+                    - HolderAddedEvent
+                    - HolderRemovedEvent
+                    - NameChangedEvent
+                    - PlannedDatesChangedEvent
+                    - StartedEvent
+                    - StatusChangedEvent
+      competition_series:
+        name: CompetitionSeriesNotification
+        description: Notifications for CompetitionSeries events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: competition_series
+                eventType:
+                  type: string
+                  enum:
+                    - CountriesChangedEvent
+                    - CreatedEvent
+                    - NameChangedEvent
+                    - OwnerAddedEvent
+                    - OwnerRemovedEvent
+                    - StatusChangedEvent
+      discussionmessage:
+        name: DiscussionMessageNotification
+        description: Notifications for DiscussionMessage events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: discussionmessage
+                eventType:
+                  type: string
+                  enum:
+                    - DeletedEvent
+                    - EditedEvent
+                    - PostedEvent
+      evaluation:
+        name: EvaluationNotification
+        description: Notifications for Evaluation events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: evaluation
+                eventType:
+                  type: string
+                  enum:
+                    - CommentsUpdatedEvent
+                    - ConfirmedEvent
+                    - CreatedEvent
+                    - ScoresUpdatedEvent
+      evaluationtemplate:
+        name: EvaluationTemplateNotification
+        description: Notifications for EvaluationTemplate events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: evaluationtemplate
+                eventType:
+                  type: string
+                  enum:
+                    - BeverageTypeChangedEvent
+                    - CreatedEvent
+                    - NameChangedEvent
+                    - OwnerAddedEvent
+                    - OwnerRemovedEvent
+                    - StatusChangedEvent
+      evaluationtemplateedition:
+        name: EvaluationTemplateEditionNotification
+        description: Notifications for EvaluationTemplateEdition events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: evaluationtemplateedition
+                eventType:
+                  type: string
+                  enum:
+                    - CategoriesUpdatedEvent
+                    - CreatedEvent
+                    - StatusChangedEvent
+      exporttemplate:
+        name: ExportTemplateNotification
+        description: Notifications for ExportTemplate events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: exporttemplate
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+                    - NameChangedEvent
+                    - OwnerAddedEvent
+                    - OwnerRemovedEvent
+                    - StatusChangedEvent
+      exporttemplateedition:
+        name: ExportTemplateEditionNotification
+        description: Notifications for ExportTemplateEdition events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: exporttemplateedition
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+                    - DefinitionUpdatedEvent
+                    - StatusChangedEvent
+      outcomepolicy:
+        name: OutcomePolicyNotification
+        description: Notifications for OutcomePolicy events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: outcomepolicy
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+                    - OwnerAddedEvent
+                    - OwnerRemovedEvent
+                    - UpdatedEvent
+      outcomepolicyedition:
+        name: OutcomePolicyEditionNotification
+        description: Notifications for OutcomePolicyEdition events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: outcomepolicyedition
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+                    - OutputPropertiesUpdatedEvent
+                    - ScriptCodeUpdatedEvent
+                    - StatusChangedEvent
+      panel:
+        name: PanelNotification
+        description: Notifications for Panel events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: panel
+                eventType:
+                  type: string
+                  enum:
+                    - CandidateAddedEvent
+                    - CandidateCodeChangedEvent
+                    - CandidateRemovedEvent
+                    - CandidatesReorderedEvent
+                    - CreatedEvent
+                    - RenamedEvent
+      producer:
+        name: ProducerNotification
+        description: Notifications for Producer events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: producer
+                eventType:
+                  type: string
+                  enum:
+                    - ClaimGrantedEvent
+                    - ClaimRejectedEvent
+                    - ClaimReleasedEvent
+                    - ClaimRequestedEvent
+                    - CreatedEvent
+                    - NameChangedEvent
+      replicabeverageoutcome:
+        name: ReplicaBeverageOutcomeNotification
+        description: Notifications for ReplicaBeverageOutcome events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: replicabeverageoutcome
+                eventType:
+                  type: string
+                  enum:
+                    - CreatedEvent
+      sample:
+        name: SampleNotification
+        description: Notifications for Sample events.
+        payload:
+          allOf:
+            - $ref: '#/components/schemas/EventNotification'
+            - type: object
+              properties:
+                aggregateType:
+                  const: sample
+                eventType:
+                  type: string
+                  enum:
+                    - AttributesChangedEvent
+                    - CodeChangedEvent
+                    - CreatedEvent
+                    - OwnerChangedEvent
+                    - VolumeChangedEvent
+operations:
+  watchEvents:
+    action: send
+    channel:
+      $ref: '#/channels/events'
+    description: |
+      Clients connect with GET and receive a live SSE stream. This is a
+      server-to-client notification operation, so the service action is send.
+    bindings:
+      http:
+        method: GET
+        bindingVersion: '0.3.0'
+components:
+  schemas:
+    EventNotification:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - aggregateType
+        - aggregateId
+        - eventType
+        - publishedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Stable outbox event ID, also used as the SSE id.
+        aggregateType:
+          type: string
+          description: Aggregate family wire name.
+        aggregateId:
+          type: string
+          description: ID of the aggregate that changed.
+        eventType:
+          type: string
+          description: Domain event class simple name.
+        publishedAt:
+          type: string
+          format: date-time
+          description: Kafka record timestamp, not the domain event creation time.

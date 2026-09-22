@@ -7,7 +7,6 @@ import {
     GET_COMMISSION_COMPETITION,
     GET_COMMISSION_RESULTS,
     GET_COMPETITION_RESULTS_SCOPE,
-    RESULTS_REFRESH_MS,
     cachedFetch,
     loadCompetitionResults,
     resolveCompetitionResultsScope,
@@ -17,6 +16,7 @@ import {
 } from "@winelore/core/results"
 import { fetchGraphQLRaw, sdk } from "../api/client"
 import { getStoredSession } from "../auth/session"
+import { useEvaluationLiveUpdates } from "../events"
 
 export type ResultsScopeState =
     | { status: "loading" }
@@ -99,11 +99,11 @@ const evaluations = cachedFetch(async (key) => {
         auid ? { headers: { "x-actor": auid } } : undefined,
     )
     return (result?.evaluationsByReplicaCandidate?.items ?? []) as any[]
-}, 15_000)
+}, 3_000)
 const beverageAwards = cachedFetch(async (beverageId) => {
     const result = await fetchGraphQLRaw<any>(GET_BEVERAGE_AWARDS, { beverageId })
     return result?.beverageAwards ?? []
-}, 15_000)
+}, 3_000)
 
 function sourceFor(auid: string | null): CompetitionResultsSource {
     return {
@@ -117,8 +117,9 @@ function sourceFor(auid: string | null): CompetitionResultsSource {
 /**
  * Every visible commission's rows, built by core from the same fetches the
  * web's server action makes. While the competition has not completed they
- * refresh every three seconds, as the web page does — here only while the
- * screen is in front. A refresh that fails keeps what is shown.
+ * refresh on live SSE events with a 3s fallback poll, as the web
+ * page does — here only while the screen is in front. A refresh that fails
+ * keeps what is shown.
  */
 export function useResultsData(competition: CompetitionPageData, auid: string | null) {
     const [context, setContext] = useState<CompetitionExportContext | null>(null)
@@ -152,13 +153,32 @@ export function useResultsData(competition: CompetitionPageData, auid: string | 
     }, [load])
 
     const completed = competition.status === "COMPLETED"
+    const [isFocused, setIsFocused] = useState(true)
+
     useFocusEffect(
         useCallback(() => {
-            if (completed) return
-            const timer = setInterval(load, RESULTS_REFRESH_MS)
-            return () => clearInterval(timer)
-        }, [completed, load]),
+            setIsFocused(true)
+            return () => setIsFocused(false)
+        }, []),
     )
+
+    // A live event invalidates the short-lived evaluation/award caches first,
+    // like the web's fresh server-action refetch — otherwise an SSE-triggered
+    // reload inside the 3s TTL would just re-read stale cache entries.
+    const handleLiveUpdate = useCallback(() => {
+        evaluations.clear()
+        beverageAwards.clear()
+        load()
+    }, [load])
+
+    // No commissionId/replicaId scope: results aggregate every visible
+    // commission, so any evaluation, outcome, replica, or commission event is
+    // relevant — matching isEvaluationRelevantEvent's accept-all empty context.
+    useEvaluationLiveUpdates({
+        enabled: !completed && isFocused,
+        onUpdate: handleLiveUpdate,
+        fallbackIntervalMs: 3_000,
+    })
 
     return { context, loading, lastRefreshedAt, reload: load }
 }

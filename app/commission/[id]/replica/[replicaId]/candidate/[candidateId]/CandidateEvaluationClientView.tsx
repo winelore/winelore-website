@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
@@ -8,11 +8,12 @@ import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { MapPin, LayoutList, Tag, Wine } from "lucide-react"
-import { getWaitDataAction } from "../../../../../actions"
 import { readCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { resolveEvaluationDestination } from "@winelore/core/evaluation"
 import { BackLink } from "@/components/BackLink"
 import { useMobileNavTitle } from "@/lib/mobileNav"
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
+
 
 interface EvaluationCategory {
   id: string
@@ -66,66 +67,68 @@ export default function CandidateEvaluationClientView({
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isFormSubmitting, setIsFormSubmitting] = useState(false)
 
-  // Polling loop to redirect expert automatically if replica, panel, or current candidate state changes
-  useEffect(() => {
+  const isFetchingRef = useRef(false)
+
+  const checkRedirect = useCallback(async () => {
     const cookieAuid = Cookies.get("auid")
     if (!cookieAuid) {
       router.push("/auth/login")
       return
     }
 
-    if (isRedirecting || isFormSubmitting) return
+    if (isRedirecting || isFormSubmitting || isFetchingRef.current) return
+    isFetchingRef.current = true
 
-    let isMounted = true
-    let isFetching = false
+    try {
+      const res = await fetch(`/api/commission/wait-status?commissionId=${commissionId}&replicaId=${replicaId}`, {
+        cache: "no-store",
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (isRedirecting || isFormSubmitting) return
 
-    const checkRedirect = async () => {
-      if (!isMounted || isRedirecting || isFormSubmitting || isFetching) return
-      isFetching = true
-      try {
-        const data = await getWaitDataAction(commissionId, replicaId)
-        if (!isMounted || isRedirecting || isFormSubmitting) return
+      const destination = resolveEvaluationDestination({
+        viewingCandidateId: candidateId,
+        replicaStatus: data.replicaStatus,
+        isPanelFinished: data.isPanelFinished,
+        currentCandidateId: data.currentCandidateId,
+        hasCompletedCurrentCandidate: data.hasCompletedCurrentCandidate,
+        recentSubmission: readCachedWaitEvaluation(commissionId, replicaId),
+      })
 
-        const destination = resolveEvaluationDestination({
-          viewingCandidateId: candidateId,
-          replicaStatus: data.replicaStatus,
-          isPanelFinished: data.isPanelFinished,
-          currentCandidateId: data.currentCandidateId,
-          hasCompletedCurrentCandidate: data.hasCompletedCurrentCandidate,
-          recentSubmission: readCachedWaitEvaluation(commissionId, replicaId),
-        })
+      if (destination.kind === "stay") return
+      if (destination.kind === "candidate" && destination.candidateId === candidateId) return
 
-        if (destination.kind === "stay") return
-
-        setIsRedirecting(true)
-        const base = `/commission/${commissionId}`
-        switch (destination.kind) {
-          case "results":
-            window.location.href = `${base}/results`
-            return
-          case "panelSummary":
-            window.location.href = `${base}/replica/${replicaId}/panel-summary`
-            return
-          case "candidate":
-            window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`
-            return
-          case "wait":
-            window.location.href = `${base}/replica/${replicaId}/wait`
-            return
-        }
-      } catch (err) {
-        console.error("Polling redirect error:", err)
-      } finally {
-        isFetching = false
+      setIsRedirecting(true)
+      const base = `/commission/${commissionId}`
+      switch (destination.kind) {
+        case "results":
+          window.location.href = `${base}/results`
+          return
+        case "panelSummary":
+          window.location.href = `${base}/replica/${replicaId}/panel-summary`
+          return
+        case "candidate":
+          window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`
+          return
+        case "wait":
+          window.location.href = `${base}/replica/${replicaId}/wait`
+          return
       }
-    }
-
-    const interval = setInterval(checkRedirect, 3000)
-    return () => {
-      isMounted = false
-      clearInterval(interval)
+    } catch (err) {
+      console.error("Evaluation redirect check error:", err)
+    } finally {
+      isFetchingRef.current = false
     }
   }, [commissionId, replicaId, candidateId, isRedirecting, isFormSubmitting, router])
+
+  // Real-time evaluation updates via SSE with relaxed fallback polling
+  useEvaluationLiveUpdates({
+    commissionId,
+    replicaId,
+    onUpdate: checkRedirect,
+    enabled: !isRedirecting && !isFormSubmitting,
+  })
 
   return (
     <div className="flex min-h-app flex-col bg-slate-50/50">

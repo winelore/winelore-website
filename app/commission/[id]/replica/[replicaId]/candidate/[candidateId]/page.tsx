@@ -5,6 +5,7 @@ import { getGeographicInfo } from "../../../../../../../lib/geocoding"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
 import { cookies } from "next/headers"
 import { selectVisibleAttributes } from "@winelore/core/evaluation"
+import { normalizeAuids } from "@winelore/core"
 
 interface Props {
     params: Promise<{ id: string; replicaId: string; candidateId: string }>
@@ -66,6 +67,13 @@ export default async function CandidateEvaluationPage({ params }: Props) {
 
     // If this candidate is not the currently active candidate for the replica, redirect appropriately
     const currentReplica = (commission.replicas || []).find((r: any) => r.id === currentReplicaId)
+    const isMember = currentReplica?.members?.some((m: any) =>
+        normalizeAuids(m.auid).includes(auidStr)
+    )
+    if (!isMember) {
+        redirect(`/commission/${commissionId}`)
+    }
+
     if (currentReplica?.currentCandidateId && currentReplica.currentCandidateId !== candidateId) {
         const activeEval = await getMyEvaluationForCandidateAction(currentReplica.currentCandidateId)
         if (!activeEval?.isComplete) {

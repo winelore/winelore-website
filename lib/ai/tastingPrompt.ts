@@ -1,26 +1,10 @@
-export interface TastingPropertyScore {
-    name: string
-    score: number
-    maxScore: number
-}
+import type {
+    TastingCategoryScore,
+    TastingPayload,
+    TastingPropertyScore,
+} from "@winelore/core/evaluation"
 
-export interface TastingCategoryScore {
-    name: string
-    score: number
-    maxScore: number
-    properties?: TastingPropertyScore[]
-}
-
-export interface TastingPayload {
-    locale: "en" | "uk" | "hu"
-    beverageType?: string | null
-    candidateCode?: string | null
-    templateName?: string | null
-    totalScore?: number | null
-    maxTotalScore?: number | null
-    categories: TastingCategoryScore[]
-    attributes?: Record<string, string | number | boolean | null> | null
-}
+export type { TastingCategoryScore, TastingPayload, TastingPropertyScore }
 
 export const TASTING_SYSTEM_PROMPT = `You are an expert AI Master Sommelier and Juror Assistant for international professional beverage competitions.
 Your role is to generate a concise, objective, 2-to-3 sentence tasting evaluation summary ("draft tasting comment") based strictly on the structured scores and sensory evaluation parameters provided.

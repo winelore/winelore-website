@@ -311,13 +311,18 @@ async function loadCommission(
  * refresh would otherwise re-fetch every evaluation of every candidate; the
  * web keeps the same short-lived caches in front of its server action.
  */
-export function cachedFetch<T>(fetch: (key: string) => Promise<T>, ttlMs: number): (key: string) => Promise<T> {
+export function cachedFetch<T>(fetch: (key: string) => Promise<T>, ttlMs: number): ((key: string) => Promise<T>) & { clear: (key?: string) => void } {
     const cache = new Map<string, { value: T; expiresAt: number }>()
-    return async (key) => {
+    const cached = async (key: string) => {
         const hit = cache.get(key)
         if (hit && hit.expiresAt > Date.now()) return hit.value
         const value = await fetch(key)
         cache.set(key, { value, expiresAt: Date.now() + ttlMs })
         return value
     }
+    cached.clear = (key?: string) => {
+        if (key === undefined) cache.clear()
+        else cache.delete(key)
+    }
+    return cached
 }

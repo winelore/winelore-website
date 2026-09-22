@@ -25,6 +25,7 @@ import {
     type CommissionPageData,
     type CommissionReplica,
 } from '@winelore/core/commission';
+import { normalizeAuids } from '@winelore/core';
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import {
@@ -528,6 +529,30 @@ export default function CommissionClientView({
     }, [propInitialData, currentAuid, selectedReplicaId])
 
     useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const queryReplicaId = params.get("replicaId") || params.get("replica");
+            if (queryReplicaId && localReplicas.some(r => r.id === queryReplicaId)) {
+                setSelectedReplicaId(queryReplicaId);
+            }
+        }
+    }, [localReplicas])
+
+    useEffect(() => {
+        if (currentAuid === null) return;
+        const auidStr = String(currentAuid);
+        const memberReplica = localReplicas.find(r =>
+            r.members?.some(m => normalizeAuids(m.auid).includes(auidStr))
+        );
+        if (memberReplica) {
+            const currentHasUser = selectedReplica?.members?.some(m => normalizeAuids(m.auid).includes(auidStr));
+            if (!currentHasUser) {
+                setSelectedReplicaId(memberReplica.id);
+            }
+        }
+    }, [currentAuid, localReplicas, selectedReplica])
+
+    useEffect(() => {
         const cookieAuid = Cookies.get("auid")
         if (cookieAuid) {
             setCurrentAuid(parseInt(cookieAuid, 10))
@@ -535,7 +560,7 @@ export default function CommissionClientView({
     }, [])
 
     useEffect(() => {
-        const me = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
+        const me = localMembers.find(m => currentAuid !== null && normalizeAuids(m.auid).includes(String(currentAuid)))
         if (me) {
             setCurrentUserRole(me.role)
             setCurrentMemberId(me.id)
@@ -547,7 +572,7 @@ export default function CommissionClientView({
 
     const creatorNames = commissionHolderNames(initialData.competition.holders, usernames, t("common.unknownCreator"))
 
-    const isHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
+    const isHolder = currentAuid !== null && normalizeAuids(initialData.competition.holders).includes(String(currentAuid))
 
     useEffect(() => {
         const prevStatus = prevReplicaStatusRef.current
@@ -706,20 +731,20 @@ export default function CommissionClientView({
     const isCommissionPreStart = currentCommissionStatus !== "STARTED" && currentCommissionStatus !== "COMPLETED"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = currentCommissionStatus === "COMPLETED"
-    const isCompetitionHolder = currentAuid !== null && (localData.competition?.holders || initialData.competition?.holders || []).includes(currentAuid)
+    const isCompetitionHolder = currentAuid !== null && normalizeAuids(localData.competition?.holders || initialData.competition?.holders).includes(String(currentAuid))
     const completedUserReplica = localReplicas.find(
         (replica) =>
             replica.status === "COMPLETED" &&
             replica.members.some(
-                (member) => currentAuid !== null && member.auid.includes(currentAuid),
+                (member) => currentAuid !== null && normalizeAuids(member.auid).includes(String(currentAuid)),
             ),
     ) ?? null
     const showResultsBanner = isCompetitionHolder || completedUserReplica !== null
     const isUserReplicaMember = selectedReplica?.members.some(
-        (m) => currentAuid !== null && m.auid.includes(currentAuid),
+        (m) => currentAuid !== null && normalizeAuids(m.auid).includes(String(currentAuid)),
     ) ?? false
     const myReplica = localReplicas.find((r) =>
-        r.members.some((m) => currentAuid !== null && m.auid.includes(currentAuid)),
+        r.members.some((m) => currentAuid !== null && normalizeAuids(m.auid).includes(String(currentAuid))),
     ) ?? null
     const selectedReplicaReadyForSummary =
         isUserReplicaMember &&
@@ -1716,7 +1741,7 @@ export default function CommissionClientView({
                                     </div>
                                 )}
 
-                                {replicaStatus === "STARTED" && currentUserRole && (
+                                {replicaStatus === "STARTED" && (currentUserRole || isUserReplicaMember) && (
                                     <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
                                         <div className="flex items-start gap-3">
                                             <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
