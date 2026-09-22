@@ -1,11 +1,9 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import { Link } from "expo-router"
 import * as Haptics from "expo-haptics"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useAuth } from "../src/auth/AuthProvider"
-import { describeAuthConfig } from "../src/auth/config"
 import { useTranslation } from "../src/i18n/LocaleProvider"
-import { MONOSPACE, brandGradient, palette, radius } from "../src/theme"
+import { brandGradient, palette, radius } from "../src/theme"
 import { Icon } from "../src/ui/Icon"
 import { LanguagePicker } from "../src/ui/LanguagePicker"
 import { PressableSurface } from "../src/ui/Pressable"
@@ -69,35 +67,7 @@ export default function WelcomeScreen() {
                         accessibilityLabel={t("common.changeLanguage")}
                     />
                 </View>
-
-                {__DEV__ ? <DeveloperTools /> : null}
             </ScrollView>
-        </View>
-    )
-}
-
-/**
- * Development affordances, not product copy — hence untranslated, and absent
- * from release builds.
- *
- * *Sample scorecard* opens the evaluator on sample data with no backend. The
- * diagnostics print the values the OAuth request will actually use: a failed
- * sign-in is nearly always a redirect URI outside the allowlist, and that is
- * derived at runtime rather than configured, so it is shown rather than left
- * to be guessed at.
- */
-function DeveloperTools() {
-    const config = describeAuthConfig()
-    return (
-        <View style={styles.devTools}>
-            <Link href="/preview" asChild>
-                <Pressable accessibilityRole="button" style={({ pressed }) => pressed && styles.pressed}>
-                    <Text style={styles.devLink}>Sample scorecard</Text>
-                </Pressable>
-            </Link>
-            <Text style={styles.devLine}>client {config.clientId}</Text>
-            <Text style={styles.devLine}>{config.redirectUri}</Text>
-            <Text style={styles.devLine}>{config.issuer}</Text>
         </View>
     )
 }
@@ -169,7 +139,4 @@ const styles = StyleSheet.create({
     ctaLabel: { fontSize: 16, fontWeight: "600", color: palette.onAccent },
     error: { fontSize: 13, color: palette.danger, textAlign: "center" },
     language: { width: "100%", maxWidth: 384, marginTop: 16 },
-    devTools: { alignItems: "center", gap: 2, marginTop: 16 },
-    devLink: { fontSize: 15, color: palette.textMuted, paddingVertical: 8 },
-    devLine: { fontSize: 11, opacity: 0.4, fontFamily: MONOSPACE },
 })
