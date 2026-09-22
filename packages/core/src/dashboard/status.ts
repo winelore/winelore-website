@@ -34,3 +34,19 @@ export function beverageStatusLook(status: string): StatusLook {
     if (status === "SUSPENDED") return { tone: "rose", glyph: "alert" }
     return { tone: "amber", glyph: "tag" }
 }
+
+export function templateStatusLook(status?: string | null): StatusLook {
+    if (status === "ACTIVE" || status === "PUBLISHED") return { tone: "emerald", glyph: "check" }
+    if (status === "ARCHIVED") return { tone: "slate", glyph: "tag" }
+    if (status === "DRAFT") return { tone: "amber", glyph: "calendar" }
+    return { tone: "emerald", glyph: "check" }
+}
+
+export function outcomePolicyStatusLook(status?: string | null): StatusLook {
+    if (status === "ACTIVE" || status === "PUBLISHED") return { tone: "emerald", glyph: "check" }
+    if (status === "ARCHIVED") return { tone: "slate", glyph: "tag" }
+    if (status === "DRAFT") return { tone: "amber", glyph: "calendar" }
+    return { tone: "emerald", glyph: "check" }
+}
+
+

@@ -13,6 +13,25 @@ const nextConfig = {
     // components/PageTransition.tsx and the view-transition CSS in globals.css).
     viewTransition: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/template/:id',
+        destination: '/templates/:id',
+        permanent: true,
+      },
+      {
+        source: '/outcome-policy',
+        destination: '/outcome-policies',
+        permanent: true,
+      },
+      {
+        source: '/outcome-policies/:id',
+        destination: '/outcome-policy/:id',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig

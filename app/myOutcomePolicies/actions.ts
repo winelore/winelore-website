@@ -21,7 +21,7 @@ export async function activateOutcomePolicyEditionAction(editionId: string, owne
 
 // Shaped and sequenced by core, which the app's outcome policy screens call too.
 
-export async function getOutcomePoliciesAction(ownerAuid: number, limit: number = 16, cursor?: string) {
+export async function getOutcomePoliciesAction(ownerAuid?: number, limit: number = 16, cursor?: string) {
     try {
         return await loadOutcomePolicies(rawGraphQL, ownerAuid, limit, cursor);
     } catch (err: any) {

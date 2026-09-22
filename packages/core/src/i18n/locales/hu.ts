@@ -6,6 +6,8 @@ const hu = {
         competitions: "Versenyek",
         wines: "Borok",
         beverages: "Italok",
+        templates: "Sablonok",
+        outcomePolicies: "Eredménypolitikák",
         map: "Térkép",
         profile: "Profil",
         logOut: "Kijelentkezés",
@@ -134,6 +136,20 @@ const hu = {
         emptyDescription: "Jelenleg nincs megjeleníthető verseny.",
         errorTitle: "Betöltési hiba",
         errorDescription: "Nem sikerült betölteni a versenyek listáját. Kérjük, frissítse az oldalt.",
+    },
+    templates: {
+        emptyTitle: "Nem találhatók sablonok",
+        emptyDescription: "Jelenleg nincs megjeleníthető értékelési sablon.",
+        errorTitle: "Betöltési hiba",
+        errorDescription: "Nem sikerült betölteni a sablonok listáját. Kérjük, frissítse az oldalt.",
+        author: "Szerző:",
+    },
+    outcomePolicies: {
+        emptyTitle: "Nem találhatók eredménypolitikák",
+        emptyDescription: "Jelenleg nincs megjeleníthető eredménypolitika.",
+        errorTitle: "Betöltési hiba",
+        errorDescription: "Nem sikerült betölteni az eredménypolitikák listáját. Kérjük, frissítse az oldalt.",
+        author: "Szerző:",
     },
     map: {
         geography: "Földrajz",
@@ -1128,6 +1144,7 @@ const hu = {
         scriptTitle: "Eredménypolitika szkript",
         save: "Mentés",
         saved: "Elmentve",
+        editionHistory: "Kiadástörténet",
     },
     newOutcomePolicy: {
         title: "Eredménypolitika létrehozása",
