@@ -25,8 +25,8 @@ export interface UseEvaluationLiveUpdatesOptions {
      */
     enabled?: boolean;
     /**
-     * Relaxed fallback polling interval in milliseconds.
-     * Defaults to 15,000ms (15 seconds).
+     * Fallback polling interval in milliseconds.
+     * Defaults to 3,000ms (3 seconds).
      */
     fallbackIntervalMs?: number;
     /**
@@ -37,7 +37,7 @@ export interface UseEvaluationLiveUpdatesOptions {
 }
 
 const DEFAULT_SSE_ENDPOINT = "/api/v1/events";
-const DEFAULT_FALLBACK_INTERVAL_MS = 15_000;
+const DEFAULT_FALLBACK_INTERVAL_MS = 3_000;
 const DEFAULT_DEBOUNCE_MS = 150;
 
 /**
@@ -75,7 +75,7 @@ export function useEvaluationLiveUpdates({
             }, debounceMs);
         };
 
-        // Fallback polling interval (relaxed, e.g. 15s)
+        // Fallback polling interval (e.g. 3s)
         const fallbackInterval = setInterval(() => {
             if (isMounted) {
                 onUpdateRef.current();

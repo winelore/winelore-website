@@ -24,8 +24,8 @@ export interface UseLiveUpdatesOptions {
      */
     enabled?: boolean
     /**
-     * Relaxed fallback polling interval in milliseconds.
-     * Defaults to 15,000ms (15 seconds).
+     * Fallback polling interval in milliseconds.
+     * Defaults to 3,000ms (3 seconds).
      */
     fallbackIntervalMs?: number
     /**
@@ -43,14 +43,14 @@ export interface UseLiveUpdatesOptions {
 /** @deprecated Prefer `useEvaluationLiveUpdates`, the shared web/mobile name. */
 export type UseEvaluationLiveUpdatesOptions = UseLiveUpdatesOptions
 
-const DEFAULT_FALLBACK_INTERVAL_MS = 15_000
+const DEFAULT_FALLBACK_INTERVAL_MS = 3_000
 const DEFAULT_DEBOUNCE_MS = 150
 
 /**
  * Subscribes to Server-Sent Events from the events endpoint for real-time updates
  * during tastings, wait room, and panel summaries on mobile.
  *
- * Mirrors the web's `useEvaluationLiveUpdates` (same defaults: 15s fallback,
+ * Mirrors the web's `useEvaluationLiveUpdates` (same defaults: 3s fallback,
  * 150ms debounce, refetch on reconnect). Always uses the XHR streaming
  * transport so behaviour — headers, Last-Event-ID resume, backoff — is
  * identical on iOS, Android, and web-preview builds.
@@ -87,7 +87,7 @@ export function useEvaluationLiveUpdates({
             }, debounceMs)
         }
 
-        // Relaxed fallback polling interval (e.g. 15s) in case of network isolation or reconnect delays
+        // Fallback polling interval (e.g. 3s) in case of network isolation or reconnect delays
         const fallbackInterval = setInterval(() => {
             if (isMounted) {
                 onUpdateRef.current()

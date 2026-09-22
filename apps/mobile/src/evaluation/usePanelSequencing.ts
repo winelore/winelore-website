@@ -7,7 +7,7 @@ import { sdk } from "../api/client"
 import { useEvaluationLiveUpdates } from "../events"
 
 /** Fallback polling interval when live SSE updates are active. */
-const FALLBACK_POLL_INTERVAL_MS = 15_000
+const FALLBACK_POLL_INTERVAL_MS = 3_000
 
 /**
  * A submission this client just made.

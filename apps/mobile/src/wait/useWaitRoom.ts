@@ -16,7 +16,7 @@ import { recentSubmission } from "../evaluation/usePanelSequencing"
 import { useEvaluationLiveUpdates } from "../events"
 
 /** Fallback polling interval when live SSE updates are active. */
-const FALLBACK_POLL_INTERVAL_MS = 15_000
+const FALLBACK_POLL_INTERVAL_MS = 3_000
 
 /** Evaluations are read as the acting judge, exactly as the web reads them. */
 function sourceFor(auid: string | null): WaitRoomSource {

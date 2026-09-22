@@ -179,7 +179,7 @@ export default function CompetitionResultsClientView({
         void loadResultsData()
     }, [loadResultsData])
 
-    // Live updates via SSE with a relaxed 15s fallback poll while the
+    // Live updates via SSE with a 3s fallback poll while the
     // competition is still running — the same mechanism as the mobile results
     // screen. No commissionId/replicaId scope: results aggregate every visible
     // commission, so any evaluation, outcome, replica, or commission event
