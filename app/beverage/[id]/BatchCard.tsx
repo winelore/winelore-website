@@ -27,7 +27,7 @@ export function BatchCard({
 
     const figures = batchFigures(batch)
     const [editAbv, setEditAbv] = useState<string>(figures.abv ? String(figures.abv) : "")
-    const [editName, setEditName] = useState<string>(batch.attributes?.vintage || "")
+    const [editName, setEditName] = useState<string>(batch.attributes?.vintage ? String(batch.attributes.vintage) : "")
 
     const displayVintage = batch.attributes?.vintage || figures.vintage
     const batchSamples = batch.samples || []
@@ -38,18 +38,21 @@ export function BatchCard({
             const vol = editVolumeMl.trim() ? parseInt(editVolumeMl.trim(), 10) : null;
             const lot = editLotNumber.trim() || null;
             const abvVal = editAbv.trim() || null;
-            const nameVal = editName.trim() || null;
+            const nameVal = String(editName).trim() || null;
 
             let hasAttributeChanges = false;
             const updatedAttributes = { ...batch.attributes };
 
-            if (abvVal !== String(figures.abv || "")) {
+            const originalAbv = figures.abv ? String(figures.abv) : null;
+            if (abvVal !== originalAbv) {
                 hasAttributeChanges = true;
                 if (abvVal) {
                     const numericAbv = parseFloat(abvVal.replace(',', '.'));
-                    if (updatedAttributes.abv !== undefined) updatedAttributes.abv = numericAbv;
-                    else if (updatedAttributes.alcohol !== undefined) updatedAttributes.alcohol = numericAbv;
-                    else updatedAttributes.alcoholByVolume = numericAbv;
+                    const finalAbv = isNaN(numericAbv) ? abvVal : numericAbv;
+
+                    updatedAttributes.alcoholByVolume = finalAbv;
+                    delete updatedAttributes.abv;
+                    delete updatedAttributes.alcohol;
                 } else {
                     delete updatedAttributes.alcoholByVolume;
                     delete updatedAttributes.abv;
@@ -57,21 +60,23 @@ export function BatchCard({
                 }
             }
 
-            const originalName = batch.attributes?.vintage || "";
-            if (nameVal !== String(originalName)) {
+            const originalName = batch.attributes?.vintage ? String(batch.attributes.vintage) : null;
+            if (nameVal !== originalName) {
                 hasAttributeChanges = true;
                 if (nameVal) {
-                    const parsedVintage = parseInt(nameVal, 10);
-                    updatedAttributes.vintage = !isNaN(parsedVintage) ? parsedVintage : nameVal;
+                    const strictVintage = Number(nameVal);
+                    updatedAttributes.vintage = !isNaN(strictVintage) && Number.isInteger(strictVintage) ? strictVintage : nameVal;
                 } else {
                     delete updatedAttributes.vintage;
                 }
             }
 
-            if (vol !== batch.volumeMl) {
+            const originalVol = batch.volumeMl ?? null;
+            if (vol !== originalVol) {
                 await changeBatchVolumeAction(batch.id, beverageId, vol)
             }
-            if (lot !== batch.lotNumber) {
+            const originalLot = batch.lotNumber ?? null;
+            if (lot !== originalLot) {
                 await changeBatchLotNumberAction(batch.id, beverageId, lot)
             }
             if (hasAttributeChanges) {
@@ -80,9 +85,16 @@ export function BatchCard({
 
             setIsEditing(false)
             router.refresh()
-            toast.success(t("batch.updateSuccess", { defaultValue: "Партію оновлено" }))
+            toast.success(t("beverage.batches.updateSuccess", { defaultValue: "Партію оновлено" }))
         } catch (err: any) {
-            toast.error(err.message || "Failed to save batch")
+            const msg = err.message || "";
+            if (msg.includes("vintage")) {
+                toast.error(t("beverage.batches.invalidVintage", { defaultValue: "Невірний формат року. Введіть число (наприклад 2024)" }))
+            } else if (msg.includes("alcoholByVolume") || msg.includes("abv") || msg.includes("alcohol")) {
+                toast.error(t("beverage.batches.invalidAbv", { defaultValue: "Невірний формат алкоголю. Введіть число (наприклад 14.5)" }))
+            } else {
+                toast.error(t("beverage.batches.generalError", { defaultValue: "Помилка збереження: перевірте правильність даних" }))
+            }
         } finally {
             setIsSaving(false)
         }
@@ -93,7 +105,7 @@ export function BatchCard({
         setEditVolumeMl(batch.volumeMl !== null && batch.volumeMl !== undefined ? String(batch.volumeMl) : "")
         setEditLotNumber(batch.lotNumber || "")
         setEditAbv(figures.abv ? String(figures.abv) : "")
-        setEditName(batch.attributes?.vintage || "")
+        setEditName(batch.attributes?.vintage ? String(batch.attributes.vintage) : "")
     }
 
     const batchVol = figures.batchVolume
@@ -120,7 +132,7 @@ export function BatchCard({
                             />
                         ) : (
                             <span className="text-md font-bold text-slate-800">
-                                {displayVintage ? `${t("beverage.batches.vintage", { defaultValue: "Vintage" })} ${displayVintage}` : t("beverage.batches.noVintage", { defaultValue: "No Vintage" })}
+                                {displayVintage ? `${t("beverage.batches.vintage")} ${displayVintage}` : t("beverage.batches.noVintage")}
                             </span>
                         )}
                     </div>
