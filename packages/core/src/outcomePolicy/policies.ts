@@ -93,6 +93,24 @@ export function latestPolicyEdition<T extends { version: number }>(editions: T[]
     return (editions || []).reduce<T | null>((latest, edition) => (!latest || edition.version > latest.version ? edition : latest), null)
 }
 
+/** An outcome policy's editions, newest first. */
+export function policyEditions<T extends { version: number }>(editions: T[] | null | undefined): T[] {
+    return [...(editions || [])].sort((a, b) => b.version - a.version)
+}
+
+/** The edition a link asks for by version, else the latest. */
+export function policyEditionAt<T extends { version: number }>(
+    editions: T[] | null | undefined,
+    version: number | undefined,
+): T | null {
+    const list = policyEditions(editions)
+    if (version !== undefined) {
+        const found = list.find((edition) => edition.version === version)
+        if (found) return found
+    }
+    return list[0] ?? null
+}
+
 /**
  * Policies with their latest editions. The backend cannot fetch a page of
  * policies with their editions, so editions come as one list and are
@@ -123,17 +141,23 @@ export function withLatestEditions(policies: any[] | null | undefined, editions:
     })
 }
 
-/** A page of the policies an owner has — after `cursor`, the last id of the page before — and how many there are. */
+/** A page of the policies an owner has — after `cursor`, the last id of the page before — and how many there are. If owner is omitted, fetches across all owners. */
 export async function loadOutcomePolicies(
     send: PolicySend,
-    owner: number,
-    limit: number,
+    owner?: number,
+    limit: number = 16,
     cursor?: string,
 ): Promise<{ policies: OutcomePolicySummary[]; totalCount: number }> {
+    const policyVars: Record<string, unknown> = { limit, cursor: cursor || undefined }
+    if (owner !== undefined) {
+        policyVars.filter = { owners: [[owner]] }
+    }
+    const countVars: Record<string, unknown> = owner !== undefined ? { owner: [owner] } : {}
+
     const [policies, editions, count] = await Promise.all([
-        send(GET_OUTCOME_POLICIES, { limit, cursor: cursor || undefined, filter: { owners: [[owner]] } }),
+        send(GET_OUTCOME_POLICIES, policyVars),
         send(GET_OUTCOME_POLICY_EDITIONS, { limit: 500 }),
-        send(GET_OUTCOME_POLICY_COUNT, { owner: [owner] }),
+        send(GET_OUTCOME_POLICY_COUNT, countVars).catch(() => ({ outcomePolicyCount: 0 })),
     ])
     return {
         policies: withLatestEditions(policies?.outcomePolicies?.items, editions?.outcomePolicyEditions?.items),
@@ -147,17 +171,23 @@ export async function loadOutcomePolicyNames(send: PolicySend, owner: number): P
     return (data?.outcomePolicies?.items || []).map((item: { name: string }) => item.name)
 }
 
-/** One policy and its latest edition; null when there is no such policy. */
+/** One policy and its editions; null when there is no such policy. */
 export async function loadOutcomePolicy(
     send: PolicySend,
     id: string,
-): Promise<{ policy: { id: string; name: string; createdAt: string }; edition: OutcomePolicyEdition | null } | null> {
+): Promise<{
+    policy: { id: string; name: string; createdAt: string }
+    edition: OutcomePolicyEdition | null
+    editions: OutcomePolicyEdition[]
+} | null> {
     const [policy, editions] = await Promise.all([
         send(GET_OUTCOME_POLICY, { id }),
         send(GET_OUTCOME_POLICY_EDITIONS_BY_POLICY_ID, { policyId: id, limit: 100 }),
     ])
     if (!policy?.outcomePolicy) return null
-    return { policy: policy.outcomePolicy, edition: latestPolicyEdition(editions?.outcomePolicyEditionsByPolicyId?.items) }
+    const items: OutcomePolicyEdition[] = editions?.outcomePolicyEditionsByPolicyId?.items || []
+    const sorted = policyEditions(items)
+    return { policy: policy.outcomePolicy, edition: sorted[0] ?? null, editions: sorted }
 }
 
 /** The backend refuses a duplicate name only with a generic error, so it is caught first. */

@@ -8,6 +8,8 @@ const uk: TranslationKey = {
     competitions: "Конкурси",
     wines: "Вина",
     beverages: "Напої",
+    templates: "Шаблони",
+    outcomePolicies: "Політики результатів",
     map: "Карта",
     profile: "Профіль",
     logOut: "Вийти",
@@ -136,6 +138,20 @@ const uk: TranslationKey = {
     emptyDescription: "Наразі немає жодного конкурсу для відображення.",
     errorTitle: "Помилка завантаження",
     errorDescription: "Не вдалося завантажити список конкурсів. Спробуйте оновити сторінку.",
+  },
+  templates: {
+    emptyTitle: "Шаблони не знайдено",
+    emptyDescription: "Наразі немає жодного шаблону оцінювання для відображення.",
+    errorTitle: "Помилка завантаження",
+    errorDescription: "Не вдалося завантажити список шаблонів. Спробуйте оновити сторінку.",
+    author: "Автор:",
+  },
+  outcomePolicies: {
+    emptyTitle: "Політики результатів не знайдено",
+    emptyDescription: "Наразі немає жодної політики результатів для відображення.",
+    errorTitle: "Помилка завантаження",
+    errorDescription: "Не вдалося завантажити список політик результатів. Спробуйте оновити сторінку.",
+    author: "Автор:",
   },
   map: {
     geography: "Географія",
@@ -1130,6 +1146,7 @@ const uk: TranslationKey = {
     scriptTitle: "Скрипт політики результатів",
     save: "Зберегти",
     saved: "Збережено",
+    editionHistory: "Історія редакцій",
   },
   newOutcomePolicy: {
     title: "Створити політику результатів",

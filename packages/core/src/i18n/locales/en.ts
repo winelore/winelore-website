@@ -6,6 +6,8 @@ const en = {
     competitions: "Competitions",
     wines: "Wines",
     beverages: "Beverages",
+    templates: "Templates",
+    outcomePolicies: "Outcome Policies",
     map: "Map",
     profile: "Profile",
     logOut: "Log Out",
@@ -134,6 +136,20 @@ const en = {
     emptyDescription: "There are no competitions to show right now.",
     errorTitle: "Loading Error",
     errorDescription: "Failed to load the list of competitions. Please try refreshing the page.",
+  },
+  templates: {
+    emptyTitle: "No templates found",
+    emptyDescription: "There are no evaluation templates to show right now.",
+    errorTitle: "Loading Error",
+    errorDescription: "Failed to load the list of templates. Please try refreshing the page.",
+    author: "Author:",
+  },
+  outcomePolicies: {
+    emptyTitle: "No outcome policies found",
+    emptyDescription: "There are no outcome policies to show right now.",
+    errorTitle: "Loading Error",
+    errorDescription: "Failed to load the list of outcome policies. Please try refreshing the page.",
+    author: "Author:",
   },
   map: {
     geography: "Geography",
@@ -1128,6 +1144,7 @@ const en = {
     scriptTitle: "Outcome Policy Script",
     save: "Save",
     saved: "Saved",
+    editionHistory: "Edition History",
   },
   newOutcomePolicy: {
     title: "Create Outcome Policy",

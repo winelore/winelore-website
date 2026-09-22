@@ -4,6 +4,8 @@ import {
     beverageStatusLook,
     commissionStatusLook,
     competitionStatusLook,
+    templateStatusLook,
+    outcomePolicyStatusLook,
     type StatusGlyph,
     type StatusLook,
     type StatusTone,
@@ -54,3 +56,13 @@ export function competitionStatusAppearance(status: string): StatusAppearance {
 export function beverageStatusAppearance(status: string): StatusAppearance {
     return toAppearance(beverageStatusLook(status))
 }
+
+export function templateStatusAppearance(status?: string | null): StatusAppearance {
+    return toAppearance(templateStatusLook(status))
+}
+
+export function outcomePolicyStatusAppearance(status?: string | null): StatusAppearance {
+    return toAppearance(outcomePolicyStatusLook(status))
+}
+
+

@@ -10,6 +10,7 @@ import {
     CREATE_OUTCOME_POLICY_EDITION_MUTATION,
     CREATE_OUTCOME_POLICY_MUTATION,
     GET_OUTCOME_POLICIES,
+    GET_OUTCOME_POLICY,
     GET_OUTCOME_POLICY_COUNT,
     GET_OUTCOME_POLICY_EDITIONS,
     GET_OUTCOME_POLICY_EDITIONS_BY_POLICY_ID,
@@ -18,6 +19,8 @@ import {
     latestPolicyEdition,
     loadOutcomePolicies,
     loadOutcomePolicy,
+    policyEditionAt,
+    policyEditions,
     policyErrorTraceId,
     saveOutcomePolicyScript,
     type PolicySend,
@@ -38,6 +41,21 @@ test("a policy's latest edition is its highest version", () => {
     assert.equal(latestPolicyEdition([{ version: 2 }, { version: 5 }, { version: 3 }])?.version, 5)
     assert.equal(latestPolicyEdition([]), null)
     assert.equal(latestPolicyEdition(null), null)
+})
+
+test("a policy's editions come newest first", () => {
+    const sorted = policyEditions([{ version: 1 }, { version: 3 }, { version: 2 }])
+    assert.deepEqual(sorted.map((e) => e.version), [3, 2, 1])
+    assert.deepEqual(policyEditions([]), [])
+    assert.deepEqual(policyEditions(null), [])
+})
+
+test("policyEditionAt finds the requested version or falls back to latest", () => {
+    const list = [{ version: 1 }, { version: 2 }, { version: 3 }]
+    assert.equal(policyEditionAt(list, 2)?.version, 2)
+    assert.equal(policyEditionAt(list, 99)?.version, 3)
+    assert.equal(policyEditionAt(list, undefined)?.version, 3)
+    assert.equal(policyEditionAt([], 1), null)
 })
 
 test("a page of an owner's policies comes with each one's latest edition and the owner's count", async () => {
@@ -76,6 +94,27 @@ test("a page of an owner's policies comes with each one's latest edition and the
 test("a policy that does not exist is null", async () => {
     const { send } = recorder((query) => (query === GET_OUTCOME_POLICY_EDITIONS_BY_POLICY_ID ? { outcomePolicyEditionsByPolicyId: { items: [] } } : { outcomePolicy: null }))
     assert.equal(await loadOutcomePolicy(send, "missing"), null)
+})
+
+test("a policy loads with its latest edition and all editions newest first", async () => {
+    const { send } = recorder((query) => {
+        if (query === GET_OUTCOME_POLICY) return { outcomePolicy: { id: "p1", name: "Policy 1", createdAt: "2026-01-01" } }
+        if (query === GET_OUTCOME_POLICY_EDITIONS_BY_POLICY_ID) {
+            return {
+                outcomePolicyEditionsByPolicyId: {
+                    items: [
+                        { id: "e1", version: 1, status: "ARCHIVED", scriptCode: "code1" },
+                        { id: "e3", version: 3, status: "ACTIVE", scriptCode: "code3" },
+                        { id: "e2", version: 2, status: "ARCHIVED", scriptCode: "code2" },
+                    ],
+                },
+            }
+        }
+    })
+    const result = await loadOutcomePolicy(send, "p1")
+    assert.equal(result?.policy.name, "Policy 1")
+    assert.equal(result?.edition?.version, 3)
+    assert.deepEqual(result?.editions.map((e) => e.version), [3, 2, 1])
 })
 
 test("creating a policy makes it the owner's, with its script as edition 1, activated", async () => {
