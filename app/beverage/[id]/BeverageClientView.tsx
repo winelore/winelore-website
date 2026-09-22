@@ -13,6 +13,7 @@ import { AppHeader } from "@/components/AppHeader"
 import { submitBeverageForReviewAction } from "../actions"
 import { BackLink } from "@/components/BackLink"
 import { EditBeverageModal } from "./EditBeverageModal"
+import { BatchCard } from "./BatchCard"
 import { SamplesListModal, type ModalBatchData } from "./SamplesListModal"
 import {
     batchFigures,
@@ -108,7 +109,7 @@ function AwardCard({ award }: { award: AwardType }) {
         <div className="bg-white border border-slate-100 rounded-[20px] p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 hover:scale-[1.01] group relative overflow-hidden">
             {/* Side decorative indigo bar */}
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-l-[20px]" />
-            
+
             <div className="flex items-start gap-4 pl-1">
                 {award.award.badgeUrl ? (
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 shadow-sm group-hover:scale-105 transition-transform duration-300">
@@ -535,157 +536,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
 
                                 {batches.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {batches.map((batch) => {
-                                            const figures = batchFigures(batch)
-                                            const displayVintage = figures.vintage
-                                            const batchSamples = batch.samples || []
-
-                                            return (
-                                                <div
-                                                    key={batch.id}
-                                                    className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-md hover:shadow-lg hover:border-indigo-100 transition-all duration-300 group/batch relative overflow-hidden flex flex-col justify-between"
-                                                >
-                                                    {/* Side border decoration */}
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 opacity-60 group-hover/batch:opacity-100 transition-opacity" />
-
-                                                    <div>
-                                                        <div className="flex items-center justify-between border-b border-slate-50 pb-3 mb-4">
-                                                            <div className="flex items-center gap-2">
-                                                                <Calendar className="w-4 h-4 text-indigo-600" />
-                                                                <span className="text-md font-bold text-slate-800">
-                                                                    {displayVintage ? `${t("beverage.batches.vintage")} ${displayVintage}` : t("beverage.batches.noVintage")}
-                                                                </span>
-                                                            </div>
-                                                            <span className="text-[10px] font-bold text-slate-400 font-mono">
-                                                                ID: {batch.id.slice(-6).toUpperCase()}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-3 gap-3 mb-4">
-                                                            <div className="bg-slate-50/50 border border-slate-100/50 rounded-xl p-3 text-center">
-                                                                <Percent className="w-4 h-4 mx-auto text-indigo-600/80 mb-1" />
-                                                                <span className="text-[9px] uppercase font-bold text-slate-400 block">{t("beverage.batches.abv")}</span>
-                                                                <span className="text-xs font-bold text-slate-700 mt-0.5 block">
-                                                                    {figures.abv ?? t("common.na")}
-                                                                </span>
-                                                            </div>
-                                                            
-                                                            <div className="bg-slate-50/50 border border-slate-100/50 rounded-xl p-3 text-center">
-                                                                <Droplet className="w-4 h-4 mx-auto text-indigo-600/80 mb-1" />
-                                                                <span className="text-[9px] uppercase font-bold text-slate-400 block">{t("beverage.batches.volume")}</span>
-                                                                <span className="text-xs font-bold text-slate-700 mt-0.5 block truncate">
-                                                                    {batch.volumeMl !== undefined && batch.volumeMl !== null
-                                                                        ? `${batch.volumeMl} ml`
-                                                                        : t("common.na")}
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="bg-slate-50/50 border border-slate-100/50 rounded-xl p-3 text-center">
-                                                                <Barcode className="w-4 h-4 mx-auto text-indigo-600/80 mb-1" />
-                                                                <span className="text-[9px] uppercase font-bold text-slate-400 block">{t("beverage.batches.lotNumber")}</span>
-                                                                <span className="text-xs font-bold text-slate-700 mt-0.5 block truncate" title={batch.lotNumber || ""}>
-                                                                    {batch.lotNumber || t("common.na")}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Samples Section */}
-                                                    {(() => {
-                                                        const groupedSamples = figures.sampleGroups
-                                                        const totalSamplesVol = figures.sampleVolume
-                                                        const batchVol = figures.batchVolume
-
-                                                        return (
-                                                            <div className="mt-2 pt-3 border-t border-slate-100 bg-slate-50/50 -mx-5 -mb-5 p-4 rounded-b-[24px]">
-                                                                <div className="flex items-center justify-between mb-2.5">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <FlaskConical className="w-3.5 h-3.5 text-indigo-600" />
-                                                                        <span className="text-xs font-bold text-slate-700">
-                                                                            {t("sample.samplesTitle", { defaultValue: "Зразки (Samples)" })}
-                                                                        </span>
-                                                                        <span className="rounded-full bg-indigo-50 border border-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
-                                                                            {batchSamples.length}
-                                                                        </span>
-                                                                    </div>
-                                                                    {initialData?.beverage?.id && (
-                                                                        <Link
-                                                                            href={`/sample/create?batchId=${batch.id}&beverageId=${initialData.beverage.id}`}
-                                                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
-                                                                        >
-                                                                            <Plus className="w-3 h-3" />
-                                                                            <span>{t("sample.addSampleButton", { defaultValue: "Додати зразок" })}</span>
-                                                                        </Link>
-                                                                    )}
-                                                                </div>
-
-                                                                {batchSamples.length > 0 ? (
-                                                                    <div className="space-y-2.5">
-                                                                        {/* Aggregated volume badges & open modal button */}
-                                                                        <div className="flex flex-wrap items-center gap-2">
-                                                                            {groupedSamples.map((group, gIdx) => (
-                                                                                <span
-                                                                                    key={gIdx}
-                                                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-xs"
-                                                                                >
-                                                                                    <Droplet className="w-3 h-3 text-indigo-500" />
-                                                                                    <span>
-                                                                                        {group.count} × {group.volumeMl ? `${group.volumeMl.toLocaleString()} ${t("common.milliliters")}` : t("common.standard", { defaultValue: "Стандарт" })}
-                                                                                    </span>
-                                                                                </span>
-                                                                            ))}
-
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setSelectedBatchForSamples(batch as any)}
-                                                                                className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 px-2.5 py-1 text-[11px] font-bold text-indigo-700 transition-colors cursor-pointer"
-                                                                            >
-                                                                                <span>{t("sample.viewAllSamples", { defaultValue: "Всі зразки" })} ({batchSamples.length})</span>
-                                                                                <ExternalLink className="w-3 h-3" />
-                                                                            </button>
-                                                                        </div>
-
-                                                                        {/* Volume utilization progress bar if batch has volumeMl */}
-                                                                        {batchVol !== null && (
-                                                                            <div className="rounded-xl border border-slate-100 bg-white/70 p-2.5">
-                                                                                <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500">
-                                                                                    <span>
-                                                                                        {t("sample.allocatedVolume", {
-                                                                                            used: totalSamplesVol.toLocaleString(),
-                                                                                            total: batchVol.toLocaleString(),
-                                                                                            defaultValue: `Виділено ${totalSamplesVol.toLocaleString()} мл з ${batchVol.toLocaleString()} мл`,
-                                                                                        })}
-                                                                                    </span>
-                                                                                    <span className={totalSamplesVol > batchVol ? "text-rose-600 font-bold" : "text-indigo-600 font-bold"}>
-                                                                                        {Math.min(100, Math.round((totalSamplesVol / batchVol) * 100))}%
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                                                                                    <div
-                                                                                        className={`h-full transition-all duration-300 ${
-                                                                                            totalSamplesVol > batchVol
-                                                                                                ? "bg-rose-500"
-                                                                                                : totalSamplesVol / batchVol > 0.8
-                                                                                                ? "bg-amber-500"
-                                                                                                : "bg-indigo-600"
-                                                                                        }`}
-                                                                                        style={{ width: `${Math.min(100, (totalSamplesVol / batchVol) * 100)}%` }}
-                                                                                    />
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <p className="text-[11px] text-slate-400 italic">
-                                                                        {t("sample.emptySamplesDesc", { defaultValue: "Немає зареєстрованих зразків" })}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        )
-                                                    })()}
-                                                </div>
-                                            )
-                                        })}
+                                        {batches.map((batch) => <BatchCard key={batch.id} batch={batch} beverageId={initialData?.beverage?.id as string} t={t} setSelectedBatchForSamples={setSelectedBatchForSamples} />)}
                                     </div>
                                 ) : (
                                     <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">
@@ -744,7 +595,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                         </span>
                                                     </div>
                                                 )}
-                                                
+
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     {group.awards.map((award: AwardType) => (
                                                         <AwardCard key={award.id} award={award} />
@@ -778,26 +629,26 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                     <div className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-md">
                                         <table className="w-full border-collapse">
                                             <thead>
-                                                <tr className="bg-slate-50/50 border-b border-slate-100">
-                                                    <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                                        {t("beverage.specs.key")}
-                                                    </th>
-                                                    <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                                        {t("beverage.specs.value")}
-                                                    </th>
-                                                </tr>
+                                            <tr className="bg-slate-50/50 border-b border-slate-100">
+                                                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                                    {t("beverage.specs.key")}
+                                                </th>
+                                                <th className="text-left px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                                    {t("beverage.specs.value")}
+                                                </th>
+                                            </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
-                                                {technicalSpecs.map((spec, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50/30 transition-colors">
-                                                        <td className="px-6 py-4 text-xs font-bold text-slate-500 capitalize">
-                                                            {spec.key}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-xs font-semibold text-slate-800">
-                                                            {spec.value}
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                            {technicalSpecs.map((spec, i) => (
+                                                <tr key={i} className="hover:bg-slate-50/30 transition-colors">
+                                                    <td className="px-6 py-4 text-xs font-bold text-slate-500 capitalize">
+                                                        {spec.key}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-semibold text-slate-800">
+                                                        {spec.value}
+                                                    </td>
+                                                </tr>
+                                            ))}
                                             </tbody>
                                         </table>
                                     </div>
