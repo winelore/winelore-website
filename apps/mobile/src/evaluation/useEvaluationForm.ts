@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
     buildInitialValues,
     buildPropertyByCode,
@@ -34,13 +34,18 @@ export function useEvaluationForm(categories: EvaluationCategory[], candidateId:
     >({})
     const [comments, setComments] = useState<Record<string, string>>({})
 
+    const prevCandidateIdRef = useRef<string>(candidateId)
+
     // A new candidate is a fresh scorecard; never carry one judge's scores or
-    // comments over.
+    // comments over. Only reset if candidateId actually changed.
     useEffect(() => {
-        setValues(buildInitialValues(categories))
-        setNumericDrafts({})
-        setNumericErrors({})
-        setComments({})
+        if (prevCandidateIdRef.current !== candidateId) {
+            prevCandidateIdRef.current = candidateId
+            setValues(buildInitialValues(categories))
+            setNumericDrafts({})
+            setNumericErrors({})
+            setComments({})
+        }
     }, [candidateId, categories])
 
     const setValue = useCallback((code: string, value: unknown) => {

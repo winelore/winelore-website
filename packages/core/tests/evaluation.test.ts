@@ -22,6 +22,7 @@ import {
     parseAttributes,
     selectEvaluationTemplateEdition,
     selectVisibleAttributes,
+    buildTastingPayload,
     type EvaluationCategory,
     type EvaluationProperty,
 } from "../src/evaluation"
@@ -323,4 +324,55 @@ test("selectEvaluationTemplateEdition skips an unusable wine edition for a usabl
         { beverageType: { code: "CIDER" }, templateEdition: { id: "cider", categories: [fullCategory] } },
     ]
     assert.equal(selectEvaluationTemplateEdition(links)?.id, "cider")
+})
+
+test("buildTastingPayload computes structured categories, total scores and attributes correctly", () => {
+    const categories: EvaluationCategory[] = [
+        category("visual", [
+            prop({ __typename: "IntProperty", code: "clarity", name: "Clarity", intMaxLimit: 5 }),
+            prop({ __typename: "DiscreteNumbersProperty", code: "colour", name: "Colour", discreteAllowedValues: [1, 2, 3, 4, 5] }),
+            prop({ __typename: "SmartProperty", code: "visualTotal", name: "Visual Subtotal" }),
+        ]),
+        category("taste", [
+            prop({ __typename: "DoubleProperty", code: "balance", name: "Balance", doubleMaxLimit: 10 }),
+            prop({ __typename: "SmartProperty", code: "total", name: "Final Result", isResult: true }),
+        ]),
+    ]
+    const values = {
+        clarity: 4,
+        colour: 5,
+        balance: 8.5,
+    }
+    const smartValues = {
+        visualTotal: 9,
+        total: 92,
+    }
+    const payload = buildTastingPayload({
+        categories,
+        values,
+        smartValues,
+        locale: "uk",
+        beverageType: "Red Wine",
+        candidateCode: "WINE-01",
+        visibleAttributes: [{ label: "vintage", value: "2020" }],
+    })
+
+    assert.equal(payload.locale, "uk")
+    assert.equal(payload.beverageType, "Red Wine")
+    assert.equal(payload.candidateCode, "WINE-01")
+    assert.equal(payload.totalScore, 92)
+    assert.equal(payload.maxTotalScore, 100)
+    assert.deepEqual(payload.attributes, { vintage: "2020" })
+    assert.equal(payload.categories.length, 2)
+
+    const visualCat = payload.categories[0]
+    assert.equal(visualCat.name, "visual")
+    assert.equal(visualCat.score, 9)
+    assert.equal(visualCat.maxScore, 10)
+    assert.equal(visualCat.properties?.length, 3)
+
+    const tasteCat = payload.categories[1]
+    assert.equal(tasteCat.name, "taste")
+    assert.equal(tasteCat.score, 8.5)
+    assert.equal(tasteCat.maxScore, 10)
 })

@@ -32,11 +32,12 @@ import {
     isNotCurrentCandidateError,
     isScoringComplete,
     orderPropertiesForDisplay,
+    buildTastingPayload,
+    type TastingPayload,
     type EvaluationCategory,
     type EvaluationProperty,
 } from '@winelore/core/evaluation';
 import { Mic, Square, Trash2, Wand2 } from "lucide-react"
-import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
@@ -504,69 +505,15 @@ export default function EvaluationForm({
         if (isGeneratingAI || !isAllScoringComplete) return
         setIsGeneratingAI(true)
         try {
-            const categoryScores: TastingCategoryScore[] = categories.map((cat) => {
-                let catScore = 0
-                let catMax = 0
-                const propScores: TastingPropertyScore[] = []
-                cat.properties.forEach((prop) => {
-                    if (prop.__typename === "SmartProperty") {
-                        const smartVal = computedSmartValues[prop.code]
-                        if (typeof smartVal === "number" && !isNaN(smartVal)) {
-                            propScores.push({ name: prop.name, score: smartVal, maxScore: 100 })
-                        }
-                        return
-                    }
-                    let maxVal = 0
-                    if (prop.__typename === "IntProperty" && prop.intMaxLimit != null) maxVal = prop.intMaxLimit
-                    else if (prop.__typename === "DoubleProperty" && prop.doubleMaxLimit != null) maxVal = prop.doubleMaxLimit
-                    else if (prop.__typename === "DiscreteNumbersProperty" && prop.discreteAllowedValues?.length) {
-                        maxVal = Math.max(...prop.discreteAllowedValues)
-                    }
-                    const rawVal = values[prop.code]
-                    const numVal = typeof rawVal === "number" ? rawVal : parseFloat(rawVal)
-                    if (!isNaN(numVal)) {
-                        catScore += numVal
-                        catMax += maxVal
-                        propScores.push({
-                            name: prop.name,
-                            score: numVal,
-                            maxScore: maxVal || numVal,
-                        })
-                    }
-                })
-                return {
-                    name: cat.name,
-                    score: catScore,
-                    maxScore: catMax,
-                    properties: propScores,
-                }
-            })
-            let totalScore: number | null = null
-            categories.forEach((cat) => {
-                cat.properties.forEach((p) => {
-                    if (p.isResult) {
-                        const val = computedSmartValues[p.code] ?? values[p.code]
-                        if (val != null && !isNaN(Number(val))) {
-                            totalScore = Number(val)
-                        }
-                    }
-                })
-            })
-            const attributesMap: Record<string, string> = {}
-            if (visibleAttributes && visibleAttributes.length > 0) {
-                visibleAttributes.forEach((attr) => {
-                    attributesMap[attr.label] = attr.value
-                })
-            }
-            const payload: TastingPayload = {
+            const payload: TastingPayload = buildTastingPayload({
+                categories,
+                values,
+                smartValues: computedSmartValues,
                 locale: (locale as "en" | "uk" | "hu") || "en",
                 beverageType: beverageName || "Wine",
                 candidateCode: candidateCode || undefined,
-                totalScore,
-                maxTotalScore: 100,
-                categories: categoryScores,
-                attributes: attributesMap,
-            }
+                visibleAttributes,
+            })
             const response = await fetch("/api/generate-comment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

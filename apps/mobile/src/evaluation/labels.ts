@@ -24,5 +24,9 @@ export function buildEvaluationLabels(t: Translation): EvaluationScreenLabels {
                 : t.t("evaluation.invalidNumber"),
         noTemplate: t.t("evaluation.noTemplate"),
         submitFailed: t.t("evaluation.submitError"),
+        aiGenerateDraft: t.t("evaluation.aiGenerateDraft"),
+        aiGenerating: t.t("evaluation.aiGenerating"),
+        aiScoreAllRequired: t.t("evaluation.aiScoreAllRequired"),
+        aiDraftFailed: t.t("evaluation.aiDraftFailed"),
     }
 }
