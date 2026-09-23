@@ -949,6 +949,10 @@ const hu = {
           volume: "Térfogat",
           lotNumber: "Tételszám",
           noVintage: "Évjárat nélküli (NV)",
+            updateSuccess: "A tétel sikeresen frissítve",
+            invalidVintage: "Érvénytelen évjárat formátum. Kérjük, adjon meg egy érvényes évet (pl. 2024)",
+            invalidAbv: "Érvénytelen ABV formátum. Kérjük, adjon meg egy érvényes számot (pl. 14.5)",
+            generalError: "Hiba történt a mentés során: kérjük, ellenőrizze az adatokat",
         },
         specs: {
           title: "Technikai specifikációk",

@@ -173,3 +173,36 @@ export const PUBLISH_BEVERAGE_TYPE = gql(`
   }
 `)
 
+
+export const CHANGE_BATCH_VOLUME = gql(`
+  mutation ChangeBatchVolume($id: ID!, $volumeMl: Int) {
+    changeBatchVolume(id: $id, volumeMl: $volumeMl) {
+      id
+      volumeMl
+      lotNumber
+      attributes
+    }
+  }
+`)
+
+export const CHANGE_BATCH_LOT_NUMBER = gql(`
+  mutation ChangeBatchLotNumber($id: ID!, $lotNumber: String) {
+    changeBatchLotNumber(id: $id, lotNumber: $lotNumber) {
+      id
+      volumeMl
+      lotNumber
+      attributes
+    }
+  }
+`)
+
+export const UPDATE_BATCH_ATTRIBUTES = gql(`
+  mutation UpdateBatchAttributes($id: ID!, $attributes: JSON!) {
+    updateBatchAttributes(id: $id, attributes: $attributes) {
+      id
+      volumeMl
+      lotNumber
+      attributes
+    }
+  }
+`)

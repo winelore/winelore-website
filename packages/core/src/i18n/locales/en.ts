@@ -768,7 +768,7 @@ const en = {
     inDaysHours: "In {{days}}d {{hours}}h",
     inHoursMinutes: "In {{hours}}h {{minutes}}m",
   },
-    meta: {
+  meta: {
     title: "WineLore - Beverage Competitions Dashboard",
     description: "Discover and participate in beverage competitions on WineLore",
   },
@@ -949,6 +949,10 @@ const en = {
       volume: "Volume",
       lotNumber: "Lot Number",
       noVintage: "Non-vintage (NV)",
+      updateSuccess: "Batch successfully updated",
+      invalidVintage: "Invalid vintage format. Please enter a valid year (e.g. 2024)",
+      invalidAbv: "Invalid ABV format. Please enter a valid number (e.g. 14.5)",
+      generalError: "Error saving batch: please check your data",
     },
     specs: {
     title: "Technical Specifications",
