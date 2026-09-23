@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react"
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
@@ -35,7 +35,8 @@ import {
     type EvaluationCategory,
     type EvaluationProperty,
 } from '@winelore/core/evaluation';
-import { Mic, Square, Trash2, Wand2 } from "lucide-react"
+import { Mic, Square, Trash2, Sparkles } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
@@ -280,7 +281,13 @@ export default function EvaluationForm({
     const [numericDrafts, setNumericDrafts] = useState<Record<string, string>>({})
     const [numericErrors, setNumericErrors] = useState<Record<string, NumericInputErrorReason | null>>({})
     const [generalComment, setGeneralComment] = useState("")
+    const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
+    const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number | null>(null)
     const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+    const isGeneratingAiRef = useRef<boolean>(false)
+    const lastTriggerHashRef = useRef<string | null>(null)
+    const prevCandidateIdRef = useRef<string>(candidateId)
+    const abortControllerRef = useRef<AbortController | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
@@ -300,19 +307,33 @@ export default function EvaluationForm({
             if (timerRef.current) clearInterval(timerRef.current)
             streamRef.current?.getTracks().forEach(t => t.stop())
             Object.values(voicePreviewUrls).forEach(u => URL.revokeObjectURL(u))
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort()
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    // ONLY reset state when switching to a DIFFERENT candidate!
     useEffect(() => {
-        setValues(buildInitialValues(categories))
-        setCommentValues({})
-        setNumericDrafts({})
-        setNumericErrors({})
-        setGeneralComment("")
-        setError(null)
-        setSuccess(false)
-        setIsSubmitting(false)
+        if (prevCandidateIdRef.current !== candidateId) {
+            prevCandidateIdRef.current = candidateId
+            setValues(buildInitialValues(categories))
+            setCommentValues({})
+            setNumericDrafts({})
+            setNumericErrors({})
+            setGeneralComment("")
+            setAiSuggestions([])
+            setSelectedSuggestionIndex(null)
+            lastTriggerHashRef.current = null
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort()
+                abortControllerRef.current = null
+            }
+            setError(null)
+            setSuccess(false)
+            setIsSubmitting(false)
+        }
     }, [candidateId, categories])
 
     const startRecording = async (key: string) => {
@@ -496,17 +517,41 @@ export default function EvaluationForm({
         [categories, values],
     )
 
-    const handleGenerateAIComment = async () => {
-        if (isGeneratingAI || !isAllScoringComplete) return
+    const latestValuesRef = useRef(values)
+    latestValuesRef.current = values
+    const latestComputedSmartValuesRef = useRef(computedSmartValues)
+    latestComputedSmartValuesRef.current = computedSmartValues
+
+    const latestCategoriesRef = useRef(categories)
+    latestCategoriesRef.current = categories
+    const latestVisibleAttributesRef = useRef(visibleAttributes)
+    latestVisibleAttributesRef.current = visibleAttributes
+    const latestBeverageNameRef = useRef(beverageName)
+    latestBeverageNameRef.current = beverageName
+    const latestCandidateCodeRef = useRef(candidateCode)
+    latestCandidateCodeRef.current = candidateCode
+    const latestLocaleRef = useRef(locale)
+    latestLocaleRef.current = locale
+    const generateAiSuggestions = useCallback(async () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+        }
+        const abortController = new AbortController()
+        abortControllerRef.current = abortController
+        isGeneratingAiRef.current = true
         setIsGeneratingAI(true)
         try {
-            const categoryScores: TastingCategoryScore[] = categories.map((cat) => {
+            const currentValues = latestValuesRef.current
+            const currentSmart = latestComputedSmartValuesRef.current
+            const currentCategories = latestCategoriesRef.current
+            const currentVisibleAttrs = latestVisibleAttributesRef.current
+            const categoryScores: TastingCategoryScore[] = currentCategories.map((cat) => {
                 let catScore = 0
                 let catMax = 0
                 const propScores: TastingPropertyScore[] = []
                 cat.properties.forEach((prop) => {
                     if (prop.__typename === "SmartProperty") {
-                        const smartVal = computedSmartValues[prop.code]
+                        const smartVal = currentSmart[prop.code]
                         if (typeof smartVal === "number" && !isNaN(smartVal)) {
                             propScores.push({ name: prop.name, score: smartVal, maxScore: 100 })
                         }
@@ -518,7 +563,7 @@ export default function EvaluationForm({
                     else if (prop.__typename === "DiscreteNumbersProperty" && prop.discreteAllowedValues?.length) {
                         maxVal = Math.max(...prop.discreteAllowedValues)
                     }
-                    const rawVal = values[prop.code]
+                    const rawVal = currentValues[prop.code]
                     const numVal = typeof rawVal === "number" ? rawVal : parseFloat(rawVal)
                     if (!isNaN(numVal)) {
                         catScore += numVal
@@ -538,10 +583,10 @@ export default function EvaluationForm({
                 }
             })
             let totalScore: number | null = null
-            categories.forEach((cat) => {
+            currentCategories.forEach((cat) => {
                 cat.properties.forEach((p) => {
                     if (p.isResult) {
-                        const val = computedSmartValues[p.code] ?? values[p.code]
+                        const val = currentSmart[p.code] ?? currentValues[p.code]
                         if (val != null && !isNaN(Number(val))) {
                             totalScore = Number(val)
                         }
@@ -549,15 +594,15 @@ export default function EvaluationForm({
                 })
             })
             const attributesMap: Record<string, string> = {}
-            if (visibleAttributes && visibleAttributes.length > 0) {
-                visibleAttributes.forEach((attr) => {
+            if (currentVisibleAttrs && currentVisibleAttrs.length > 0) {
+                currentVisibleAttrs.forEach((attr) => {
                     attributesMap[attr.label] = attr.value
                 })
             }
             const payload: TastingPayload = {
-                locale: (locale as "en" | "uk" | "hu") || "en",
-                beverageType: beverageName || "Wine",
-                candidateCode: candidateCode || undefined,
+                locale: (latestLocaleRef.current as "en" | "uk" | "hu") || "en",
+                beverageType: latestBeverageNameRef.current || "Wine",
+                candidateCode: latestCandidateCodeRef.current || undefined,
                 totalScore,
                 maxTotalScore: 100,
                 categories: categoryScores,
@@ -567,30 +612,50 @@ export default function EvaluationForm({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
+                signal: abortController.signal,
             })
-            if (!response.ok || !response.body) {
+            if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}))
-                throw new Error(errJson.error || "Failed to generate AI comment")
+                throw new Error(errJson.error || "Failed to generate AI tasting suggestions")
             }
-            setGeneralComment("")
-            const reader = response.body.getReader()
-            const decoder = new TextDecoder()
-            let accumulated = ""
-            while (true) {
-                const { done, value } = await reader.read()
-                if (done) break
-                const chunk = decoder.decode(value, { stream: true })
-                accumulated += chunk
-                setGeneralComment(accumulated)
+            const data = await response.json()
+            if (Array.isArray(data.options) && data.options.length > 0) {
+                setAiSuggestions(data.options)
+                setSelectedSuggestionIndex((prevIdx) => {
+                    if (prevIdx !== null && data.options[prevIdx]) {
+                        setGeneralComment(data.options[prevIdx])
+                    }
+                    return prevIdx
+                })
             }
-            toast.success(t("evaluation.aiDraftGenerated"))
         } catch (err: any) {
+            if (err?.name === "AbortError") return
             console.error("AI Comment Generation error:", err)
             toast.error(err.message || t("evaluation.aiDraftFailed"))
         } finally {
+            isGeneratingAiRef.current = false
             setIsGeneratingAI(false)
         }
-    }
+    }, [])
+
+    const triggerHash = `${JSON.stringify(values)}_${locale}`
+
+    // Automatically trigger AI generation when all required scores are filled
+    useEffect(() => {
+        // 1. Immediately bypass if scores + language haven't mutated (guards against background polling and triggers on locale switch)
+        if (lastTriggerHashRef.current === triggerHash) return
+        // 2. Only generate when all required scores are filled
+        if (!isAllScoringComplete) return
+        // 3. Prevent overlapping generation calls
+        if (isGeneratingAiRef.current) return
+        lastTriggerHashRef.current = triggerHash
+        const timer = setTimeout(() => {
+            generateAiSuggestions()
+        }, 300)
+        return () => {
+            clearTimeout(timer)
+        }
+    }, [triggerHash, isAllScoringComplete, generateAiSuggestions])
 
             const handleSubmit = async () => {
         setIsSubmitting(true)
@@ -960,10 +1025,10 @@ export default function EvaluationForm({
                                 })}
                             </div>
 
-                            {/* Блок з кнопкою та коментарем для останньої категорії */}
+                            {/* Блок з кнопкою та коментарем для останньої категорії */}
                             {isLastCategory && (
                                 <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4">
-                                    <div className="flex flex-col gap-1.5">
+                                    <div className="flex flex-col gap-2">
                                         <div className="flex items-center justify-between">
                                             <label
                                                 htmlFor="general-comment-input"
@@ -971,78 +1036,124 @@ export default function EvaluationForm({
                                             >
                                                 {t("evaluation.generalCommentLabel")}
                                             </label>
-                                            <button
-                                                type="button"
-                                                onClick={handleGenerateAIComment}
-                                                disabled={isGeneratingAI || !isAllScoringComplete}
-                                                className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-2.5 sm:py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs cursor-pointer active:scale-[0.98]"
-                                                title={!isAllScoringComplete ? t("evaluation.aiScoreAllRequired") : t("evaluation.aiGenerateDraft")}
-                                            >
-                                                <Wand2
-                                                    className={`w-3.5 h-3.5 text-indigo-600 shrink-0 ${isGeneratingAI ? "animate-spin" : ""}`}/>
-                                                <span>{isGeneratingAI ? t("evaluation.aiGenerating") : t("evaluation.aiGenerateDraft")}</span>
-                                            </button>
+                                            <Skeleton className="h-3 w-4/5 rounded-md bg-slate-100" />
                                         </div>
-                                            <div className="flex items-end gap-2">
+                                    </div>
+
+                                    {/* AI Suggestions Loading Skeleton (Shimmer) */}
+                                    {!isGeneratingAI && aiSuggestions.length > 0 && (
+                                        <div className="flex flex-col gap-2 my-1 animate-in fade-in zoom-in-95 duration-300">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                                                    <span className="text-sm animate-pulse">✨</span>
+                                                    <span className="font-semibold text-indigo-600 animate-pulse drop-shadow-xs">
+                                                        AI is analyzing scores...
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] text-slate-400 font-medium">
+                                                    {t("evaluation.aiClickToApply")}
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                                {aiSuggestions.map((optionText, idx) => {
+                                                    const isSelected = selectedSuggestionIndex === idx && generalComment === optionText
+                                                    const badgeLabel =
+                                                        idx === 0
+                                                            ? t("evaluation.aiFocusStructure")
+                                                            : idx === 1
+                                                                ? t("evaluation.aiFocusBalance")
+                                                                : t("evaluation.aiFocusHighlights")
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setGeneralComment(optionText)
+                                                                setSelectedSuggestionIndex(idx)
+                                                            }}
+                                                            className={`group relative text-left p-3 rounded-xl border text-xs transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 active:scale-[0.99] min-h-24 ${
+                                                                isSelected
+                                                                    ? "bg-indigo-50/90 border-indigo-400 ring-2 ring-indigo-400/30 shadow-xs shadow-indigo-100 text-indigo-950"
+                                                                    : "bg-white hover:bg-slate-50/80 border-slate-200/90 hover:border-indigo-200 text-slate-700 shadow-2xs"
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between w-full">
+                                                                <span
+                                                                    className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase transition-colors ${
+                                                                        isSelected
+                                                                            ? "bg-indigo-600 text-white"
+                                                                            : "bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700"
+                                                                    }`}
+                                                                >
+                                                                    {badgeLabel}
+                                                                </span>
+                                                            </div>
+                                                            <p className="line-clamp-3 leading-relaxed text-[12px] font-normal text-slate-600 group-hover:text-slate-900">
+                                                                {optionText}
+                                                            </p>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Textarea for general comment */}
+                                    <div className="flex items-end gap-2">
                                         <textarea
+                                            id="general-comment-input"
                                             rows={2}
                                             value={generalComment}
                                             onChange={(e) => setGeneralComment(e.target.value)}
                                             placeholder={t("evaluation.generalCommentPlaceholder")}
-                                            className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white resize-none transition-colors"
+                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white resize-none transition-colors"
                                         />
-                                            {voiceCommentsEnabled && (
-                                                <VoiceCommentButton
-                                                    isRecording={activeRecordingKey === "general"}
-                                                    recordingTime={recordingTime}
-                                                    previewUrl={voicePreviewUrls["general"]}
-                                                    disabled={activeRecordingKey !== null && activeRecordingKey !== "general"}
-                                                    onStart={() => startRecording("general")}
-                                                    onStop={stopRecording}
-                                                    onDiscard={() => discardVoice("general")}
-                                                />
-                                            )}
-                                        </div>
-                                        {voiceCommentsEnabled && voicePreviewUrls["general"] && (
-                                            <div
-                                                className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-0.5 mt-1">
-                                                <audio src={voicePreviewUrls["general"]} controls
-                                                       className="h-7 flex-1 min-w-0"/>
-                                            </div>
+                                        {voiceCommentsEnabled && (
+                                            <VoiceCommentButton
+                                                isRecording={activeRecordingKey === "general"}
+                                                recordingTime={recordingTime}
+                                                previewUrl={voicePreviewUrls["general"]}
+                                                disabled={activeRecordingKey !== null && activeRecordingKey !== "general"}
+                                                onStart={() => startRecording("general")}
+                                                onStop={stopRecording}
+                                                onDiscard={() => discardVoice("general")}
+                                            />
                                         )}
                                     </div>
+                                    {voiceCommentsEnabled && voicePreviewUrls["general"] && (
+                                        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-0.5 mt-1">
+                                            <audio src={voicePreviewUrls["general"]} controls className="h-7 flex-1 min-w-0"/>
+                                        </div>
+                                    )}
 
+                                    {/* Desktop Submit Button */}
                                     <div className="hidden md:flex flex-col gap-4">
-                                    {isFormValid ? (
-                                        <button
-                                            type="button"
-                                            onClick={handleSubmit}
-                                            disabled={isSubmitting}
-                                            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors shadow-md shadow-indigo-600/10 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
-                                        >
-                                            {isSubmitting && <div
-                                                className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
-                                            <span>{t("evaluation.submit")}</span>
-                                        </button>
-                                    ) : (
-                                        <div
-                                            className="w-full py-2.5 bg-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl text-center cursor-default select-none border border-slate-200">
-                                            {t("evaluation.fillRequired")}
-                                        </div>
-                                    )}
+                                        {isFormValid ? (
+                                            <button
+                                                type="button"
+                                                onClick={handleSubmit}
+                                                disabled={isSubmitting}
+                                                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors shadow-md shadow-indigo-600/10 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+                                            >
+                                                {isSubmitting && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>}
+                                                <span>{t("evaluation.submit")}</span>
+                                            </button>
+                                        ) : (
+                                            <div className="w-full py-2.5 bg-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs rounded-xl text-center cursor-default select-none border border-slate-200">
+                                                {t("evaluation.fillRequired")}
+                                            </div>
+                                        )}
 
-                                    {error && (
-                                        <div
-                                            className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-[11px] font-semibold text-center">
-                                            {error}
-                                        </div>
-                                    )}
-                                    {success && (
-                                        <div
-                                            className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 text-[11px] font-semibold text-center animate-pulse">
-                                            {t("evaluation.submitSuccess")}
-                                        </div>
-                                    )}
+                                        {error && (
+                                            <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-[11px] font-semibold text-center">
+                                                {error}
+                                            </div>
+                                        )}
+                                        {success && (
+                                            <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 text-[11px] font-semibold text-center animate-pulse">
+                                                {t("evaluation.submitSuccess")}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

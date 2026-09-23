@@ -1,10 +1,10 @@
 import fs from "node:fs"
 import path from "node:path"
-import { generateText } from "ai"
+import { generateObject } from "ai"
 import { getTastingModel } from "../lib/ai/provider"
 import {
     buildTastingPrompt,
-    TASTING_SYSTEM_PROMPT,
+    TASTING_SYSTEM_PROMPT, tastingOptionsSchema,
     type TastingPayload,
 } from "../lib/ai/tastingPrompt"
 
@@ -216,13 +216,19 @@ async function runScenario(scenarioName: string, payload: TastingPayload) {
         console.log(`⚠️ No API key detected (GOOGLE_GENERATIVE_AI_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY).`)
         console.log(`   To execute live LLM calls, please add your key to .env or .env.local:`)
         console.log(`   GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key`)
-        console.log(`\n[PREDICTED / DESIGNED OUTPUT ACCORDING TO PROMPT CONSTRAINTS]:`)
+        console.log(`\n[PREDICTED / DESIGNED 3-OPTION SHORTHAND OUTPUT]:`)
         if (payload.locale === "uk") {
-            console.log(`   "Зразок демонструє бездоганну чистоту та блиск, а також виразний, гармонійний ароматичний профіль високої якості. Смак вирізняється чудовим балансом кислотності та структури з тривалим і витонченим післясмаком, що підтверджує високу сортову типовість."`)
+            console.log(`   [Option 1 - Structure]: "Бездоганна чистота й блиск з виразною, живою кислотністю. Тонка мінеральна напруга та витончений лінійний посмак."`)
+            console.log(`   [Option 2 - Balance]:   "Зразкова гармонія компонентів. Текстура шовковиста, чудова сортова типовість з тривалим чистим фінішем."`)
+            console.log(`   [Option 3 - Verdict]:   "Породисте вино високого класу. Свіже, зібране, демонструє відмінний баланс та благородну витримку."`)
         } else if (payload.locale === "en") {
-            console.log(`   "The wine presents a sound appearance and clean base profile, though the aromatic intensity remains modest and simple. On the palate, the structure shows acceptable commercial balance but lacks mid-palate depth and persistence, resulting in a relatively short finish."`)
+            console.log(`   [Option 1 - Structure]: "Firm, fine-grained tannins with vibrant acidity framing a taut palate. Finishes dry and linear with focused grip."`)
+            console.log(`   [Option 2 - Balance]:   "Well-knit and harmonious proportion. Alcohol and fruit weight integrate cleanly; shows solid varietal typicity."`)
+            console.log(`   [Option 3 - Verdict]:   "Modest mid-palate density and slightly muted nose, but commercially sound, clean, and accessible."`)
         } else {
-            console.log(`   "A tétel megjelenése megfelelő, azonban az illatban komoly tisztasági hiba és tompaság mutatkozik, ami strukturális hibára utal. Ízben a harmónia megbomlik, a tétel diszharmonikus, a lecsengés pedig rövid és kesernyés maradványérzettel zárul."`)
+            console.log(`   [Option 1 - Structure]: "Laza szerkezet, tompa savak és lapos középpalátás. A lecsengés rövid és kissé kesernyés."`)
+            console.log(`   [Option 2 - Balance]:   "Hiányzik az egyensúly, a tétel megbomlott harmóniát és tompa aromatikát mutat."`)
+            console.log(`   [Option 3 - Verdict]:   "Tisztasági hiba az illatban, oxidáció nyomai és fáradt szerkezet jellemzi."`)
         }
         return
     }
@@ -230,13 +236,18 @@ async function runScenario(scenarioName: string, payload: TastingPayload) {
     try {
         const startTime = Date.now()
         const model = getTastingModel()
-        const result = await generateText({
+        const { object } = await generateObject({
             model,
+            schema: tastingOptionsSchema,
             system: TASTING_SYSTEM_PROMPT,
             prompt,
         })
         const durationMs = Date.now() - startTime
-        console.log(`✅ [GENERATED TASTING SUMMARY (${durationMs}ms)]:\n${result.text.trim()}`)
+        console.log(`✅ [GENERATED 3 TASTING OPTIONS (${durationMs}ms)]:`)
+        object.options.forEach((opt, idx) => {
+            const label = idx === 0 ? "Structure" : idx === 1 ? "Balance" : "Verdict"
+            console.log(`   [Option ${idx + 1} - ${label}]: ${opt}`)
+        })
     } catch (err: any) {
         console.error(`❌ [GENERATION ERROR]:`, err.message || err)
     }
