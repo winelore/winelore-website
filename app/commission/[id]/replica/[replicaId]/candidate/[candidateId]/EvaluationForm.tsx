@@ -32,6 +32,8 @@ import {
     isNotCurrentCandidateError,
     isScoringComplete,
     orderPropertiesForDisplay,
+    buildTastingPayload,
+    type TastingPayload,
     type EvaluationCategory,
     type EvaluationProperty,
 } from '@winelore/core/evaluation';

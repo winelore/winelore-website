@@ -486,8 +486,8 @@ export async function seedCompetitionScenarioAction(data: SeederFormData, log: (
         const replicaId = replicaRes.createCommissionReplica.id;
         log(`   Репліку "${cleanReplicaName}" створено (ID: ${replicaId})`);
 
-        // Генеруємо нового голову для репліки!
-        const headAuid = generateAuid();
+        // Для першої репліки призначаємо поточного користувача-ініціатора головою, для решти генеруємо
+        const headAuid = rIdx === 0 ? auidInt : generateAuid();
         const headRes = await sdk.DevAddCommissionReplicaMember({
           id: replicaId,
           input: { auid: [headAuid], role: 'HEAD' }

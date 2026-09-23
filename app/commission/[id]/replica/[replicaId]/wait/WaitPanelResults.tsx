@@ -1,10 +1,11 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, Loader2, Search } from "lucide-react";
 import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
 import { useUsernames } from "@/hooks/useUsernames";
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates";
 import { normalizeAuids, aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue, calculateDeltaOutliers, formatSignedDiff, buildOutcomePropertyMap } from '@winelore/core';
 import type { PropertyMeta, TemplateEdition } from '@winelore/core';
 import { MemberEvaluationSection } from "../../../../EvaluationCommentsDisplay";
@@ -20,6 +21,7 @@ import {
     parseEvaluationTotal,
 } from '@winelore/core';
 import { getPanelResultsAction } from "./actions";
+
 interface WaitPanelResultsProps {
     commissionId: string;
     replicaId: string;
@@ -105,21 +107,34 @@ export default function WaitPanelResults({
         const auidStr = Cookies.get("auid");
         if (auidStr) setMyAuid(auidStr);
     }, []);
-    useEffect(() => {
-        let mounted = true;
-        setLoading(true);
-        getPanelResultsAction(commissionId, replicaId, panelId)
-            .then((res) => {
-                if (mounted && res) {
-                    setData(res);
-                }
-            })
-            .catch(console.error)
-            .finally(() => {
-                if (mounted) setLoading(false);
-            });
-        return () => { mounted = false; };
+    const isFetchingRef = useRef(false);
+
+    const reloadResults = useCallback(async () => {
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
+        try {
+            const res = await getPanelResultsAction(commissionId, replicaId, panelId);
+            if (res) {
+                setData(res);
+            }
+        } catch (err) {
+            console.error("Failed to reload panel results:", err);
+        } finally {
+            isFetchingRef.current = false;
+            setLoading(false);
+        }
     }, [commissionId, replicaId, panelId]);
+
+    useEffect(() => {
+        setLoading(true);
+        reloadResults();
+    }, [reloadResults]);
+
+    useEvaluationLiveUpdates({
+        commissionId,
+        replicaId,
+        onUpdate: reloadResults,
+    });
     const allPersonAuids = useMemo(() => {
         if (!data?.commission) return [];
         const auids = new Set<string>();

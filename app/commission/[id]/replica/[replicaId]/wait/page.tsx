@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, use, useMemo, useRef } from "react"
+import React, { useState, useEffect, useCallback, use, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
@@ -9,6 +9,8 @@ import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
+
 import {
     getWaitDataAction,
     markCandidateEvaluatedAction,
@@ -64,76 +66,79 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         }
     }, [commissionId, replicaId, router]);
 
-    // 2. Polling loop with in-flight and unmount guards
-    useEffect(() => {
-        if (auid === null || isRedirecting) return;
+    // 2. Real-time updates via SSE with in-flight guard and relaxed fallback polling
+    const isFetchingRef = useRef(false);
 
-        let isMounted = true;
-        let isFetching = false;
+    const fetchData = useCallback(async () => {
+        if (auid === null || isRedirecting || isFetchingRef.current) return;
+        isFetchingRef.current = true;
+        try {
+            const data = await getWaitDataAction(commissionId, replicaId);
+            if (isRedirecting) return;
 
-        const fetchData = async () => {
-            if (!isMounted || isRedirecting || isFetching) return;
-            isFetching = true;
-            try {
-                const data = await getWaitDataAction(commissionId, replicaId);
-                if (!isMounted || isRedirecting) return;
+            setRoom(data);
 
-                setRoom(data);
-
-                if (data.myEvaluation && hasEvaluationData(data.myEvaluation, data.flags)) {
-                    clearCachedWaitEvaluation(commissionId, replicaId);
-                    setCachedEvaluation(null);
-                }
-
-                // Where a waiting judge belongs is core's rule, shared with the
-                // app, so both are sent to the same place by the same state.
-                const cached = readCachedWaitEvaluation(commissionId, replicaId);
-                const destination = resolveWaitDestination({
-                    replicaStatus: data.replicaStatus,
-                    isPanelFinished: data.isPanelFinished,
-                    currentCandidateId: data.currentCandidateId,
-                    hasCompletedCurrentCandidate: data.hasCompletedCurrentCandidate,
-                    waitingOnCandidateId: waitingOnRef.current,
-                    recentSubmission: cached
-                        ? { candidateId: cached.candidateId, isComplete: cached.isComplete }
-                        : null,
-                });
-
-                const base = `/commission/${commissionId}`;
-                switch (destination.kind) {
-                    case "results":
-                        setIsRedirecting(true);
-                        window.location.href = `${base}/results`;
-                        return;
-                    case "panelSummary":
-                        if (!data.currentPanelId) break;
-                        setIsRedirecting(true);
-                        window.location.href = `${base}/replica/${replicaId}/panel-summary`;
-                        return;
-                    case "candidate":
-                        setIsRedirecting(true);
-                        window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`;
-                        return;
-                    case "wait":
-                        break;
-                }
-
-                waitingOnRef.current = data.currentCandidateId;
-                setIsSwitching(false);
-            } catch (err) {
-                console.error("Polling error", err);
-            } finally {
-                isFetching = false;
+            if (data.myEvaluation && hasEvaluationData(data.myEvaluation, data.flags)) {
+                clearCachedWaitEvaluation(commissionId, replicaId);
+                setCachedEvaluation(null);
             }
-        };
 
-        fetchData();
-        const interval = setInterval(fetchData, 3000);
-        return () => {
-            isMounted = false;
-            clearInterval(interval);
-        };
+            // Where a waiting judge belongs is core's rule, shared with the
+            // app, so both are sent to the same place by the same state.
+            const cached = readCachedWaitEvaluation(commissionId, replicaId);
+            const destination = resolveWaitDestination({
+                replicaStatus: data.replicaStatus,
+                isPanelFinished: data.isPanelFinished,
+                currentCandidateId: data.currentCandidateId,
+                hasCompletedCurrentCandidate: data.hasCompletedCurrentCandidate,
+                waitingOnCandidateId: waitingOnRef.current,
+                recentSubmission: cached
+                    ? { candidateId: cached.candidateId, isComplete: cached.isComplete }
+                    : null,
+            });
+
+            const base = `/commission/${commissionId}`;
+            switch (destination.kind) {
+                case "results":
+                    setIsRedirecting(true);
+                    window.location.href = `${base}/results`;
+                    return;
+                case "panelSummary":
+                    if (!data.currentPanelId) break;
+                    setIsRedirecting(true);
+                    window.location.href = `${base}/replica/${replicaId}/panel-summary`;
+                    return;
+                case "candidate":
+                    setIsRedirecting(true);
+                    window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`;
+                    return;
+                case "wait":
+                    break;
+            }
+
+            waitingOnRef.current = data.currentCandidateId;
+            setIsSwitching(false);
+        } catch (err) {
+            console.error("Evaluation update error", err);
+        } finally {
+            isFetchingRef.current = false;
+        }
     }, [commissionId, replicaId, auid, isRedirecting]);
+
+    // Initial fetch when authenticated
+    useEffect(() => {
+        if (auid !== null && !isRedirecting) {
+            fetchData();
+        }
+    }, [auid, isRedirecting, fetchData]);
+
+    // Live Server-Sent Events subscription
+    useEvaluationLiveUpdates({
+        commissionId,
+        replicaId,
+        onUpdate: fetchData,
+        enabled: auid !== null && !isRedirecting,
+    });
 
     const {
         progress,

@@ -1,7 +1,9 @@
 import { useCallback, useState } from "react"
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -11,6 +13,7 @@ import * as Haptics from "expo-haptics"
 import {
     GENERAL_COMMENT_KEY,
     buildCommentsPayload,
+    buildTastingPayload,
     orderPropertiesForDisplay,
     type EvaluationCommentInput,
     type EvaluationCategory,
@@ -18,6 +21,8 @@ import {
 } from "@winelore/core/evaluation"
 import type { CompetitionFeatureFlags, NumericInputErrorReason } from "@winelore/core"
 import { useTranslation } from "../i18n/LocaleProvider"
+import { getWebOrigin } from "../navigation/destinations"
+import { Icon } from "../ui/Icon"
 import { useEvaluationForm } from "./useEvaluationForm"
 import { CommentField } from "./CommentField"
 import { PropertyInput } from "./PropertyInput"
@@ -35,6 +40,10 @@ export interface EvaluationScreenLabels {
     numericError: (reason: NumericInputErrorReason) => string
     noTemplate: string
     submitFailed: string
+    aiGenerateDraft: string
+    aiGenerating: string
+    aiScoreAllRequired: string
+    aiDraftFailed: string
 }
 
 interface EvaluationScreenProps {
@@ -67,11 +76,88 @@ export function EvaluationScreen({
     uploadVoice,
     onSubmit,
 }: EvaluationScreenProps) {
-    const { t } = useTranslation()
+    const { t, locale } = useTranslation()
     const form = useEvaluationForm(categories, candidateId)
     const voice = useVoiceRecorder()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+    const [aiError, setAiError] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+
+    const handleGenerateAIComment = useCallback(async () => {
+        if (isGeneratingAI || !form.scoringComplete) return
+        setIsGeneratingAI(true)
+        setAiError(null)
+        try {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            const payload = buildTastingPayload({
+                categories,
+                values: form.values,
+                smartValues: form.smartValues,
+                locale: (locale as "en" | "uk" | "hu") || "en",
+                beverageType: beverageName || "Wine",
+                candidateCode: candidateCode || undefined,
+                visibleAttributes,
+            })
+
+            const endpoint = `${getWebOrigin()}/api/generate-comment`
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+
+            if (!response.ok) {
+                const errJson = await response.json().catch(() => ({}))
+                throw new Error(errJson.error || labels.aiDraftFailed)
+            }
+
+            // The web form streams the draft token-by-token; React Native's
+            // fetch may not expose a reader, so stream when available and
+            // fall back to reading the whole body as text.
+            const bodyWithReader = response.body as unknown as {
+                getReader?: () => { read(): Promise<{ done: boolean; value?: Uint8Array }> }
+            } | null
+            const reader = bodyWithReader?.getReader?.()
+            if (reader) {
+                const decoder = new TextDecoder()
+                let accumulated = ""
+                form.setComment(GENERAL_COMMENT_KEY, "")
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+                    if (value) {
+                        accumulated += decoder.decode(value, { stream: true })
+                        form.setComment(GENERAL_COMMENT_KEY, accumulated)
+                    }
+                }
+                if (accumulated) {
+                    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                }
+            } else {
+                const text = await response.text()
+                if (text) {
+                    form.setComment(GENERAL_COMMENT_KEY, text)
+                    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                }
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : labels.aiDraftFailed
+            setAiError(message)
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+        } finally {
+            setIsGeneratingAI(false)
+        }
+    }, [
+        isGeneratingAI,
+        form,
+        categories,
+        locale,
+        beverageName,
+        candidateCode,
+        visibleAttributes,
+        labels.aiDraftFailed,
+    ])
 
     /**
      * The drafts as core reads them: text and recording under one key per
@@ -188,8 +274,45 @@ export function EvaluationScreen({
                 ))}
 
                 <View style={styles.category}>
-                    <Text style={styles.categoryName}>{t("evaluation.generalCommentLabel")}</Text>
+                    <View style={styles.commentHeaderRow}>
+                        <Text style={styles.categoryName}>{t("evaluation.generalCommentLabel")}</Text>
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                                form.scoringComplete ? labels.aiGenerateDraft : labels.aiScoreAllRequired
+                            }
+                            accessibilityHint={
+                                form.scoringComplete ? undefined : labels.aiScoreAllRequired
+                            }
+                            disabled={isGeneratingAI || !form.scoringComplete}
+                            onPress={handleGenerateAIComment}
+                            style={({ pressed }) => [
+                                styles.aiButton,
+                                (!form.scoringComplete || isGeneratingAI) && styles.aiButtonDisabled,
+                                pressed && styles.pressed,
+                            ]}
+                        >
+                            {isGeneratingAI ? (
+                                <ActivityIndicator size="small" color={palette.accent} />
+                            ) : (
+                                <Icon
+                                    name="wand"
+                                    size={14}
+                                    color={form.scoringComplete ? palette.accent : palette.textFaint}
+                                />
+                            )}
+                            <Text
+                                style={[
+                                    styles.aiButtonText,
+                                    (!form.scoringComplete || isGeneratingAI) && styles.aiButtonTextDisabled,
+                                ]}
+                            >
+                                {isGeneratingAI ? labels.aiGenerating : labels.aiGenerateDraft}
+                            </Text>
+                        </Pressable>
+                    </View>
                     {commentFieldFor(GENERAL_COMMENT_KEY, t("evaluation.generalCommentPlaceholder"))}
+                    {aiError ? <Text style={styles.aiErrorText}>{aiError}</Text> : null}
                 </View>
 
                 {voice.error ? (
@@ -269,6 +392,41 @@ const styles = StyleSheet.create({
     attributeValue: { ...type.caption, fontWeight: "600", color: palette.text },
     category: { gap: spacing.sm },
     categoryName: { ...type.title, color: palette.text },
+    commentHeaderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    aiButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingVertical: 5,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.md,
+        backgroundColor: palette.accentSoft,
+        borderWidth: 1,
+        borderColor: palette.accentBorder,
+    },
+    aiButtonDisabled: {
+        backgroundColor: palette.surface,
+        borderColor: palette.border,
+        opacity: 0.6,
+    },
+    aiButtonText: {
+        ...type.caption,
+        fontWeight: "600",
+        color: palette.accent,
+    },
+    aiButtonTextDisabled: {
+        color: palette.textFaint,
+    },
+    aiErrorText: {
+        ...type.caption,
+        color: palette.danger,
+        marginTop: 2,
+    },
+    pressed: { opacity: 0.75 },
     properties: { gap: spacing.xs },
     property: { gap: spacing.xs },
     voiceError: { ...type.caption, fontWeight: "600", color: palette.danger },

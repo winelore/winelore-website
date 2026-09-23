@@ -75,6 +75,7 @@ const GLYPHS = {
     more: { ios: "ellipsis.circle", android: "more_horiz" }, // MoreHorizontal
     microphone: { ios: "mic", android: "mic" }, // Mic
     starFill: { ios: "star.fill", android: "star" },
+    wand: { ios: "wand.and.stars", android: "auto_awesome" }, // Wand2 / Sparkles
     // Status glyphs — see StatusGlyph in @winelore/core/dashboard.
     play: { ios: "play.circle", android: "play_circle" }, // PlayCircle
     check: { ios: "checkmark.circle", android: "check_circle" }, // CheckCircle

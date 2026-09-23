@@ -5,24 +5,13 @@ export interface TastingPropertyScore {
     score: number
     maxScore: number
 }
+import type {
+    TastingCategoryScore,
+    TastingPayload,
+    TastingPropertyScore,
+} from "@winelore/core/evaluation"
 
-export interface TastingCategoryScore {
-    name: string
-    score: number
-    maxScore: number
-    properties?: TastingPropertyScore[]
-}
-
-export interface TastingPayload {
-    locale: "en" | "uk" | "hu"
-    beverageType?: string | null
-    candidateCode?: string | null
-    templateName?: string | null
-    totalScore?: number | null
-    maxTotalScore?: number | null
-    categories: TastingCategoryScore[]
-    attributes?: Record<string, string | number | boolean | null> | null
-}
+export type { TastingCategoryScore, TastingPayload, TastingPropertyScore }
 
 export const tastingOptionsSchema = z.object({
     options: z.array(z.string()).length(3).describe(
