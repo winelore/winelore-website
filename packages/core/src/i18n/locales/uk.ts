@@ -58,6 +58,7 @@ const uk: TranslationKey = {
     preview: "Перегляд",
     saveDates: "Зберегти дати",
     editPlannedDates: "Редагувати заплановані дати",
+    edit: "Редагувати",
     backHome: "На головну",
     change: "Змінити",
     close: "Закрити",

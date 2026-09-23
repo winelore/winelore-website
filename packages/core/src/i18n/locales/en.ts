@@ -56,6 +56,7 @@ const en = {
     preview: "Preview",
     saveDates: "Save dates",
     editPlannedDates: "Edit planned dates",
+    edit: "Edit",
     backHome: "Back to Home",
     change: "Change",
     close: "Close",

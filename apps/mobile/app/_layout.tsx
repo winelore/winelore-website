@@ -77,8 +77,7 @@ function RootStack() {
                         ...(Platform.OS === "android" ? { sheetCornerRadius: 28 } : {}),
                     }}
                 />
-                {/* The beverage page's modals — the web's edit and samples dialogs — as page sheets. */}
-                <Stack.Screen name="beverage/[id]/edit" options={pageSheet} />
+                {/* The beverage page's modals — the web's samples dialog — as page sheets. */}
                 <Stack.Screen name="beverage/[id]/samples/[batchId]" options={pageSheet} />
                 {/*
                  * A beverage from the map, as Apple Maps opens a place: a sheet

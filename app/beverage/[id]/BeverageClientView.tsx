@@ -7,26 +7,29 @@ import { toast } from "sonner"
 import {
     Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin, Calendar, Award, ArrowLeft, Clock,
     Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send, Pencil, FlaskConical, Plus, ExternalLink,
-    Check, X
+    Check, X, Loader2, Trash2, UserPlus
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { AppHeader } from "@/components/AppHeader"
-import { submitBeverageForReviewAction, changeBeverageNameAction, changeBeverageOriginAction } from "../actions"
+import {
+    submitBeverageForReviewAction,
+    changeBeverageNameAction,
+    changeBeverageOriginAction,
+    registerBeverageProducerAction,
+    unregisterBeverageProducerAction,
+} from "../actions"
+import { searchUserByUsernameAction } from "@/app/commission/actions"
 import { BackLink } from "@/components/BackLink"
-import { EditBeverageModal } from "./EditBeverageModal"
 import { BatchCard } from "./BatchCard"
 import { SamplesListModal, type ModalBatchData } from "./SamplesListModal"
 import {
-    batchFigures,
     beverageStatusTone,
     beverageTabs,
     defaultBeverageTab,
     groupAwardsByCompetition,
     isBeverageProducer,
     isBeverageTab,
-    producerName,
-    producerRoleKey,
     technicalSpecs as readTechnicalSpecs,
     type BeverageAward,
     type BeverageBatch,
@@ -159,35 +162,24 @@ function AwardCard({ award }: { award: AwardType }) {
     )
 }
 
-function ProducerBadge({ producer }: { producer: ProducerDetails }) {
-    const { t } = useTranslation()
+function getAvatarGradient(auid: number): string {
+    const gradients = [
+        "from-pink-500 via-rose-500 to-red-500",
+        "from-indigo-500 via-purple-500 to-pink-500",
+        "from-blue-500 via-teal-500 to-emerald-500",
+        "from-amber-400 via-orange-500 to-red-500",
+        "from-violet-600 via-purple-600 to-indigo-600",
+        "from-cyan-500 via-blue-500 to-indigo-500",
+    ]
+    return gradients[Math.abs(auid) % gradients.length]
+}
 
-    const getRoleColors = (role: string) => {
-        switch (role.toUpperCase()) {
-            case "MAKER":
-                return "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100/70"
-            case "OWNER":
-                return "bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100/70"
-            case "DISTRIBUTOR":
-                return "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100/70"
-            case "BOTTLER":
-                return "bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100/70"
-            default:
-                return "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-        }
-    }
-
-    const roleKey = producerRoleKey(producer.role)
-    const displayRole: string = roleKey ? t(roleKey) : producer.role
-    const renderName = () => producerName(producer, t("common.unknownUser"))
-
-    return (
-        <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all duration-300 hover:-translate-y-0.5 ${getRoleColors(producer.role)}`}>
-            <span className="font-bold text-slate-900">{renderName()}</span>
-            <span className="opacity-30 text-current font-normal">•</span>
-            <span className="uppercase tracking-wider text-[8px] font-extrabold">{displayRole}</span>
-        </div>
-    )
+function producerLabel(p: ProducerDetails): string {
+    if (p.displayName) return p.displayName
+    if (p.username) return `@${p.username}`
+    if (p.producerId) return `ID ${p.producerId}`
+    if (p.auid && p.auid.length > 0) return `AUID ${p.auid[0]}`
+    return "Producer"
 }
 
 export default function BeverageClientView({ initialData, currentAuid, isNotFound, isError }: Props) {
@@ -207,12 +199,19 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     }, [])
     const [beverageStatus, setBeverageStatus] = useState<BeverageStatus | null>(initialData?.beverage?.status || null)
     const [isSubmittingForReview, setIsSubmittingForReview] = useState(false)
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isMutating, setIsMutating] = useState(false)
     const [isEditingName, setIsEditingName] = useState(false)
     const [editNameData, setEditNameData] = useState("")
     const [isEditingOrigin, setIsEditingOrigin] = useState(false)
     const [editOriginData, setEditOriginData] = useState({ latitude: "", longitude: "" })
+    const [isAddingProducer, setIsAddingProducer] = useState(false)
+    const [producerUsernameInput, setProducerUsernameInput] = useState("")
+    const [isSearchingProducer, setIsSearchingProducer] = useState(false)
+    const [producerSearchError, setProducerSearchError] = useState<string | null>(null)
+    const [foundProducer, setFoundProducer] = useState<{ auid: number; username: string; displayName: string } | null>(null)
+    const [selectedProducerRole, setSelectedProducerRole] = useState<"MAKER" | "BOTTLER">("MAKER")
+    const [isAddingProducerMutating, setIsAddingProducerMutating] = useState(false)
+    const [removingProducerId, setRemovingProducerId] = useState<string | null>(null)
     const [selectedBatchForSamples, setSelectedBatchForSamples] = useState<ModalBatchData | null>(null)
     const [beverageEdits, setBeverageEdits] = useState<{
         name?: string
@@ -339,6 +338,80 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
             toast.error(err.message || t("beverage.edit.saveError"))
         } finally {
             setIsMutating(false)
+        }
+    }
+
+    useEffect(() => {
+        const trimmed = producerUsernameInput.trim().replace(/^@/, "")
+        if (!trimmed || !isAddingProducer) {
+            if (!trimmed) {
+                setFoundProducer(null)
+                setProducerSearchError(null)
+            }
+            return
+        }
+        const timer = setTimeout(async () => {
+            setIsSearchingProducer(true)
+            setProducerSearchError(null)
+            setFoundProducer(null)
+            try {
+                const res = await searchUserByUsernameAction(trimmed)
+                if (res.success && res.user) {
+                    setFoundProducer(res.user)
+                } else {
+                    setProducerSearchError(res.error || t("beverage.edit.userNotFound"))
+                }
+            } catch (err: any) {
+                setProducerSearchError(err.message || t("beverage.edit.searchError"))
+            } finally {
+                setIsSearchingProducer(false)
+            }
+        }, 400)
+        return () => clearTimeout(timer)
+    }, [producerUsernameInput, isAddingProducer, t])
+
+    const openAddProducer = () => {
+        setProducerUsernameInput("")
+        setFoundProducer(null)
+        setProducerSearchError(null)
+        setIsAddingProducer(true)
+    }
+
+    const handleAddProducer = async () => {
+        if (!foundProducer || isAddingProducerMutating) return
+        setIsAddingProducerMutating(true)
+        try {
+            const updated = await registerBeverageProducerAction(beverage.id, foundProducer.auid, selectedProducerRole)
+            const enrichedProducers = (updated.producers as unknown as ProducerDetails[]).map((p) =>
+                (p.producerId === String(foundProducer.auid) || (p.auid && p.auid[0] === foundProducer.auid))
+                    ? { ...p, displayName: foundProducer.displayName, username: foundProducer.username }
+                    : p
+            )
+            setBeverageEdits((prev) => ({ ...prev, producers: enrichedProducers }))
+            setProducerUsernameInput("")
+            setFoundProducer(null)
+            setIsAddingProducer(false)
+            router.refresh()
+            toast.success(t("beverage.edit.saveSuccess"))
+        } catch (err: any) {
+            toast.error(err.message || t("beverage.edit.addProducerError"))
+        } finally {
+            setIsAddingProducerMutating(false)
+        }
+    }
+
+    const handleRemoveProducer = async (producerDetailsId: string) => {
+        if (removingProducerId) return
+        setRemovingProducerId(producerDetailsId)
+        try {
+            const updated = await unregisterBeverageProducerAction(beverage.id, producerDetailsId)
+            setBeverageEdits((prev) => ({ ...prev, producers: updated.producers as unknown as ProducerDetails[] }))
+            router.refresh()
+            toast.success(t("beverage.edit.saveSuccess"))
+        } catch (err: any) {
+            toast.error(err.message || t("beverage.edit.removeProducerError"))
+        } finally {
+            setRemovingProducerId(null)
         }
     }
 
@@ -628,24 +701,148 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                             <Users className="w-3.5 h-3.5 text-indigo-500" />
                                             <span>{t("beverage.producers")}</span>
                                         </div>
-                                        {isProducer && (
+                                        {isProducer && !isAddingProducer && (
                                             <button
-                                                onClick={() => setIsEditModalOpen(true)}
-                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
-                                                title={t("beverage.edit.producersTitle")}
+                                                onClick={openAddProducer}
+                                                disabled={isAddingProducerMutating || removingProducerId !== null}
+                                                className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 text-xs font-semibold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
                                             >
-                                                <Pencil className="w-4 h-4" />
+                                                <Plus className="w-3.5 h-3.5" />
+                                                <span>{t("beverage.edit.addProducer")}</span>
                                             </button>
                                         )}
                                     </div>
                                     {beverage.producers.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-col gap-2">
                                             {beverage.producers.map((p) => (
-                                                <ProducerBadge key={p.id} producer={p} />
+                                                <div
+                                                    key={p.id}
+                                                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
+                                                >
+                                                    <div
+                                                        className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient((p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
+                                                    >
+                                                        {producerLabel(p).slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-bold text-slate-800 truncate">{producerLabel(p)}</p>
+                                                        <p className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wide">{p.role}</p>
+                                                    </div>
+                                                    {isProducer && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveProducer(p.id)}
+                                                            disabled={removingProducerId === p.id}
+                                                            aria-label={t("beverage.edit.removeProducer")}
+                                                            title={t("beverage.edit.removeProducer")}
+                                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                                                        >
+                                                            {removingProducerId === p.id ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-sm font-medium text-slate-400">{t("common.na")}</div>
+                                        !isAddingProducer && <div className="text-sm font-medium text-slate-400">{t("common.na")}</div>
+                                    )}
+
+                                    {isProducer && isAddingProducer && (
+                                        <div className="mb-1 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-slate-800">{t("beverage.edit.producersTitle")}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsAddingProducer(false)}
+                                                    className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <div className="relative">
+                                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">@</span>
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    placeholder={t("beverage.edit.usernameLabel")}
+                                                    value={producerUsernameInput}
+                                                    onChange={(e) => {
+                                                        setProducerUsernameInput(e.target.value)
+                                                        if (foundProducer) setFoundProducer(null)
+                                                        if (producerSearchError) setProducerSearchError(null)
+                                                    }}
+                                                    onKeyDown={e => {
+                                                        if (e.key === "Enter" && foundProducer) handleAddProducer()
+                                                        if (e.key === "Escape") setIsAddingProducer(false)
+                                                    }}
+                                                    className="w-full pl-8 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                                />
+                                                {isSearchingProducer && (
+                                                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-indigo-600 flex items-center">
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {producerSearchError && (
+                                                <p className="flex items-center gap-1.5 text-xs text-rose-500 font-semibold">
+                                                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                                    <span>{producerSearchError}</span>
+                                                </p>
+                                            )}
+                                            {foundProducer && (
+                                                <div className="flex items-center gap-3 animate-fade-in">
+                                                    <div
+                                                        className={`flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br ${getAvatarGradient(foundProducer.auid)} text-white font-bold text-xs shrink-0 border-2 border-white shadow-sm`}
+                                                    >
+                                                        {foundProducer.displayName.slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-bold text-slate-800 truncate">{foundProducer.displayName}</p>
+                                                        <p className="text-[10px] text-indigo-600 font-semibold">@{foundProducer.username}</p>
+                                                    </div>
+                                                    <select
+                                                        value={selectedProducerRole}
+                                                        onChange={(e) => setSelectedProducerRole(e.target.value as "MAKER" | "BOTTLER")}
+                                                        className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 outline-none cursor-pointer shrink-0"
+                                                    >
+                                                        <option value="MAKER">{t("roles.maker")}</option>
+                                                        <option value="BOTTLER">{t("roles.bottler")}</option>
+                                                    </select>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-end gap-2 mt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsAddingProducer(false)}
+                                                    disabled={isAddingProducerMutating}
+                                                    className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                                                >
+                                                    {t("competition.cancel")}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddProducer}
+                                                    disabled={!foundProducer || isAddingProducerMutating}
+                                                    className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-1 disabled:opacity-75 cursor-pointer"
+                                                >
+                                                    {isAddingProducerMutating ? (
+                                                        <>
+                                                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                            <span>{t("beverage.edit.saving")}</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <UserPlus className="w-3.5 h-3.5" />
+                                                            <span>{t("beverage.edit.addProducer")}</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
 
@@ -855,13 +1052,6 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                     </div>
                 </div>
             </main>
-
-            <EditBeverageModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                beverage={beverage}
-                onUpdated={(patch) => setBeverageEdits((prev) => ({ ...prev, ...patch }))}
-            />
 
             <SamplesListModal
                 isOpen={!!selectedBatchForSamples}

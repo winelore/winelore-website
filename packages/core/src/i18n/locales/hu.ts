@@ -56,6 +56,7 @@ const hu = {
       preview: "Előnézet",
       saveDates: "Dátumok mentése",
       editPlannedDates: "Tervezett dátumok szerkesztése",
+      edit: "Szerkesztés",
       backHome: "Vissza a főoldalra",
       change: "Módosítás",
       close: "Bezárás",
