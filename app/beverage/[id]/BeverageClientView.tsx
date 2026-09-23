@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
     Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin, Calendar, Award, ArrowLeft, Clock,
-    Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send, Pencil, FlaskConical, Plus, ExternalLink
+    Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send, Pencil, FlaskConical, Plus, ExternalLink,
+    Check, X
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { AppHeader } from "@/components/AppHeader"
-import { submitBeverageForReviewAction } from "../actions"
+import { submitBeverageForReviewAction, changeBeverageNameAction, changeBeverageOriginAction } from "../actions"
 import { BackLink } from "@/components/BackLink"
 import { EditBeverageModal } from "./EditBeverageModal"
 import { BatchCard } from "./BatchCard"
@@ -206,6 +208,11 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     const [beverageStatus, setBeverageStatus] = useState<BeverageStatus | null>(initialData?.beverage?.status || null)
     const [isSubmittingForReview, setIsSubmittingForReview] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [isMutating, setIsMutating] = useState(false)
+    const [isEditingName, setIsEditingName] = useState(false)
+    const [editNameData, setEditNameData] = useState("")
+    const [isEditingOrigin, setIsEditingOrigin] = useState(false)
+    const [editOriginData, setEditOriginData] = useState({ latitude: "", longitude: "" })
     const [selectedBatchForSamples, setSelectedBatchForSamples] = useState<ModalBatchData | null>(null)
     const [beverageEdits, setBeverageEdits] = useState<{
         name?: string
@@ -275,6 +282,65 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         ...beverageEdits,
     }
     const isProducer = isBeverageProducer(beverage.producers, currentAuid)
+    const router = useRouter()
+
+    const openEditName = () => {
+        setEditNameData(beverage.name)
+        setIsEditingName(true)
+    }
+
+    const openEditOrigin = () => {
+        setEditOriginData({
+            latitude: beverage.origin?.latitude != null ? String(beverage.origin.latitude) : "",
+            longitude: beverage.origin?.longitude != null ? String(beverage.origin.longitude) : "",
+        })
+        setIsEditingOrigin(true)
+    }
+
+    const handleSaveName = async () => {
+        if (!editNameData.trim()) {
+            toast.error(t("beverage.edit.nameRequired"))
+            return
+        }
+        setIsMutating(true)
+        try {
+            const updated = await changeBeverageNameAction(beverage.id, editNameData.trim())
+            setBeverageEdits((prev) => ({ ...prev, name: updated.name }))
+            setIsEditingName(false)
+            router.refresh()
+        } catch (err: any) {
+            toast.error(err.message || t("beverage.edit.saveError"))
+        } finally {
+            setIsMutating(false)
+        }
+    }
+
+    const handleSaveOrigin = async () => {
+        const latRaw = editOriginData.latitude.trim()
+        const lngRaw = editOriginData.longitude.trim()
+        if ((latRaw && !lngRaw) || (!latRaw && lngRaw)) {
+            toast.error(t("beverage.edit.saveError"))
+            return
+        }
+        const lat = latRaw ? Number(latRaw) : null
+        const lng = lngRaw ? Number(lngRaw) : null
+        if ((latRaw && (lat === null || Number.isNaN(lat))) || (lngRaw && (lng === null || Number.isNaN(lng)))) {
+            toast.error(t("beverage.edit.saveError"))
+            return
+        }
+        setIsMutating(true)
+        try {
+            const origin = lat !== null && lng !== null ? { latitude: lat, longitude: lng } : null
+            const updated = await changeBeverageOriginAction(beverage.id, origin)
+            setBeverageEdits((prev) => ({ ...prev, origin: updated.origin }))
+            setIsEditingOrigin(false)
+            router.refresh()
+        } catch (err: any) {
+            toast.error(err.message || t("beverage.edit.saveError"))
+        } finally {
+            setIsMutating(false)
+        }
+    }
 
     const handleSubmitForReview = async () => {
         if (isSubmittingForReview || beverage.status !== "DRAFT" || !isProducer) return
@@ -375,16 +441,56 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                 </span>
                                             </div>
                                             <h1 ref={navTitleRef} className="text-2xl md:text-3xl font-extrabold text-slate-800 mt-3 mb-2 tracking-tight group-hover/header:text-indigo-950 transition-colors flex items-center justify-center md:justify-start gap-2">
-                                                {beverage.name}
-                                                {isProducer && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsEditModalOpen(true)}
-                                                        title={t("beverage.edit.button")}
-                                                        className="shrink-0 p-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-150 text-slate-400 hover:text-indigo-600 rounded-xl transition-all cursor-pointer"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
+                                                {isEditingName ? (
+                                                    <div className="flex items-center gap-2 mt-1 w-full">
+                                                        <input
+                                                            type="text"
+                                                            autoFocus
+                                                            className="text-xl md:text-2xl font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-xl px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[180px] flex-1 max-w-lg"
+                                                            value={editNameData}
+                                                            onChange={e => setEditNameData(e.target.value)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === "Enter") handleSaveName()
+                                                                if (e.key === "Escape") setIsEditingName(false)
+                                                            }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleSaveName}
+                                                            disabled={isMutating}
+                                                            className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
+                                                            title={t("common.save")}
+                                                        >
+                                                            {isMutating ? (
+                                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                            ) : (
+                                                                <Check className="w-4 h-4" />
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsEditingName(false)}
+                                                            disabled={isMutating}
+                                                            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer"
+                                                            title={t("competition.cancel")}
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {beverage.name}
+                                                        {isProducer && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={openEditName}
+                                                                title={t("beverage.edit.button")}
+                                                                className="shrink-0 p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer active:scale-95"
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </>
                                                 )}
                                             </h1>
                                         </div>
@@ -421,11 +527,81 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
                                 {/* Origin info */}
                                 <div className="space-y-1.5">
-                                    <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                                        <MapPin className="w-3.5 h-3.5 text-indigo-500" />
-                                        <span>{t("beverage.origin")}</span>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                                            <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+                                            <span>{t("beverage.origin")}</span>
+                                        </div>
+                                        {isProducer && (
+                                            isEditingOrigin ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSaveOrigin}
+                                                        disabled={isMutating}
+                                                        className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                                        title={t("common.saveDates")}
+                                                    >
+                                                        {isMutating ? (
+                                                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                        ) : (
+                                                            <Check className="w-3.5 h-3.5" />
+                                                        )}
+                                                        <span>Save</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsEditingOrigin(false)}
+                                                        disabled={isMutating}
+                                                        className="px-2.5 py-1 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                                                        title={t("competition.cancel")}
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={openEditOrigin}
+                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
+                                                    title={t("common.editPlannedDates")}
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                            )
+                                        )}
                                     </div>
-                                    {beverageEdits.origin !== undefined ? (
+                                    {isEditingOrigin ? (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("beverage.edit.latitudeLabel")}</span>
+                                                <input
+                                                    type="number"
+                                                    step="any"
+                                                    className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                    value={editOriginData.latitude}
+                                                    onChange={e => setEditOriginData({ ...editOriginData, latitude: e.target.value })}
+                                                    onKeyDown={e => {
+                                                        if (e.key === "Enter") handleSaveOrigin()
+                                                        if (e.key === "Escape") setIsEditingOrigin(false)
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("beverage.edit.longitudeLabel")}</span>
+                                                <input
+                                                    type="number"
+                                                    step="any"
+                                                    className="text-xs font-semibold text-slate-800 bg-slate-50 border border-indigo-300 focus:border-indigo-600 rounded-lg px-2.5 py-1 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                    value={editOriginData.longitude}
+                                                    onChange={e => setEditOriginData({ ...editOriginData, longitude: e.target.value })}
+                                                    onKeyDown={e => {
+                                                        if (e.key === "Enter") handleSaveOrigin()
+                                                        if (e.key === "Escape") setIsEditingOrigin(false)
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : beverageEdits.origin !== undefined ? (
                                         // Origin was just edited — originParts was geocoded from the old
                                         // coordinates server-side, so show the raw numbers instead of a
                                         // now-possibly-stale place name until the page next reloads.
@@ -447,9 +623,20 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
 
                                 {/* Producers info */}
                                 <div className="space-y-1.5">
-                                    <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                                        <Users className="w-3.5 h-3.5 text-indigo-500" />
-                                        <span>{t("beverage.producers")}</span>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                                            <Users className="w-3.5 h-3.5 text-indigo-500" />
+                                            <span>{t("beverage.producers")}</span>
+                                        </div>
+                                        {isProducer && (
+                                            <button
+                                                onClick={() => setIsEditModalOpen(true)}
+                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
+                                                title={t("beverage.edit.producersTitle")}
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                     {beverage.producers.length > 0 ? (
                                         <div className="flex flex-wrap gap-2">
@@ -536,7 +723,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
 
                                 {batches.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {batches.map((batch) => <BatchCard key={batch.id} batch={batch} beverageId={initialData?.beverage?.id as string} t={t} setSelectedBatchForSamples={setSelectedBatchForSamples} />)}
+                                        {batches.map((batch) => <BatchCard key={batch.id} batch={batch} beverageId={initialData?.beverage?.id as string} t={t} canEdit={isProducer} setSelectedBatchForSamples={setSelectedBatchForSamples} />)}
                                     </div>
                                 ) : (
                                     <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-16 text-center shadow-md flex flex-col items-center justify-center">

@@ -2,11 +2,9 @@
 
 import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { X, Pencil, Loader2, Check, AlertCircle, MapPin, Users, UserPlus, Trash2 } from "lucide-react"
+import { X, Pencil, Loader2, AlertCircle, Users, UserPlus, Trash2 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import {
-    changeBeverageNameAction,
-    changeBeverageOriginAction,
     registerBeverageProducerAction,
     unregisterBeverageProducerAction,
 } from "../actions"
@@ -59,12 +57,6 @@ function producerLabel(p: ProducerDetails): string {
 export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: EditBeverageModalProps) {
     const { t } = useTranslation()
 
-    const [name, setName] = useState(beverage.name)
-    const [latitude, setLatitude] = useState(beverage.origin?.latitude != null ? String(beverage.origin.latitude) : "")
-    const [longitude, setLongitude] = useState(beverage.origin?.longitude != null ? String(beverage.origin.longitude) : "")
-    const [isSaving, setIsSaving] = useState(false)
-    const [saveError, setSaveError] = useState<string | null>(null)
-
     const [usernameInput, setUsernameInput] = useState("")
     const [isSearching, setIsSearching] = useState(false)
     const [searchError, setSearchError] = useState<string | null>(null)
@@ -75,10 +67,6 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
 
     useEffect(() => {
         if (isOpen) {
-            setName(beverage.name)
-            setLatitude(beverage.origin?.latitude != null ? String(beverage.origin.latitude) : "")
-            setLongitude(beverage.origin?.longitude != null ? String(beverage.origin.longitude) : "")
-            setSaveError(null)
             setUsernameInput("")
             setFoundUser(null)
             setSearchError(null)
@@ -116,44 +104,6 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
     // Stays mounted briefly after closing so the sheet/dialog can animate out.
     const { mounted, closing } = usePresence(isOpen)
     if (!mounted) return null
-
-    const nameChanged = name.trim() !== beverage.name
-    const latChanged = latitude !== (beverage.origin?.latitude != null ? String(beverage.origin.latitude) : "")
-    const lngChanged = longitude !== (beverage.origin?.longitude != null ? String(beverage.origin.longitude) : "")
-    const hasChanges = nameChanged || latChanged || lngChanged
-
-    const handleSave = async () => {
-        const trimmedName = name.trim()
-        if (!trimmedName) {
-            setSaveError(t("beverage.edit.nameRequired"))
-            return
-        }
-        setIsSaving(true)
-        setSaveError(null)
-        try {
-            let patch: Partial<EditableBeverage> = {}
-
-            if (nameChanged) {
-                const updated = await changeBeverageNameAction(beverage.id, trimmedName)
-                patch.name = updated.name
-            }
-
-            if (latChanged || lngChanged) {
-                const hasCoords = latitude.trim() !== "" && longitude.trim() !== ""
-                const origin = hasCoords ? { latitude: Number(latitude), longitude: Number(longitude) } : null
-                const updated = await changeBeverageOriginAction(beverage.id, origin)
-                patch.origin = updated.origin
-            }
-
-            onUpdated(patch)
-            toast.success(t("beverage.edit.saveSuccess"))
-            onClose()
-        } catch (err: any) {
-            setSaveError(err.message || t("beverage.edit.saveError"))
-        } finally {
-            setIsSaving(false)
-        }
-    }
 
     const handleAddProducer = async () => {
         if (!foundUser) return
@@ -213,84 +163,6 @@ export function EditBeverageModal({ isOpen, onClose, beverage, onUpdated }: Edit
 
                 {/* Body */}
                 <div className="p-6 flex flex-col gap-6 overflow-y-auto">
-                    {/* Name */}
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            {t("beverage.edit.nameLabel")}
-                        </label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder={t("beverage.edit.namePlaceholder")}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                        />
-                    </div>
-
-                    {/* Origin */}
-                    <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                                <MapPin className="w-3.5 h-3.5 text-indigo-500" />
-                                {t("beverage.edit.originLabel")}
-                            </label>
-                            {(latitude || longitude) && (
-                                <button
-                                    type="button"
-                                    onClick={() => { setLatitude(""); setLongitude("") }}
-                                    className="text-[11px] font-semibold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                                >
-                                    {t("beverage.edit.clearOrigin")}
-                                </button>
-                            )}
-                        </div>
-                        <p className="text-[11px] text-slate-400 font-medium">{t("beverage.edit.originHint")}</p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("beverage.edit.latitudeLabel")}</span>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    value={latitude}
-                                    onChange={(e) => setLatitude(e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("beverage.edit.longitudeLabel")}</span>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    value={longitude}
-                                    onChange={(e) => setLongitude(e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {saveError && (
-                        <p className="flex items-center gap-1.5 text-xs text-rose-500 font-semibold">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>{saveError}</span>
-                        </p>
-                    )}
-
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            onClick={handleSave}
-                            disabled={!hasChanges || isSaving}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-bold shadow-md shadow-indigo-600/15 transition-all active:scale-95 cursor-pointer disabled:pointer-events-none"
-                        >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                            <span>{isSaving ? t("beverage.edit.saving") : t("beverage.edit.save")}</span>
-                        </button>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="h-[1px] w-full bg-slate-100" />
-
                     {/* Producers */}
                     <div className="flex flex-col gap-3">
                         <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">

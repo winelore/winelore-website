@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -11,28 +11,50 @@ export function BatchCard({
                               batch,
                               beverageId,
                               t,
+                              canEdit = true,
                               setSelectedBatchForSamples
                           }: {
     batch: any;
     beverageId: string;
     t: any;
+    canEdit?: boolean;
     setSelectedBatchForSamples: (batch: any) => void;
 }) {
     const router = useRouter()
 
+    const figures = batchFigures(batch)
     const [isEditing, setIsEditing] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [editVolumeMl, setEditVolumeMl] = useState<string>(batch.volumeMl !== null && batch.volumeMl !== undefined ? String(batch.volumeMl) : "")
     const [editLotNumber, setEditLotNumber] = useState<string>(batch.lotNumber || "")
-
-    const figures = batchFigures(batch)
     const [editAbv, setEditAbv] = useState<string>(figures.abv ? String(figures.abv) : "")
     const [editName, setEditName] = useState<string>(batch.attributes?.vintage ? String(batch.attributes.vintage) : "")
+
+    const openEdit = () => {
+        const currentFigures = batchFigures(batch)
+        setEditVolumeMl(batch.volumeMl !== null && batch.volumeMl !== undefined ? String(batch.volumeMl) : "")
+        setEditLotNumber(batch.lotNumber || "")
+        setEditAbv(currentFigures.abv ? String(currentFigures.abv) : "")
+        setEditName(batch.attributes?.vintage ? String(batch.attributes.vintage) : "")
+        setIsEditing(true)
+    }
+
+    useEffect(() => {
+        if (!isEditing) {
+            const currentFigures = batchFigures(batch)
+            setEditVolumeMl(batch.volumeMl !== null && batch.volumeMl !== undefined ? String(batch.volumeMl) : "")
+            setEditLotNumber(batch.lotNumber || "")
+            setEditAbv(currentFigures.abv ? String(currentFigures.abv) : "")
+            setEditName(batch.attributes?.vintage ? String(batch.attributes.vintage) : "")
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [batch.id, isEditing])
 
     const displayVintage = batch.attributes?.vintage || figures.vintage
     const batchSamples = batch.samples || []
 
     const handleSave = async () => {
+        if (isSaving) return
         setIsSaving(true)
         try {
             const vol = editVolumeMl.trim() ? parseInt(editVolumeMl.trim(), 10) : null;
@@ -126,7 +148,11 @@ export function BatchCard({
                                 type="text"
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
-                                className="w-full text-sm font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                onKeyDown={e => {
+                                    if (e.key === "Enter") handleSave()
+                                    if (e.key === "Escape") handleCancel()
+                                }}
+                                className="w-full text-sm font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-xl px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder={t("beverage.batches.vintage")}
                                 disabled={isSaving}
                                 autoFocus
@@ -141,28 +167,28 @@ export function BatchCard({
                         <span className="text-[10px] font-bold text-slate-400 font-mono hidden sm:inline-block">
                             ID: {batch.id.slice(-6).toUpperCase()}
                         </span>
-                        {!isEditing ? (
+                        {canEdit && (!isEditing ? (
                             <button
                                 type="button"
-                                onClick={() => setIsEditing(true)}
+                                onClick={openEdit}
                                 title={t("common.edit", { defaultValue: "Редагувати" })}
-                                className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all shrink-0 cursor-pointer active:scale-95"
                             >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-4 h-4" />
                             </button>
-                        ) : (
+                        ) : isEditing ? (
                             <div className="flex items-center gap-1.5">
                                 <button
                                     type="button"
                                     onClick={handleSave}
                                     disabled={isSaving}
                                     title={t("common.save", { defaultValue: "Зберегти" })}
-                                    className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer flex items-center justify-center"
+                                    className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer flex items-center justify-center"
                                 >
                                     {isSaving ? (
-                                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                     ) : (
-                                        <Check className="w-3.5 h-3.5" />
+                                        <Check className="w-4 h-4" />
                                     )}
                                 </button>
                                 <button
@@ -170,12 +196,12 @@ export function BatchCard({
                                     onClick={handleCancel}
                                     disabled={isSaving}
                                     title={t("common.cancel", { defaultValue: "Скасувати" })}
-                                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors shrink-0 cursor-pointer flex items-center justify-center"
+                                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition-colors shrink-0 cursor-pointer flex items-center justify-center"
                                 >
-                                    <X className="w-3.5 h-3.5" />
+                                    <X className="w-4 h-4" />
                                 </button>
                             </div>
-                        )}
+                        ) : null)}
                     </div>
                 </div>
 
@@ -188,7 +214,11 @@ export function BatchCard({
                                 type="text"
                                 value={editAbv}
                                 onChange={(e) => setEditAbv(e.target.value)}
-                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                onKeyDown={e => {
+                                    if (e.key === "Enter") handleSave()
+                                    if (e.key === "Escape") handleCancel()
+                                }}
+                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-lg px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder="%"
                                 disabled={isSaving}
                             />
@@ -207,7 +237,11 @@ export function BatchCard({
                                 type="number"
                                 value={editVolumeMl}
                                 onChange={(e) => setEditVolumeMl(e.target.value)}
-                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                onKeyDown={e => {
+                                    if (e.key === "Enter") handleSave()
+                                    if (e.key === "Escape") handleCancel()
+                                }}
+                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-lg px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder="ml"
                                 disabled={isSaving}
                             />
@@ -228,7 +262,11 @@ export function BatchCard({
                                 type="text"
                                 value={editLotNumber}
                                 onChange={(e) => setEditLotNumber(e.target.value)}
-                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                onKeyDown={e => {
+                                    if (e.key === "Enter") handleSave()
+                                    if (e.key === "Escape") handleCancel()
+                                }}
+                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-lg px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder="Lot #"
                                 disabled={isSaving}
                             />
