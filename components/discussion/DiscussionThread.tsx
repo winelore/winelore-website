@@ -96,8 +96,8 @@ export function DiscussionThread({
 
     if (isLoading && messages.length === 0) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-500 mb-2" />
                 <span className="text-xs font-medium">{t("discussion.loadingMessages") || "Loading conversation..."}</span>
             </div>
         )
@@ -105,14 +105,14 @@ export function DiscussionThread({
 
     if (messages.length === 0) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center mb-3 shadow-inner">
-                    <MessageSquareDashed className="w-7 h-7" />
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center mb-2.5 shadow-xs">
+                    <MessageSquareDashed className="w-6 h-6" />
                 </div>
                 <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">
                     {t("discussion.noMessagesTitle") || "No messages yet"}
                 </h4>
-                <p className="text-xs text-slate-400 max-w-[240px] mt-1">
+                <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[220px] mt-1 leading-normal">
                     {t("discussion.noMessagesDesc") || "Start the discussion for this wine candidate with other commission experts."}
                 </p>
             </div>
@@ -123,7 +123,7 @@ export function DiscussionThread({
         <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto px-4 py-4 space-y-1"
+            className="flex-1 overflow-y-auto p-4 flex flex-col gap-4"
         >
             {messages.map((message) => {
                 const isMe = currentAuid !== null && message.authorAuid.includes(currentAuid)

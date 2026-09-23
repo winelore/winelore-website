@@ -63,18 +63,18 @@ export function MessageInput({
     }
 
     return (
-        <div className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0">
             {/* Telegram-Style Reply Banner */}
             {replyTo && (
                 <div className="mb-2 flex items-center justify-between rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 p-2.5 transition-all animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-start gap-2.5 overflow-hidden">
-                        <div className="w-1 self-stretch bg-indigo-600 dark:bg-indigo-400 rounded-full shrink-0" />
-                        <div className="overflow-hidden">
+                    <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
+                        <div className="w-1 h-8 bg-indigo-600 dark:bg-indigo-400 rounded-full shrink-0" />
+                        <div className="overflow-hidden min-w-0">
                             <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
                                 <CornerDownRight className="w-3 h-3 shrink-0" />
                                 <span className="truncate">
                   {t("discussion.replyingTo") || "Replying to"} {replyToAuthorName || t("discussion.user") || "User"}
-                </span>
+                                </span>
                             </div>
                             <p className="text-xs text-slate-600 dark:text-slate-300 truncate mt-0.5">
                                 {replyTo.text}
@@ -84,7 +84,7 @@ export function MessageInput({
                     <button
                         type="button"
                         onClick={onCancelReply}
-                        className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-800 transition-colors shrink-0"
+                        className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
                         title={t("common.cancel") || "Cancel"}
                     >
                         <X className="w-3.5 h-3.5" />
@@ -93,23 +93,24 @@ export function MessageInput({
             )}
 
             {/* Input Area */}
-            <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={disabled || isSending}
-            placeholder={t("discussion.inputPlaceholder") || "Type your comment or note..."}
-            rows={1}
-            className="flex-1 max-h-[120px] resize-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all"
-        />
+            <form onSubmit={handleSubmit} className="flex items-end gap-2 w-full">
+                <textarea
+                    ref={textareaRef}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={disabled || isSending}
+                    placeholder={t("discussion.inputPlaceholder") || "Type your comment or note..."}
+                    rows={1}
+                    className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all leading-normal"
+                />
 
                 <button
                     type="submit"
                     disabled={!text.trim() || isSending || disabled}
-                    className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="w-10 h-10 min-w-10 min-h-10 shrink-0 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     title={t("discussion.send") || "Send"}
+                    aria-label={t("discussion.send") || "Send"}
                 >
                     {isSending ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
