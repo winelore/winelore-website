@@ -119,16 +119,17 @@ export function BatchCard({
 
             <div>
                 <div className="flex items-center justify-between border-b border-slate-50 pb-3 mb-4">
-                    <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-indigo-600" />
+                    <div className="flex items-center gap-2 flex-1 mr-2">
+                        <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
                         {isEditing ? (
                             <input
                                 type="text"
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
-                                className="w-full text-md font-bold text-slate-800 bg-white border border-slate-200 rounded px-2 outline-none focus:border-indigo-500"
+                                className="w-full text-sm font-extrabold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-3 py-1 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder={t("beverage.batches.vintage")}
                                 disabled={isSaving}
+                                autoFocus
                             />
                         ) : (
                             <span className="text-md font-bold text-slate-800">
@@ -136,8 +137,8 @@ export function BatchCard({
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400 font-mono">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-bold text-slate-400 font-mono hidden sm:inline-block">
                             ID: {batch.id.slice(-6).toUpperCase()}
                         </span>
                         {!isEditing ? (
@@ -150,22 +151,26 @@ export function BatchCard({
                                 <Pencil className="w-3.5 h-3.5" />
                             </button>
                         ) : (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                                 <button
                                     type="button"
                                     onClick={handleSave}
                                     disabled={isSaving}
                                     title={t("common.save", { defaultValue: "Зберегти" })}
-                                    className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                    className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-sm transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer flex items-center justify-center"
                                 >
-                                    <Check className="w-3.5 h-3.5" />
+                                    {isSaving ? (
+                                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                    ) : (
+                                        <Check className="w-3.5 h-3.5" />
+                                    )}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleCancel}
                                     disabled={isSaving}
                                     title={t("common.cancel", { defaultValue: "Скасувати" })}
-                                    className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors shrink-0 cursor-pointer flex items-center justify-center"
                                 >
                                     <X className="w-3.5 h-3.5" />
                                 </button>
@@ -183,7 +188,7 @@ export function BatchCard({
                                 type="text"
                                 value={editAbv}
                                 onChange={(e) => setEditAbv(e.target.value)}
-                                className="w-full text-center text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-indigo-500"
+                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder="%"
                                 disabled={isSaving}
                             />
@@ -202,7 +207,7 @@ export function BatchCard({
                                 type="number"
                                 value={editVolumeMl}
                                 onChange={(e) => setEditVolumeMl(e.target.value)}
-                                className="w-full text-center text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-indigo-500"
+                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder="ml"
                                 disabled={isSaving}
                             />
@@ -223,7 +228,7 @@ export function BatchCard({
                                 type="text"
                                 value={editLotNumber}
                                 onChange={(e) => setEditLotNumber(e.target.value)}
-                                className="w-full text-center text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-indigo-500"
+                                className="w-full text-center text-xs font-bold text-slate-900 bg-white border border-indigo-400 focus:border-indigo-600 rounded-full px-2 py-0.5 outline-none shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 placeholder="Lot #"
                                 disabled={isSaving}
                             />
