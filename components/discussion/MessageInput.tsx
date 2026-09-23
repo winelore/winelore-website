@@ -1,25 +1,27 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { Send, X, CornerDownRight, Loader2 } from "lucide-react"
+import { Send, X, CornerDownRight, Quote } from "lucide-react"
 import { type DiscussionMessage } from "@/app/commission/discussionActions"
 import { useTranslation } from "@/lib/i18n/context"
 
 interface MessageInputProps {
     replyTo: DiscussionMessage | null
+    replyQuote?: { text?: string; startIndex?: number | null; endIndex?: number | null } | null
     replyToAuthorName?: string | null
     onCancelReply: () => void
     onSend: (text: string) => Promise<boolean | void> | void
-    isSending: boolean
+    isSending?: boolean
     disabled?: boolean
 }
 
 export function MessageInput({
                                  replyTo,
+                                 replyQuote,
                                  replyToAuthorName,
                                  onCancelReply,
                                  onSend,
-                                 isSending,
+                                 isSending = false,
                                  disabled = false,
                              }: MessageInputProps) {
     const { t } = useTranslation()
@@ -41,18 +43,22 @@ export function MessageInput({
         textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`
     }, [text])
 
-    const handleSubmit = async (e?: React.FormEvent) => {
+    // Immediate zero-lag submit handler (Telegram style)
+    const handleSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault()
         const trimmed = text.trim()
-        if (!trimmed || isSending || disabled) return
+        if (!trimmed || disabled) return
 
-        const success = await onSend(trimmed)
-        if (success !== false) {
-            setText("")
-            if (textareaRef.current) {
-                textareaRef.current.style.height = "auto"
-            }
+        // 1. Immediately clear input text and reset height (Zero optimistic lag)
+        setText("")
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto"
+            textareaRef.current.focus()
         }
+        // 2. Immediately clear reply state
+        onCancelReply()
+        // 3. Fire send asynchronously without blocking button or UI
+        onSend(trimmed)
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -62,6 +68,10 @@ export function MessageInput({
         }
     }
 
+    // Display partial quote snippet if available, otherwise full message text
+    const quoteSnippet = replyQuote?.text || replyTo?.text || ""
+    const isPartial = Boolean(replyQuote?.text && replyQuote.text !== replyTo?.text)
+
     return (
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0">
             {/* Telegram-Style Reply Banner */}
@@ -70,14 +80,20 @@ export function MessageInput({
                     <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
                         <div className="w-1 h-8 bg-indigo-600 dark:bg-indigo-400 rounded-full shrink-0" />
                         <div className="overflow-hidden min-w-0">
-                            <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
                                 <CornerDownRight className="w-3 h-3 shrink-0" />
                                 <span className="truncate">
                   {t("discussion.replyingTo") || "Replying to"} {replyToAuthorName || t("discussion.user") || "User"}
                                 </span>
+                                {isPartial && (
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-sm text-[9px] font-medium bg-indigo-200/60 dark:bg-indigo-900/80 text-indigo-800 dark:text-indigo-200 shrink-0">
+                                        <Quote className="w-2.5 h-2.5" />
+                                        <span>Quote</span>
+                                    </span>
+                                )}
                             </div>
-                            <p className="text-xs text-slate-600 dark:text-slate-300 truncate mt-0.5">
-                                {replyTo.text}
+                            <p className="text-xs text-slate-600 dark:text-slate-300 truncate mt-0.5 italic">
+                                &ldquo;{quoteSnippet}&rdquo;
                             </p>
                         </div>
                     </div>
@@ -99,24 +115,20 @@ export function MessageInput({
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    disabled={disabled || isSending}
+                    disabled={disabled}
                     placeholder={t("discussion.inputPlaceholder") || "Type your comment or note..."}
                     rows={1}
                     className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 transition-all leading-normal"
                 />
-
+                {/* Send Button: strictly flexbox-centered circular button with pr-0.5 for optical balance */}
                 <button
                     type="submit"
-                    disabled={!text.trim() || isSending || disabled}
-                    className="w-10 h-10 min-w-10 min-h-10 shrink-0 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    disabled={!text.trim() || disabled}
+                    className="w-10 h-10 shrink-0 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center pr-0.5 shadow-md shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     title={t("discussion.send") || "Send"}
                     aria-label={t("discussion.send") || "Send"}
                 >
-                    {isSending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <Send className="w-4 h-4 translate-x-px" />
-                    )}
+                    <Send className="w-[18px] h-[18px] shrink-0" />
                 </button>
             </form>
         </div>

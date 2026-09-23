@@ -1166,6 +1166,7 @@ const hu = {
         user: "Felhasználó",
         unknownUser: "Ismeretlen felhasználó",
         reply: "Válasz",
+        quote: "Idézet",
         replyingTo: "Válasz neki",
         inputPlaceholder: "Írja be a megjegyzést vagy észrevételt...",
         send: "Küldés",

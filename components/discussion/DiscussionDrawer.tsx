@@ -38,12 +38,13 @@ export function DiscussionDrawer({
         }
     }, [])
 
-    // Hook handles short-polling every 3s and optimistic messaging
+    // Hook handles short-polling every 3s, smart partial quotes, and optimistic messaging
     const {
         messages,
         isLoading,
         isSending,
         replyToMessage,
+        replyQuote,
         setReplyToMessage,
         clearReply,
         sendMessage,
@@ -161,11 +162,12 @@ export function DiscussionDrawer({
                             currentAuid={currentAuid}
                             members={members}
                             isLoading={isLoading}
-                            onReply={(msg) => setReplyToMessage(msg)}
+                            onReply={(msg, quote) => setReplyToMessage(msg, quote)}
                         />
                         {/* Input Area (Footer) */}
                         <MessageInput
                             replyTo={replyToMessage}
+                            replyQuote={replyQuote}
                             replyToAuthorName={replyAuthorName}
                             onCancelReply={clearReply}
                             onSend={sendMessage}

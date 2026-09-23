@@ -19,7 +19,10 @@ interface DiscussionThreadProps {
     currentAuid: number | null
     members?: MemberInfo[]
     isLoading: boolean
-    onReply: (message: DiscussionMessage) => void
+    onReply: (
+        message: DiscussionMessage,
+        quote?: { text?: string; startIndex?: number | null; endIndex?: number | null } | null,
+    ) => void
 }
 
 export function DiscussionThread({
@@ -31,7 +34,10 @@ export function DiscussionThread({
                                  }: DiscussionThreadProps) {
     const { t } = useTranslation()
     const scrollContainerRef = useRef<HTMLDivElement>(null)
-    const shouldAutoScrollRef = useRef<boolean>(true)
+    // Smart scroll management refs
+    const isInitialLoadRef = useRef<boolean>(true)
+    const prevMessagesCountRef = useRef<number>(0)
+    const isNearBottomRef = useRef<boolean>(true)
 
     // Collect all author auids to batch fetch usernames
     const allAuids = useMemo(() => {
@@ -78,31 +84,55 @@ export function DiscussionThread({
         return usernames[primaryId] || usernames[String(primaryId)] || `@expert_${primaryId}`
     }
 
-    // Handle user scroll detection: only auto-scroll if already near bottom
+    // Handle user scroll detection: strictly update whether user is positioned at the bottom
     const handleScroll = () => {
         const container = scrollContainerRef.current
         if (!container) return
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120
-        shouldAutoScrollRef.current = isNearBottom
+        // User is considered "at bottom" if within 40px of bottom
+        const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+        isNearBottomRef.current = distanceToBottom <= 40
     }
 
-    // Auto-scroll to bottom on new messages if near bottom
+    // Smart auto-scroll logic
     useEffect(() => {
         const container = scrollContainerRef.current
         if (!container) return
-        if (shouldAutoScrollRef.current) {
+        const currentCount = messages.length
+        const prevCount = prevMessagesCountRef.current
+        // 1. Initial load: auto-scroll to bottom once messages first appear
+        if (isInitialLoadRef.current && currentCount > 0) {
             container.scrollTo({
                 top: container.scrollHeight,
-                behavior: messages.length <= 1 ? "auto" : "smooth",
+                behavior: "auto",
             })
+            isInitialLoadRef.current = false
+            prevMessagesCountRef.current = currentCount
+            isNearBottomRef.current = true
+            return
         }
+        // 2. New message(s) arrived
+        if (currentCount > prevCount) {
+            // Only scroll down if the user was already near the bottom (prevents scroll hijacking while reading)
+            if (isNearBottomRef.current) {
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: "smooth",
+                })
+            }
+            prevMessagesCountRef.current = currentCount
+            return
+        }
+        // 3. Periodic polling refresh without message additions: DO NOT scroll
+        prevMessagesCountRef.current = currentCount
     }, [messages])
 
     if (isLoading && messages.length === 0) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-slate-400">
                 <Loader2 className="w-5 h-5 animate-spin text-indigo-500 mb-2" />
-                <span className="text-xs font-medium">{t("discussion.loadingMessages") || "Loading conversation..."}</span>
+                <span className="text-xs font-medium">
+                    {t("discussion.loadingMessages") || "Loading conversation..."}
+                </span>
             </div>
         )
     }
@@ -127,7 +157,7 @@ export function DiscussionThread({
         <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 flex flex-col gap-4"
+            className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 scroll-smooth"
         >
             {messages.map((message) => {
                 const isMe = currentAuid !== null && message.authorAuid.includes(currentAuid)

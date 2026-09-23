@@ -1168,6 +1168,7 @@ const uk: TranslationKey = {
     user: "Користувач",
     unknownUser: "Невідомий користувач",
     reply: "Відповісти",
+    quote: "Цитата",
     replyingTo: "Відповідь для",
     inputPlaceholder: "Напишіть коментар або замітку...",
     send: "Надіслати",

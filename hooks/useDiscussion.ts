@@ -22,7 +22,8 @@ export interface UseDiscussionReturn {
     isSending: boolean
     error: string | null
     replyToMessage: DiscussionMessage | null
-    setReplyToMessage: (message: DiscussionMessage | null) => void
+    replyQuote: { text?: string; startIndex?: number | null; endIndex?: number | null } | null
+    setReplyToMessage: (message: DiscussionMessage | null, quote?: { text?: string; startIndex?: number | null; endIndex?: number | null } | null) => void
     clearReply: () => void
     sendMessage: (text: string) => Promise<boolean>
     refresh: () => Promise<void>
@@ -38,7 +39,8 @@ export function useDiscussion({
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [isSending, setIsSending] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
-    const [replyToMessage, setReplyToMessage] = useState<DiscussionMessage | null>(null)
+    const [replyToMessage, setReplyToMessageState] = useState<DiscussionMessage | null>(null)
+    const [replyQuote, setReplyQuote] = useState<{ text?: string; startIndex?: number | null; endIndex?: number | null } | null>(null)
 
     // Track pending optimistic messages so polling doesn't overwrite them in flight
     const pendingOptimisticIdsRef = useRef<Set<string>>(new Set())
@@ -91,6 +93,8 @@ export function useDiscussion({
         isMountedRef.current = true
         setMessages([])
         setReplyToMessage(null)
+        setReplyToMessageState(null)
+        setReplyQuote(null)
         setError(null)
         pendingOptimisticIdsRef.current.clear()
 
@@ -147,11 +151,18 @@ export function useDiscussion({
         }
     }, [cleanCandidateId, enabled, pollIntervalMs, fetchMessages])
 
-    const clearReply = useCallback(() => {
-        setReplyToMessage(null)
+    const setReplyToMessage = useCallback((message: DiscussionMessage | null, quote?: { text?: string; startIndex?: number | null; endIndex?: number | null } | null) => {
+        setReplyToMessageState(message)
+        setReplyQuote(quote || null)
     }, [])
 
-    // Send message with instant optimistic UI update and background sync
+    const clearReply = useCallback(() => {
+        setReplyToMessage(null)
+        setReplyToMessageState(null)
+        setReplyQuote(null)
+    }, [])
+
+    // Send message with instant optimistic UI update and background sync (fire-and-forget style)
     const sendMessage = useCallback(
         async (text: string): Promise<boolean> => {
             const trimmed = text.trim()
@@ -159,6 +170,8 @@ export function useDiscussion({
 
             const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
             const replyId = replyToMessage ? replyToMessage.id : null
+            const quoteStart = replyQuote?.startIndex ?? null
+            const quoteEnd = replyQuote?.endIndex ?? null
 
             const optimisticMessage: DiscussionMessage = {
                 id: tempId,
@@ -167,54 +180,50 @@ export function useDiscussion({
                 text: trimmed,
                 createdAt: new Date().toISOString(),
                 replyToMessageId: replyId,
+                quoteStartIndex: quoteStart,
+                quoteEndIndex: quoteEnd,
             }
 
-            // Mark as pending and update UI immediately
+            // Immediately and synchronously update messages array (zero UI lag)
             pendingOptimisticIdsRef.current.add(tempId)
             setMessages((prev) => [...prev, optimisticMessage])
             clearReply()
-            setIsSending(true)
+            // Fire-and-forget server action in background without blocking button or UI
+            sendDiscussionMessageAction({
+                replicaCandidateId: cleanCandidateId,
+                text: trimmed,
+                replyToMessageId: replyId,
+                quoteStartIndex: quoteStart,
+                quoteEndIndex: quoteEnd,
+            })
+                .then((res) => {
+                    if (!isMountedRef.current) return
+                    pendingOptimisticIdsRef.current.delete(tempId)
 
-            try {
-                const res = await sendDiscussionMessageAction({
-                    replicaCandidateId: cleanCandidateId,
-                    text: trimmed,
-                    replyToMessageId: replyId,
+                    if (res.success && res.message) {
+                        const serverMessage = res.message
+                        // Swap temporary message with persisted server message
+                        setMessages((prev) =>
+                            prev.map((msg) => (msg.id === tempId ? serverMessage : msg)),
+                        )
+                    } else {
+                        // Rollback optimistic update on error
+                        setMessages((prev) => prev.filter((msg) => msg.id !== tempId))
+                        const errorMsg = res.error || "Failed to send message"
+                        toast.error(errorMsg)
+                    }
                 })
-
-                if (!isMountedRef.current) return false
-
-                pendingOptimisticIdsRef.current.delete(tempId)
-
-                if (res.success && res.message) {
-                    const serverMessage = res.message
-                    // Swap temporary message with persisted server message
-                    setMessages((prev) =>
-                        prev.map((msg) => (msg.id === tempId ? serverMessage : msg)),
-                    )
-                    return true
-                } else {
-                    // Rollback optimistic update
+                .catch((err: any) => {
+                    if (!isMountedRef.current) return
+                    pendingOptimisticIdsRef.current.delete(tempId)
+                    // Rollback optimistic update on exception
                     setMessages((prev) => prev.filter((msg) => msg.id !== tempId))
-                    const errorMsg = res.error || "Failed to send message"
+                    const errorMsg = err?.message || "An unexpected error occurred while sending message"
                     toast.error(errorMsg)
-                    return false
-                }
-            } catch (err: any) {
-                if (!isMountedRef.current) return false
-                pendingOptimisticIdsRef.current.delete(tempId)
-                // Rollback optimistic update
-                setMessages((prev) => prev.filter((msg) => msg.id !== tempId))
-                const errorMsg = err?.message || "An unexpected error occurred while sending message"
-                toast.error(errorMsg)
-                return false
-            } finally {
-                if (isMountedRef.current) {
-                    setIsSending(false)
-                }
-            }
+                })
+            return true
         },
-        [cleanCandidateId, replyToMessage, resolvedAuid, clearReply],
+        [cleanCandidateId, replyToMessage, replyQuote, resolvedAuid, clearReply],
     )
 
     const refresh = useCallback(async () => {
@@ -227,6 +236,7 @@ export function useDiscussion({
         isSending,
         error,
         replyToMessage,
+        replyQuote,
         setReplyToMessage,
         clearReply,
         sendMessage,

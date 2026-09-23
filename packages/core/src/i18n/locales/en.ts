@@ -1166,6 +1166,7 @@ const en = {
     user: "User",
     unknownUser: "Unknown User",
     reply: "Reply",
+    quote: "Quote",
     replyingTo: "Replying to",
     inputPlaceholder: "Type your comment or note...",
     send: "Send",

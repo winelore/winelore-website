@@ -10,12 +10,16 @@ export interface DiscussionMessage {
     text: string
     createdAt: string
     replyToMessageId?: string | null
+    quoteStartIndex?: number | null
+    quoteEndIndex?: number | null
 }
 
 export interface SendDiscussionMessageInput {
     replicaCandidateId: string
     text: string
     replyToMessageId?: string | null
+    quoteStartIndex?: number | null
+    quoteEndIndex?: number | null
 }
 
 export interface DiscussionResponse<T = unknown> {
@@ -106,6 +110,8 @@ export async function getDiscussionMessagesAction(
                 text: String(m.text || ""),
                 createdAt: m.createdAt || new Date().toISOString(),
                 replyToMessageId: m.replyToId ? String(m.replyToId) : null,
+                quoteStartIndex: m.quoteStartIndex != null ? Number(m.quoteStartIndex) : null,
+                quoteEndIndex: m.quoteEndIndex != null ? Number(m.quoteEndIndex) : null,
             }))
             mockMessagesStore.set(cleanId, messages)
             return { success: true, messages }
@@ -124,7 +130,7 @@ export async function getDiscussionMessagesAction(
 export async function sendDiscussionMessageAction(
     input: SendDiscussionMessageInput,
 ): Promise<{ success: boolean; message?: DiscussionMessage; error?: string }> {
-    const { replicaCandidateId, text, replyToMessageId } = input
+    const { replicaCandidateId, text, replyToMessageId, quoteStartIndex, quoteEndIndex } = input
     const cleanId = typeof replicaCandidateId === "string" ? replicaCandidateId.trim() : ""
 
     if (!isValidId(replicaCandidateId)) {
@@ -165,6 +171,8 @@ export async function sendDiscussionMessageAction(
                     replicaCandidateId: cleanId,
                     text: trimmedText,
                     replyToId: replyToMessageId || null,
+                    quoteStartIndex: typeof quoteStartIndex === "number" ? quoteStartIndex : null,
+                    quoteEndIndex: typeof quoteEndIndex === "number" ? quoteEndIndex : null,
                 },
             },
             actorInfo.headers,
@@ -179,6 +187,8 @@ export async function sendDiscussionMessageAction(
                 text: String(raw.text || trimmedText),
                 createdAt: raw.createdAt || new Date().toISOString(),
                 replyToMessageId: raw.replyToId ? String(raw.replyToId) : null,
+                quoteStartIndex: raw.quoteStartIndex != null ? Number(raw.quoteStartIndex) : null,
+                quoteEndIndex: raw.quoteEndIndex != null ? Number(raw.quoteEndIndex) : null,
             }
 
             // Sync mock store as well
@@ -200,6 +210,8 @@ export async function sendDiscussionMessageAction(
         text: trimmedText,
         createdAt: new Date().toISOString(),
         replyToMessageId: replyToMessageId ? String(replyToMessageId).trim() : null,
+        quoteStartIndex: typeof quoteStartIndex === "number" ? quoteStartIndex : null,
+        quoteEndIndex: typeof quoteEndIndex === "number" ? quoteEndIndex : null,
     }
 
     const existingList = mockMessagesStore.get(cleanId) || []
