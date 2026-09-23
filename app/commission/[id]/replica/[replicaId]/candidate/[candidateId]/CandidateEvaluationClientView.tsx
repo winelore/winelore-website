@@ -11,6 +11,7 @@ import { MapPin, LayoutList, Tag, Wine } from "lucide-react"
 import { readCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
 import { resolveEvaluationDestination } from "@winelore/core/evaluation"
 import { BackLink } from "@/components/BackLink"
+import { DiscussionDrawer } from "@/components/discussion/DiscussionDrawer"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
 
@@ -38,6 +39,8 @@ interface CandidateEvaluationClientViewProps {
   propertyCommentsEnabled: boolean
   voiceCommentsEnabled: boolean
   visibleAttributes?: { label: string; value: string }[]
+  discussionsEnabled?: boolean
+  members?: Array<{ id?: string; auid: number[] | number; role: string }>
 }
 
 export default function CandidateEvaluationClientView({
@@ -57,6 +60,8 @@ export default function CandidateEvaluationClientView({
   propertyCommentsEnabled,
   voiceCommentsEnabled,
   visibleAttributes = [],
+  discussionsEnabled = true,
+  members = [],
 }: CandidateEvaluationClientViewProps) {
   const router = useRouter()
   const { t, tCount } = useTranslation()
@@ -213,6 +218,16 @@ export default function CandidateEvaluationClientView({
         />
         </div>
       </main>
+      {discussionsEnabled && (
+          <DiscussionDrawer
+              replicaCandidateId={candidateId}
+              candidateCode={candidateCode}
+              beverageName={beverageName}
+              commissionName={commissionName}
+              members={members}
+              discussionsEnabled={discussionsEnabled}
+          />
+      )}
     </div>
   )
 }

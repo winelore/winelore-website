@@ -56,7 +56,10 @@ import {
     setCommissionBeverageOriginDuringEvaluationEnabledAction,
     setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction,
     setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
+    setCommissionDiscussionPolicyAction,
+    type DiscussionPolicy,
 } from "../actions"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
@@ -178,6 +181,7 @@ export default function CommissionClientView({
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
+    const isMutatingRef = useRef(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [hasRedirected, setHasRedirected] = useState(false)
@@ -442,6 +446,30 @@ export default function CommissionClientView({
         }
     };
 
+    const handleChangeDiscussionPolicy = async (newPolicy: DiscussionPolicy) => {
+        if (isMutating || newPolicy === localData.discussionPolicy) return;
+        const previousPolicy = localData.discussionPolicy ?? "ALWAYS";
+        // Optimistic update first — UI responds instantly
+        setLocalData(prev => ({ ...prev, discussionPolicy: newPolicy }));
+        setIsMutating(true);
+        try {
+            const res = await setCommissionDiscussionPolicyAction(localData.id, newPolicy);
+            if (!res.success) {
+                // Rollback to previous policy
+                setLocalData(prev => ({ ...prev, discussionPolicy: previousPolicy }));
+                toast.error(res.error || t("commission.addMemberError"));
+            } else if (res.policy) {
+                setLocalData(prev => ({ ...prev, discussionPolicy: res.policy as DiscussionPolicy }));
+            }
+        } catch (err: any) {
+            // Rollback on exception
+            setLocalData(prev => ({ ...prev, discussionPolicy: previousPolicy }));
+            toast.error(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
     const handleToggleChaoticCandidateChanges = async () => {
         if (!selectedReplica || isMutating) return;
         const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0];
@@ -599,6 +627,10 @@ export default function CommissionClientView({
         return () => clearInterval(intervalId)
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
 
+    // Keep the ref in sync so the polling closure can check mutation state without going stale
+    useEffect(() => {
+        isMutatingRef.current = isMutating
+    }, [isMutating])
     useEffect(() => {
         let isMounted = true
         let isFetching = false
@@ -609,7 +641,11 @@ export default function CommissionClientView({
             try {
                 const updated = await getCommissionDataAction(localData.id)
                 if (isMounted && updated) {
-                    setLocalData(updated)
+                    setLocalData(prev => ({
+                        ...updated,
+                        // Don't overwrite optimistic discussionPolicy changes while a mutation is in flight
+                        discussionPolicy: isMutatingRef.current ? prev.discussionPolicy : updated.discussionPolicy,
+                    }))
                     if (updated.replicas) {
                         setLocalReplicas(updated.replicas)
                     }
@@ -1411,6 +1447,44 @@ export default function CommissionClientView({
                                                 localData.beverageOriginDuringEvaluationEnabled ? 'translate-x-5' : 'translate-x-0'
                                             }`} />
                                         </button>
+                                    </div>
+                                    {/* Discussions Policy Setting */}
+                                    <div className="flex flex-col justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl gap-3">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.discussionsSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{t("commission.discussionsSettingDesc")}</span>
+                                        </div>
+                                        <div className="w-full">
+                                            <Select
+                                                value={localData.discussionPolicy || "ALWAYS"}
+                                                onValueChange={(val) => handleChangeDiscussionPolicy(val as DiscussionPolicy)}
+                                                disabled={isMutating}
+                                            >
+                                                <SelectTrigger size="sm" className="w-full h-9 rounded-xl bg-white border-slate-200 text-xs font-medium text-slate-700 shadow-2xs hover:border-slate-300 focus:ring-2 focus:ring-indigo-500/20 transition-all">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl shadow-xl border-slate-100 bg-white p-1">
+                                                    <SelectItem value="ALWAYS" className="text-xs font-medium cursor-pointer rounded-lg py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                                            <span>{t("commission.discussionPolicyAlways")}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="AFTER_EVALUATION" className="text-xs font-medium cursor-pointer rounded-lg py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                                                            <span>{t("commission.discussionPolicyAfterEvaluation")}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="DISABLED" className="text-xs font-medium cursor-pointer rounded-lg py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />
+                                                            <span>{t("commission.discussionPolicyDisabled")}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
