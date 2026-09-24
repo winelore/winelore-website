@@ -34,6 +34,7 @@ import { PressableSurface } from "../ui/Pressable"
 import { Segmented } from "../ui/Segmented"
 import { panelSurface } from "../ui/Surface"
 import { HolderAvatar } from "../competition/parts"
+import { useAvatarUrls } from "../users/useAvatarUrls"
 import { useUserSearch } from "../users/useUserSearch"
 import { patchBeverage } from "./useBeveragePage"
 import { registerBeverageProducer, unregisterBeverageProducer } from "./mutations"
@@ -366,6 +367,12 @@ function Producers({
     const { t } = useTranslation()
     const [removing, setRemoving] = useState<string | null>(null)
     const [adding, setAdding] = useState(false)
+    const avatarUrls = useAvatarUrls(
+        producers.flatMap((producer) => {
+            const id = producerAuid(producer)
+            return id === null ? [] : [String(id)]
+        }),
+    )
 
     const label = (producer: BeverageProducer) => {
         const producerId = producerAuid(producer)
@@ -435,7 +442,12 @@ function Producers({
                         const roleKey = producerRoleKey(producer.role)
                         return (
                             <View key={producer.id} style={styles.producer}>
-                                <HolderAvatar auid={producerId ?? 0} username={label(producer)} size={32} />
+                                <HolderAvatar
+                                    auid={producerId ?? 0}
+                                    username={label(producer)}
+                                    size={32}
+                                    imageUrl={producerId === null ? null : avatarUrls[String(producerId)]}
+                                />
                                 <View style={styles.producerText}>
                                     <Text style={styles.producerName} numberOfLines={1}>
                                         {label(producer)}
@@ -480,6 +492,7 @@ function AddProducer({ beverageId, auid, onDone }: { beverageId: string; auid: s
         notFound: t("beverage.edit.userNotFound"),
         failed: t("beverage.edit.searchError"),
     })
+    const avatarUrls = useAvatarUrls(found ? [String(found.auid)] : [])
     const [role, setRole] = useState<AddableProducerRole>("MAKER")
     const [addingProducer, setAddingProducer] = useState(false)
 
@@ -527,7 +540,12 @@ function AddProducer({ beverageId, auid, onDone }: { beverageId: string; auid: s
             {found ? (
                 <View style={styles.found}>
                     <View style={styles.foundUser}>
-                        <HolderAvatar auid={found.auid} username={found.displayName} size={36} />
+                        <HolderAvatar
+                            auid={found.auid}
+                            username={found.displayName}
+                            size={36}
+                            imageUrl={avatarUrls[String(found.auid)]}
+                        />
                         <View style={styles.producerText}>
                             <Text style={styles.producerName} numberOfLines={1}>
                                 {found.displayName}

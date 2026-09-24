@@ -9,6 +9,8 @@ import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavAction, useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useAvatars } from "@/hooks/useAvatars"
+import { AxusAvatar } from "@/components/AxusAvatar"
 import Link from "next/link"
 import {
     startCompetitionAction,
@@ -47,13 +49,20 @@ const AVATAR_GRADIENTS = [
         "from-fuchsia-500 via-purple-600 to-pink-600",
 ]
 
-function HolderAvatar({ auid, username, className }: { auid: number; username?: string; className?: string }) {
+function HolderAvatar({ auid, username, imageUrl, className }: { auid: number; username?: string; imageUrl?: string | null; className?: string }) {
     const gradient = AVATAR_GRADIENTS[holderAvatarIndex(auid)]
     const initials = holderInitials(username, auid)
     return (
-        <div className={`flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[10px] shadow-sm shrink-0 border border-white/10 ${className}`}>
-            <span>{initials}</span>
-        </div>
+        <AxusAvatar
+            imageUrl={imageUrl}
+            alt={username || `Holder ${auid}`}
+            className={`rounded-full object-cover shadow-sm shrink-0 border border-white/10 ${className}`}
+            fallback={
+                <div className={`flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[10px] shadow-sm shrink-0 border border-white/10 ${className}`}>
+                    <span>{initials}</span>
+                </div>
+            }
+        />
     )
 }
 
@@ -271,6 +280,7 @@ export default function CompetitionClientView({
         return initialData.holders || []
     }, [initialData.holders])
     const { usernames } = useUsernames(allHolderAuids)
+    const { avatars } = useAvatars(allHolderAuids)
 
     useEffect(() => {
         setLocalData(propInitialData)
@@ -632,7 +642,7 @@ export default function CompetitionClientView({
                                         {initialData.holders.length > 0 ? (
                                             initialData.holders.map((holderAuid) => (
                                                 <div key={holderAuid} className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-1.5 hover:border-indigo-200 transition-colors duration-250">
-                                                    <HolderAvatar auid={holderAuid} username={usernames[holderAuid]} className="h-5 w-5" />
+                                                    <HolderAvatar auid={holderAuid} username={usernames[holderAuid]} imageUrl={avatars[holderAuid]} className="h-5 w-5" />
                                                     <span className="text-xs font-bold text-slate-700">{usernames[holderAuid] || String(holderAuid)}</span>
                                                 </div>
                                             ))

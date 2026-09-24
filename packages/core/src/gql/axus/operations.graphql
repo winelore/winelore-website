@@ -296,3 +296,12 @@ query UserDetails($auid: ID!) {
         icon
     }
 }
+query Avatar($variationId: ID!) {
+    avatar(variationId: $variationId) {
+        variationId
+        objectKey
+        contentType
+        sizeBytes
+        updatedAt
+    }
+}

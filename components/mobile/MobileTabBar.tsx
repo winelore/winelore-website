@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { CircleUser } from "lucide-react"
 import { AvatarPlaceholder, PERSONAL_LINKS, isMenuLinkActive } from "@/components/wine-lore-main"
+import { AxusAvatar } from "@/components/AxusAvatar"
+import { useCurrentUserAvatar } from "@/hooks/useAvatars"
 import { MobileProfileSheet } from "@/components/mobile/MobileProfileSheet"
 import { useTranslation } from "@/lib/i18n/context"
 import type { AppTabId } from "@/components/AppHeader"
@@ -50,6 +52,7 @@ export function MobileTabBar({ tabs, activeTab, username }: MobileTabBarProps) {
     const profileActive = sheetOpen || PERSONAL_LINKS.some(({ href }) => isMenuLinkActive(pathname, href))
     const currentTab = profileActive ? "profile" : activeTab
     const [poppedTab] = useState(() => (lastActiveTab !== null && lastActiveTab !== currentTab ? currentTab : null))
+    const currentUserAvatar = useCurrentUserAvatar()
     useEffect(() => {
         lastActiveTab = currentTab
     }, [currentTab])
@@ -98,8 +101,15 @@ export function MobileTabBar({ tabs, activeTab, username }: MobileTabBarProps) {
                         className={itemClass}
                     >
                         {username ? (
-                            <AvatarPlaceholder
-                                className={`h-6 w-6 ring-offset-1 transition-shadow ${profileActive ? "ring-2 ring-indigo-600" : "ring-1 ring-slate-200"} ${poppedTab === "profile" ? "animate-tab-pop" : ""}`}
+                            <AxusAvatar
+                                imageUrl={currentUserAvatar}
+                                alt={username}
+                                className={`h-6 w-6 rounded-full object-cover ring-offset-1 transition-shadow ${profileActive ? "ring-2 ring-indigo-600" : "ring-1 ring-slate-200"} ${poppedTab === "profile" ? "animate-tab-pop" : ""}`}
+                                fallback={
+                                    <AvatarPlaceholder
+                                        className={`h-6 w-6 ring-offset-1 transition-shadow ${profileActive ? "ring-2 ring-indigo-600" : "ring-1 ring-slate-200"} ${poppedTab === "profile" ? "animate-tab-pop" : ""}`}
+                                    />
+                                }
                             />
                         ) : (
                             <CircleUser

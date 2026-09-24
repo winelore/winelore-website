@@ -23,6 +23,12 @@ const VARIATION_NAME_QUERY = `
   }
 `
 
+const VARIATION_AVATAR_QUERY = `
+  query VariationAvatar($variationId: ID!) {
+    avatar(variationId: $variationId) { objectKey }
+  }
+`
+
 /** AXUS ID's placeholder name for an unnamed variation — never shown to users. */
 const PLACEHOLDER_VARIATION_NAME = "Default Variation"
 
@@ -77,6 +83,33 @@ export async function resolveDisplayName(
     return displayName && displayName !== PLACEHOLDER_VARIATION_NAME
         ? displayName
         : `@${defaultUsername}`
+}
+
+/**
+ * Resolve a user's profile photo URL, or null when they have none.
+ *
+ * Never throws and never needs a token: the photo itself is public, so this
+ * degrades to null on any failure (unknown engine field, outage) rather than
+ * breaking the screen that shows the person.
+ */
+export async function resolveAvatarUrl(config: AxusConfig, auid: string): Promise<string | null> {
+    const details = await axusQuery<{
+        defaultVariation?: { variationId?: string | null } | null
+        variations?: Array<{ id: string }> | null
+    }>(config.graphqlEndpoint, USER_DETAILS_QUERY, { auid: String(auid) })
+
+    const variationId = details?.defaultVariation?.variationId || details?.variations?.[0]?.id
+    if (!variationId) return null
+
+    const avatarResult = await axusQuery<{ avatar?: { objectKey?: string | null } | null }>(
+        config.graphqlEndpoint,
+        VARIATION_AVATAR_QUERY,
+        { variationId },
+    )
+    if (!avatarResult?.avatar?.objectKey) return null
+
+    const base = config.graphqlEndpoint.replace(/\/graphql\/?$/, "")
+    return `${base}/v1/variations/${encodeURIComponent(variationId)}/avatar`
 }
 
 const OWNER_BY_USERNAME_QUERY = `

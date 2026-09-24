@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -20,6 +20,8 @@ import {
     unregisterBeverageProducerAction,
 } from "../actions"
 import { searchUserByUsernameAction } from "@/app/commission/actions"
+import { useAvatars } from "@/hooks/useAvatars"
+import { AxusAvatar } from "@/components/AxusAvatar"
 import { BackLink } from "@/components/BackLink"
 import { BatchCard } from "./BatchCard"
 import { SamplesListModal, type ModalBatchData } from "./SamplesListModal"
@@ -219,6 +221,17 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         producers?: ProducerDetails[]
     }>({})
     const { formatStatus, formatBeverageType, formatDateTime, t } = useTranslation()
+
+    const producerAuids = useMemo(() => {
+        const producers = beverageEdits.producers ?? initialData?.beverage?.producers ?? [];
+        const ids: number[] = [];
+        for (const p of producers) {
+            if (p.auid) ids.push(...p.auid);
+        }
+        if (foundProducer) ids.push(foundProducer.auid);
+        return ids;
+    }, [beverageEdits.producers, initialData?.beverage?.producers, foundProducer])
+    const { avatars } = useAvatars(producerAuids)
 
     const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(beverageEdits.name ?? initialData?.beverage?.name)
 
@@ -719,11 +732,18 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                     key={p.id}
                                                     className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
                                                 >
-                                                    <div
-                                                        className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient((p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
-                                                    >
-                                                        {producerLabel(p).slice(0, 2).toUpperCase()}
-                                                    </div>
+                                                    <AxusAvatar
+                                                        imageUrl={p.auid?.[0] != null ? avatars[p.auid[0]] : null}
+                                                        alt={producerLabel(p)}
+                                                        className="h-8 w-8 rounded-full object-cover shrink-0 border-2 border-white shadow-sm"
+                                                        fallback={
+                                                            <div
+                                                                className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient((p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
+                                                            >
+                                                                {producerLabel(p).slice(0, 2).toUpperCase()}
+                                                            </div>
+                                                        }
+                                                    />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="text-xs font-bold text-slate-800 truncate">{producerLabel(p)}</p>
                                                         <p className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wide">{p.role}</p>
@@ -795,11 +815,18 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                             )}
                                             {foundProducer && (
                                                 <div className="flex items-center gap-3 animate-fade-in">
-                                                    <div
-                                                        className={`flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br ${getAvatarGradient(foundProducer.auid)} text-white font-bold text-xs shrink-0 border-2 border-white shadow-sm`}
-                                                    >
-                                                        {foundProducer.displayName.slice(0, 2).toUpperCase()}
-                                                    </div>
+                                                    <AxusAvatar
+                                                        imageUrl={avatars[foundProducer.auid]}
+                                                        alt={foundProducer.displayName}
+                                                        className="h-9 w-9 rounded-full object-cover shrink-0 border-2 border-white shadow-sm"
+                                                        fallback={
+                                                            <div
+                                                                className={`flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br ${getAvatarGradient(foundProducer.auid)} text-white font-bold text-xs shrink-0 border-2 border-white shadow-sm`}
+                                                            >
+                                                                {foundProducer.displayName.slice(0, 2).toUpperCase()}
+                                                            </div>
+                                                        }
+                                                    />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="text-xs font-bold text-slate-800 truncate">{foundProducer.displayName}</p>
                                                         <p className="text-[10px] text-indigo-600 font-semibold">@{foundProducer.username}</p>

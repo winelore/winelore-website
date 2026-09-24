@@ -1,6 +1,7 @@
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native"
 import { isMemberUser, sortMembersByRole, type CommissionMember } from "@winelore/core/commission"
 import { HolderAvatar } from "../competition/parts"
+import { useAvatarUrls } from "../users/useAvatarUrls"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { continuous, palette, radius } from "../theme"
 import { Icon } from "../ui/Icon"
@@ -36,6 +37,7 @@ export function TastingPanelCard({
     onRemove,
 }: TastingPanelCardProps) {
     const { t } = useTranslation()
+    const avatarUrls = useAvatarUrls(members.flatMap((member) => member.auid.map(String)))
 
     // Removing someone cannot be taken back, so it asks, as the web does.
     const confirmRemove = (memberId: string) =>
@@ -74,7 +76,12 @@ export function TastingPanelCard({
                     return (
                         <View key={member.id} style={[styles.member, me && styles.memberMe]}>
                             <View>
-                                <HolderAvatar auid={primary} username={names[String(primary)]} size={40} />
+                                <HolderAvatar
+                                    auid={primary}
+                                    username={names[String(primary)]}
+                                    size={40}
+                                    imageUrl={avatarUrls[String(primary)]}
+                                />
                                 {member.role === "HEAD" ? (
                                     <View style={styles.crown}>
                                         <Icon name="crown" size={9} color={palette.onAccent} weight="bold" />

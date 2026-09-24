@@ -1,15 +1,38 @@
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
+import { useState } from "react"
+import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
 import { palette } from "../theme"
 import { Icon } from "./Icon"
 
 /**
  * The web's `AvatarPlaceholder`: an indigo → purple → pink wash with a person
- * glyph. AXUS ID has no profile photos yet, so this is everyone's avatar.
+ * glyph, shown until the AXUS ID photo loads — or when the user has none.
  */
-export function Avatar({ size, style }: { size: number; style?: StyleProp<ViewStyle> }) {
+export function Avatar({
+    size,
+    style,
+    imageUrl,
+    accessibilityLabel,
+}: {
+    size: number
+    style?: StyleProp<ViewStyle>
+    /** Absolute AXUS ID avatar download URL; placeholder while missing. */
+    imageUrl?: string | null
+    accessibilityLabel?: string
+}) {
+    const [failed, setFailed] = useState(false)
+
     return (
         <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }, style]}>
-            <Icon name="personFill" size={size / 2} color={palette.accentMuted} weight="regular" />
+            {imageUrl && !failed ? (
+                <Image
+                    source={{ uri: imageUrl }}
+                    style={{ width: size, height: size }}
+                    accessibilityLabel={accessibilityLabel}
+                    onError={() => setFailed(true)}
+                />
+            ) : (
+                <Icon name="personFill" size={size / 2} color={palette.accentMuted} weight="regular" />
+            )}
         </View>
     )
 }
