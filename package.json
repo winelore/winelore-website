@@ -49,6 +49,8 @@
     "@radix-ui/react-tooltip": "1.2.8",
     "@uiw/react-codemirror": "^4.25.11",
     "@vercel/analytics": "1.6.1",
+    "@vercel/speed-insights": "^2.0.0",
+    "@winelore/core": "*",
     "ai": "^7.0.93",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
@@ -75,8 +77,7 @@
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
     "xlsx": "^0.18.5",
-    "zod": "^3.24.1",
-    "@winelore/core": "*"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^7.1.2",
