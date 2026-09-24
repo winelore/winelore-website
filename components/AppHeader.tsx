@@ -3,7 +3,6 @@
 import type { LucideIcon } from "lucide-react"
 import { Trophy, Wine, Home, Map } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 import { MobileNavBar } from "@/components/mobile/MobileNavBar"
@@ -31,7 +30,6 @@ export function AppHeader({
   showMobileTabBar = true,
 }: AppHeaderProps) {
   const { t } = useTranslation()
-  const router = useRouter()
   // undefined until hydration has read the auth cookies; null when signed out.
   const currentUser = useCurrentUser()
   const mounted = currentUser !== undefined
@@ -62,15 +60,14 @@ export function AppHeader({
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (
-              <button
+              <Link
                 key={tab.id}
-                type="button"
+                href={tab.href}
                 aria-label={tab.label}
-                onClick={() => {
+                onClick={(event) => {
                   if (onTabChange) {
+                    event.preventDefault()
                     onTabChange(tab.id)
-                  } else {
-                    router.push(tab.href)
                   }
                 }}
                 className={`flex items-center gap-1 sm:gap-2 rounded-full px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
@@ -81,7 +78,7 @@ export function AppHeader({
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
                 <span className="hidden sm:inline">{tab.label}</span>
-              </button>
+              </Link>
             )
           })}
         </nav>

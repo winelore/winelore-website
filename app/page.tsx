@@ -70,7 +70,7 @@ export default async function HomePage() {
             return (data.beverages?.items || []).map((beverage) => withBeverageType(beverage));
         }, []),
         load("templates", async () => {
-            const result = await getEvaluationTemplatesAction(currentAuid);
+            const result = await getEvaluationTemplatesAction(currentAuid, DASHBOARD_PANEL_LIMIT, 0, true);
             return (result.templates || [])
                 .filter((template: any) => isTemplateOwnedBy(template, currentAuid))
                 .slice(0, DASHBOARD_PANEL_LIMIT);

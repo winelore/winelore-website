@@ -4,6 +4,7 @@ import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '@winelore/core/gql/sdk';
 import { getGraphQLEndpoint } from './graphqlEndpoint';
+import { fetchWithProducerCompatibility } from './graphqlTransport';
 
 const GRAPHQL_ENDPOINT = getGraphQLEndpoint();
 const CLIENT_GRAPHQL_ENDPOINT = '/api/graphql';
@@ -92,11 +93,11 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
         }
     }
 
-    const response = await fetch(GRAPHQL_ENDPOINT, {
+    const response = await fetchWithProducerCompatibility(GRAPHQL_ENDPOINT, {
         method: 'POST',
         headers: cleanHeaders,
         body: JSON.stringify({ query, variables }),
-        next: { revalidate: 0 }
+        cache: 'no-store'
     });
 
     const { data, errors } = await parseJsonResponse(response, 'fetchGraphQLRaw');
@@ -130,11 +131,11 @@ export async function mutateGraphQLRaw<TResult>(
         cleanHeaders[lower === 'x-actor' || lower === 'actor' ? 'X-ACTOR' : key] = value;
     }
 
-    const response = await fetch(GRAPHQL_ENDPOINT, {
+    const response = await fetchWithProducerCompatibility(GRAPHQL_ENDPOINT, {
         method: 'POST',
         headers: cleanHeaders,
         body: JSON.stringify({ query, variables }),
-        next: { revalidate: 0 }
+        cache: 'no-store'
     });
 
     const { data, errors } = await parseJsonResponse(response, 'mutateGraphQLRaw');
@@ -159,14 +160,14 @@ export async function fetchGraphQL<TResult, TVariables>(
     }
 
     try {
-        response = await fetch(endpoint, {
+        response = await fetchWithProducerCompatibility(endpoint, {
             method: 'POST',
             headers,
             body: JSON.stringify({
                 query: print(document),
                 variables,
             }),
-            next: { revalidate: 0 }
+            cache: 'no-store'
         });
     } catch (error) {
         console.error('GraphQL Network Error (fetchGraphQL):', error);
@@ -215,14 +216,14 @@ const requester = async <R, V>(
 
     cleanHeaders['X-ACTOR'] = actor;
 
-    const response = await fetch(GRAPHQL_ENDPOINT, {
+    const response = await fetchWithProducerCompatibility(GRAPHQL_ENDPOINT, {
         method: 'POST',
         headers: cleanHeaders,
         body: JSON.stringify({
             query: print(doc),
             variables: vars,
         }),
-        next: { revalidate: 0 }
+        cache: 'no-store'
     });
 
     const { data, errors } = await parseJsonResponse(response, 'SDK requester');
