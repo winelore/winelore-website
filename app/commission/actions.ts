@@ -23,6 +23,70 @@ import {
 import type { PropertyMeta } from "./propertyMap";
 
 export type { MyTastingSummaryData } from "./expertRanking";
+import { revalidatePath } from 'next/cache';
+
+export interface OutcomeOutputPropertyDetail {
+    __typename?: string;
+    id?: string;
+    code: string;
+    name: string;
+    description?: string | null;
+    isResult?: boolean | null;
+    minLimit?: number | null;
+    maxLimit?: number | null;
+    allowedValues?: any[] | null;
+}
+
+function normalizeOutputProperty(prop: any): OutcomeOutputPropertyDetail {
+    return {
+        __typename: prop.__typename,
+        id: prop.id,
+        code: prop.code,
+        name: prop.name,
+        description: prop.description,
+        isResult: prop.isResult,
+        minLimit: prop.intMinLimit ?? prop.doubleMinLimit ?? null,
+        maxLimit: prop.intMaxLimit ?? prop.doubleMaxLimit ?? null,
+        allowedValues: prop.enumAllowedValues ?? prop.discreteAllowedValues ?? null,
+    };
+}
+
+export interface OutcomePolicyEditionDetail {
+    id: string;
+    policyId: string;
+    policyName?: string;
+    version: number;
+    status: string;
+    calculationScope: string;
+    scriptCode: string;
+    createdAt?: string;
+    inputTemplateEdition?: {
+        id: string;
+        version: number;
+        status?: string;
+        template?: {
+            id: string;
+            name: string;
+            beverageType?: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+        } | null;
+        categories?: Array<{
+            id: string;
+            name: string;
+            properties?: Array<{
+                id: string;
+                code: string;
+                name: string;
+                isRequired?: boolean;
+                isResult?: boolean;
+            }>;
+        }> | null;
+    } | null;
+    outputProperties: OutcomeOutputPropertyDetail[];
+}
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -620,6 +684,91 @@ export async function getCommissionDataAction(commissionId: string) {
             legacyTemplateEdition = null;
         }
 
+        // Fetch outcome policy edition
+        let commissionOutcomePolicyEdition: OutcomePolicyEditionDetail | null = null;
+        try {
+            const outcomeRes = await rawGraphQL(`
+                query GetCommissionOutcomePolicy($id: ID!) {
+                    commission(id: $id) {
+                        id
+                        outcomePolicyEdition {
+                            id
+                            policyId
+                            version
+                            status
+                            calculationScope
+                            scriptCode
+                            createdAt
+                            inputTemplateEdition {
+                                id
+                                version
+                                status
+                                template {
+                                    id
+                                    name
+                                    beverageType {
+                                        id
+                                        code
+                                        name
+                                    }
+                                }
+                            }
+                            outputProperties {
+                                __typename
+                                id
+                                code
+                                name
+                                description
+                                isResult
+                                ... on OutcomeIntProperty {
+                                    intMinLimit: minLimit
+                                    intMaxLimit: maxLimit
+                                }
+                                ... on OutcomeDoubleProperty {
+                                    doubleMinLimit: minLimit
+                                    doubleMaxLimit: maxLimit
+                                }
+                                ... on OutcomeEnumProperty {
+                                    enumAllowedValues: allowedValues
+                                }
+                                ... on OutcomeDiscreteNumbersProperty {
+                                    discreteAllowedValues: allowedValues
+                                }
+                            }
+                        }
+                    }
+                }
+            `, { id: commissionId });
+
+            const ope = outcomeRes?.commission?.outcomePolicyEdition;
+            if (ope) {
+                let policyName = "Outcome Policy";
+                try {
+                    const policyRes = await rawGraphQL(`
+                        query GetOutcomePolicyName($id: ID!) {
+                            outcomePolicy(id: $id) {
+                                id
+                                name
+                            }
+                        }
+                    `, { id: ope.policyId });
+                    if (policyRes?.outcomePolicy?.name) {
+                        policyName = policyRes.outcomePolicy.name;
+                    }
+                } catch {
+                    // Fallback if name query fails
+                }
+
+                commissionOutcomePolicyEdition = {
+                    ...ope,
+                    policyName,
+                    outputProperties: (ope.outputProperties || []).map(normalizeOutputProperty),
+                };
+            }
+        } catch (err: any) {
+            console.warn("❌ Failed to fetch outcome policy edition:", err.message);
+        }
+
         const candidatesOrder = (commission.panels || []).flatMap((panel: any) =>
             (panel.candidates || []).map((candidate: any) => candidate.id),
         );
@@ -685,6 +834,7 @@ export async function getCommissionDataAction(commissionId: string) {
                 evaluationTemplateEdition: legacyTemplateEdition
             },
             templateEditions, // ПЕРЕДАЄМО НОВИЙ МАСИВ НА ФРОНТЕНД
+            outcomePolicyEdition: commissionOutcomePolicyEdition,
             candidateCount: candidatesOrder.length,
             panels: commission.panels || [],
             replicas,
@@ -1348,6 +1498,168 @@ export async function getOutcomePoliciesAction(filter?: { owners?: number[] }, l
     } catch (err: any) {
         console.error("Server Action Error (getOutcomePoliciesAction):", err);
         return { success: false, items: [], count: 0, error: err?.message || "Failed to fetch outcome policies" };
+    }
+}
+
+export async function getOutcomePolicyCatalogAction() {
+    try {
+        const headers = await getActorHeaders().catch(() => ({}));
+        const query = `
+            query GetOutcomePolicyCatalog($limit: Int) {
+                outcomePolicies(limit: $limit) {
+                    items {
+                        id
+                        name
+                        createdAt
+                    }
+                }
+                outcomePolicyEditions(limit: $limit) {
+                    items {
+                        id
+                        policyId
+                        version
+                        status
+                        calculationScope
+                        scriptCode
+                        createdAt
+                        inputTemplateEdition {
+                            id
+                            version
+                            status
+                            template {
+                                id
+                                name
+                                beverageType {
+                                    id
+                                    code
+                                    name
+                                }
+                            }
+                            categories {
+                                id
+                                name
+                                properties {
+                                    id
+                                    code
+                                    name
+                                    isRequired
+                                    isResult
+                                }
+                            }
+                        }
+                        outputProperties {
+                            __typename
+                            id
+                            code
+                            name
+                            description
+                            isResult
+                            ... on OutcomeIntProperty {
+                                intMinLimit: minLimit
+                                intMaxLimit: maxLimit
+                            }
+                            ... on OutcomeDoubleProperty {
+                                doubleMinLimit: minLimit
+                                doubleMaxLimit: maxLimit
+                            }
+                            ... on OutcomeEnumProperty {
+                                enumAllowedValues: allowedValues
+                            }
+                            ... on OutcomeDiscreteNumbersProperty {
+                                discreteAllowedValues: allowedValues
+                            }
+                        }
+                    }
+                }
+            }
+        `;
+        const data = await rawGraphQL(query, { limit: 100 }, headers);
+        const policies = data?.outcomePolicies?.items || [];
+        const editions = data?.outcomePolicyEditions?.items || [];
+
+        const policyMap = new Map<string, { id: string; name: string; createdAt?: string }>();
+        for (const p of policies) {
+            policyMap.set(p.id, p);
+        }
+
+        const enrichedEditions: OutcomePolicyEditionDetail[] = editions.map((ed: any) => {
+            const policy = policyMap.get(ed.policyId);
+            return {
+                id: ed.id,
+                policyId: ed.policyId,
+                policyName: policy?.name || "Outcome Policy",
+                version: ed.version,
+                status: ed.status,
+                calculationScope: ed.calculationScope,
+                scriptCode: ed.scriptCode,
+                createdAt: ed.createdAt || policy?.createdAt,
+                inputTemplateEdition: ed.inputTemplateEdition,
+                outputProperties: (ed.outputProperties || []).map(normalizeOutputProperty),
+            };
+        });
+
+        return {
+            success: true,
+            policies,
+            editions: enrichedEditions,
+        };
+    } catch (err: any) {
+        console.error("Server Action Error (getOutcomePolicyCatalogAction):", err);
+        return {
+            success: false,
+            policies: [],
+            editions: [],
+            error: err?.message || "Failed to fetch outcome policies catalog",
+        };
+    }
+}
+
+export async function setCommissionOutcomePolicyAction(commissionId: string, outcomePolicyEditionId: string) {
+    if (!isValidUuid(commissionId) || !isValidUuid(outcomePolicyEditionId)) {
+        return { success: false, error: "Invalid parameters" };
+    }
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionOutcomePolicyEdition($commissionId: ID!, $outcomePolicyEditionId: ID!) {
+                setCommissionOutcomePolicyEdition(commissionId: $commissionId, outcomePolicyEditionId: $outcomePolicyEditionId) {
+                    id
+                    outcomePolicyEdition {
+                        id
+                        policyId
+                        version
+                        status
+                        calculationScope
+                    }
+                }
+            }
+        `, { commissionId, outcomePolicyEditionId }, headers);
+        revalidatePath(`/commission/${commissionId}`);
+        return { success: true, commission: data?.setCommissionOutcomePolicyEdition };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionOutcomePolicyAction):", err);
+        return { success: false, error: err?.message || "Failed to assign outcome policy" };
+    }
+}
+
+export async function removeCommissionOutcomePolicyAction(commissionId: string) {
+    if (!isValidUuid(commissionId)) {
+        return { success: false, error: "Invalid commissionId" };
+    }
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation RemoveCommissionOutcomePolicyEdition($commissionId: ID!) {
+                removeCommissionOutcomePolicyEdition(commissionId: $commissionId) {
+                    id
+                }
+            }
+        `, { commissionId }, headers);
+        revalidatePath(`/commission/${commissionId}`);
+        return { success: true, commission: data?.removeCommissionOutcomePolicyEdition };
+    } catch (err: any) {
+        console.error("Server Action Error (removeCommissionOutcomePolicyAction):", err);
+        return { success: false, error: err?.message || "Failed to remove outcome policy" };
     }
 }
 

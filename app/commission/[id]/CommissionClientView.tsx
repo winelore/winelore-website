@@ -47,6 +47,8 @@ import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
 import { BackLink } from "@/components/BackLink"
+import { OutcomePolicyBlock } from "./components/OutcomePolicyBlock"
+import type { OutcomePolicyEditionDetail } from "../actions"
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -210,6 +212,7 @@ interface InitialData {
         evaluationTemplateEdition?: any;
     };
     templateEditions?: TemplateEditionLink[];
+    outcomePolicyEdition?: OutcomePolicyEditionDetail | null;
     replicas: Replica[];
     members: Member[];
     panels?: CommissionPanel[];
@@ -1893,6 +1896,18 @@ export default function CommissionClientView({
                                 commissionId={initialData.id}
                                 templateEditions={initialData.templateEditions || []}
                                 beverageTypesInCommission={beverageTypesInCommission}
+                                isCompetitionHolder={isCompetitionHolder}
+                                canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
+                                onRefresh={refreshData}
+                            />
+                        </div>
+
+                        {/* Outcome Policy */}
+                        <div className="order-8 lg:order-none">
+                            <OutcomePolicyBlock
+                                commissionId={initialData.id}
+                                outcomePolicyEdition={initialData.outcomePolicyEdition}
+                                templateEditions={initialData.templateEditions || []}
                                 isCompetitionHolder={isCompetitionHolder}
                                 canEdit={initialData.status === "DRAFT" || initialData.status === "PLANNED"}
                                 onRefresh={refreshData}
