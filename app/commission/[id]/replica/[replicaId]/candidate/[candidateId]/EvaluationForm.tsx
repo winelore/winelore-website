@@ -584,9 +584,7 @@ export default function EvaluationForm({
                         comments: [],
                     })
                     setSuccess(true)
-                    setTimeout(() => {
-                        window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-                    }, 500)
+                    router.replace(`/commission/${commissionId}/replica/${replicaId}/wait`)
                     return
                 }
 
@@ -616,9 +614,7 @@ export default function EvaluationForm({
 
             setSuccess(true)
 
-            setTimeout(() => {
-                window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-            }, 1000)
+            router.replace(`/commission/${commissionId}/replica/${replicaId}/wait`)
         } catch (err: any) {
             console.error("Evaluation submit error:", err)
             setError(err?.message || t("evaluation.submitError"))

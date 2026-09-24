@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const state = webCrypto.randomUuid();
 
   const cookieStore = await cookies();
-  const tempCookie = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: false };
+  const tempCookie = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: process.env.NODE_ENV === "production" };
   cookieStore.set("axus_oauth_state", state, tempCookie);
   cookieStore.set("axus_code_verifier", codeVerifier, tempCookie);
 

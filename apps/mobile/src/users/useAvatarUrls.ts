@@ -7,16 +7,20 @@ import { getAxusConfig } from "../auth/config"
  * name, a photo can change mid-session from another device.
  */
 const cache = new Map<string, { url: string | null; expiresAt: number }>()
+const inFlight = new Map<string, Promise<string | null>>()
 const TTL_MS = 10 * 60 * 1000
 
 function lookUp(auid: string): Promise<string | null> {
     const cached = cache.get(auid)
     if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.url)
+    const existing = inFlight.get(auid)
+    if (existing) return existing
     // resolveAvatarUrl never rejects; it degrades to null.
     const pending = resolveAvatarUrl(getAxusConfig(), auid).then((url) => {
-        cache.set(auid, { url, expiresAt: Date.now() + TTL_MS })
+        cache.set(auid, { url, expiresAt: Date.now() + (url ? TTL_MS : 60 * 1000) })
         return url
-    })
+    }).finally(() => { inFlight.delete(auid) })
+    inFlight.set(auid, pending)
     return pending
 }
 

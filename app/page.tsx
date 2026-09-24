@@ -26,81 +26,56 @@ export default async function HomePage() {
         return <LandingClientView />;
     }
 
-    let recentCompetitions: any[] = [];
-    let myCommissions: any[] = [];
-    let recentBeverages: any[] = [];
-    let myTemplates: any[] = [];
-    let beverageTypesDict: Record<string, string> = {};
+    const load = async <T,>(label: string, run: () => Promise<T>, fallback: T): Promise<T> => {
+        try {
+            return await run();
+        } catch (error) {
+            console.error(`Failed to load ${label}:`, error);
+            return fallback;
+        }
+    };
 
-    try {
-        beverageTypesDict = buildBeverageTypeCodeMap(await getBeverageTypesAction());
-    } catch (e) {
-        console.error("Failed to load beverage types map:", e);
-    }
-
-    // 1. Recent Competitions
-    try {
-        const response = await fetchGraphQL(GET_MY_COMPETITIONS, {
-            limit: DASHBOARD_PANEL_LIMIT,
-            filter: { holders: [[currentAuid]] }
-        });
-        // Shaping is shared with the mobile home screen.
-        recentCompetitions = (response.competitions?.items || []).map((comp: any) =>
-            toDashboardCompetition(comp, currentAuid)
-        );
-    } catch (error) {
-        console.error("Failed to fetch recent competitions:", error);
-    }
-
-    // 2. Active Commissions
-    try {
-        let allCommissions: any[] = [];
-        let currentOffset = 0;
-        let hasMore = true;
-
-        while (hasMore) {
-            const commData: any = await fetchGraphQLRaw(GET_DASHBOARD_COMMISSIONS, {
-                limit: 100,
-                offset: currentOffset,
+    // The panels are independent; fetch them together instead of making
+    // navigation wait for the sum of five request chains.
+    const [beverageTypesDict, recentCompetitions, myCommissions, recentBeverages, myTemplates] = await Promise.all([
+        load("beverage types", async () => buildBeverageTypeCodeMap(await getBeverageTypesAction()), {} as Record<string, string>),
+        load("recent competitions", async () => {
+            const response = await fetchGraphQL(GET_MY_COMPETITIONS, {
+                limit: DASHBOARD_PANEL_LIMIT,
+                filter: { holders: [[currentAuid]] },
             });
-            const items = commData.commissions?.items || [];
-            allCommissions = allCommissions.concat(items);
-
-            if (items.length < 100) {
-                hasMore = false;
-            } else {
+            return (response.competitions?.items || []).map((comp: any) => toDashboardCompetition(comp, currentAuid));
+        }, []),
+        load("commissions", async () => {
+            let allCommissions: any[] = [];
+            let currentOffset = 0;
+            while (true) {
+                const commData: any = await fetchGraphQLRaw(GET_DASHBOARD_COMMISSIONS, {
+                    limit: 100,
+                    offset: currentOffset,
+                });
+                const items = commData.commissions?.items || [];
+                allCommissions = allCommissions.concat(items);
+                const active = selectActiveCommissions(allCommissions, String(currentAuid));
+                if (items.length < 100 || active.length >= DASHBOARD_PANEL_LIMIT) return active;
                 currentOffset += 100;
             }
-        }
-        // Membership and status filtering is shared with the mobile app, and
-        // matches nested auid arrays that a plain `includes` would miss.
-        myCommissions = selectActiveCommissions(allCommissions, String(currentAuid));
-    } catch (error) {
-        console.error("Failed to load commissions:", error);
-    }
-
-    // 3. Recent Beverages
-    try {
-        const bevData = await sdk.GetMyBeverages({
-            limit: DASHBOARD_PANEL_LIMIT,
-            filter: { producers: [[currentAuid]] },
-            producer: [currentAuid]
-        });
-        recentBeverages = (bevData.beverages?.items || []).map((beverage) => withBeverageType(beverage));
-    } catch (error) {
-        console.error("Failed to load beverages:", error);
-    }
-
-    // 4. My Templates
-    try {
-        const result = await getEvaluationTemplatesAction(currentAuid);
-        const templatesArray = result.templates || [];
-        myTemplates = templatesArray
-            .filter((t: any) => isTemplateOwnedBy(t, currentAuid))
-            .slice(0, DASHBOARD_PANEL_LIMIT);
-    } catch (error) {
-        console.error("Failed to fetch templates:", error);
-    }
+        }, []),
+        load("beverages", async () => {
+            const data = await sdk.GetMyBeverages({
+                limit: DASHBOARD_PANEL_LIMIT,
+                filter: { producers: [[currentAuid]] },
+                producer: [currentAuid],
+            });
+            return (data.beverages?.items || []).map((beverage) => withBeverageType(beverage));
+        }, []),
+        load("templates", async () => {
+            const result = await getEvaluationTemplatesAction(currentAuid);
+            return (result.templates || [])
+                .filter((template: any) => isTemplateOwnedBy(template, currentAuid))
+                .slice(0, DASHBOARD_PANEL_LIMIT);
+        }, []),
+    ]);
 
     return (
         <HomeClientView

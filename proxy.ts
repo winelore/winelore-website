@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { shouldRefreshAccessToken, secondsSinceExpiry } from "@winelore/core/auth";
+import { AxusTokenError, shouldRefreshAccessToken, secondsSinceExpiry } from "@winelore/core/auth";
 import { refreshTokens } from "@/lib/authRefresh";
 import { AUTH_COOKIE_NAMES, writeSessionCookies } from "@/lib/authCookies";
 import { isProd } from "@/lib/isProd";
@@ -12,6 +12,7 @@ import { isProd } from "@/lib/isProd";
  * the user out mid-tasting.
  */
 const REFRESH_RACE_WINDOW_SECONDS = 60;
+const REFRESH_SKEW_SECONDS = 60;
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -34,7 +35,7 @@ export async function proxy(request: NextRequest) {
 
   // Missing identity cookies mean the session is incomplete regardless of the
   // access token's own expiry.
-  const shouldRefresh = !accessToken || !auid || shouldRefreshAccessToken(accessToken);
+  const shouldRefresh = !accessToken || !auid || shouldRefreshAccessToken(accessToken, { skewSeconds: REFRESH_SKEW_SECONDS });
   if (!shouldRefresh) return NextResponse.next();
 
   try {
@@ -49,10 +50,7 @@ export async function proxy(request: NextRequest) {
     request.cookies.set("axus_refresh_token", session.refreshToken);
 
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set(
-      "cookie",
-      request.cookies.getAll().map((c) => `${c.name}=${c.value}`).join("; "),
-    );
+    requestHeaders.set("cookie", request.cookies.toString());
 
     const response = NextResponse.next({ request: { headers: requestHeaders } });
     writeSessionCookies(response.cookies, session);
@@ -60,16 +58,20 @@ export async function proxy(request: NextRequest) {
   } catch (error) {
     console.error("Failed to refresh tokens in middleware:", error);
 
-    const expiredFor = secondsSinceExpiry(accessToken);
-    const lostRace = expiredFor !== null && expiredFor < REFRESH_RACE_WINDOW_SECONDS;
-
     const response = NextResponse.next();
-    if (lostRace) {
+    // A network outage or server error does not mean the session is revoked.
+    // Keep it so the next request can retry the refresh.
+    if (!(error instanceof AxusTokenError) || (error.status !== 400 && error.status !== 401)) {
+      return response;
+    }
+
+    const expiredFor = secondsSinceExpiry(accessToken);
+    if (expiredFor !== null && expiredFor < REFRESH_RACE_WINDOW_SECONDS) {
       console.warn("Possible token refresh race condition detected. Retaining cookies.");
       return response;
     }
 
-    // The refresh token is genuinely dead — clear the session.
+    // The token endpoint rejected this refresh token.
     for (const name of AUTH_COOKIE_NAMES) response.cookies.delete(name);
     return response;
   }

@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n/context"
 import { usePresence } from "@/hooks/usePresence"
 import { useAvatars } from "@/hooks/useAvatars"
 import { AxusAvatar } from "@/components/AxusAvatar"
+import { holderInitials } from "@winelore/core/competition"
 
 function getAvatarGradient(auid: number): string {
     const gradients = [
@@ -191,7 +192,7 @@ export function AddMemberModal({
                                                 foundUser.auid
                                             )} text-white font-bold text-sm shadow-md shrink-0 border-2 border-white`}
                                         >
-                                            {foundUser.displayName.slice(0, 2).toUpperCase()}
+                                            {holderInitials(foundUser.displayName || foundUser.username, foundUser.auid)}
                                         </div>
                                     }
                                 />

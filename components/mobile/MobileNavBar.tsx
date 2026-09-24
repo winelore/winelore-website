@@ -6,7 +6,6 @@ import { ChevronLeft } from "lucide-react"
 import { useMobileNavState } from "@/lib/mobileNav"
 import type { MobileNavBack, MobileNavAction } from "@/lib/mobileNav"
 import { useTranslation } from "@/lib/i18n/context"
-import { NAV_BACK } from "@/components/PageTransition"
 
 // What the nav bar last showed for a settled page. While a route is loading
 // (and between pages) the bar keeps showing this instead of blanking out.
@@ -66,7 +65,6 @@ export function MobileNavBar() {
                     {back ? (
                         <Link
                             href={back.href}
-                            transitionTypes={[NAV_BACK]}
                             aria-label={back.label}
                             className="flex min-w-0 items-center rounded-lg py-1.5 pr-2 text-[17px] leading-none text-indigo-600 transition-opacity active:opacity-40"
                         >

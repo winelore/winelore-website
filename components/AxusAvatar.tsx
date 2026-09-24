@@ -18,9 +18,9 @@ type AxusAvatarProps = {
  * removed photo) swaps back to the fallback instead of a broken image.
  */
 export function AxusAvatar({ imageUrl, alt, className, fallback }: AxusAvatarProps) {
-    const [failed, setFailed] = useState(false)
+    const [failedUrl, setFailedUrl] = useState<string | null>(null)
 
-    if (!imageUrl || failed) {
+    if (!imageUrl || failedUrl === imageUrl) {
         return <>{fallback}</>
     }
 
@@ -31,7 +31,7 @@ export function AxusAvatar({ imageUrl, alt, className, fallback }: AxusAvatarPro
             alt={alt}
             loading="lazy"
             referrerPolicy="no-referrer"
-            onError={() => setFailed(true)}
+            onError={() => setFailedUrl(imageUrl)}
             className={className}
         />
     )

@@ -22,6 +22,7 @@ import {
 import { searchUserByUsernameAction } from "@/app/commission/actions"
 import { useAvatars } from "@/hooks/useAvatars"
 import { AxusAvatar } from "@/components/AxusAvatar"
+import { holderInitials } from "@winelore/core/competition"
 import { BackLink } from "@/components/BackLink"
 import { BatchCard } from "./BatchCard"
 import { SamplesListModal, type ModalBatchData } from "./SamplesListModal"
@@ -740,7 +741,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                             <div
                                                                 className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient((p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
                                                             >
-                                                                {producerLabel(p).slice(0, 2).toUpperCase()}
+                                                                {holderInitials(producerLabel(p), (p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)}
                                                             </div>
                                                         }
                                                     />
@@ -823,7 +824,7 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                             <div
                                                                 className={`flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br ${getAvatarGradient(foundProducer.auid)} text-white font-bold text-xs shrink-0 border-2 border-white shadow-sm`}
                                                             >
-                                                                {foundProducer.displayName.slice(0, 2).toUpperCase()}
+                                                                {holderInitials(foundProducer.displayName || foundProducer.username, foundProducer.auid)}
                                                             </div>
                                                         }
                                                     />

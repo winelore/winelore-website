@@ -81,7 +81,7 @@ export function parseJwt(token: string): JwtPayload | null {
 
 /**
  * Whether an access token is expired, or close enough that it should be
- * refreshed now. Mirrors the 5-minute skew the web proxy has always used.
+ * refreshed now. Callers can choose a skew for their request patterns.
  *
  * A token that cannot be parsed, or carries no `exp`, counts as needing
  * refresh — the caller cannot tell how long it is good for.

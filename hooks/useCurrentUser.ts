@@ -40,12 +40,20 @@ export function useCurrentUser(): string | null | undefined {
 
         getUsernamesAction([auid])
             .then((res) => {
-                if (res[auid]) {
-                    Cookies.set("displayName", res[auid], { path: "/", secure: false, sameSite: "lax" })
+                if (res[auid] && res[auid] !== auid && res[auid] !== `@${auid}`) {
+                    Cookies.set("displayName", res[auid], {
+                        path: "/",
+                        secure: process.env.NODE_ENV === "production",
+                        sameSite: "lax",
+                        expires: 400,
+                    })
                     listeners.forEach((listener) => listener())
+                } else {
+                    displayNameRequestedFor = null
                 }
             })
             .catch((err) => {
+                displayNameRequestedFor = null
                 console.error("Failed to fetch display name in header:", err)
             })
     }, [])

@@ -8,7 +8,6 @@ import { ProfileMenu } from "@/components/wine-lore-main"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 import { MobileNavBar } from "@/components/mobile/MobileNavBar"
 import { MobileTabBar } from "@/components/mobile/MobileTabBar"
-import { NAV_TAB } from "@/components/PageTransition"
 import { useTranslation } from "@/lib/i18n/context"
 
 import { useCurrentUser } from "@/hooks/useCurrentUser"
@@ -71,7 +70,7 @@ export function AppHeader({
                   if (onTabChange) {
                     onTabChange(tab.id)
                   } else {
-                    router.push(tab.href, { transitionTypes: [NAV_TAB] })
+                    router.push(tab.href)
                   }
                 }}
                 className={`flex items-center gap-1 sm:gap-2 rounded-full px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${

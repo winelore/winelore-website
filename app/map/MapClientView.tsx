@@ -44,10 +44,9 @@ function ProducerBadge({ producer }: { producer: ProducerDetails }) {
     else if (roleUpper === "DISTRIBUTOR") displayRole = t("roles.distributor")
     else if (roleUpper === "BOTTLER") displayRole = t("roles.bottler")
 
-    // Виправлено: тепер завжди @username, без перевірки на цифри
     const renderName = () => {
         if (producer.displayName) return producer.displayName;
-        if (producer.username) return `@${producer.username}`;
+        if (producer.username) return producer.username.startsWith("@") ? producer.username : `@${producer.username}`;
         return t("common.unknownUser");
     }
 
@@ -140,7 +139,7 @@ export default function MapClientView() {
                             let uName = null;
 
                             if (typeof userInfo === 'string') {
-                                uName = userInfo;
+                                dName = userInfo;
                             } else if (userInfo && typeof userInfo === 'object') {
                                 dName = userInfo.displayName || null;
                                 uName = userInfo.username || null;

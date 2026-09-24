@@ -12,7 +12,6 @@ import { useCurrentUserAvatar } from "@/hooks/useAvatars"
 import { MobileProfileSheet } from "@/components/mobile/MobileProfileSheet"
 import { useTranslation } from "@/lib/i18n/context"
 import type { AppTabId } from "@/components/AppHeader"
-import { NAV_TAB } from "@/components/PageTransition"
 
 export interface MobileTab {
     id: AppTabId
@@ -79,7 +78,6 @@ export function MobileTabBar({ tabs, activeTab, username }: MobileTabBarProps) {
                             <Link
                                 key={tab.id}
                                 href={tab.href}
-                                transitionTypes={[NAV_TAB]}
                                 aria-current={active ? "page" : undefined}
                                 onClick={(event) => handleTabClick(event, tab)}
                                 className={itemClass}

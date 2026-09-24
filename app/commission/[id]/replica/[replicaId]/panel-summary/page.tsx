@@ -46,7 +46,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
             const nextData = await getWaitDataAction(commissionId, replicaId)
 
             if (nextData.replicaStatus === "COMPLETED") {
-                window.location.href = `/commission/${commissionId}/results`
+                router.replace(`/commission/${commissionId}/results`)
                 return
             }
 
@@ -68,7 +68,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
                 const destination = nextData.currentCandidateId
                     ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
                     : `/commission/${commissionId}/replica/${replicaId}/wait`
-                window.location.href = destination
+                router.replace(destination)
                 return
             }
 
@@ -105,7 +105,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
         setIsAdvancing(true)
         try {
             await startNextPanelAction(replicaId, data.nextPanelId, data.nextPanelFirstCandidateId)
-            window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${data.nextPanelFirstCandidateId}`
+            router.replace(`/commission/${commissionId}/replica/${replicaId}/candidate/${data.nextPanelFirstCandidateId}`)
         } catch (error) {
             console.error("Failed to start next panel", error)
             setIsAdvancing(false)
@@ -117,7 +117,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
         setIsAdvancing(true)
         try {
             await completeCommissionReplicaAction(replicaId)
-            window.location.href = `/commission/${commissionId}/results`
+            router.replace(`/commission/${commissionId}/results`)
         } catch (error) {
             console.error("Failed to complete replica", error)
             setIsAdvancing(false)
