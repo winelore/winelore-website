@@ -15,13 +15,16 @@ import { Stack, useRouter } from "expo-router"
 import { useHeaderHeight } from "expo-router/react-navigation"
 import * as Haptics from "expo-haptics"
 import {
+    batchFigures,
     beverageCreatorAuid,
     beverageTabs,
     defaultBeverageTab,
     isBeverageProducer,
     isBeverageTab,
+    parseAttributes,
     producerAuid,
     technicalSpecs,
+    type BeverageBatch,
     type BeveragePageData,
     type BeverageTab,
 } from "@winelore/core/beverage"
@@ -34,9 +37,16 @@ import { PressableSurface } from "../ui/Pressable"
 import { panelSurface } from "../ui/Surface"
 import { useDisplayNames } from "../users/useDisplayNames"
 import { AwardsTab } from "./AwardsTab"
-import { BatchesTab } from "./BatchesTab"
+import { BatchesTab, type BatchDraft } from "./BatchesTab"
 import { HeaderCard } from "./HeaderCard"
-import { submitBeverageForReview } from "./mutations"
+import {
+    changeBatchLotNumber,
+    changeBatchVolume,
+    changeBeverageOrigin,
+    renameBeverage,
+    submitBeverageForReview,
+    updateBatchAttributes,
+} from "./mutations"
 import { SpecsTab } from "./SpecsTab"
 import { TabStrip, type TabOption } from "./parts"
 import { patchBeverage, useBeveragePage } from "./useBeveragePage"
@@ -149,6 +159,8 @@ function Loaded({
         isBeverageTab(requestedTab) ? requestedTab : defaultBeverageTab(specs.length),
     )
     const [submitting, setSubmitting] = useState(false)
+    const [editBusy, setEditBusy] = useState<null | "name" | "origin">(null)
+    const [busyBatchId, setBusyBatchId] = useState<string | null>(null)
     const [titleShown, setTitleShown] = useState(false)
     const cardY = useRef(0)
     const nameBottom = useRef(0)
@@ -167,6 +179,102 @@ function Loaded({
         // offset past the header's edge reaches its bottom.
         const shown = event.nativeEvent.contentOffset.y + headerHeight > cardY.current + nameBottom.current
         if (shown !== titleShown) setTitleShown(shown)
+    }
+
+    /**
+     * Run a change, then say a failure in an alert, as the competition
+     * screen does; success is felt rather than announced.
+     */
+    const runEdit = async (
+        kind: NonNullable<typeof editBusy>,
+        change: () => Promise<void>,
+    ): Promise<boolean> => {
+        setEditBusy(kind)
+        try {
+            await change()
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            return true
+        } catch (error) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+            Alert.alert(t("errors.serverTitle"), error instanceof Error ? error.message : String(error))
+            return false
+        } finally {
+            setEditBusy(null)
+        }
+    }
+
+    const rename = async (name: string): Promise<boolean> => {
+        if (!name.trim()) {
+            Alert.alert(t("beverage.edit.title"), t("beverage.edit.nameRequired"))
+            return false
+        }
+        return runEdit("name", async () => {
+            const updated = await renameBeverage(beverage.id, name.trim(), auid ?? "")
+            patchBeverage(beverage.id, { name: updated.name })
+        })
+    }
+
+    const saveOrigin = async (origin: { latitude: number; longitude: number } | null): Promise<boolean> =>
+        runEdit("origin", async () => {
+            const updated = await changeBeverageOrigin(beverage.id, origin, auid ?? "")
+            patchBeverage(beverage.id, { origin: updated.origin })
+        })
+
+    /**
+     * A batch's own fields are saved only where they changed, as the web
+     * saves them; batches are reloaded after, since only the beverage itself
+     * is patched into the page.
+     */
+    const saveBatch = async (batch: BeverageBatch, draft: BatchDraft): Promise<boolean> => {
+        setBusyBatchId(batch.id)
+        try {
+            const attrs = parseAttributes(batch.attributes)
+            const updatedAttributes: Record<string, unknown> = { ...(typeof batch.attributes === "object" && batch.attributes !== null ? batch.attributes : {}) }
+            let hasAttributeChanges = false
+
+            const originalVintage = attrs.vintage ?? ""
+            if (draft.vintage !== originalVintage) {
+                hasAttributeChanges = true
+                if (draft.vintage) updatedAttributes.vintage = Number(draft.vintage)
+                else delete updatedAttributes.vintage
+            }
+
+            const abv = batchFigures(batch).abv?.replace("%", "") ?? ""
+            if (draft.abv !== abv) {
+                hasAttributeChanges = true
+                if (draft.abv) {
+                    let strength = Number(draft.abv)
+                    if (Number.isInteger(strength)) strength += 0.00001
+                    updatedAttributes.alcoholByVolume = strength
+                    delete updatedAttributes.abv
+                    delete updatedAttributes.alcohol
+                } else {
+                    delete updatedAttributes.alcoholByVolume
+                    delete updatedAttributes.abv
+                    delete updatedAttributes.alcohol
+                }
+            }
+
+            const volume = draft.volumeMl ? Number.parseInt(draft.volumeMl, 10) : null
+            if (volume !== (batch.volumeMl ?? null)) {
+                await changeBatchVolume(batch.id, volume, auid ?? "")
+            }
+            if ((draft.lotNumber || null) !== (batch.lotNumber ?? null)) {
+                await changeBatchLotNumber(batch.id, draft.lotNumber || null, auid ?? "")
+            }
+            if (hasAttributeChanges) {
+                await updateBatchAttributes(batch.id, updatedAttributes, auid ?? "")
+            }
+            await reload()
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            return true
+        } catch (error) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+            Alert.alert(t("errors.serverTitle"), error instanceof Error ? error.message : String(error))
+            return false
+        } finally {
+            setBusyBatchId(null)
+        }
     }
 
     /**
@@ -230,12 +338,13 @@ function Loaded({
                     <HeaderCard
                         page={page}
                         usernames={usernames}
+                        auid={auid}
                         isProducer={isProducer}
                         submitting={submitting}
-                        onEdit={() => {
-                            Haptics.selectionAsync()
-                            router.push(`/beverage/${beverage.id}/edit`)
-                        }}
+                        nameBusy={editBusy === "name"}
+                        originBusy={editBusy === "origin"}
+                        onRename={rename}
+                        onSaveOrigin={saveOrigin}
                         onSubmitForReview={submit}
                         onNameLayout={(event) => {
                             // Relative to the card; its own offset is added on scroll.
@@ -250,6 +359,9 @@ function Loaded({
                 {tab === "batches" ? (
                     <BatchesTab
                         batches={batches}
+                        canEdit={isProducer}
+                        busyBatchId={busyBatchId}
+                        onSaveBatch={saveBatch}
                         onCreateBatch={() => open(destinations.createBatch(beverage.id))}
                         onAddSample={(batch) => open(destinations.createSample(batch.id, beverage.id))}
                         onShowSamples={(batch) => {

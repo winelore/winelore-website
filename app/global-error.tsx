@@ -1,16 +1,22 @@
 "use client"
 
+import { useEffect } from "react"
+
 // This replaces the entire root layout when the layout itself throws, so it
 // can't rely on Providers/LocaleProvider (they live inside the layout that
 // just failed) — it defines its own <html>/<body> and stays deliberately
 // minimal and English-only, matching Next.js's own guidance for this file.
 
 export default function GlobalError({
+    error,
     reset,
 }: {
     error: Error & { digest?: string }
     reset: () => void
 }) {
+    useEffect(() => {
+        console.error("Unhandled root layout error:", error)
+    }, [error])
     return (
         <html lang="en">
             <body className="font-sans antialiased">

@@ -14,7 +14,7 @@ type Point = { latitude: number; longitude: number }
 async function nominatim(url: string): Promise<any | null> {
     try {
         const response = await fetch(url, {
-            headers: { "User-Agent": "WineLoreApp/1.0 (contact@winelore.com)", "Accept-Language": "uk,en,hu" },
+            headers: { "User-Agent": "WineLoreApp/1.0 (contact@winelore.com)", "Accept-Language": "uk,en,hu,sk" },
         })
         return response.ok ? await response.json() : null
     } catch {

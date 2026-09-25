@@ -103,16 +103,16 @@ export default function CandidateEvaluationClientView({
       const base = `/commission/${commissionId}`
       switch (destination.kind) {
         case "results":
-          window.location.href = `${base}/results`
+          router.replace(`${base}/results`)
           return
         case "panelSummary":
-          window.location.href = `${base}/replica/${replicaId}/panel-summary`
+          router.replace(`${base}/replica/${replicaId}/panel-summary`)
           return
         case "candidate":
-          window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`
+          router.replace(`${base}/replica/${replicaId}/candidate/${destination.candidateId}`)
           return
         case "wait":
-          window.location.href = `${base}/replica/${replicaId}/wait`
+          router.replace(`${base}/replica/${replicaId}/wait`)
           return
       }
     } catch (err) {

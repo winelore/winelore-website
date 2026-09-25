@@ -23,6 +23,8 @@ import { destinations, useOpenDestination } from "../../../src/navigation/destin
 import { cardShadow, continuous, palette, radius } from "../../../src/theme"
 import { Avatar } from "../../../src/ui/Avatar"
 import { useDisplayNames } from "../../../src/users/useDisplayNames"
+import { useAvatarUrls } from "../../../src/users/useAvatarUrls"
+import { useAuth } from "../../../src/auth/AuthProvider"
 
 /**
  * The home dashboard — the web's `HomeClientView`, section for section: the
@@ -47,6 +49,8 @@ export default function HomeScreen() {
     const beverages = data.beverages.status === "ready" ? data.beverages.items : []
     const auids = useMemo(() => dashboardUsernameAuids(competitions, beverages), [competitions, beverages])
     const usernames = useDisplayNames(auids)
+    const { session } = useAuth()
+    const avatarUrls = useAvatarUrls(session ? [session.auid] : [])
 
     const refresh = async () => {
         setIsRefreshing(true)
@@ -67,7 +71,11 @@ export default function HomeScreen() {
             hitSlop={8}
             style={({ pressed }) => pressed && styles.pressed}
         >
-            <Avatar size={36} style={styles.headerAvatar} />
+            <Avatar
+                size={36}
+                style={styles.headerAvatar}
+                imageUrl={session ? avatarUrls[session.auid] : null}
+            />
         </Pressable>
     )
 

@@ -95,6 +95,7 @@ export function buildTastingPrompt(payload: TastingPayload): string {
         en: "English",
         uk: "Ukrainian (Українська)",
         hu: "Hungarian (Magyar)",
+        sk: "Slovak (Slovenčina)",
     }
     const targetLanguage = localeNames[locale] || "English"
     text += `\nRequired Output Language: ${targetLanguage}\n`

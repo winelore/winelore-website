@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { useMobileNavBack } from "@/lib/mobileNav"
-import { NAV_BACK } from "@/components/PageTransition"
 
 interface BackLinkProps {
     href: string
@@ -25,7 +24,6 @@ export function BackLink({ href, label, className = "" }: BackLinkProps) {
     return (
         <Link
             href={href}
-            transitionTypes={[NAV_BACK]}
             className={`hidden md:inline-flex w-fit items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-all hover:bg-slate-50 ${className}`}
         >
             <ArrowLeft className="h-4 w-4" />

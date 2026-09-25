@@ -28,6 +28,8 @@ import {
 import { normalizeAuids } from '@winelore/core';
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useAvatars } from "@/hooks/useAvatars"
+import { AxusAvatar } from "@/components/AxusAvatar"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -90,14 +92,23 @@ function getAvatarGradient(auid: number): string {
     return gradients[idx]
 }
 
-function MemberAvatar({ auid, role, username, className }: { auid: number[]; role: string; username?: string; className?: string }) {
+function MemberAvatar({ auid, role, username, imageUrl, className }: { auid: number[]; role: string; username?: string; imageUrl?: string | null; className?: string }) {
     const primaryAuid = auid[0] || 0
     const gradient = getAvatarGradient(primaryAuid)
     const initials = memberInitials(username, primaryAuid)
 
     return (
-        <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm shrink-0 border border-white/10 ${className}`}>
-            <span>{initials}</span>
+        <div className={`relative shrink-0 ${className}`}>
+            <AxusAvatar
+                imageUrl={imageUrl}
+                alt={username || `Member ${primaryAuid}`}
+                className="h-full w-full rounded-full object-cover shadow-sm border border-white/10"
+                fallback={
+                    <div className={`flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm border border-white/10`}>
+                        <span>{initials}</span>
+                    </div>
+                }
+            />
             {role === "HEAD" && (
                 <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-0.5 border border-background shadow-xs">
                     <Crown className="w-2.5 h-2.5 text-white" />
@@ -514,6 +525,7 @@ export default function CommissionClientView({
         return Array.from(new Set([...memberIds, ...holderIds, ...producerIds]));
     }, [localMembers, initialData.competition.holders, localData.panels])
     const { usernames } = useUsernames(allMemberAuids)
+    const { avatars } = useAvatars(allMemberAuids)
 
     const prevReplicaStatusRef = useRef(selectedReplica?.status)
 
@@ -1089,7 +1101,7 @@ export default function CommissionClientView({
                                                 ? "border-indigo-200 bg-indigo-50/30 shadow-indigo-100/30 shadow-md"
                                                 : "border-slate-100 bg-slate-50/30 hover:border-slate-200/50 hover:bg-slate-50/50"
                                         }`}>
-                                            <MemberAvatar auid={p.auid} role={p.role} username={usernames[p.auid[0]]} className="h-10 w-10 shrink-0" />
+                                            <MemberAvatar auid={p.auid} role={p.role} username={usernames[p.auid[0]]} imageUrl={avatars[p.auid[0]]} className="h-10 w-10 shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">

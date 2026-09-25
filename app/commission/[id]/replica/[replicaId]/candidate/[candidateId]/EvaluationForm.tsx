@@ -543,46 +543,14 @@ export default function EvaluationForm({
         isGeneratingAiRef.current = true
         setIsGeneratingAI(true)
         try {
-            const currentValues = latestValuesRef.current
-            const currentSmart = latestComputedSmartValuesRef.current
-            const currentCategories = latestCategoriesRef.current
-            const currentVisibleAttrs = latestVisibleAttributesRef.current
-            const categoryScores: TastingCategoryScore[] = currentCategories.map((cat) => {
-                let catScore = 0
-                let catMax = 0
-                const propScores: TastingPropertyScore[] = []
-                cat.properties.forEach((prop) => {
-                    if (prop.__typename === "SmartProperty") {
-                        const smartVal = currentSmart[prop.code]
-                        if (typeof smartVal === "number" && !isNaN(smartVal)) {
-                            propScores.push({ name: prop.name, score: smartVal, maxScore: 100 })
-                        }
-                        return
-                    }
-                    let maxVal = 0
-                    if (prop.__typename === "IntProperty" && prop.intMaxLimit != null) maxVal = prop.intMaxLimit
-                    else if (prop.__typename === "DoubleProperty" && prop.doubleMaxLimit != null) maxVal = prop.doubleMaxLimit
-                    else if (prop.__typename === "DiscreteNumbersProperty" && prop.discreteAllowedValues?.length) {
-                        maxVal = Math.max(...prop.discreteAllowedValues)
-                    }
-                    const rawVal = currentValues[prop.code]
-                    const numVal = typeof rawVal === "number" ? rawVal : parseFloat(rawVal)
-                    if (!isNaN(numVal)) {
-                        catScore += numVal
-                        catMax += maxVal
-                        propScores.push({
-                            name: prop.name,
-                            score: numVal,
-                            maxScore: maxVal || numVal,
-                        })
-                    }
-                })
-                return {
-                    name: cat.name,
-                    score: catScore,
-                    maxScore: catMax,
-                    properties: propScores,
-                }
+            const payload: TastingPayload = buildTastingPayload({
+                categories: latestCategoriesRef.current,
+                values: latestValuesRef.current,
+                smartValues: latestComputedSmartValuesRef.current,
+                locale: (latestLocaleRef.current as "en" | "uk" | "hu") || "en",
+                beverageType: latestBeverageNameRef.current || "Wine",
+                candidateCode: latestCandidateCodeRef.current || undefined,
+                visibleAttributes: latestVisibleAttributesRef.current,
             })
             let totalScore: number | null = null
             currentCategories.forEach((cat) => {
@@ -700,9 +668,7 @@ export default function EvaluationForm({
                         comments: [],
                     })
                     setSuccess(true)
-                    setTimeout(() => {
-                        window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-                    }, 500)
+                    router.replace(`/commission/${commissionId}/replica/${replicaId}/wait`)
                     return
                 }
 
@@ -732,9 +698,7 @@ export default function EvaluationForm({
 
             setSuccess(true)
 
-            setTimeout(() => {
-                window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-            }, 1000)
+            router.replace(`/commission/${commissionId}/replica/${replicaId}/wait`)
         } catch (err: any) {
             console.error("Evaluation submit error:", err)
             setError(err?.message || t("evaluation.submitError"))

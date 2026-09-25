@@ -8,6 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTranslation } from "@/lib/i18n/context"
 import type { MessageKey } from '@winelore/core/i18n'
 import { BadgeCheck } from "lucide-react"
+import { AxusAvatar } from "@/components/AxusAvatar"
+import { useCurrentUserAvatar } from "@/hooks/useAvatars"
 
 // These five are the only routes in the menu with no dedicated tab in
 // AppHeader, so this menu (and its mobile counterpart, the profile sheet) is
@@ -61,13 +63,19 @@ export const AXUS_ACCOUNT_URL = `${process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || "ht
 export function ProfileMenu({ username }: ProfileMenuProps) {
   const { t } = useTranslation()
   const pathname = usePathname()
+  const currentUserAvatar = useCurrentUserAvatar()
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-slate-100/70">
           <span className="font-medium text-slate-800">{username}</span>
           <BadgeCheck className="h-5 w-5 text-blue-500" />
-          <AvatarPlaceholder className="h-9 w-9" />
+          <AxusAvatar
+            imageUrl={currentUserAvatar}
+            alt={username}
+            className="h-9 w-9 rounded-full object-cover"
+            fallback={<AvatarPlaceholder className="h-9 w-9" />}
+          />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[260px] rounded-[24px] p-0 shadow-lg border-slate-100 bg-white/80 backdrop-blur-md">

@@ -22,7 +22,10 @@ function isValidUuid(id: string | null | undefined): boolean {
 export async function startCompetitionAction(id: string) {
     if (!isValidUuid(id)) throw new Error("Invalid UUID parameter");
     try {
-        return await sdk.StartCompetition({ id });
+        const cookieStore = await cookies();
+        const auid = cookieStore.get("auid")?.value;
+        const headers = auid ? { actor: auid, "x-actor": auid } : undefined;
+        return await sdk.StartCompetition({ id }, headers ? { headers } : undefined);
     } catch (err: any) {
         console.error("Server Action Error (startCompetitionAction):", err);
         throw new Error(err.message || "Failed to start competition");
@@ -75,9 +78,13 @@ export async function updateCompetitionSettingsAction(
     if (!isValidUuid(competitionId)) throw new Error("Invalid UUID parameter");
 
     const executeMutation = async (query: string, variables: any) => {
+        const actorHeaders = await getActorHeaders();
         const response = await fetch(getGraphQLEndpoint(), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...actorHeaders,
+            },
             body: JSON.stringify({ query, variables }),
             cache: 'no-store'
         });
@@ -204,11 +211,24 @@ export async function getCompetitionSeriesListAction() {
 }
 
 
+async function getActorHeaders(): Promise<Record<string, string>> {
+    try {
+        const cookieStore = await cookies();
+        const auid = cookieStore.get("auid")?.value;
+        if (auid) {
+            return { 'X-ACTOR': auid, actor: auid };
+        }
+    } catch {}
+    return {};
+}
+
 async function executeGraphQL(query: string, variables: any) {
+    const actorHeaders = await getActorHeaders();
     const response = await fetch(getGraphQLEndpoint(), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            ...actorHeaders,
         },
         body: JSON.stringify({ query, variables }),
         cache: 'no-store'

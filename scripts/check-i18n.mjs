@@ -9,7 +9,7 @@
 import fs from 'fs';
 import { execSync } from 'child_process';
 
-const LOCALES = ['en', 'uk', 'hu'];
+const LOCALES = ['en', 'uk', 'hu', 'sk'];
 
 function keysOf(file) {
     const src = fs.readFileSync(file, 'utf8');

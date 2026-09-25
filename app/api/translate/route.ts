@@ -9,6 +9,8 @@ async function fetchTranslation(text: string, targetLocale: Locale): Promise<str
     langpair = "en|uk"
   } else if (targetLocale === "hu") {
     langpair = "en|hu"
+  } else if (targetLocale === "sk") {
+    langpair = "en|sk"
   } else {
     langpair = "uk|en"
   }

@@ -1,7 +1,7 @@
 "use server"
 
 import { fetchGraphQLRaw, mutateGraphQLRaw } from '../../lib/apiClient';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache } from 'next/cache';
 import {
     createEvaluationTemplate,
     loadTemplateDetail,
@@ -9,6 +9,7 @@ import {
     saveEvaluationTemplate,
     toCatalogEdition,
 } from '@winelore/core/commission';
+import { isTemplateOwnedBy } from '@winelore/core/dashboard';
 
 // An edition's fields as core's toCatalogEdition reads them.
 const TEMPLATE_EDITION_FIELDS = `
@@ -49,30 +50,25 @@ async function strictSend(query: string, variables: Record<string, unknown>, hea
         : fetchGraphQLRaw<any, Record<string, unknown>>(query, variables, headers);
 }
 
+// Public reference data shared across list pages. Failed requests are not cached.
+const loadBeverageTypes = unstable_cache(async () => {
+    const data = await rawGraphQL(`query GetBeverageTypes {
+        beverageTypes { items { id code name status } }
+    }`);
+    if (!data?.beverageTypes) throw new Error('Missing beverage type catalog');
+    return data.beverageTypes.items.filter((item: any) => !item.status || item.status === 'PUBLISHED');
+}, ['published-beverage-types-v1'], { revalidate: 60 });
+
 export async function getBeverageTypesAction(): Promise<{ id: string; code: string; name: string }[]> {
     try {
-        const query = `
-            query GetBeverageTypes {
-                beverageTypes {
-                    items {
-                        id
-                        code
-                        name
-                        status
-                    }
-                }
-            }
-        `;
-        const data = await rawGraphQL(query);
-        const items = data?.beverageTypes?.items || [];
-        return items.filter((item: any) => !item.status || item.status === 'PUBLISHED');
-    } catch (err: any) {
-        console.error("❌ Failed to fetch beverage types:", err.message);
+        return await loadBeverageTypes();
+    } catch (err) {
+        console.error('Failed to fetch beverage types:', err);
         return [];
     }
 }
 
-export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: number = 100, offset: number = 0) {
+export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: number = 100, offset: number = 0, summaryOnly: boolean = false) {
     try {
         // A page of templates, filtered and counted by the backend; the
         // owner check below stays in case a backend ignores the filter.
@@ -87,7 +83,7 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: nu
                         status
                         createdAt
                         editions(limit: 1) {
-                            ${TEMPLATE_EDITION_FIELDS}
+                            ${summaryOnly ? "id version status" : TEMPLATE_EDITION_FIELDS}
                         }
                     }
                 }
@@ -118,7 +114,7 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: nu
             };
         });
         if (ownerAuid !== undefined) {
-            templates = templates.filter((t: any) => t.owners?.some((owner: number[]) => owner.includes(ownerAuid)));
+            templates = templates.filter((t: any) => isTemplateOwnedBy(t, ownerAuid));
         }
 
         return { templates, totalCount: data?.evaluationTemplateCount || 0 };

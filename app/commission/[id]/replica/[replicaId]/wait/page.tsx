@@ -101,16 +101,16 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             switch (destination.kind) {
                 case "results":
                     setIsRedirecting(true);
-                    window.location.href = `${base}/results`;
+                    router.replace(`${base}/results`);
                     return;
                 case "panelSummary":
                     if (!data.currentPanelId) break;
                     setIsRedirecting(true);
-                    window.location.href = `${base}/replica/${replicaId}/panel-summary`;
+                    router.replace(`${base}/replica/${replicaId}/panel-summary`);
                     return;
                 case "candidate":
                     setIsRedirecting(true);
-                    window.location.href = `${base}/replica/${replicaId}/candidate/${destination.candidateId}`;
+                    router.replace(`${base}/replica/${replicaId}/candidate/${destination.candidateId}`);
                     return;
                 case "wait":
                     break;
@@ -123,7 +123,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         } finally {
             isFetchingRef.current = false;
         }
-    }, [commissionId, replicaId, auid, isRedirecting]);
+    }, [commissionId, replicaId, auid, isRedirecting, router]);
 
     // Initial fetch when authenticated
     useEffect(() => {
@@ -166,7 +166,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             const result = await markCandidateEvaluatedAction(replicaId, currentCandidateId);
             if (!result?.nextCandidateId) {
                 setIsRedirecting(true);
-                window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`;
+                router.replace(`/commission/${commissionId}/replica/${replicaId}/panel-summary`);
             }
             // For a regular beverage transition, polling detects the new candidate.
         } catch (err: any) {

@@ -177,6 +177,8 @@ export type CreateOutcomePolicyInput = {
 export type CreateSampleInput = {
   attributes?: unknown;
   batchId: string | number;
+  code?: string | null | undefined;
+  owner?: Array<number> | null | undefined;
   volumeMl?: number | null | undefined;
 };
 
@@ -274,27 +276,6 @@ export type SubmitEvaluationInput = {
   scores: Array<EvaluatedPropertyScoreInput>;
 };
 
-export type GetBeverageQueryVariables = Exact<{
-  id: string | number;
-}>;
-
-
-export type GetBeverageQuery = { beverage: { id: string, name: string, status: Types.BeverageStatus, typeId: string, schemaEditionIds: string, attributes: unknown, createdBy: Array<number>, createdAt: string, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: Types.ProducerRole }>, origin: { latitude: number, longitude: number } | null } | null };
-
-export type GetBeverageAwardsQueryVariables = Exact<{
-  id: string | number;
-}>;
-
-
-export type GetBeverageAwardsQuery = { beverageAwards: Array<{ id: string, commissionId: string, candidateId: string, assignedAt: string, award: { id: string, code: string, name: string, description: string | null, badgeUrl: string | null } }> };
-
-export type GetCommissionForAwardQueryVariables = Exact<{
-  id: string | number;
-}>;
-
-
-export type GetCommissionForAwardQuery = { commission: { id: string, name: string, competition: { id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string } } } | null };
-
 export type SubmitBeverageForReviewMutationVariables = Exact<{
   id: string | number;
 }>;
@@ -362,6 +343,30 @@ export type PublishBeverageTypeMutationVariables = Exact<{
 
 
 export type PublishBeverageTypeMutation = { publishBeverageType: { id: string } };
+
+export type ChangeBatchVolumeMutationVariables = Exact<{
+  id: string | number;
+  volumeMl?: number | null | undefined;
+}>;
+
+
+export type ChangeBatchVolumeMutation = { changeBatchVolume: { id: string, volumeMl: number | null, lotNumber: string | null, attributes: unknown } };
+
+export type ChangeBatchLotNumberMutationVariables = Exact<{
+  id: string | number;
+  lotNumber?: string | null | undefined;
+}>;
+
+
+export type ChangeBatchLotNumberMutation = { changeBatchLotNumber: { id: string, volumeMl: number | null, lotNumber: string | null, attributes: unknown } };
+
+export type UpdateBatchAttributesMutationVariables = Exact<{
+  id: string | number;
+  attributes: unknown;
+}>;
+
+
+export type UpdateBatchAttributesMutation = { updateBatchAttributes: { id: string, volumeMl: number | null, lotNumber: string | null, attributes: unknown } };
 
 export type GetBeveragesQueryVariables = Exact<{
   limit?: number | null | undefined;
@@ -915,70 +920,6 @@ export type GetDashboardCompetitionsQueryVariables = Exact<{
 export type GetDashboardCompetitionsQuery = { competitionCount: number, competitions: { items: Array<{ id: string, name: string, status: Types.CompetitionStatus, startedAt: string | null, endedAt: string | null, holders: Array<Array<number>>, plannedDates: { start: string | null, end: string | null } | null, series: { id: string, name: string, status: Types.CompetitionSeriesStatus } }> } };
 
 
-export const GetBeverageDocument = gql`
-    query GetBeverage($id: ID!) {
-  beverage(id: $id) {
-    id
-    name
-    status
-    typeId
-    schemaEditionIds
-    attributes
-    createdBy
-    producers {
-      id
-      auid
-      producerId
-      role
-    }
-    origin {
-      latitude
-      longitude
-    }
-    createdAt
-  }
-}
-    `;
-export const GetBeverageAwardsDocument = gql`
-    query GetBeverageAwards($id: ID!) {
-  beverageAwards(beverageId: $id) {
-    id
-    commissionId
-    candidateId
-    assignedAt
-    award {
-      id
-      code
-      name
-      description
-      badgeUrl
-    }
-  }
-}
-    `;
-export const GetCommissionForAwardDocument = gql`
-    query GetCommissionForAward($id: ID!) {
-  commission(id: $id) {
-    id
-    name
-    competition {
-      id
-      name
-      status
-      plannedDates {
-        start
-        end
-      }
-      startedAt
-      endedAt
-      series {
-        id
-        name
-      }
-    }
-  }
-}
-    `;
 export const SubmitBeverageForReviewDocument = gql`
     mutation SubmitBeverageForReview($id: ID!) {
   submitBeverageForReview(id: $id) {
@@ -1137,6 +1078,36 @@ export const PublishBeverageTypeDocument = gql`
     mutation PublishBeverageType($id: ID!) {
   publishBeverageType(id: $id) {
     id
+  }
+}
+    `;
+export const ChangeBatchVolumeDocument = gql`
+    mutation ChangeBatchVolume($id: ID!, $volumeMl: Int) {
+  changeBatchVolume(id: $id, volumeMl: $volumeMl) {
+    id
+    volumeMl
+    lotNumber
+    attributes
+  }
+}
+    `;
+export const ChangeBatchLotNumberDocument = gql`
+    mutation ChangeBatchLotNumber($id: ID!, $lotNumber: String) {
+  changeBatchLotNumber(id: $id, lotNumber: $lotNumber) {
+    id
+    volumeMl
+    lotNumber
+    attributes
+  }
+}
+    `;
+export const UpdateBatchAttributesDocument = gql`
+    mutation UpdateBatchAttributes($id: ID!, $attributes: JSON!) {
+  updateBatchAttributes(id: $id, attributes: $attributes) {
+    id
+    volumeMl
+    lotNumber
+    attributes
   }
 }
     `;
@@ -2262,15 +2233,6 @@ export const GetDashboardCompetitionsDocument = gql`
 export type Requester<C = {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C>(requester: Requester<C>) {
   return {
-    GetBeverage(variables: Types.GetBeverageQueryVariables, options?: C): Promise<Types.GetBeverageQuery> {
-      return requester<Types.GetBeverageQuery, Types.GetBeverageQueryVariables>(GetBeverageDocument, variables, options) as Promise<Types.GetBeverageQuery>;
-    },
-    GetBeverageAwards(variables: Types.GetBeverageAwardsQueryVariables, options?: C): Promise<Types.GetBeverageAwardsQuery> {
-      return requester<Types.GetBeverageAwardsQuery, Types.GetBeverageAwardsQueryVariables>(GetBeverageAwardsDocument, variables, options) as Promise<Types.GetBeverageAwardsQuery>;
-    },
-    GetCommissionForAward(variables: Types.GetCommissionForAwardQueryVariables, options?: C): Promise<Types.GetCommissionForAwardQuery> {
-      return requester<Types.GetCommissionForAwardQuery, Types.GetCommissionForAwardQueryVariables>(GetCommissionForAwardDocument, variables, options) as Promise<Types.GetCommissionForAwardQuery>;
-    },
     SubmitBeverageForReview(variables: Types.SubmitBeverageForReviewMutationVariables, options?: C): Promise<Types.SubmitBeverageForReviewMutation> {
       return requester<Types.SubmitBeverageForReviewMutation, Types.SubmitBeverageForReviewMutationVariables>(SubmitBeverageForReviewDocument, variables, options) as Promise<Types.SubmitBeverageForReviewMutation>;
     },
@@ -2297,6 +2259,15 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     PublishBeverageType(variables: Types.PublishBeverageTypeMutationVariables, options?: C): Promise<Types.PublishBeverageTypeMutation> {
       return requester<Types.PublishBeverageTypeMutation, Types.PublishBeverageTypeMutationVariables>(PublishBeverageTypeDocument, variables, options) as Promise<Types.PublishBeverageTypeMutation>;
+    },
+    ChangeBatchVolume(variables: Types.ChangeBatchVolumeMutationVariables, options?: C): Promise<Types.ChangeBatchVolumeMutation> {
+      return requester<Types.ChangeBatchVolumeMutation, Types.ChangeBatchVolumeMutationVariables>(ChangeBatchVolumeDocument, variables, options) as Promise<Types.ChangeBatchVolumeMutation>;
+    },
+    ChangeBatchLotNumber(variables: Types.ChangeBatchLotNumberMutationVariables, options?: C): Promise<Types.ChangeBatchLotNumberMutation> {
+      return requester<Types.ChangeBatchLotNumberMutation, Types.ChangeBatchLotNumberMutationVariables>(ChangeBatchLotNumberDocument, variables, options) as Promise<Types.ChangeBatchLotNumberMutation>;
+    },
+    UpdateBatchAttributes(variables: Types.UpdateBatchAttributesMutationVariables, options?: C): Promise<Types.UpdateBatchAttributesMutation> {
+      return requester<Types.UpdateBatchAttributesMutation, Types.UpdateBatchAttributesMutationVariables>(UpdateBatchAttributesDocument, variables, options) as Promise<Types.UpdateBatchAttributesMutation>;
     },
     GetBeverages(variables?: Types.GetBeveragesQueryVariables, options?: C): Promise<Types.GetBeveragesQuery> {
       return requester<Types.GetBeveragesQuery, Types.GetBeveragesQueryVariables>(GetBeveragesDocument, variables, options) as Promise<Types.GetBeveragesQuery>;

@@ -108,3 +108,42 @@ export async function unregisterBeverageProducerAction(id: string, producerDetai
         throw new Error(err.message || "Failed to remove producer")
     }
 }
+
+export async function changeBatchVolumeAction(batchId: string, beverageId: string, volumeMl: number | null) {
+    if (!isValidUuid(batchId)) throw new Error("Invalid UUID parameter")
+    const headers = await getActorHeaders()
+    try {
+        const data = await (sdk as any).ChangeBatchVolume({ id: batchId, volumeMl }, { headers })
+        revalidatePath(`/beverage/${beverageId}`)
+        return data.changeBatchVolume
+    } catch (err: any) {
+        console.error("Server Action Error (changeBatchVolumeAction):", err)
+        throw new Error(err.message || "Failed to update batch volume")
+    }
+}
+
+export async function changeBatchLotNumberAction(batchId: string, beverageId: string, lotNumber: string | null) {
+    if (!isValidUuid(batchId)) throw new Error("Invalid UUID parameter")
+    const headers = await getActorHeaders()
+    try {
+        const data = await (sdk as any).ChangeBatchLotNumber({ id: batchId, lotNumber }, { headers })
+        revalidatePath(`/beverage/${beverageId}`)
+        return data.changeBatchLotNumber
+    } catch (err: any) {
+        console.error("Server Action Error (changeBatchLotNumberAction):", err)
+        throw new Error(err.message || "Failed to update batch lot number")
+    }
+}
+
+export async function updateBatchAttributesAction(batchId: string, beverageId: string, attributes: any) {
+    if (!isValidUuid(batchId)) throw new Error("Invalid UUID parameter")
+    const headers = await getActorHeaders()
+    try {
+        const data = await (sdk as any).UpdateBatchAttributes({ id: batchId, attributes }, { headers })
+        revalidatePath(`/beverage/${beverageId}`)
+        return data.updateBatchAttributes
+    } catch (err: any) {
+        console.error("Server Action Error (updateBatchAttributesAction):", err)
+        throw new Error(err.message || "Failed to update batch attributes")
+    }
+}

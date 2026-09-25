@@ -6,12 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:core --silent && node --import jiti/register --test tests/*.test.ts",
     "check-i18n": "node scripts/check-i18n.mjs",
     "test:ai": "node ./node_modules/.bin/jiti scripts/test-ai-generation.ts",
     "codegen": "graphql-codegen",
     "codegen:watch": "graphql-codegen --watch",
-    "typecheck": "tsc --noEmit",
     "check:core": "node scripts/check-core-portability.mjs",
     "test:core": "node --import jiti/register --test packages/core/tests/*.test.ts"
   },
@@ -49,6 +49,8 @@
     "@radix-ui/react-tooltip": "1.2.8",
     "@uiw/react-codemirror": "^4.25.11",
     "@vercel/analytics": "1.6.1",
+    "@vercel/speed-insights": "^2.0.0",
+    "@winelore/core": "*",
     "ai": "^7.0.93",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
@@ -75,8 +77,7 @@
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
     "xlsx": "^0.18.5",
-    "zod": "^3.24.1",
-    "@winelore/core": "*"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^7.1.2",

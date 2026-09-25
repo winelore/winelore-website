@@ -14,7 +14,7 @@ judge back up. The decision itself is `resolveEvaluationDestination` in
 and a judge on the web are never sent to different places by the same server
 state.
 
-Localisation runs off the same en/uk/hu tables as the web. `LocaleProvider`
+Localisation runs off the same en/uk/hu/sk tables as the web. `LocaleProvider`
 detects the device language through `Intl` (Hermes ships it, so no extra
 native module) and persists a choice in SecureStore. `npm run check-i18n`
 now scans `apps/mobile` too, so a mistyped key fails there.

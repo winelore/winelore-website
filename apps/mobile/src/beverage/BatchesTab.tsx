@@ -1,19 +1,37 @@
-import { Pressable, StyleSheet, Text, View } from "react-native"
-import { batchFigures, type BeverageBatch } from "@winelore/core/beverage"
+import { useState } from "react"
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from "react-native"
+import * as Haptics from "expo-haptics"
+import { batchFigures, parseAttributes, type BeverageBatch } from "@winelore/core/beverage"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { MONOSPACE, continuous, palette, radius } from "../theme"
 import { Icon, type IconName } from "../ui/Icon"
 import { EmptyCard, PrimaryButton, SectionTitle, allocationColor } from "./parts"
 
+export interface BatchDraft {
+    vintage: string
+    abv: string
+    volumeMl: string
+    lotNumber: string
+}
+
 interface BatchesTabProps {
     batches: BeverageBatch[]
+    canEdit: boolean
+    busyBatchId: string | null
+    onSaveBatch: (batch: BeverageBatch, draft: BatchDraft) => Promise<boolean>
     onCreateBatch: () => void
     onAddSample: (batch: BeverageBatch) => void
     onShowSamples: (batch: BeverageBatch) => void
 }
 
+// iOS decimal pads have no minus key; ABV never needs one.
+const DECIMAL_KEYBOARD: KeyboardTypeOptions = Platform.select({
+    ios: "numbers-and-punctuation",
+    default: "decimal-pad",
+})
+
 /** "Vintages & Batches": each batch with its figures and how much has gone to samples. */
-export function BatchesTab({ batches, onCreateBatch, onAddSample, onShowSamples }: BatchesTabProps) {
+export function BatchesTab({ batches, canEdit, busyBatchId, onSaveBatch, onCreateBatch, onAddSample, onShowSamples }: BatchesTabProps) {
     const { t } = useTranslation()
     return (
         <View style={styles.tab}>
@@ -27,6 +45,9 @@ export function BatchesTab({ batches, onCreateBatch, onAddSample, onShowSamples 
                     <BatchCard
                         key={batch.id}
                         batch={batch}
+                        canEdit={canEdit}
+                        busy={busyBatchId === batch.id}
+                        onSave={(draft) => onSaveBatch(batch, draft)}
                         onAddSample={() => onAddSample(batch)}
                         onShowSamples={() => onShowSamples(batch)}
                     />
@@ -46,10 +67,16 @@ export function BatchesTab({ batches, onCreateBatch, onAddSample, onShowSamples 
 
 function BatchCard({
     batch,
+    canEdit,
+    busy,
+    onSave,
     onAddSample,
     onShowSamples,
 }: {
     batch: BeverageBatch
+    canEdit: boolean
+    busy: boolean
+    onSave: (draft: BatchDraft) => Promise<boolean>
     onAddSample: () => void
     onShowSamples: () => void
 }) {
@@ -58,27 +85,156 @@ function BatchCard({
     const ml = t("common.milliliters")
     const amount = (value: number) => `${value.toLocaleString(locale)} ${ml}`
 
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState<BatchDraft>({ vintage: "", abv: "", volumeMl: "", lotNumber: "" })
+
+    const openEdit = () => {
+        const attrs = parseAttributes(batch.attributes)
+        setDraft({
+            vintage: attrs.vintage ?? "",
+            abv: figures.abv ? figures.abv.replace("%", "") : "",
+            volumeMl: batch.volumeMl !== null && batch.volumeMl !== undefined ? String(batch.volumeMl) : "",
+            lotNumber: batch.lotNumber || "",
+        })
+        Haptics.selectionAsync()
+        setEditing(true)
+    }
+
+    const save = async () => {
+        const vintage = draft.vintage.trim()
+        if (vintage && (!/^\d{4}$/.test(vintage) || Number(vintage) < 1900 || Number(vintage) > 2100)) {
+            Alert.alert(t("beverage.batches.title"), t("beverage.batches.invalidVintage"))
+            return
+        }
+        const abvRaw = draft.abv.trim().replace(",", ".")
+        if (abvRaw) {
+            const abv = Number(abvRaw)
+            if (Number.isNaN(abv) || abv <= 0 || abv > 100) {
+                Alert.alert(t("beverage.batches.title"), t("beverage.batches.invalidAbv"))
+                return
+            }
+        }
+        const volumeRaw = draft.volumeMl.trim()
+        if (volumeRaw) {
+            const volume = Number.parseInt(volumeRaw, 10)
+            if (Number.isNaN(volume) || volume <= 0) {
+                Alert.alert(t("beverage.batches.title"), t("beverage.batches.generalError"))
+                return
+            }
+        }
+        if (await onSave({ vintage, abv: abvRaw, volumeMl: volumeRaw, lotNumber: draft.lotNumber.trim() })) {
+            setEditing(false)
+        }
+    }
+
     return (
         <View style={styles.card}>
             <View style={styles.accentBar} />
             <View style={styles.cardHead}>
                 <View style={styles.vintage}>
                     <Icon name="calendar" size={16} color={palette.accent} />
-                    <Text style={styles.vintageLabel}>
-                        {figures.vintage ? `${t("beverage.batches.vintage")} ${figures.vintage}` : t("beverage.batches.noVintage")}
-                    </Text>
+                    {editing ? (
+                        <TextInput
+                            value={draft.vintage}
+                            onChangeText={(value) => setDraft({ ...draft, vintage: value })}
+                            autoFocus
+                            keyboardType="numeric"
+                            returnKeyType="done"
+                            onSubmitEditing={save}
+                            editable={!busy}
+                            style={styles.headInput}
+                            placeholder={t("beverage.batches.vintage")}
+                            placeholderTextColor={palette.textFaint}
+                            accessibilityLabel={t("beverage.batches.vintage")}
+                        />
+                    ) : (
+                        <Text style={styles.vintageLabel}>
+                            {figures.vintage ? `${t("beverage.batches.vintage")} ${figures.vintage}` : t("beverage.batches.noVintage")}
+                        </Text>
+                    )}
                 </View>
-                <Text style={styles.batchId}>ID: {batch.id.slice(-6).toUpperCase()}</Text>
+                <View style={styles.headRight}>
+                    <Text style={styles.batchId}>ID: {batch.id.slice(-6).toUpperCase()}</Text>
+                    {canEdit ? (
+                        editing ? (
+                            <View style={styles.editActions}>
+                                <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t("common.save")}
+                                    onPress={save}
+                                    disabled={busy}
+                                    style={({ pressed }) => [styles.saveButton, (pressed || busy) && styles.dimmed]}
+                                >
+                                    {busy ? (
+                                        <ActivityIndicator size="small" color={palette.onAccent} />
+                                    ) : (
+                                        <Icon name="done" size={14} color={palette.onAccent} weight="bold" />
+                                    )}
+                                </Pressable>
+                                <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t("competition.cancel")}
+                                    onPress={() => setEditing(false)}
+                                    disabled={busy}
+                                    style={({ pressed }) => [styles.cancelButton, pressed && styles.dimmed]}
+                                >
+                                    <Icon name="close" size={14} color={palette.textMuted} weight="bold" />
+                                </Pressable>
+                            </View>
+                        ) : (
+                            <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={t("common.edit")}
+                                hitSlop={8}
+                                onPress={openEdit}
+                                style={({ pressed }) => [styles.pencil, pressed && styles.dimmed]}
+                            >
+                                <Icon name="edit" size={16} color={palette.textFaint} />
+                            </Pressable>
+                        )
+                    ) : null}
+                </View>
             </View>
 
             <View style={styles.stats}>
-                <Stat icon="percent" label={t("beverage.batches.abv")} value={figures.abv ?? t("common.na")} />
+                <Stat
+                    icon="percent"
+                    label={t("beverage.batches.abv")}
+                    value={figures.abv ?? t("common.na")}
+                    editing={editing}
+                    editValue={draft.abv}
+                    onEditValue={(value) => setDraft({ ...draft, abv: value })}
+                    onSave={save}
+                    busy={busy}
+                    keyboardType={DECIMAL_KEYBOARD}
+                    placeholder="%"
+                    accessibilityLabel={t("beverage.batches.abv")}
+                />
                 <Stat
                     icon="droplet"
                     label={t("beverage.batches.volume")}
                     value={batch.volumeMl !== undefined && batch.volumeMl !== null ? `${batch.volumeMl} ${ml}` : t("common.na")}
+                    editing={editing}
+                    editValue={draft.volumeMl}
+                    onEditValue={(value) => setDraft({ ...draft, volumeMl: value })}
+                    onSave={save}
+                    busy={busy}
+                    keyboardType="numeric"
+                    placeholder="ml"
+                    accessibilityLabel={t("beverage.batches.volume")}
                 />
-                <Stat icon="barcode" label={t("beverage.batches.lotNumber")} value={batch.lotNumber || t("common.na")} />
+                <Stat
+                    icon="barcode"
+                    label={t("beverage.batches.lotNumber")}
+                    value={batch.lotNumber || t("common.na")}
+                    editing={editing}
+                    editValue={draft.lotNumber}
+                    onEditValue={(value) => setDraft({ ...draft, lotNumber: value })}
+                    onSave={save}
+                    busy={busy}
+                    placeholder="Lot #"
+                    accessibilityLabel={t("beverage.batches.lotNumber")}
+                />
             </View>
 
             <View style={styles.samples}>
@@ -164,14 +320,53 @@ function BatchCard({
     )
 }
 
-function Stat({ icon, label, value }: { icon: IconName; label: string; value: string }) {
+function Stat({
+    icon,
+    label,
+    value,
+    editing,
+    editValue,
+    onEditValue,
+    onSave,
+    busy,
+    keyboardType,
+    placeholder,
+    accessibilityLabel,
+}: {
+    icon: IconName
+    label: string
+    value: string
+    editing: boolean
+    editValue: string
+    onEditValue: (value: string) => void
+    onSave: () => void
+    busy: boolean
+    keyboardType?: KeyboardTypeOptions
+    placeholder?: string
+    accessibilityLabel?: string
+}) {
     return (
         <View style={styles.stat}>
             <Icon name={icon} size={16} color="rgba(79, 57, 246, 0.8)" />
             <Text style={styles.statLabel}>{label}</Text>
-            <Text style={styles.statValue} numberOfLines={1}>
-                {value}
-            </Text>
+            {editing ? (
+                <TextInput
+                    value={editValue}
+                    onChangeText={onEditValue}
+                    keyboardType={keyboardType}
+                    returnKeyType="done"
+                    onSubmitEditing={onSave}
+                    editable={!busy}
+                    style={styles.statInput}
+                    placeholder={placeholder}
+                    placeholderTextColor={palette.textFaint}
+                    accessibilityLabel={accessibilityLabel}
+                />
+            ) : (
+                <Text style={styles.statValue} numberOfLines={1}>
+                    {value}
+                </Text>
+            )}
         </View>
     )
 }
@@ -204,6 +399,38 @@ const styles = StyleSheet.create({
     },
     vintage: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
     vintageLabel: { flexShrink: 1, fontSize: 16, fontWeight: "700", color: palette.heading },
+    headRight: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 },
+    headInput: {
+        flex: 1,
+        minWidth: 0,
+        fontSize: 16,
+        fontWeight: "700",
+        color: palette.text,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: "#7c86ff", // indigo-400
+        backgroundColor: palette.surface,
+    },
+    editActions: { flexDirection: "row", alignItems: "center", gap: 6 },
+    saveButton: {
+        width: 32,
+        height: 32,
+        borderRadius: radius.sm,
+        backgroundColor: palette.accent,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    cancelButton: {
+        width: 32,
+        height: 32,
+        borderRadius: radius.sm,
+        backgroundColor: palette.borderSoft,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    pencil: { padding: 6, borderRadius: radius.sm },
     batchId: { fontFamily: MONOSPACE, fontSize: 10, fontWeight: "700", color: palette.textFaint },
     stats: { flexDirection: "row", gap: 12, marginBottom: 16 },
     stat: {
@@ -219,6 +446,20 @@ const styles = StyleSheet.create({
     },
     statLabel: { marginTop: 4, fontSize: 9, fontWeight: "700", textTransform: "uppercase", color: palette.textFaint },
     statValue: { marginTop: 2, fontSize: 12, fontWeight: "700", color: palette.textStrong },
+    statInput: {
+        marginTop: 2,
+        width: "100%",
+        fontSize: 12,
+        fontWeight: "700",
+        textAlign: "center",
+        color: palette.text,
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: "#7c86ff", // indigo-400
+        backgroundColor: palette.surface,
+    },
     // mt-2 pt-3 border-t bg-slate-50/50 -mx-5 -mb-5 p-4
     samples: {
         marginTop: 8,

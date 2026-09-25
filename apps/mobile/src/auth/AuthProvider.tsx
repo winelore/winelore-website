@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react"
 import * as Haptics from "expo-haptics"
 import type { AxusSession } from "@winelore/core/auth"
-import { getStoredSession, signIn as runSignIn, signOut as runSignOut, SignInCancelledError } from "./session"
+import { getStoredSession, signIn as runSignIn, signOut as runSignOut, SignInCancelledError, subscribeSession } from "./session"
 
 type StoredSession = Awaited<ReturnType<typeof getStoredSession>>
 
@@ -21,9 +21,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
+        let changed = false
+        const unsubscribe = subscribeSession((next) => {
+            changed = true
+            setSession(next)
+        })
         getStoredSession()
-            .then(setSession)
-            .catch(() => setSession(null))
+            .then((next) => { if (!changed) setSession(next) })
+            .catch(() => { if (!changed) setSession(null) })
+        return unsubscribe
     }, [])
 
     const signIn = useCallback(async () => {

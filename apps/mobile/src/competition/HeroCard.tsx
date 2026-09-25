@@ -6,6 +6,7 @@ import {
     type CompetitionPageData,
 } from "@winelore/core/competition"
 import { useTranslation } from "../i18n/LocaleProvider"
+import { useAvatarUrls } from "../users/useAvatarUrls"
 import { continuous, palette, radius, type } from "../theme"
 import { Icon } from "../ui/Icon"
 import { panelSurface } from "../ui/Surface"
@@ -40,6 +41,7 @@ export function HeroCard({ page, usernames, isHolder, busy, onRename, onNameLayo
     }, [page.status])
 
     const timing = formatCompetitionPageTiming(page, t, locale, now)
+    const avatarUrls = useAvatarUrls(page.holders.map(String))
 
     const save = async () => {
         if (await onRename(draft)) setEditing(false)
@@ -130,7 +132,11 @@ export function HeroCard({ page, usernames, isHolder, busy, onRename, onNameLayo
                     {page.holders.length > 0 ? (
                         page.holders.map((auid) => (
                             <View key={auid} style={styles.chip}>
-                                <HolderAvatar auid={auid} username={usernames[auid]} />
+                                <HolderAvatar
+                                    auid={auid}
+                                    username={usernames[auid]}
+                                    imageUrl={avatarUrls[String(auid)]}
+                                />
                                 <Text style={styles.chipName}>{usernames[auid] || String(auid)}</Text>
                             </View>
                         ))

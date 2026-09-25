@@ -21,6 +21,10 @@ export function useBackendTranslation(text: string | null | undefined): string {
       if (!cancelled) {
         setTranslated(result)
       }
+    }).catch(() => {
+      if (!cancelled) {
+        setTranslated(value)
+      }
     })
 
     return () => {
@@ -43,13 +47,17 @@ export function TranslatedText({ text, className, as: Component = "span", prefix
   const translated = useBackendTranslation(text)
   if (!text) return null
   
-  // Прибираємо "(бал)" завжди, якщо це українська або угорська локаль або якщо є префікс
+  // Прибираємо "(бал)" / "(pont)" / Slovak "(bod|body|bodov)" — backend score-unit suffixes
   let finalText = translated
   
   const removePostfixes = (str: string) => {
     let s = str
     if (s.includes("(бал)")) s = s.replace("(бал)", "")
     if (s.includes("(pont)")) s = s.replace("(pont)", "")
+    if (s.includes("(bodov)")) s = s.replace("(bodov)", "")
+    if (s.includes("(body)")) s = s.replace("(body)", "")
+    if (s.includes("(bodu)")) s = s.replace("(bodu)", "")
+    if (s.includes("(bod)")) s = s.replace("(bod)", "")
     return s.trim()
   }
 

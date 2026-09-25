@@ -23,40 +23,59 @@ const OPTIONS: SecureStore.SecureStoreOptions = {
     keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
 }
 
+type StoredSession = Omit<AxusSession, "expiresIn" | "refreshTokenExpiresIn">
+let cachedSession: StoredSession | null | undefined
+let queue: Promise<void> = Promise.resolve()
+
+function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    const result = queue.then(operation, operation)
+    queue = result.then(() => undefined, () => undefined)
+    return result
+}
+
 export async function saveSession(session: AxusSession): Promise<void> {
-    await Promise.all([
-        SecureStore.setItemAsync(KEYS.accessToken, session.accessToken, OPTIONS),
-        SecureStore.setItemAsync(KEYS.refreshToken, session.refreshToken, OPTIONS),
-        SecureStore.setItemAsync(KEYS.auid, session.auid, OPTIONS),
-        SecureStore.setItemAsync(KEYS.username, session.username, OPTIONS),
-        SecureStore.setItemAsync(KEYS.displayName, session.displayName, OPTIONS),
-    ])
+    await enqueue(async () => {
+        await Promise.all([
+            SecureStore.setItemAsync(KEYS.accessToken, session.accessToken, OPTIONS),
+            SecureStore.setItemAsync(KEYS.refreshToken, session.refreshToken, OPTIONS),
+            SecureStore.setItemAsync(KEYS.auid, session.auid, OPTIONS),
+            SecureStore.setItemAsync(KEYS.username, session.username, OPTIONS),
+            SecureStore.setItemAsync(KEYS.displayName, session.displayName, OPTIONS),
+        ])
+        cachedSession = session
+    })
 }
 
 /** The stored session, or null when signed out. */
-export async function loadSession(): Promise<Omit<
-    AxusSession,
-    "expiresIn" | "refreshTokenExpiresIn"
-> | null> {
-    const [accessToken, refreshToken, auid, username, displayName] = await Promise.all([
-        SecureStore.getItemAsync(KEYS.accessToken, OPTIONS),
-        SecureStore.getItemAsync(KEYS.refreshToken, OPTIONS),
-        SecureStore.getItemAsync(KEYS.auid, OPTIONS),
-        SecureStore.getItemAsync(KEYS.username, OPTIONS),
-        SecureStore.getItemAsync(KEYS.displayName, OPTIONS),
-    ])
-    if (!refreshToken || !auid) return null
-    return {
-        accessToken: accessToken ?? "",
-        refreshToken,
-        auid,
-        username: username ?? "axus_user",
-        displayName: displayName ?? `@${username ?? "axus_user"}`,
-    }
+export async function loadSession(): Promise<StoredSession | null> {
+    await queue
+    if (cachedSession !== undefined) return cachedSession
+    return enqueue(async () => {
+        if (cachedSession === undefined) {
+            const [accessToken, refreshToken, auid, username, displayName] = await Promise.all([
+                SecureStore.getItemAsync(KEYS.accessToken, OPTIONS),
+                SecureStore.getItemAsync(KEYS.refreshToken, OPTIONS),
+                SecureStore.getItemAsync(KEYS.auid, OPTIONS),
+                SecureStore.getItemAsync(KEYS.username, OPTIONS),
+                SecureStore.getItemAsync(KEYS.displayName, OPTIONS),
+            ])
+            cachedSession = refreshToken && auid ? {
+                accessToken: accessToken ?? "",
+                refreshToken,
+                auid,
+                username: username ?? "axus_user",
+                displayName: displayName ?? `@${username ?? "axus_user"}`,
+            } : null
+        }
+        return cachedSession
+    })
 }
 
 export async function clearSession(): Promise<void> {
-    await Promise.all(
-        Object.values(KEYS).map((key) => SecureStore.deleteItemAsync(key, OPTIONS)),
-    )
+    await enqueue(async () => {
+        await Promise.all(
+            Object.values(KEYS).map((key) => SecureStore.deleteItemAsync(key, OPTIONS)),
+        )
+        cachedSession = null
+    })
 }
