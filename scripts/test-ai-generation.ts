@@ -4,9 +4,12 @@ import { generateObject } from "ai"
 import { getTastingModel } from "../lib/ai/provider"
 import {
     buildTastingPrompt,
-    TASTING_SYSTEM_PROMPT, tastingOptionsSchema,
+    buildTastingSystemPrompt,
+    TASTING_SYSTEM_PROMPT,
+    tastingOptionsSchema,
     type TastingPayload,
 } from "../lib/ai/tastingPrompt"
+import { getFewShotExamples } from "../lib/ai/commentKnowledgeBase"
 
 // Simple .env loader for CLI execution
 function loadEnv() {
@@ -236,10 +239,14 @@ async function runScenario(scenarioName: string, payload: TastingPayload) {
     try {
         const startTime = Date.now()
         const model = getTastingModel()
+        const fewShotExamples = getFewShotExamples(3)
+        console.log(`[FEW-SHOT EXAMPLES SAMPLED]:`)
+        fewShotExamples.forEach((ex, idx) => console.log(`   ${idx + 1}. "${ex}"`))
+        const system = buildTastingSystemPrompt(fewShotExamples)
         const { object } = await generateObject({
             model,
             schema: tastingOptionsSchema,
-            system: TASTING_SYSTEM_PROMPT,
+            system,
             prompt,
         })
         const durationMs = Date.now() - startTime

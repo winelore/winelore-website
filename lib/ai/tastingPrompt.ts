@@ -47,6 +47,17 @@ FORMAT & LENGTH:
   * "uk": Ukrainian sommelier shorthand (e.g. "виразна сортова типовість", "жива кислотність", "бракує щільності в середині смаку", "дрібнозернистий танін", "чистий лінійний посмак").
   * "hu": Hungarian sommelier shorthand (e.g. "szép fajtajelleg", "feszes savgerinc", "finom cseranyag", "hiányos középpalátán", "tiszta, egyenes lecsengés").`
 
+export function buildTastingSystemPrompt(fewShotExamples: string[] = []): string {
+    let prompt = TASTING_SYSTEM_PROMPT
+    if (fewShotExamples.length > 0) {
+        const formatted = fewShotExamples.map((ex, i) => `${i + 1}. "${ex}"`).join("\n")
+        prompt += `\n\nREAL EXPERT COMPETITION EXAMPLES (FEW-SHOT REFERENCE):
+Adopt the exact tone, brevity, and professional vocabulary of the following real expert comments. Do not copy them directly, but match their style:
+${formatted}`
+    }
+    return prompt
+}
+
 export function buildTastingPrompt(payload: TastingPayload): string {
     const {
         beverageType,

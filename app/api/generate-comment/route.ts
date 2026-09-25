@@ -2,10 +2,11 @@ import { generateObject } from "ai"
 import { getTastingModel } from "@/lib/ai/provider"
 import {
     buildTastingPrompt,
-    TASTING_SYSTEM_PROMPT,
+    buildTastingSystemPrompt,
     tastingOptionsSchema,
     type TastingPayload,
 } from "@/lib/ai/tastingPrompt"
+import { getFewShotExamples } from "@/lib/ai/commentKnowledgeBase"
 
 export const dynamic = "force-dynamic"
 export async function POST(req: Request) {
@@ -16,10 +17,12 @@ export async function POST(req: Request) {
         }
         const model = getTastingModel()
         const prompt = buildTastingPrompt(payload)
+        const fewShotExamples = getFewShotExamples(3)
+        const system = buildTastingSystemPrompt(fewShotExamples)
         const { object } = await generateObject({
             model,
             schema: tastingOptionsSchema,
-            system: TASTING_SYSTEM_PROMPT,
+            system,
             prompt,
         })
         return Response.json({ options: object.options })
