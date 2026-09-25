@@ -28,6 +28,9 @@ const schemaUrl = process.env.CODEGEN_GRAPHQL_SCHEMA || process.env.GRAPHQL_ENDP
 
 const config: CodegenConfig = {
     generates: {
+        './src/gql/schema.graphql': {
+            schema: schemaUrl,
+        },
         './packages/core/src/gql/': {
             schema: schemaUrl,
             documents: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}', 'packages/core/src/**/*.{ts,tsx}', '!packages/core/src/gql/**/*.{ts,tsx}'],
