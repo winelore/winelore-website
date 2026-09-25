@@ -79,7 +79,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all pages and actions, exclude static files and public assets
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Match pages and server actions, exclude static files, public assets,
+    // and API routes (API calls already carry their own auth and must not
+    // pay for a token refresh on every request).
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.well-known(?:/.*)?$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

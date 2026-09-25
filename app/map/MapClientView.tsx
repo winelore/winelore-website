@@ -160,7 +160,9 @@ export default function MapClientView() {
                         try {
                             const parsed = JSON.parse(fullBev.attributes);
                             if (parsed?.color) colorVal = parsed.color;
-                        } catch(e) {}
+                        } catch {
+                            // Malformed attributes JSON falls back to default color.
+                        }
                     }
                 }
                 fullBev.type = colorVal;
