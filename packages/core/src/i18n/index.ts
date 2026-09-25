@@ -1,6 +1,7 @@
 import en from "./locales/en"
 import uk from "./locales/uk"
-import hu from "./locales/hu" // 💡 ДОДАНО: імпорт угорської локалі
+import hu from "./locales/hu"
+import sk from "./locales/sk"
 import type { TranslationKey } from "./locales/en"
 import type { Locale } from "./types"
 
@@ -11,7 +12,8 @@ export * from "./types"
 export const messages: Record<Locale, TranslationKey> = {
   en,
   uk,
-  hu, // 💡 ДОДАНО: реєстрація в об'єкті повідомлень
+  hu,
+  sk,
 }
 
 type NestedKeyOf<T, Prefix extends string = ""> = T extends object
@@ -59,6 +61,11 @@ export function translate(
 // Slavic locales (uk) need 3 plural forms: one (1, 21, 31...), few (2-4, 22-24...),
 // many (0, 5-20, 25-30...). English/Hungarian only ever resolve to "" or "_plural".
 function resolvePluralSuffix(locale: Locale, count: number): "" | "_few" | "_plural" {
+  if (locale === "sk") {
+    if (count === 1) return ""
+    if (count >= 2 && count <= 4) return "_few"
+    return "_plural"
+  }
   if (locale !== "uk") {
     return count === 1 ? "" : "_plural"
   }
@@ -91,6 +98,7 @@ export function getDateLocale(locale: Locale): string {
   // 💡 ОНОВЛЕНО: додано повернення угорської локалі для Intl.DateTimeFormat
   if (locale === "uk") return "uk-UA"
   if (locale === "hu") return "hu-HU"
+  if (locale === "sk") return "sk-SK"
   return "en-GB"
 }
 
