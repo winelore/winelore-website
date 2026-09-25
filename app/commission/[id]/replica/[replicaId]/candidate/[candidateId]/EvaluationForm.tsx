@@ -39,7 +39,6 @@ import {
 } from '@winelore/core/evaluation';
 import { Mic, Square, Trash2, Sparkles } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { TastingCategoryScore, TastingPropertyScore, TastingPayload } from "@/lib/ai/tastingPrompt"
 
 function EnumOption({ value, formatEnumLabel }: { value: string, formatEnumLabel: (label: string) => string }) {
     const translatedLabel = formatEnumLabel(value)
@@ -552,32 +551,6 @@ export default function EvaluationForm({
                 candidateCode: latestCandidateCodeRef.current || undefined,
                 visibleAttributes: latestVisibleAttributesRef.current,
             })
-            let totalScore: number | null = null
-            currentCategories.forEach((cat) => {
-                cat.properties.forEach((p) => {
-                    if (p.isResult) {
-                        const val = currentSmart[p.code] ?? currentValues[p.code]
-                        if (val != null && !isNaN(Number(val))) {
-                            totalScore = Number(val)
-                        }
-                    }
-                })
-            })
-            const attributesMap: Record<string, string> = {}
-            if (currentVisibleAttrs && currentVisibleAttrs.length > 0) {
-                currentVisibleAttrs.forEach((attr) => {
-                    attributesMap[attr.label] = attr.value
-                })
-            }
-            const payload: TastingPayload = {
-                locale: (latestLocaleRef.current as "en" | "uk" | "hu") || "en",
-                beverageType: latestBeverageNameRef.current || "Wine",
-                candidateCode: latestCandidateCodeRef.current || undefined,
-                totalScore,
-                maxTotalScore: 100,
-                categories: categoryScores,
-                attributes: attributesMap,
-            }
             const response = await fetch("/api/generate-comment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
