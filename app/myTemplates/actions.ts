@@ -9,6 +9,7 @@ import {
     saveEvaluationTemplate,
     toCatalogEdition,
 } from '@winelore/core/commission';
+import { isTemplateOwnedBy } from '@winelore/core/dashboard';
 
 // An edition's fields as core's toCatalogEdition reads them.
 const TEMPLATE_EDITION_FIELDS = `
@@ -113,7 +114,7 @@ export async function getEvaluationTemplatesAction(ownerAuid?: number, limit: nu
             };
         });
         if (ownerAuid !== undefined) {
-            templates = templates.filter((t: any) => t.owners?.some((owner: number[]) => owner.includes(ownerAuid)));
+            templates = templates.filter((t: any) => isTemplateOwnedBy(t, ownerAuid));
         }
 
         return { templates, totalCount: data?.evaluationTemplateCount || 0 };

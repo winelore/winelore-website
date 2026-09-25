@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+"use client";
+
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import Cookies from "js-cookie";
 import { getAvatarUrlsAction } from "@/app/userActions";
 
@@ -94,25 +96,16 @@ export function useAvatars(auids: (string | number)[]) {
   return { avatars, loading };
 }
 
+const emptySubscribe = () => () => {};
+const getAuidSnapshot = () => (typeof window !== "undefined" ? Cookies.get("auid") ?? null : null);
+const getServerAuidSnapshot = () => null;
+
 /**
  * Profile photo URL for the signed-in user (auid cookie), or null when
  * signed out or photo-less. For lists, prefer useAvatars(auids).
  */
 export function useCurrentUserAvatar() {
-  const [auid, setAuid] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return Cookies.get("auid") ?? null;
-    }
-    return null;
-  });
-
-  useEffect(() => {
-    const current = Cookies.get("auid") ?? null;
-    if (current !== auid) {
-      setAuid(current);
-    }
-  }, [auid]);
-
+  const auid = useSyncExternalStore(emptySubscribe, getAuidSnapshot, getServerAuidSnapshot);
   const { avatars } = useAvatars(auid ? [auid] : []);
   return auid ? (avatars[auid] ?? null) : null;
 }

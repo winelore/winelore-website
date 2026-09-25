@@ -21,6 +21,10 @@ export function useBackendTranslation(text: string | null | undefined): string {
       if (!cancelled) {
         setTranslated(result)
       }
+    }).catch(() => {
+      if (!cancelled) {
+        setTranslated(value)
+      }
     })
 
     return () => {

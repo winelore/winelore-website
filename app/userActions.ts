@@ -41,8 +41,9 @@ export async function getUsernamesAction(auids: (string | number)[]): Promise<Re
   const config = getAxusConfig();
 
   const fetchPromises = uniqueAuids.map(async (auid) => {
-    if (displayNameCache.has(auid)) {
-      result[auid] = displayNameCache.get(auid)!;
+    const cached = displayNameCache.get(auid);
+    if (cached !== undefined) {
+      result[auid] = cached;
       return;
     }
 

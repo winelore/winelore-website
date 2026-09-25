@@ -17,11 +17,16 @@ export default function SubmitEvaluationButton({ commissionId, candidateId, scor
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
-            // Реальна мутація з твоєї схеми
-            const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || 'http://switchback.proxy.rlwy.net:43233/graphql';
+            // Route through the same-origin proxy so the auid cookie becomes
+            // X-ACTOR server-side; fall back to the public endpoint helper
+            // (which itself falls back to the configured default) otherwise.
+            const endpoint = '/api/graphql';
+            const actor = Cookies.get('auid');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (actor) headers['X-ACTOR'] = actor;
             const response = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     query: `
                         mutation SubmitEval($input: SubmitEvaluationInput!) {
@@ -36,6 +41,8 @@ export default function SubmitEvaluationButton({ commissionId, candidateId, scor
                 })
             });
 
+            if (!response.ok) throw new Error(`GraphQL proxy responded with HTTP ${response.status}`);
+
             const json = await response.json();
 
             if (json.errors) throw new Error(json.errors[0].message);
@@ -45,6 +52,7 @@ export default function SubmitEvaluationButton({ commissionId, candidateId, scor
         } catch (error) {
             console.error("Помилка відправки:", error);
             alert("Не вдалося відправити оцінку. Спробуйте ще раз.");
+        } finally {
             setIsSubmitting(false);
         }
     };

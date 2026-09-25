@@ -160,7 +160,9 @@ export default function MapClientView() {
                         try {
                             const parsed = JSON.parse(fullBev.attributes);
                             if (parsed?.color) colorVal = parsed.color;
-                        } catch(e) {}
+                        } catch {
+                            // Malformed attributes JSON falls back to default color.
+                        }
                     }
                 }
                 fullBev.type = colorVal;
@@ -213,6 +215,8 @@ export default function MapClientView() {
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
         };
     }, [isResizing]);
 

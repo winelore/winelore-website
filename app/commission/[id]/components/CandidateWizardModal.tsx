@@ -543,14 +543,24 @@ export function CandidateWizardModal({
                                                         if (parsed && parsed.vintage) {
                                                             vintageVal = String(parsed.vintage)
                                                         }
-                                                    } catch (e) {}
+                                                    } catch {
+                                                        // Malformed attributes JSON means no vintage to show.
+                                                    }
                                                 }
                                             }
 
                                             return (
                                                 <div
                                                     key={batch.id}
+                                                    role="button"
+                                                    tabIndex={0}
                                                     onClick={() => handleSelectBatch(batch)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter" || e.key === " ") {
+                                                            e.preventDefault();
+                                                            handleSelectBatch(batch);
+                                                        }
+                                                    }}
                                                     className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
                                                         isSelected
                                                             ? "bg-indigo-50 border-indigo-300 shadow-sm"
@@ -742,7 +752,7 @@ export function CandidateWizardModal({
                     {step > 1 ? (
                         <button
                             type="button"
-                            onClick={() => setStep((prev) => (prev - 1) as any)}
+                            onClick={() => setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4)}
                             disabled={isSubmitting}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
                         >

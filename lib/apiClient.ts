@@ -8,7 +8,19 @@ import { fetchWithProducerCompatibility } from './graphqlTransport';
 
 const GRAPHQL_ENDPOINT = getGraphQLEndpoint();
 const CLIENT_GRAPHQL_ENDPOINT = '/api/graphql';
+// Fallback for genuinely public server fetches. Authenticated server code
+// should resolve the real auid from cookies (see resolveServerActor below)
+// instead of relying on this.
 const DEFAULT_ACTOR = '1';
+
+async function resolveServerActor(): Promise<string | null> {
+    try {
+        const { cookies } = await import('next/headers');
+        return (await cookies()).get('auid')?.value ?? null;
+    } catch {
+        return null;
+    }
+}
 
 function isNotFoundError(err: any): boolean {
     const code = err.extensions?.code;
@@ -25,6 +37,20 @@ function isNotFoundError(err: any): boolean {
 }
 
 
+
+function logFilteredErrors(context: string, errors: any[], data: unknown) {
+    const ignoredNotFound = errors.filter((err: any) => isNotFoundError(err));
+    const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
+    if (ignoredNotFound.length > 0) {
+        console.warn(`GraphQL NOT_FOUND suppressed (${context}):`, ignoredNotFound.map((e: any) => e.message || e.extensions?.code));
+    }
+    if (filteredErrors.length > 0) {
+        logGraphQLPipelineError(context, filteredErrors, !data);
+        if (!data) {
+            throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
+        }
+    }
+}
 
 function logGraphQLPipelineError(context: string, errors: any[], isFatal: boolean) {
     if (!errors || errors.length === 0) return;
@@ -103,13 +129,7 @@ export async function fetchGraphQLRaw<TResult, TVariables>(
     const { data, errors } = await parseJsonResponse(response, 'fetchGraphQLRaw');
 
     if (errors) {
-        const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
-        if (filteredErrors.length > 0) {
-            logGraphQLPipelineError('fetchGraphQLRaw', filteredErrors, !data);
-            if (!data) {
-                throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
-            }
-        }
+        logFilteredErrors('fetchGraphQLRaw', errors, data);
     }
 
     return data;
@@ -148,15 +168,20 @@ export async function mutateGraphQLRaw<TResult>(
 
 export async function fetchGraphQL<TResult, TVariables>(
     document: TypedDocumentNode<TResult, TVariables>,
-    variables?: TVariables
+    variables?: TVariables,
+    options?: { headers?: Record<string, string> }
 ): Promise<TResult> {
     const isServer = typeof window === 'undefined';
     const endpoint = isServer ? GRAPHQL_ENDPOINT : CLIENT_GRAPHQL_ENDPOINT;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options?.headers ?? {}) };
     let response: Response;
 
-    if (isServer) {
-        headers['X-ACTOR'] = DEFAULT_ACTOR;
+    if (isServer && !headers['X-ACTOR']) {
+        // Authenticated server components must act as the signed-in user, not
+        // as the anonymous fallback. Public pages without a cookie still use
+        // DEFAULT_ACTOR.
+        const serverActor = await resolveServerActor();
+        headers['X-ACTOR'] = serverActor ?? DEFAULT_ACTOR;
     }
 
     try {
@@ -177,13 +202,7 @@ export async function fetchGraphQL<TResult, TVariables>(
     const { data, errors } = await parseJsonResponse(response, 'fetchGraphQL');
 
     if (errors) {
-        const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
-        if (filteredErrors.length > 0) {
-            logGraphQLPipelineError('fetchGraphQL', filteredErrors, !data);
-            if (!data) {
-                throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
-            }
-        }
+        logFilteredErrors('fetchGraphQL', errors, data);
     }
 
     return data;
@@ -198,7 +217,7 @@ const requester = async <R, V>(
     vars?: V,
     options?: RequesterOptions
 ): Promise<R> => {
-    let actor = DEFAULT_ACTOR;
+    let actor: string | undefined;
     const cleanHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
     };
@@ -214,7 +233,11 @@ const requester = async <R, V>(
         }
     }
 
-    cleanHeaders['X-ACTOR'] = actor;
+    if (!actor && typeof window === 'undefined') {
+        actor = (await resolveServerActor()) ?? DEFAULT_ACTOR;
+    }
+
+    cleanHeaders['X-ACTOR'] = actor ?? DEFAULT_ACTOR;
 
     const response = await fetchWithProducerCompatibility(GRAPHQL_ENDPOINT, {
         method: 'POST',
@@ -229,13 +252,7 @@ const requester = async <R, V>(
     const { data, errors } = await parseJsonResponse(response, 'SDK requester');
 
     if (errors) {
-        const filteredErrors = errors.filter((err: any) => !isNotFoundError(err));
-        if (filteredErrors.length > 0) {
-            logGraphQLPipelineError('SDK requester', filteredErrors, !data);
-            if (!data) {
-                throw new Error(filteredErrors[0]?.message || 'Помилка виконання GraphQL запиту');
-            }
-        }
+        logFilteredErrors('SDK requester', errors, data);
     }
 
     return data;
