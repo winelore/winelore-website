@@ -13,6 +13,7 @@ import {
     getCommissionTemplatesWithResultMarkers,
     getEvaluationsForCandidateAction,
 } from "@/app/commission/actions"
+import type { Locale } from "@winelore/core/i18n"
 
 // Server-side memory caches (15 second TTL) to ensure 0-CPU background polling
 const evaluations = cachedFetch((candidateId) => getEvaluationsForCandidateAction(candidateId), 15000)
@@ -28,7 +29,7 @@ const beverageAwards = cachedFetch(async (beverageId) => {
 export async function getCompetitionExportDataAction(
     commissions: { id: string; name: string; status: string }[],
     competitionName: string,
-    _locale: "en" | "uk" | "hu" = "en"
+    _locale: Locale = "en"
 ): Promise<CompetitionExportContext> {
     const cookieStore = await cookies()
     const auid = cookieStore.get("auid")?.value ?? null

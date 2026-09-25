@@ -94,7 +94,7 @@ export function EvaluationScreen({
                 categories,
                 values: form.values,
                 smartValues: form.smartValues,
-                locale: (locale as "en" | "uk" | "hu") || "en",
+                locale,
                 beverageType: beverageName || "Wine",
                 candidateCode: candidateCode || undefined,
                 visibleAttributes,

@@ -509,7 +509,7 @@ export default function EvaluationForm({
                 categories,
                 values,
                 smartValues: computedSmartValues,
-                locale: (locale as "en" | "uk" | "hu") || "en",
+                locale,
                 beverageType: beverageName || "Wine",
                 candidateCode: candidateCode || undefined,
                 visibleAttributes,

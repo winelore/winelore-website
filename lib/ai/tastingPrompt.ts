@@ -24,7 +24,8 @@ CRITICAL CONSTRAINTS:
    - You MUST generate the response in the specified locale:
      * "en": English
      * "uk": Ukrainian (Українська)
-     * "hu": Hungarian (Magyar)`
+     * "hu": Hungarian (Magyar)
+     * "sk": Slovak (Slovenčina)`
 
 export function buildTastingPrompt(payload: TastingPayload): string {
     const {
@@ -63,6 +64,7 @@ export function buildTastingPrompt(payload: TastingPayload): string {
         en: "English",
         uk: "Ukrainian (Українська)",
         hu: "Hungarian (Magyar)",
+        sk: "Slovak (Slovenčina)",
     }
     const targetLanguage = localeNames[locale] || "English"
     text += `\nRequired Output Language: ${targetLanguage}\n`

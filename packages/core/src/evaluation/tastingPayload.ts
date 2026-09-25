@@ -1,4 +1,5 @@
 import type { EvaluationCategory, EvaluationValues, SmartValues } from "./types"
+import type { Locale } from "../i18n/types"
 
 export interface TastingPropertyScore {
     name: string
@@ -14,7 +15,7 @@ export interface TastingCategoryScore {
 }
 
 export interface TastingPayload {
-    locale: "en" | "uk" | "hu"
+    locale: Locale
     beverageType?: string | null
     candidateCode?: string | null
     templateName?: string | null
@@ -28,7 +29,7 @@ export interface BuildTastingPayloadOptions {
     categories: EvaluationCategory[]
     values: EvaluationValues
     smartValues: SmartValues
-    locale: "en" | "uk" | "hu"
+    locale: Locale
     beverageType?: string | null
     candidateCode?: string | null
     templateName?: string | null
