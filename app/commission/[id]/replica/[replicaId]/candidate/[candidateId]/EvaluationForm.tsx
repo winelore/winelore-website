@@ -932,6 +932,7 @@ export default function EvaluationForm({
                                         </div>
                                             <div className="flex items-end gap-2">
                                         <textarea
+                                            id="general-comment-input"
                                             rows={2}
                                             value={generalComment}
                                             onChange={(e) => setGeneralComment(e.target.value)}

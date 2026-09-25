@@ -58,6 +58,16 @@ export default function WineJumperGame({ embedded = false }: { embedded?: boolea
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.code !== 'Space') return;
+            const target = e.target as HTMLElement | null;
+            if (
+                target &&
+                (target.tagName === 'INPUT' ||
+                 target.tagName === 'TEXTAREA' ||
+                 target.isContentEditable ||
+                 target.closest('input, textarea, [contenteditable="true"]'))
+            ) {
+                return;
+            }
             // Keep the page from scrolling under the player.
             e.preventDefault();
             jump();

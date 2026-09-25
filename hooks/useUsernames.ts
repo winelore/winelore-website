@@ -1,8 +1,17 @@
+"use client";
+
 import { useState, useEffect, useMemo } from "react";
 import { getUsernamesAction } from "@/app/userActions";
 
-const usernameClientCache = new Map<string, string>();
+interface UsernameCacheEntry {
+  name: string;
+  expiresAt: number;
+}
+
+const usernameClientCache = new Map<string, UsernameCacheEntry>();
 const usernameRequests = new Map<string, Promise<Record<string, string>>>();
+const USERNAME_TTL_MS = 10 * 60 * 1000;
+const FALLBACK_TTL_MS = 60 * 1000;
 
 function loadUsernames(auids: string[]) {
   const key = JSON.stringify(auids);
@@ -21,11 +30,12 @@ export function useUsernames(auids: (string | number)[]) {
 
   const [usernames, setUsernames] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
+    const now = Date.now();
     for (const id of auids) {
       const strId = String(id);
       const cached = usernameClientCache.get(strId);
-      if (cached) {
-        initial[strId] = cached;
+      if (cached && cached.expiresAt > now) {
+        initial[strId] = cached.name;
       }
     }
     return initial;
@@ -39,13 +49,17 @@ export function useUsernames(auids: (string | number)[]) {
       return;
     }
 
-    const missingAuids = parsedAuids.filter((id) => !usernameClientCache.has(id));
+    const now = Date.now();
+    const missingAuids = parsedAuids.filter((id) => {
+      const cached = usernameClientCache.get(id);
+      return !cached || cached.expiresAt <= now;
+    });
 
     // If everything is already cached:
     if (missingAuids.length === 0) {
       const cachedResults: Record<string, string> = {};
       for (const id of parsedAuids) {
-        cachedResults[id] = usernameClientCache.get(id)!;
+        cachedResults[id] = usernameClientCache.get(id)?.name ?? id;
       }
       setUsernames(cachedResults);
       setLoading(false);
@@ -57,16 +71,27 @@ export function useUsernames(auids: (string | number)[]) {
 
     loadUsernames(missingAuids)
       .then((res) => {
+        const currentTime = Date.now();
         for (const [id, name] of Object.entries(res)) {
-          if (name !== id && name !== `@${id}`) usernameClientCache.set(id, name);
+          const isFallback = !name || name === id || name === `@${id}`;
+          usernameClientCache.set(id, {
+            name: name || id,
+            expiresAt: currentTime + (isFallback ? FALLBACK_TTL_MS : USERNAME_TTL_MS),
+          });
+        }
+        for (const id of missingAuids) {
+          if (!usernameClientCache.has(id)) {
+            usernameClientCache.set(id, {
+              name: id,
+              expiresAt: currentTime + FALLBACK_TTL_MS,
+            });
+          }
         }
         if (isMounted) {
           setUsernames((prev) => {
             const next = { ...prev };
             for (const id of parsedAuids) {
-              if (usernameClientCache.has(id)) {
-                next[id] = usernameClientCache.get(id)!;
-              }
+              next[id] = usernameClientCache.get(id)?.name ?? id;
             }
             return next;
           });

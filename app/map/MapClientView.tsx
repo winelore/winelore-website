@@ -213,6 +213,8 @@ export default function MapClientView() {
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
         };
     }, [isResizing]);
 

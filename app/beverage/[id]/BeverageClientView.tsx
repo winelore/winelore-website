@@ -186,13 +186,9 @@ function producerLabel(p: ProducerDetails): string {
 }
 
 export default function BeverageClientView({ initialData, currentAuid, isNotFound, isError }: Props) {
-    const [currentTab, setCurrentTab] = useState<BeverageTab>(() => {
-        if (typeof window !== "undefined") {
-            const tabParam = new URLSearchParams(window.location.search).get("tab")
-            if (isBeverageTab(tabParam)) return tabParam
-        }
-        return defaultBeverageTab(readTechnicalSpecs(initialData?.beverage?.attributes).length)
-    })
+    const [currentTab, setCurrentTab] = useState<BeverageTab>(() =>
+        defaultBeverageTab(readTechnicalSpecs(initialData?.beverage?.attributes).length)
+    )
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -739,9 +735,9 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                         className="h-8 w-8 rounded-full object-cover shrink-0 border-2 border-white shadow-sm"
                                                         fallback={
                                                             <div
-                                                                className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient((p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
+                                                                className={`flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br ${getAvatarGradient((p.auid?.[0] ?? (p.producerId ? parseInt(p.producerId, 10) : 0)) || 0)} text-white font-bold text-[10px] shrink-0 border-2 border-white shadow-sm`}
                                                             >
-                                                                {holderInitials(producerLabel(p), (p.producerId ? parseInt(p.producerId, 10) : (p.auid ? p.auid[0] : 0)) || 0)}
+                                                                {holderInitials(producerLabel(p), (p.auid?.[0] ?? (p.producerId ? parseInt(p.producerId, 10) : 0)) || 0)}
                                                             </div>
                                                         }
                                                     />
