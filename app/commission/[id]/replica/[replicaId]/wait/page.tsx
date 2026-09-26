@@ -28,6 +28,7 @@ import {
     MemberEvaluationSection,
 } from "../../../../EvaluationCommentsDisplay"
 import { BackLink } from "@/components/BackLink"
+import { DiscussionDrawer } from "@/components/discussion/DiscussionDrawer"
 
 export default function WaitPage({ params }: { params: Promise<{ id: string; replicaId: string }> }) {
     const { id: commissionId, replicaId } = use(params);
@@ -37,6 +38,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
     const [room, setRoom] = useState<WaitRoomState>(() => emptyWaitRoom());
     const [isSwitching, setIsSwitching] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
+    const [discussionsEnabled, setDiscussionsEnabled] = useState(false);
+    const [commissionName, setCommissionName] = useState<string>("");
     // The evaluation cached at submit, until the server reports it back.
     const [cachedEvaluation, setCachedEvaluation] = useState<any | null>(null);
 
@@ -77,6 +80,8 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
             if (isRedirecting) return;
 
             setRoom(data);
+            setDiscussionsEnabled(Boolean((data as any).discussionsEnabled));
+            if ((data as any).commissionName) setCommissionName((data as any).commissionName);
 
             if (data.myEvaluation && hasEvaluationData(data.myEvaluation, data.flags)) {
                 clearCachedWaitEvaluation(commissionId, replicaId);
@@ -469,6 +474,16 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                     {t("commission.waitingOtherExperts")}
                 </div>
             </main>
+            {discussionsEnabled && room.currentCandidateId && (
+                <DiscussionDrawer
+                    replicaCandidateId={room.currentCandidateId}
+                    candidateCode={room.currentCandidateCode || ""}
+                    beverageName={room.currentCandidateBeverageName}
+                    commissionName={commissionName}
+                    members={room.members}
+                    discussionsEnabled={discussionsEnabled}
+                />
+            )}
         </div>
     );
 }
