@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -15,13 +15,18 @@ import {
     Rocket,
     PauseCircle,
     Archive,
+    Layers,
+    Calendar,
+    MapPin,
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
-import { getDateLocale } from "@/lib/i18n"
+import { getDateLocale } from "@winelore/core/i18n"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useUsernames } from "@/hooks/useUsernames"
+import { CompetitionCard, StateCard } from "@/components/list"
 import {
     type CompetitionSeries,
+    type SeriesCompetition,
     changeCompetitionSeriesNameAction,
     changeCompetitionSeriesCountriesAction,
     addCompetitionSeriesOwnerAction,
@@ -43,16 +48,17 @@ const STATUS_STYLES: Record<string, string> = {
     IN_REVIEW: "bg-amber-50 text-amber-600 border border-amber-100",
 }
 
-// `owners` is a list of lists of auid (number[][]) — flatten for display / membership checks.
 function flattenOwners(owners: number[][]): number[] {
     return owners?.flat?.() ?? []
 }
 
 export default function CompetitionSeriesClientView({
-                                                        initialSeries,
-                                                        isOwner,
-                                                    }: {
+    initialSeries,
+    initialCompetitions = [],
+    isOwner,
+}: {
     initialSeries: CompetitionSeries
+    initialCompetitions?: SeriesCompetition[]
     isOwner: boolean
 }) {
     const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
@@ -69,21 +75,29 @@ export default function CompetitionSeriesClientView({
     const [transitioning, setTransitioning] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    const formattedDate = series.createdAt ? new Intl.DateTimeFormat(getDateLocale(locale), {
-        month: 'long', day: 'numeric', year: 'numeric'
-    }).format(new Date(series.createdAt)) : ""
+    const formattedDate = series.createdAt
+        ? new Intl.DateTimeFormat(getDateLocale(locale), {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+          }).format(new Date(series.createdAt))
+        : ""
 
     const isEditable = isOwner && series.status !== "ARCHIVED"
     const owners = flattenOwners(series.owners)
-    const { usernames } = useUsernames(owners)
 
-    function withError<T>(fn: () => Promise<T>) {
-        setError(null)
-        return fn().catch((err: any) => {
-            setError(err?.message || "Щось пішло не так")
-            throw err
-        })
-    }
+    // Collect all auids from owners and competition holders for usernames lookup
+    const allAuids = useMemo(() => {
+        const set = new Set<number>(owners)
+        for (const comp of initialCompetitions) {
+            for (const h of comp.holders?.flat?.() ?? []) {
+                set.add(h)
+            }
+        }
+        return Array.from(set)
+    }, [owners, initialCompetitions])
+
+    const { usernames } = useUsernames(allAuids)
 
     async function handleSaveName() {
         const trimmed = name.trim()
@@ -105,7 +119,10 @@ export default function CompetitionSeriesClientView({
         setSavingField("countries")
         const codes = countriesType === "SPECIFIC" ? countriesCodes : undefined
         try {
-            const result = await changeCompetitionSeriesCountriesAction(series.id, { countriesType, countriesCodes: codes })
+            const result = await changeCompetitionSeriesCountriesAction(series.id, {
+                countriesType,
+                countriesCodes: codes,
+            })
             if (result.success && result.series) {
                 setSeries((prev) => ({
                     ...prev,
@@ -128,7 +145,11 @@ export default function CompetitionSeriesClientView({
         try {
             const lookup = await findAuidByUsernameAction(username)
             if (!lookup.success || lookup.auid === undefined) {
-                setError(lookup.error === "ownerNotFound" ? t("myCompetitionSeries.ownerNotFound") : (lookup.error || t("myCompetitionSeries.ownerNotFound")))
+                setError(
+                    lookup.error === "ownerNotFound"
+                        ? t("myCompetitionSeries.ownerNotFound")
+                        : lookup.error || t("myCompetitionSeries.ownerNotFound"),
+                )
                 return
             }
             const result = await addCompetitionSeriesOwnerAction(series.id, [lookup.auid])
@@ -181,8 +202,8 @@ export default function CompetitionSeriesClientView({
             <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-3xl flex flex-col gap-6">
-
+                <div className="w-full max-w-5xl flex flex-col gap-6">
+                    {/* Back button */}
                     <Link
                         href="/myCompetitionSeries"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors w-fit"
@@ -192,18 +213,30 @@ export default function CompetitionSeriesClientView({
                     </Link>
 
                     {/* Header card */}
-                    <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50">
+                    <div className="bg-white border border-slate-100 rounded-[32px] p-6 sm:p-8 shadow-xl shadow-slate-200/50">
                         <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div className="flex items-center gap-4">
                                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
-                                    <Trophy className="h-7 w-7" />
+                                    <Layers className="h-7 w-7" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">{series.name}</h2>
-                                    <p className="text-xs text-slate-400 mt-1">{t("myCompetitionSeries.createdOn")} {formattedDate}</p>
+                                    <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+                                        {series.name}
+                                    </h2>
+                                    {formattedDate && (
+                                        <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                            <Calendar className="w-3.5 h-3.5" />
+                                            {t("myCompetitionSeries.createdOn")} {formattedDate}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${STATUS_STYLES[series.status] || "bg-slate-100 text-slate-500 border border-slate-200"}`}>
+                            <span
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                                    STATUS_STYLES[series.status] ||
+                                    "bg-slate-100 text-slate-500 border border-slate-200"
+                                }`}
+                            >
                                 <Globe2 className="w-3.5 h-3.5" />
                                 {formatStatus(series.status)}
                             </span>
@@ -215,7 +248,47 @@ export default function CompetitionSeriesClientView({
                             </div>
                         )}
 
-                        {/* Status workflow actions */}
+                        {/* Read-only details banner for non-owners or general info */}
+                        {!isOwner && (
+                            <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100/80">
+                                    <Globe2 className="w-5 h-5 text-indigo-500 shrink-0" />
+                                    <div>
+                                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            {t("myCompetitionSeries.countriesTypeLabel")}
+                                        </div>
+                                        <div className="text-sm font-semibold text-slate-700 mt-0.5">
+                                            {t(`competitionSeriesCountriesType.${series.countriesType}` as any)}
+                                            {series.countriesType === "SPECIFIC" &&
+                                                series.countriesCodes &&
+                                                series.countriesCodes.length > 0 && (
+                                                    <span className="text-xs text-slate-500 ml-1.5">
+                                                        ({series.countriesCodes.join(", ")})
+                                                    </span>
+                                                )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {owners.length > 0 && (
+                                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100/80">
+                                        <Users className="w-5 h-5 text-indigo-500 shrink-0" />
+                                        <div className="min-w-0">
+                                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                                {t("myCompetitionSeries.ownersSection")}
+                                            </div>
+                                            <div className="text-sm font-semibold text-slate-700 mt-0.5 truncate">
+                                                {owners
+                                                    .map((id) => usernames[id] || `@${id}`)
+                                                    .join(", ")}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Status workflow actions — only for owners */}
                         {isOwner && (
                             <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-slate-50">
                                 {series.status === "DRAFT" && (
@@ -223,7 +296,9 @@ export default function CompetitionSeriesClientView({
                                         label={t("myCompetitionSeries.actions.submit")}
                                         icon={Send}
                                         loading={transitioning === "submit"}
-                                        onClick={() => handleTransition("submit", submitCompetitionSeriesForReviewAction)}
+                                        onClick={() =>
+                                            handleTransition("submit", submitCompetitionSeriesForReviewAction)
+                                        }
                                     />
                                 )}
                                 {(series.status === "APPROVED" || series.status === "SUSPENDED") && (
@@ -231,7 +306,9 @@ export default function CompetitionSeriesClientView({
                                         label={t("myCompetitionSeries.actions.publish")}
                                         icon={Rocket}
                                         loading={transitioning === "publish"}
-                                        onClick={() => handleTransition("publish", publishCompetitionSeriesAction)}
+                                        onClick={() =>
+                                            handleTransition("publish", publishCompetitionSeriesAction)
+                                        }
                                     />
                                 )}
                                 {series.status === "PUBLISHED" && (
@@ -240,7 +317,9 @@ export default function CompetitionSeriesClientView({
                                         icon={PauseCircle}
                                         variant="warning"
                                         loading={transitioning === "suspend"}
-                                        onClick={() => handleTransition("suspend", suspendCompetitionSeriesAction)}
+                                        onClick={() =>
+                                            handleTransition("suspend", suspendCompetitionSeriesAction)
+                                        }
                                     />
                                 )}
                                 {series.status !== "ARCHIVED" && (
@@ -249,116 +328,200 @@ export default function CompetitionSeriesClientView({
                                         icon={Archive}
                                         variant="muted"
                                         loading={transitioning === "archive"}
-                                        onClick={() => handleTransition("archive", archiveCompetitionSeriesAction)}
+                                        onClick={() =>
+                                            handleTransition("archive", archiveCompetitionSeriesAction)
+                                        }
                                     />
                                 )}
                             </div>
                         )}
                     </div>
 
-                    {/* Details / editing */}
-                    <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 flex flex-col gap-6">
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">{t("myCompetitionSeries.editTitle")}</h3>
+                    {/* Details / editing — only for owners */}
+                    {isOwner && (
+                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 sm:p-8 shadow-xl shadow-slate-200/50 flex flex-col gap-6">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+                                {t("myCompetitionSeries.editTitle")}
+                            </h3>
 
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{t("myCompetitionSeries.nameLabel")}</label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={name}
-                                    disabled={!isEditable}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
-                                />
-                                {isEditable && name.trim() !== series.name && (
-                                    <SaveButton loading={savingField === "name"} onClick={handleSaveName} />
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{t("myCompetitionSeries.countriesTypeLabel")}</label>
-                            <div className="flex flex-col md:flex-row gap-2">
-                                <select
-                                    value={countriesType}
-                                    disabled={!isEditable}
-                                    onChange={(e) => setCountriesType(e.target.value)}
-                                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all bg-white"
-                                >
-                                    {(["GLOBAL", "NOT_SPECIFIED", "SPECIFIC"] as const).map((value) => (
-                                        <option key={value} value={value}>{t(`competitionSeriesCountriesType.${value}`)}</option>
-                                    ))}
-                                </select>
-                                {countriesType === "SPECIFIC" && (
-                                    <div className="flex-1">
-                                        <CountryMultiSelect value={countriesCodes} onChange={setCountriesCodes} disabled={!isEditable} />
-                                    </div>
-                                )}
-                                {isEditable && (
-                                    countriesType !== series.countriesType ||
-                                    countriesCodes.join(",") !== (series.countriesCodes || []).join(",")
-                                ) && (
-                                    <SaveButton loading={savingField === "countries"} onClick={handleSaveCountries} />
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                                <Users className="w-3.5 h-3.5" />
-                                {t("myCompetitionSeries.ownersSection")}
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {owners.map((auid) => (
-                                    <span
-                                        key={auid}
-                                        className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-sm font-semibold text-slate-600"
-                                        title={`AUID: ${auid}`}
-                                    >
-                                        {usernames[auid] || auid}
-                                        {isEditable && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveOwner(auid)}
-                                                disabled={savingField === "owners"}
-                                                className="p-1 rounded-lg hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                                                title={t("myCompetitionSeries.removeOwner")}
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
-                                    </span>
-                                ))}
-                            </div>
-                            {isEditable && (
-                                <div className="flex gap-2 mt-1">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                    {t("myCompetitionSeries.nameLabel")}
+                                </label>
+                                <div className="flex gap-2">
                                     <input
                                         type="text"
-                                        value={newOwnerUsername}
-                                        onChange={(e) => setNewOwnerUsername(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault()
-                                                handleAddOwner()
-                                            }
-                                        }}
-                                        placeholder={t("myCompetitionSeries.placeholderUsername")}
-                                        className="w-48 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+                                        value={name}
+                                        disabled={!isEditable}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={handleAddOwner}
-                                        disabled={savingField === "owners" || !newOwnerUsername.trim()}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 text-sm font-semibold border border-slate-100 transition-all disabled:opacity-50"
-                                    >
-                                        {savingField === "owners" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                                        {t("myCompetitionSeries.addOwner")}
-                                    </button>
+                                    {isEditable && name.trim() !== series.name && (
+                                        <SaveButton loading={savingField === "name"} onClick={handleSaveName} />
+                                    )}
                                 </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                    {t("myCompetitionSeries.countriesTypeLabel")}
+                                </label>
+                                <div className="flex flex-col md:flex-row gap-2">
+                                    <select
+                                        value={countriesType}
+                                        disabled={!isEditable}
+                                        onChange={(e) => setCountriesType(e.target.value)}
+                                        className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 disabled:bg-slate-50 disabled:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all bg-white"
+                                    >
+                                        {(["GLOBAL", "NOT_SPECIFIED", "SPECIFIC"] as const).map((value) => (
+                                            <option key={value} value={value}>
+                                                {t(`competitionSeriesCountriesType.${value}` as any)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {countriesType === "SPECIFIC" && (
+                                        <div className="flex-1">
+                                            <CountryMultiSelect
+                                                value={countriesCodes}
+                                                onChange={setCountriesCodes}
+                                                disabled={!isEditable}
+                                            />
+                                        </div>
+                                    )}
+                                    {isEditable &&
+                                        (countriesType !== series.countriesType ||
+                                            countriesCodes.join(",") !==
+                                                (series.countriesCodes || []).join(",")) && (
+                                            <SaveButton
+                                                loading={savingField === "countries"}
+                                                onClick={handleSaveCountries}
+                                            />
+                                        )}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5" />
+                                    {t("myCompetitionSeries.ownersSection")}
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {owners.map((auid) => (
+                                        <span
+                                            key={auid}
+                                            className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-sm font-semibold text-slate-600"
+                                            title={`AUID: ${auid}`}
+                                        >
+                                            {usernames[auid] || `@${auid}`}
+                                            {isEditable && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveOwner(auid)}
+                                                    disabled={savingField === "owners"}
+                                                    className="p-1 rounded-lg hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                                                    title={t("myCompetitionSeries.removeOwner")}
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </span>
+                                    ))}
+                                </div>
+                                {isEditable && (
+                                    <div className="flex gap-2 mt-1">
+                                        <input
+                                            type="text"
+                                            value={newOwnerUsername}
+                                            onChange={(e) => setNewOwnerUsername(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault()
+                                                    handleAddOwner()
+                                                }
+                                            }}
+                                            placeholder={t("myCompetitionSeries.placeholderUsername")}
+                                            className="w-48 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAddOwner}
+                                            disabled={savingField === "owners" || !newOwnerUsername.trim()}
+                                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 text-sm font-semibold border border-slate-100 transition-all disabled:opacity-50"
+                                        >
+                                            {savingField === "owners" ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Plus className="w-4 h-4" />
+                                            )}
+                                            {t("myCompetitionSeries.addOwner")}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Competitions in this series section */}
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                                    <Trophy className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800 tracking-tight">
+                                        {t("myCompetitionSeries.competitionsInSeries")}
+                                    </h3>
+                                    <p className="text-xs text-slate-400">
+                                        {initialCompetitions.length > 0
+                                            ? t("myCompetitionSeries.competitionsInSeriesSubtitle", {
+                                                  count: initialCompetitions.length,
+                                              })
+                                            : t("myCompetitionSeries.noCompetitionsSubtitle")}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {isOwner && (
+                                <Link
+                                    href={`/competition/create?seriesId=${series.id}`}
+                                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>{t("myCompetitions.createButton")}</span>
+                                </Link>
                             )}
                         </div>
-                    </div>
 
+                        {initialCompetitions.length === 0 ? (
+                            <StateCard
+                                variant="empty"
+                                icon={Trophy}
+                                title={t("myCompetitionSeries.noCompetitions")}
+                                description={t("myCompetitionSeries.noCompetitionsDescription")}
+                            />
+                        ) : (
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {initialCompetitions.map((comp) => (
+                                    <CompetitionCard
+                                        key={comp.id}
+                                        competition={{
+                                            id: comp.id,
+                                            name: comp.name,
+                                            status: comp.status,
+                                            plannedStartAt: comp.plannedDates?.start ?? null,
+                                            plannedEndAt: comp.plannedDates?.end ?? null,
+                                            startedAt: comp.startedAt,
+                                            endedAt: comp.endedAt,
+                                            holder: comp.holders?.flat?.() ?? [],
+                                            series: { name: series.name },
+                                        }}
+                                        usernames={usernames}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </main>
         </div>
@@ -381,12 +544,12 @@ function SaveButton({ loading, onClick }: { loading: boolean; onClick: () => voi
 }
 
 function ActionButton({
-                          label,
-                          icon: Icon,
-                          onClick,
-                          loading,
-                          variant = "primary",
-                      }: {
+    label,
+    icon: Icon,
+    onClick,
+    loading,
+    variant = "primary",
+}: {
     label: string
     icon: React.ComponentType<{ className?: string }>
     onClick: () => void

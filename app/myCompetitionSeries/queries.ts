@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql"
+import { gql } from "@winelore/core/gql"
 
 export const GET_MY_COMPETITIONS_SERIES = gql(`
     query GetMyCompetitionSeries($limit: Int, $offset: Int, $cursor: ID) {

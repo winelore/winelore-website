@@ -2,7 +2,7 @@
 
 import { Calendar, Globe2, Trophy } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
-import { getDateLocale } from "@/lib/i18n"
+import { getDateLocale } from "@winelore/core/i18n"
 import { EntityCard, type EntityCardDensity } from "./EntityCard"
 import { competitionSeriesStatusAppearance } from "./statusAppearance"
 
@@ -35,7 +35,7 @@ export function CompetitionSeriesCard({ series, density = "comfortable" }: Compe
         <EntityCard
             href={`/competitionSeries/${series.id}`}
             icon={Trophy}
-            kicker={series.countriesType ? t(`competitionSeriesCountriesType.${series.countriesType}`) : undefined}
+            kicker={series.countriesType ? t(`competitionSeriesCountriesType.${series.countriesType}` as any) : undefined}
             title={series.name}
             meta={formattedDate ? [{ icon: Calendar, label: t("myCompetitionSeries.createdOn"), value: formattedDate }] : []}
             status={{

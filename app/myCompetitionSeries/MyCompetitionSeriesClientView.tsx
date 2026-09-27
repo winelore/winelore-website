@@ -1,203 +1,118 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import Cookies from "js-cookie"
+import { useState, useEffect } from "react"
+import { Layers, Plus } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { FileText, Trophy, Wine, Globe2, Plus, Calendar, Settings, Loader2 } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
 import { useTranslation } from "@/lib/i18n/context"
-import { getDateLocale } from "@/lib/i18n"
-import { AppHeader, type AppTabId } from "@/components/AppHeader"
-import { getMyCompetitionSeriesPageAction } from "../competitionSeries/actions"
+import {
+    ListPageShell,
+    ListPageHeader,
+    Pagination,
+    StateCard,
+    CompetitionSeriesCard,
+    type CompetitionSeriesCardData,
+} from "@/components/list"
 
-type SeriesStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "ARCHIVED" | "PUBLISHED" | "SUSPENDED"
-
-interface Series {
-    id: string
-    name: string
-    status: SeriesStatus
-    countriesType: string
-    countriesCodes: string[] | null
-    owners: number[][]
-    createdAt: string
+interface Series extends CompetitionSeriesCardData {
+    owners?: number[][]
+    countriesCodes?: string[] | null
 }
 
 interface InitialData {
     series: Series[]
 }
 
-function CompetitionSeriesCard({ series }: { series: Series }) {
-    const { formatStatus, locale, t } = useTranslation()
-    const router = useRouter()
-
-    const formattedDate = series.createdAt ? new Intl.DateTimeFormat(getDateLocale(locale), {
-        month: 'short', day: 'numeric', year: 'numeric'
-    }).format(new Date(series.createdAt)) : ""
-
-    return (
-        <div
-            role="button"
-            tabIndex={0}
-            onClick={() => router.push(`/competitionSeries/${series.id}`)}
-            onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    router.push(`/competitionSeries/${series.id}`)
-                }
-            }}
-            className="group bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 flex flex-col justify-center min-h-[140px] cursor-pointer"
-        >
-            <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                    <Trophy className="h-7 w-7" />
-                </div>
-                <div className="flex-1 min-w-0">
-                   <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 truncate block">
-                      {series?.countriesType ? t(`competitionSeriesCountriesType.${series.countriesType}`) : ''}
-                    </span>
-                    <h3 className="text-xl font-bold text-slate-800 truncate mt-0.5 group-hover:text-indigo-600 transition-colors">
-                        {series.name}
-                    </h3>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
-                <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        series.status === "APPROVED" || series.status === "PUBLISHED"
-                            ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                            : series.status === "ARCHIVED" || series.status === "SUSPENDED"
-                                ? "bg-slate-100 text-slate-500 border border-slate-200"
-                                : "bg-amber-50 text-amber-600 border border-amber-100"
-                    }`}>
-                        <Globe2 className="w-3 h-3" />
-                        {formatStatus(series.status)}
-                    </span>
-
-                    <Link
-                        href={`/competitionSeries/${series.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded-lg bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all"
-                        title="Edit Series"
-                    >
-                        <Settings className="w-4 h-4" />
-                    </Link>
-                </div>
-
-                <Link
-                    href={`/competitionSeries/create?seriesId=${series.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl transition-all"
-                >
-                    Create Competition
-                </Link>
-            </div>
-        </div>
-    )
+interface MyCompetitionSeriesProps {
+    initialData: InitialData
+    currentPage: number
+    totalPages?: number
+    totalCount?: number
+    hasError?: boolean
+    isOwner?: boolean
 }
 
 export default function MyCompetitionSeriesClientView({
-                                                          initialData,
-                                                          initialHasMore,
-                                                          pageSize,
-                                                      }: {
-    initialData: InitialData
-    initialHasMore: boolean
-    pageSize: number
-}) {
-    const [activeTab, setActiveTab] = useState<AppTabId>("competitions")
-    const [currentAuid, setCurrentAuid] = useState<number | null>(null)
-    const { t } = useTranslation()
+    initialData,
+    currentPage,
+    totalPages = 1,
+    totalCount = 0,
+    hasError = false,
+    isOwner = false,
+}: MyCompetitionSeriesProps) {
+    const { t, tCount } = useTranslation()
+    const router = useRouter()
+    const pathname = usePathname()
+    const [isLoading, setIsLoading] = useState(false)
 
-    const [series, setSeries] = useState<Series[]>(initialData.series)
-    const [offset, setOffset] = useState(initialData.series.length > 0 ? pageSize : 0)
-    const [hasMore, setHasMore] = useState(initialHasMore)
-    const [loadingMore, setLoadingMore] = useState(false)
-
-    useEffect(() => {
-        const cookieAuid = Cookies.get("auid")
-        if (cookieAuid) setCurrentAuid(parseInt(cookieAuid, 10))
-    }, [])
-
-    async function handleLoadMore() {
-        setLoadingMore(true)
-        try {
-            const result = await getMyCompetitionSeriesPageAction(offset, pageSize)
-            if (result.success) {
-                setSeries((prev) => [...prev, ...result.items])
-                setOffset(offset + pageSize)
-                setHasMore(result.hasMore)
-            } else {
-                setHasMore(false)
-            }
-        } finally {
-            setLoadingMore(false)
-        }
+    const handleJumpToPage = (pageNumber: number) => {
+        setIsLoading(true)
+        router.push(`${pathname}?page=${pageNumber}`)
     }
 
+    useEffect(() => {
+        setIsLoading(false)
+    }, [initialData])
+
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
-            <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+        <ListPageShell activeTab="competitions" isLoading={isLoading}>
+            <ListPageHeader
+                titleIcon={<Layers className="w-8 h-8 text-indigo-600" />}
+                title={t("myCompetitionSeries.title")}
+                subtitle={t("myCompetitionSeries.subtitle")}
+                countLabel={tCount("common.seriesCount", totalCount)}
+                actions={
+                    isOwner ? (
+                        <Link
+                            href="/competitionSeries/create"
+                            className="min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-5 py-3 text-sm font-bold shadow-md shadow-indigo-500/10 transition-all cursor-pointer transform active:scale-95"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>{t("myCompetitionSeries.createButton")}</span>
+                        </Link>
+                    ) : undefined
+                }
+            />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl flex flex-col gap-8">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 content-start flex-1">
+                {hasError && (
+                    <StateCard
+                        variant="error"
+                        title={t("myCompetitionSeries.errorTitle")}
+                        description={t("myCompetitionSeries.errorDescription")}
+                    />
+                )}
 
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myCompetitionSeries.title")}</h2>
-                            <p className="text-sm text-slate-500 mt-1">{t("myCompetitionSeries.subtitle")}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
-                                {t("myCompetitionSeries.count", { count: series.length })}
-                            </span>
-                            <Link
-                                href="/competitionSeries/create"
-                                className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" />
-                                {t("myCompetitionSeries.createButton")}
-                            </Link>
-                        </div>
-                    </div>
+                {!hasError &&
+                    initialData.series.map((s) => (
+                        <CompetitionSeriesCard
+                            key={s.id}
+                            series={{
+                                id: s.id,
+                                name: s.name,
+                                status: s.status,
+                                countriesType: s.countriesType,
+                                createdAt: s.createdAt,
+                            }}
+                        />
+                    ))}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {series.map((s) => (
-                            <CompetitionSeriesCard key={s.id} series={s} />
-                        ))}
+                {!hasError && initialData.series.length === 0 && (
+                    <StateCard
+                        variant="empty"
+                        icon={Layers}
+                        title={t("myCompetitionSeries.emptyTitle")}
+                        description={t("myCompetitionSeries.emptyDescription")}
+                    />
+                )}
+            </div>
 
-                        {series.length === 0 && (
-                            <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-100 rounded-[32px] shadow-xl shadow-slate-200/50">
-                                <Trophy className="w-12 h-12 text-slate-300 mb-4" />
-                                <h3 className="text-lg font-bold text-slate-700">{t("myCompetitionSeries.emptyTitle")}</h3>
-                                <p className="text-sm text-slate-500 mt-1 max-w-md">{t("myCompetitionSeries.emptyDescription")}</p>
-                                <Link
-                                    href="/competitionSeries/create"
-                                    className="mt-6 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-6 py-3 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    {t("myCompetitionSeries.createButton")}
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-
-                    {hasMore && series.length > 0 && (
-                        <div className="flex justify-center pb-4">
-                            <button
-                                type="button"
-                                onClick={handleLoadMore}
-                                disabled={loadingMore}
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-100 text-slate-600 text-sm font-semibold shadow-sm hover:bg-slate-50 hover:text-indigo-600 transition-all disabled:opacity-60"
-                            >
-                                {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {t("myCompetitionSeries.loadMore")}
-                            </button>
-                        </div>
-                    )}
-
-                </div>
-            </main>
-        </div>
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                isLoading={isLoading}
+                onPageChange={handleJumpToPage}
+            />
+        </ListPageShell>
     )
 }

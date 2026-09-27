@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic"
 
 import { cookies } from "next/headers"
-import { redirect, notFound } from "next/navigation"
-import { getCompetitionSeriesAction } from "../actions"
+import { notFound } from "next/navigation"
+import { getCompetitionSeriesAction, getCompetitionsBySeriesAction } from "../actions"
 import CompetitionSeriesClientView from "./CompetitionSeriesClientView"
 
 export default async function CompetitionSeriesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -10,17 +10,22 @@ export default async function CompetitionSeriesPage({ params }: { params: Promis
 
     const cookieStore = await cookies()
     const currentAuidStr = cookieStore.get("auid")?.value
-    if (!currentAuidStr) {
-        redirect("/auth/login")
-    }
-    const currentAuid = parseInt(currentAuidStr, 10)
+    const currentAuid = currentAuidStr ? parseInt(currentAuidStr, 10) : null
 
     const series = await getCompetitionSeriesAction(id)
     if (!series) {
         notFound()
     }
 
-    const isOwner = series.owners?.flat?.().includes(currentAuid) ?? false
+    const competitions = await getCompetitionsBySeriesAction(id)
+    const isOwner = currentAuid !== null && (series.owners?.flat?.().includes(currentAuid) ?? false)
 
-    return <CompetitionSeriesClientView initialSeries={series} isOwner={isOwner} />
+    return (
+        <CompetitionSeriesClientView
+            initialSeries={series}
+            initialCompetitions={competitions}
+            isOwner={isOwner}
+        />
+    )
 }
+

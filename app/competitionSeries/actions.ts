@@ -5,7 +5,7 @@ import { fetchGraphQL } from "@/lib/apiClient";
 import { getAxusGraphQLEndpoint } from "@/lib/axusEndpoint";
 import { GET_MY_COMPETITIONS_SERIES } from "../myCompetitionSeries/queries";
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "https://winelore-dev.thewinelore.com/graphql"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -70,7 +70,7 @@ export async function getMyCompetitionSeriesPageAction(offset: number, limit: nu
         }
         const currentAuid = parseInt(currentAuidStr, 10);
 
-        const response = await fetchGraphQL(GET_MY_COMPETITIONS_SERIES, { limit, offset }) as any;
+        const response = (await fetchGraphQL(GET_MY_COMPETITIONS_SERIES as any, { limit, offset })) as any;
         const pageItems: CompetitionSeries[] = response.competitionSeriesList?.items || [];
 
         const myItems = pageItems.filter((series) => series.owners?.flat?.().includes(currentAuid));
@@ -126,21 +126,48 @@ export async function findAuidByUsernameAction(username: string): Promise<{ succ
     }
 }
 
-// NOTE: there is no confirmed single-item query (e.g. `competitionSeries(id: ID!)`)
-// in the schema yet — only `competitionSeriesList` was verified. So reads go through
-// the list query and filter client-side. If a dedicated single-item query exists,
-// swap this out for it (cheaper than fetching the whole list).
+import { GET_COMPETITION_SERIES, GET_COMPETITIONS_BY_SERIES } from "./queries";
+
+export interface SeriesCompetition {
+    id: string;
+    name: string;
+    status: string;
+    startedAt: string | null;
+    endedAt: string | null;
+    holders: number[][];
+    plannedDates: {
+        start: string | null;
+        end: string | null;
+    } | null;
+    series: {
+        id: string;
+        name: string;
+        status?: string;
+    } | null;
+}
+
 export async function getCompetitionSeriesAction(id: string): Promise<CompetitionSeries | null> {
     if (!isValidUuid(id)) return null;
     try {
-        const response = await fetchGraphQL(GET_MY_COMPETITIONS_SERIES, { limit: 100 }) as any;
-        const items: CompetitionSeries[] = response.competitionSeriesList?.items || [];
-        return items.find((s) => s.id === id) ?? null;
+        const response = (await fetchGraphQL(GET_COMPETITION_SERIES as any, { id })) as any;
+        return response.competitionSeries ?? null;
     } catch (err: any) {
         console.error("Server Action Error (getCompetitionSeriesAction):", err);
         return null;
     }
 }
+
+export async function getCompetitionsBySeriesAction(seriesId: string, limit: number = 50): Promise<SeriesCompetition[]> {
+    if (!isValidUuid(seriesId)) return [];
+    try {
+        const response = (await fetchGraphQL(GET_COMPETITIONS_BY_SERIES as any, { seriesId, limit })) as any;
+        return response.competitionsBySeries?.items ?? [];
+    } catch (err: any) {
+        console.error("Server Action Error (getCompetitionsBySeriesAction):", err);
+        return [];
+    }
+}
+
 
 export async function createCompetitionSeriesAction(input: {
     name: string;

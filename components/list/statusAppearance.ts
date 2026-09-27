@@ -65,4 +65,20 @@ export function outcomePolicyStatusAppearance(status?: string | null): StatusApp
     return toAppearance(outcomePolicyStatusLook(status))
 }
 
+export function competitionSeriesStatusAppearance(status?: string | null): StatusAppearance {
+    switch (status) {
+        case "APPROVED":
+        case "PUBLISHED":
+            return { colorScheme: "emerald", icon: CheckCircle }
+        case "SUSPENDED":
+            return { colorScheme: "rose", icon: AlertCircle }
+        case "IN_REVIEW":
+            return { colorScheme: "amber", icon: Calendar }
+        case "DRAFT":
+        case "ARCHIVED":
+        default:
+            return { colorScheme: "slate", icon: Tag }
+    }
+}
+
 
