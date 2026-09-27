@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Layers, Trophy, User } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { TranslatedText } from "@/lib/i18n/TranslatedText"
-import { formatCompetitionTiming } from "@/lib/competitionTiming"
+import { formatCompetitionTiming } from '@winelore/core'
 import { EntityCard, type EntityCardDensity, type EntityCardMeta } from "./EntityCard"
 import { competitionStatusAppearance } from "./statusAppearance"
 

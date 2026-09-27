@@ -1,6 +1,7 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Providers } from './providers'
 import './globals.css'
 
@@ -13,23 +14,26 @@ export const metadata: Metadata = {
   title: 'WineLore - Beverage Competitions Dashboard',
   description: 'Discover and participate in beverage competitions on WineLore',
   generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+  // Icons come from app/icon.tsx and app/apple-icon.tsx; the manifest from
+  // app/manifest.ts. Together with appleWebApp these make "Add to Home Screen"
+  // on iOS launch WineLore as a standalone, full-screen app.
+  appleWebApp: {
+    capable: true,
+    title: 'WineLore',
+    statusBarStyle: 'default',
   },
+  formatDetection: {
+    telephone: false,
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Lets the layout run edge-to-edge under the notch / home indicator; the
+  // mobile shell pads itself with env(safe-area-inset-*).
+  viewportFit: 'cover',
+  themeColor: '#ffffff',
 }
 
 export default function RootLayout({
@@ -44,6 +48,7 @@ export default function RootLayout({
           {children}
         </Providers>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

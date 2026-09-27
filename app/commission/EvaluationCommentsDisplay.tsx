@@ -4,74 +4,25 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
-import type { PropertyMeta } from "./propertyMap";
-import { formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore";
+import {
+    commentHasVisibleContent,
+    formatPropertyScoreValue,
+    hasFullAssessmentDetails,
+    hasHiddenComments,
+    isResultOrGeneralComment,
+    splitDisplayedScores,
+} from '@winelore/core';
+import type { PropertyMeta } from '@winelore/core';
 
-export type CompetitionFeatureFlags = {
-    propertyCommentsEnabled: boolean;
-    voiceCommentsEnabled: boolean;
-};
-
-export function commentHasVisibleContent(
-    comment: { text?: string | null; voiceUrl?: string | null; propertyId?: string | null },
-    flags: CompetitionFeatureFlags,
-) {
-    if (comment.propertyId && !flags.propertyCommentsEnabled) return false;
-    const hasText = Boolean(comment.text?.trim());
-    const hasVoice = flags.voiceCommentsEnabled && Boolean(comment.voiceUrl);
-    return hasText || hasVoice;
-}
-
-export function isResultOrGeneralComment(
-    comment: { propertyId?: string | null },
-    propertyMap: Record<string, PropertyMeta>,
-) {
-    if (!comment.propertyId) return true;
-    return propertyMap[comment.propertyId]?.isResult === true;
-}
-
-function hasScoreValue(
-    value: string | null | undefined,
-    kind?: PropertyMeta["kind"],
-): boolean {
-    return hasStoredScoreValue(value, kind);
-}
-
-export function hasEvaluationData(
-    evaluation: {
-        scores?: Array<{ code: string; value: string | null }>;
-        comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }>;
-    },
-    flags: CompetitionFeatureFlags,
-) {
-    const hasScores = (evaluation.scores || []).some((s) => hasStoredScoreValue(s.value));
-    const hasComments = (evaluation.comments || []).some((c) => commentHasVisibleContent(c, flags));
-    return hasScores || hasComments;
-}
-
-export function hasFullAssessmentDetails(
-    evaluation: {
-        scores?: Array<{ code: string; value: string }>;
-        comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }>;
-    },
-    propertyMap: Record<string, PropertyMeta>,
-    flags: CompetitionFeatureFlags,
-) {
-    const scores = evaluation.scores || [];
-    const hasNonResultScores = scores.some((s) => propertyMap[s.code]?.isResult !== true);
-    const allComments = (evaluation.comments || []).filter((c) => commentHasVisibleContent(c, flags));
-    const hasHiddenComments = allComments.some((c) => !isResultOrGeneralComment(c, propertyMap));
-    return hasNonResultScores || hasHiddenComments;
-}
-
-export function hasHiddenComments(
-    evaluation: { comments?: Array<{ text?: string; voiceUrl?: string | null; propertyId?: string | null }> },
-    propertyMap: Record<string, PropertyMeta>,
-    flags: CompetitionFeatureFlags,
-) {
-    const allComments = (evaluation.comments || []).filter((c) => commentHasVisibleContent(c, flags));
-    return allComments.some((c) => !isResultOrGeneralComment(c, propertyMap));
-}
+// The rules for what a card shows live in core, so the app's cards match.
+export {
+    commentHasVisibleContent,
+    hasEvaluationData,
+    hasFullAssessmentDetails,
+    hasHiddenComments,
+    isResultOrGeneralComment,
+    type CompetitionFeatureFlags,
+} from '@winelore/core';
 
 function SubmittedScores({
     scores,
@@ -86,8 +37,7 @@ function SubmittedScores({
 }) {
     const { t } = useTranslation();
 
-    const regularScores = scores.filter((score) => propertyMap[score.code]?.isResult !== true);
-    const resultScores = scores.filter((score) => propertyMap[score.code]?.isResult === true);
+    const { regular: regularScores, result: resultScores } = splitDisplayedScores(scores, propertyMap);
 
     const borderClass = accent === "indigo" ? "border-indigo-300" : "border-indigo-200";
 
@@ -294,9 +244,8 @@ function MemberEvaluationDetails({
     propertyCommentsEnabled: boolean;
     voiceCommentsEnabled: boolean;
 }) {
-    const scores = (evaluation.scores || []).filter((s) =>
-        hasScoreValue(s.value, propertyMap[s.code]?.kind),
-    );
+    const { regular, result } = splitDisplayedScores(evaluation.scores, propertyMap);
+    const scores = [...regular, ...result];
 
     return (
         <>
@@ -331,8 +280,10 @@ export function MemberEvaluationSection({
     onConfirmEvaluation,
 }: {
     evaluation: {
-        id?: string;
-        status?: string;
+        // Core's normalized evaluation uses null for "not set"; the raw server
+        // shapes this is also given use undefined.
+        id?: string | null;
+        status?: string | null;
         scores?: Array<{ code: string; value: string }>;
         comments?: Array<{ id: string; text?: string; voiceUrl?: string | null; propertyId?: string | null }>;
     };

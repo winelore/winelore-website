@@ -1,20 +1,26 @@
 "use client"
 
+import { useEffect } from "react"
+
 // This replaces the entire root layout when the layout itself throws, so it
 // can't rely on Providers/LocaleProvider (they live inside the layout that
 // just failed) — it defines its own <html>/<body> and stays deliberately
 // minimal and English-only, matching Next.js's own guidance for this file.
 
 export default function GlobalError({
+    error,
     reset,
 }: {
     error: Error & { digest?: string }
     reset: () => void
 }) {
+    useEffect(() => {
+        console.error("Unhandled root layout error:", error)
+    }, [error])
     return (
         <html lang="en">
             <body className="font-sans antialiased">
-                <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50/50 p-6 text-center">
+                <div className="flex min-h-app flex-col items-center justify-center gap-4 bg-slate-50/50 p-6 text-center">
                     <h2 className="text-2xl font-extrabold text-slate-800">Something went wrong</h2>
                     <p className="max-w-md text-sm text-slate-500">
                         The application hit an unexpected error and couldn&apos;t recover on its own. You can try again, or reload the page.

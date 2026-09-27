@@ -3,56 +3,36 @@
 import type { LucideIcon } from "lucide-react"
 import { Trophy, Wine, Home, Map } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { ProfileMenu } from "@/components/wine-lore-main"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { MobileNavBar } from "@/components/mobile/MobileNavBar"
+import { MobileTabBar } from "@/components/mobile/MobileTabBar"
 import { useTranslation } from "@/lib/i18n/context"
 
-import { useEffect, useState } from "react"
-import Cookies from "js-cookie"
-import { getUsernamesAction } from "@/app/userActions"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 export type AppTabId = "home" | "competitions" | "beverages" | "map" | "none"
 
 interface AppHeaderProps {
   activeTab: AppTabId
   onTabChange?: (tab: AppTabId) => void
+  /**
+   * Phones only: show the bottom tab bar. Turn off for focused task screens
+   * (scoring a wine, filling a create form) — like a pushed iOS screen that
+   * hides the tab bar, it keeps the whole viewport for the task at hand.
+   */
+  showMobileTabBar?: boolean
 }
 
 export function AppHeader({
   activeTab,
   onTabChange,
+  showMobileTabBar = true,
 }: AppHeaderProps) {
   const { t } = useTranslation()
-  const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-    const storedAuid = Cookies.get("auid")
-    const storedUsername = Cookies.get("username")
-    const storedDisplayName = Cookies.get("displayName")
-    
-    if (storedAuid) {
-      if (storedDisplayName) {
-        setCurrentUser(storedDisplayName)
-      } else {
-        setCurrentUser(storedUsername ? `@${storedUsername}` : storedAuid)
-        
-        getUsernamesAction([storedAuid])
-          .then((res) => {
-            if (res[storedAuid]) {
-              setCurrentUser(res[storedAuid])
-              Cookies.set("displayName", res[storedAuid], { path: "/", secure: false, sameSite: "lax" })
-            }
-          })
-          .catch((err) => {
-            console.error("Failed to fetch display name in header:", err)
-          })
-      }
-    }
-  }, [])
+  // undefined until hydration has read the auth cookies; null when signed out.
+  const currentUser = useCurrentUser()
+  const mounted = currentUser !== undefined
 
   const tabs: { id: AppTabId; label: string; icon: LucideIcon; href: string }[] = [
     { id: "home", label: t("common.home"), icon: Home, href: "/" },
@@ -62,7 +42,12 @@ export function AppHeader({
   ]
 
   return (
-    <header className="flex shrink-0 items-center border-b border-slate-100 bg-white px-3 py-3 sm:px-6 sm:py-4">
+    <>
+    <MobileNavBar />
+    {showMobileTabBar && (
+      <MobileTabBar tabs={tabs} activeTab={activeTab} username={currentUser} />
+    )}
+    <header data-app-header className="hidden md:flex shrink-0 items-center border-b border-slate-100 bg-white px-3 py-3 sm:px-6 sm:py-4">
       <div className="flex flex-1 items-center justify-start min-w-0">
         <Link href="/" className="text-lg sm:text-2xl font-bold tracking-tight text-slate-800 transition-colors hover:text-slate-600 truncate">
           WineLore
@@ -75,15 +60,14 @@ export function AppHeader({
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (
-              <button
+              <Link
                 key={tab.id}
-                type="button"
+                href={tab.href}
                 aria-label={tab.label}
-                onClick={() => {
+                onClick={(event) => {
                   if (onTabChange) {
+                    event.preventDefault()
                     onTabChange(tab.id)
-                  } else {
-                    router.push(tab.href)
                   }
                 }}
                 className={`flex items-center gap-1 sm:gap-2 rounded-full px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
@@ -94,7 +78,7 @@ export function AppHeader({
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-indigo-600" : ""}`} />
                 <span className="hidden sm:inline">{tab.label}</span>
-              </button>
+              </Link>
             )
           })}
         </nav>
@@ -116,5 +100,6 @@ export function AppHeader({
         )}
       </div>
     </header>
+    </>
   )
 }

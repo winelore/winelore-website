@@ -1,6 +1,6 @@
 import { commentHasVisibleContent } from "../../EvaluationCommentsDisplay"
-import type { PropertyMeta } from "../../propertyMap"
-import { formatPropertyScoreValue, type BooleanScoreLabels, hasStoredScoreValue } from "@/lib/formatPropertyScore"
+import { formatPropertyScoreValue, hasStoredScoreValue } from '@winelore/core';
+import type { PropertyMeta, BooleanScoreLabels } from '@winelore/core';
 
 function shouldIncludeInExpertExport(
     code: string,
@@ -322,7 +322,7 @@ export function downloadCsv(content: string, filename: string): void {
     link.href = url
     link.download = filename
     link.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 export async function downloadResultsXlsx(
@@ -358,6 +358,4 @@ export async function downloadResultsXlsx(
     XLSX.writeFile(wb, filename)
 }
 
-export function sanitizeFilename(name: string): string {
-    return name.replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").slice(0, 80) || "results"
-}
+export { sanitizeFilename } from "@winelore/core/results"

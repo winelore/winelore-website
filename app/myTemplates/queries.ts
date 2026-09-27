@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql"
+import { gql } from '@winelore/core/gql'
 
 export const CHANGE_EVALUATION_TEMPLATE_NAME = gql(`
   mutation ChangeEvaluationTemplateName($id: ID!, $newName: String!) {

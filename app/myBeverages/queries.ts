@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql"
+import { gql } from '@winelore/core/gql'
 
 export const GET_MY_BEVERAGES = gql(`
   query GetMyBeverages($limit: Int, $cursor: ID, $offset: Int, $filter: BeverageFilterInput, $producer: [Int!]) {

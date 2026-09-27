@@ -23,7 +23,7 @@ function MapClickHandler({
     onSelectLocation: (lat: number, lng: number) => void;
 }) {
     useMapEvents({
-        click(e) {
+        click(e: any) {
             onSelectLocation(e.latlng.lat, e.latlng.lng);
         },
     });
@@ -76,7 +76,7 @@ export default function LocationPickerMapInner({
         try {
             const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
-                { headers: { 'Accept-Language': 'uk,en,hu' } }
+                { headers: { 'Accept-Language': 'uk,en,hu,sk' } }
             );
             if (res.ok) {
                 const data = await res.json();
@@ -98,7 +98,7 @@ export default function LocationPickerMapInner({
         try {
             const res = await fetch(
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-                { headers: { 'Accept-Language': 'uk,en,hu' } }
+                { headers: { 'Accept-Language': 'uk,en,hu,sk' } }
             );
             if (res.ok) {
                 const data = await res.json();
@@ -202,7 +202,7 @@ export default function LocationPickerMapInner({
                             icon={markerIcon}
                             draggable={!disabled}
                             eventHandlers={{
-                                dragend: (e) => {
+                                dragend: (e: any) => {
                                     const latlng = e.target.getLatLng();
                                     handleMapClick(latlng.lat, latlng.lng);
                                 },

@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql";
+import { gql } from '@winelore/core/gql';
 
 export const CREATE_OUTCOME_POLICY = gql(`
   mutation CreateOutcomePolicy($input: CreateOutcomePolicyInput!) {

@@ -2,7 +2,7 @@
 
 import { Globe } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
-import { LOCALE_LABELS, LOCALES, type Locale } from "@/lib/i18n/types"
+import { LOCALE_LABELS, LOCALES, type Locale } from '@winelore/core/i18n/types'
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -1,9 +1,11 @@
 import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
 import { isReplicaCandidateFinished } from "../../../../../replicaUtils"
 import { notFound, redirect } from "next/navigation"
-import { getGeographicInfo } from "../../../../../../../lib/geocoding"
+import { getGeographicInfo } from "../../../../../../../lib/geocoding.server"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
 import { cookies } from "next/headers"
+import { selectVisibleAttributes } from "@winelore/core/evaluation"
+import { normalizeAuids } from "@winelore/core"
 
 interface Props {
     params: Promise<{ id: string; replicaId: string; candidateId: string }>
@@ -65,6 +67,13 @@ export default async function CandidateEvaluationPage({ params }: Props) {
 
     // If this candidate is not the currently active candidate for the replica, redirect appropriately
     const currentReplica = (commission.replicas || []).find((r: any) => r.id === currentReplicaId)
+    const isMember = currentReplica?.members?.some((m: any) =>
+        normalizeAuids(m.auid).includes(auidStr)
+    )
+    if (!isMember) {
+        redirect(`/commission/${commissionId}`)
+    }
+
     if (currentReplica?.currentCandidateId && currentReplica.currentCandidateId !== candidateId) {
         const activeEval = await getMyEvaluationForCandidateAction(currentReplica.currentCandidateId)
         if (!activeEval?.isComplete) {
@@ -101,89 +110,18 @@ export default async function CandidateEvaluationPage({ params }: Props) {
     // Use the dynamic evaluation template from the backend
     const categories = commission.competition?.evaluationTemplateEdition?.categories || []
     const evalVisibleAttr = commission.evaluationVisibleAttributes || { beverage: [], batch: [], sample: [] };
-    const visibleAttributes: { label: string; value: string }[] = [];
 
-    // === DEBUG LOGGING ===
-    console.log("[DEBUG attributes] evalVisibleAttr:", JSON.stringify(evalVisibleAttr));
-    console.log("[DEBUG attributes] currentCandidate?.sample:", JSON.stringify(currentCandidate?.sample));
-    console.log("[DEBUG attributes] beverage.attributes (raw):", currentCandidate?.sample?.batch?.beverage?.attributes);
-    console.log("[DEBUG attributes] batch.attributes (raw):", currentCandidate?.sample?.batch?.attributes);
-    console.log("[DEBUG attributes] sample.attributes (raw):", currentCandidate?.sample?.attributes);
-    // ====================
-
-    // Функція для надійного парсингу атрибутів (підтримує як JSON, так і Kotlin Map {key=value})
-    function parseAttributesString(attrStr: unknown): Record<string, string> {
-        if (!attrStr) return {};
-        if (typeof attrStr === 'object' && attrStr !== null) {
-            const result: Record<string, string> = {};
-            Object.entries(attrStr).forEach(([k, v]) => {
-                if (v !== null && v !== undefined) result[k] = String(v);
-            });
-            return result;
-        }
-
-        const trimmed = String(attrStr).trim();
-        if (!trimmed) return {};
-
-        // 1. Спробуємо стандартний JSON
-        try {
-            const parsed = JSON.parse(trimmed);
-            if (parsed && typeof parsed === "object") {
-                const result: Record<string, string> = {};
-                Object.entries(parsed).forEach(([k, v]) => {
-                    if (v !== null && v !== undefined) result[k] = String(v);
-                });
-                return result;
-            }
-        } catch (e) {
-            // Це не JSON, йдемо далі
-        }
-
-        // 2. Спробуємо Kotlin Map формат: {key1=val1, key2=val2}
-        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-            const content = trimmed.slice(1, -1).trim();
-            if (!content) return {};
-
-            const result: Record<string, string> = {};
-            const parts = content.split(/,\s*/);
-            parts.forEach(part => {
-                const eqIdx = part.indexOf('=');
-                if (eqIdx !== -1) {
-                    const key = part.substring(0, eqIdx).trim().replace(/^["']|["']$/g, "");
-                    const val = part.substring(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
-                    if (key) result[key] = val;
-                }
-            });
-            return result;
-        }
-
-        return {};
-    }
-
-    // Допоміжна функція для фільтрації та відбору лише видимих атрибутів
-    const processAttributes = (rawAttr: string | any | undefined, visibleKeys: string[]) => {
-        if (!rawAttr || !visibleKeys || visibleKeys.length === 0) return;
-
-        const parsed = parseAttributesString(rawAttr);
-        const parsedKeys = Object.keys(parsed);
-
-        visibleKeys.forEach((key) => {
-            // Шукаємо ключ без урахування регістру (наприклад vintage === Vintage)
-            const actualKey = parsedKeys.find(k => k.toLowerCase() === key.toLowerCase());
-            if (actualKey && parsed[actualKey] !== undefined && parsed[actualKey] !== null && parsed[actualKey] !== "") {
-                visibleAttributes.push({ label: key, value: String(parsed[actualKey]) });
-            }
-        });
-    };
-
-    // Collecting attributes (beverage -> batch -> sample)
+    // Attributes are shown most-general first: beverage, then batch, then sample.
     const beverage = currentCandidate?.sample?.batch?.beverage;
     const beverageName = beverage?.name || null;
     const batch = currentCandidate?.sample?.batch;
     const sample = currentCandidate?.sample;
-    processAttributes(beverage?.attributes, evalVisibleAttr.beverage);
-    processAttributes(batch?.attributes, evalVisibleAttr.batch);
-    processAttributes(sample?.attributes, evalVisibleAttr.sample);
+
+    const visibleAttributes = [
+        ...selectVisibleAttributes(beverage?.attributes, evalVisibleAttr.beverage),
+        ...selectVisibleAttributes(batch?.attributes, evalVisibleAttr.batch),
+        ...selectVisibleAttributes(sample?.attributes, evalVisibleAttr.sample),
+    ];
 
     return (
         <CandidateEvaluationClientView
@@ -203,6 +141,8 @@ export default async function CandidateEvaluationPage({ params }: Props) {
             propertyCommentsEnabled={commission.competition.propertyCommentsEnabled}
             voiceCommentsEnabled={commission.competition.voiceCommentsEnabled}
             visibleAttributes={visibleAttributes}
+            discussionsEnabled={(commission.discussionPolicy ?? "ALWAYS") === "ALWAYS"}
+            members={currentReplica?.members || commission.members || []}
         />
     )
 }

@@ -1,20 +1,23 @@
 "use client"
 
-import React, { use, useEffect, useMemo, useState } from "react"
+import React, { use, useEffect, useMemo, useState, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import { useMobileNavTitle } from "@/lib/mobileNav"
 import {
     completeCommissionReplicaAction,
     getWaitDataAction,
     startNextPanelAction,
 } from "../../../../actions"
-import { normalizeAuids } from "../../../../auidUtils"
+import { normalizeAuids } from '@winelore/core'
 import WaitPanelResults from "../wait/WaitPanelResults"
 import { BackLink } from "@/components/BackLink"
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
+
 
 type PanelSummaryData = Awaited<ReturnType<typeof getWaitDataAction>>
 
@@ -27,68 +30,69 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
     const [isAdvancing, setIsAdvancing] = useState(false)
     const [loadError, setLoadError] = useState(false)
 
-    useEffect(() => {
+    const isFetchingRef = useRef(false)
+    const summaryPanelIdRef = useRef<string | null>(null)
+
+    const loadSummary = useCallback(async () => {
         if (!Cookies.get("auid")) {
             router.replace("/auth/login")
             return
         }
 
-        let mounted = true
-        let isFetching = false
-        let summaryPanelId: string | null = null
+        if (isFetchingRef.current) return
+        isFetchingRef.current = true
 
-        const loadSummary = async () => {
-            if (!mounted || isFetching) return
-            isFetching = true
-            try {
-                const nextData = await getWaitDataAction(commissionId, replicaId)
-                if (!mounted) return
+        try {
+            const nextData = await getWaitDataAction(commissionId, replicaId)
 
-                if (nextData.replicaStatus === "COMPLETED") {
-                    window.location.href = `/commission/${commissionId}/results`
-                    return
-                }
+            if (nextData.replicaStatus === "COMPLETED") {
+                router.replace(`/commission/${commissionId}/results`)
+                return
+            }
 
-                if (!nextData.currentPanelId) {
-                    router.replace(`/commission/${commissionId}`)
-                    return
-                }
+            if (!nextData.currentPanelId) {
+                router.replace(`/commission/${commissionId}`)
+                return
+            }
 
-                if (summaryPanelId === null) {
-                    if (!nextData.isPanelFinished) {
-                        const destination = nextData.currentCandidateId
-                            ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
-                            : `/commission/${commissionId}/replica/${replicaId}/wait`
-                        router.replace(destination)
-                        return
-                    }
-                    summaryPanelId = nextData.currentPanelId
-                } else if (nextData.currentPanelId !== summaryPanelId || !nextData.isPanelFinished) {
+            if (summaryPanelIdRef.current === null) {
+                if (!nextData.isPanelFinished) {
                     const destination = nextData.currentCandidateId
                         ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
                         : `/commission/${commissionId}/replica/${replicaId}/wait`
-                    window.location.href = destination
+                    router.replace(destination)
                     return
                 }
-
-                setData(nextData)
-                setLoadError(false)
-            } catch (error) {
-                console.error("Failed to load panel summary", error)
-                if (mounted) setLoadError(true)
-            } finally {
-                isFetching = false
-                if (mounted) setIsLoading(false)
+                summaryPanelIdRef.current = nextData.currentPanelId
+            } else if (nextData.currentPanelId !== summaryPanelIdRef.current || !nextData.isPanelFinished) {
+                const destination = nextData.currentCandidateId
+                    ? `/commission/${commissionId}/replica/${replicaId}/candidate/${nextData.currentCandidateId}`
+                    : `/commission/${commissionId}/replica/${replicaId}/wait`
+                router.replace(destination)
+                return
             }
-        }
 
-        loadSummary()
-        const interval = window.setInterval(loadSummary, 3000)
-        return () => {
-            mounted = false
-            window.clearInterval(interval)
+            setData(nextData)
+            setLoadError(false)
+        } catch (error) {
+            console.error("Failed to load panel summary", error)
+            setLoadError(true)
+        } finally {
+            isFetchingRef.current = false
+            setIsLoading(false)
         }
     }, [commissionId, replicaId, router])
+
+    useEffect(() => {
+        loadSummary()
+    }, [loadSummary])
+
+    useEvaluationLiveUpdates({
+        commissionId,
+        replicaId,
+        onUpdate: loadSummary,
+        enabled: !isAdvancing,
+    })
 
     const role = useMemo(() => {
         const actorAuid = Cookies.get("auid")
@@ -101,7 +105,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
         setIsAdvancing(true)
         try {
             await startNextPanelAction(replicaId, data.nextPanelId, data.nextPanelFirstCandidateId)
-            window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${data.nextPanelFirstCandidateId}`
+            router.replace(`/commission/${commissionId}/replica/${replicaId}/candidate/${data.nextPanelFirstCandidateId}`)
         } catch (error) {
             console.error("Failed to start next panel", error)
             setIsAdvancing(false)
@@ -113,16 +117,18 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
         setIsAdvancing(true)
         try {
             await completeCommissionReplicaAction(replicaId)
-            window.location.href = `/commission/${commissionId}/results`
+            router.replace(`/commission/${commissionId}/results`)
         } catch (error) {
             console.error("Failed to complete replica", error)
             setIsAdvancing(false)
         }
     }
 
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(data ? `${t("commission.panelSummaryTitle")}: ${data.currentPanelName}` : null)
+
     if (isLoading) {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50/50">
+            <div className="flex min-h-app flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex flex-1 items-center justify-center p-6">
                     <div className="flex items-center gap-3 font-medium text-slate-500">
@@ -136,7 +142,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
 
     if (!data || !data.currentPanelId) {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50/50">
+            <div className="flex min-h-app flex-col bg-slate-50/50">
                 <AppHeader activeTab="competitions" />
                 <main className="flex flex-1 items-center justify-center p-6 text-center text-slate-500">
                     {loadError ? t("commission.panelSummaryLoadError") : t("common.loading")}
@@ -148,9 +154,9 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
     const hasNextPanel = Boolean(data.nextPanelId && data.nextPanelFirstCandidateId)
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50/50">
+        <div className="flex min-h-app flex-col bg-slate-50/50">
             <AppHeader activeTab="competitions" />
-            <main className="flex-1 p-6 md:p-10">
+            <main className="flex-1 px-4 pt-1 pb-6 md:p-10">
                 <div className="mx-auto max-w-7xl space-y-8">
                     <BackLink href={`/commission/${commissionId}`} label={t("commission.backToCommission")} />
 
@@ -160,7 +166,7 @@ export default function PanelSummaryPage({ params }: { params: Promise<{ id: str
                                 <CheckCircle2 className="h-6 w-6 text-emerald-600" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-800">
+                                <h1 ref={navTitleRef} className="text-2xl font-bold text-slate-800">
                                     {t("commission.panelSummaryTitle")}: {data.currentPanelName}
                                 </h1>
                                 <p className="mt-1 text-sm text-slate-500">

@@ -5,6 +5,7 @@ import { GET_COMPETITION_PAGE } from './queries';
 import CompetitionClientView from './CompetitionClientView';
 import CompetitionNotFound from './CompetitionNotFound';
 import { cookies } from 'next/headers';
+import { toCompetitionPage } from '@winelore/core/competition';
 
 interface PageProps {
     params: Promise<{
@@ -41,34 +42,7 @@ export default async function CompetitionStartPage({ params }: PageProps) {
         return <CompetitionNotFound />;
     }
 
-    const initialData = {
-        id: competition.id,
-        name: competition.name,
-        status: competition.status,
-        startedAt: competition.startedAt || null,
-        plannedStartAt: competition.plannedDates?.start || null,
-        plannedEndAt: competition.plannedDates?.end || null,
-        endedAt: competition.endedAt || null,
-        series: {
-            id: competition.series.id,
-            name: competition.series.name,
-            status: competition.series.status
-        },
-        holders: competition.holders.flat(),
-        commissions: commissions.map((comm: any) => ({
-            id: comm.id,
-            name: comm.name,
-            status: comm.status,
-            plannedStartAt: comm.plannedDates?.start || null,
-            plannedEndAt: comm.plannedDates?.end || null,
-            startedAt: comm.startedAt || null,
-            endedAt: comm.endedAt || null,
-            wineJumperMiniGameEnabled: comm.wineJumperMiniGameEnabled || false,
-            voiceCommentsEnabled: comm.voiceCommentsEnabled || false,
-            propertyCommentsEnabled: comm.propertyCommentsEnabled || false,
-            beverageOriginDuringEvaluationEnabled: comm.beverageOriginDuringEvaluationEnabled || false
-        }))
-    };
+    const initialData = toCompetitionPage(competition, commissions);
 
     return (
         <CompetitionClientView initialData={initialData} serverAuid={serverAuid} />

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie"
@@ -8,9 +8,13 @@ import EvaluationForm from "./EvaluationForm"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { MapPin, LayoutList, Tag, Wine } from "lucide-react"
-import { getWaitDataAction } from "../../../../../actions"
 import { readCachedWaitEvaluation } from "../../../../../waitEvaluationCache"
+import { resolveEvaluationDestination } from "@winelore/core/evaluation"
 import { BackLink } from "@/components/BackLink"
+import { DiscussionDrawer } from "@/components/discussion/DiscussionDrawer"
+import { useMobileNavTitle } from "@/lib/mobileNav"
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
+
 
 interface EvaluationCategory {
   id: string
@@ -35,6 +39,8 @@ interface CandidateEvaluationClientViewProps {
   propertyCommentsEnabled: boolean
   voiceCommentsEnabled: boolean
   visibleAttributes?: { label: string; value: string }[]
+  discussionsEnabled?: boolean
+  members?: Array<{ id?: string; auid: number[] | number; role: string }>
 }
 
 export default function CandidateEvaluationClientView({
@@ -54,100 +60,88 @@ export default function CandidateEvaluationClientView({
   propertyCommentsEnabled,
   voiceCommentsEnabled,
   visibleAttributes = [],
+  discussionsEnabled = true,
+  members = [],
 }: CandidateEvaluationClientViewProps) {
   const router = useRouter()
   const { t, tCount } = useTranslation()
   const displayReplicaName = replicaName || t("common.standard")
+  const candidateTitle = t("evaluation.candidate", { code: candidateCode })
+  const titleRef = useMobileNavTitle<HTMLHeadingElement>(candidateTitle)
 
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isFormSubmitting, setIsFormSubmitting] = useState(false)
 
-  // Polling loop to redirect expert automatically if replica, panel, or current candidate state changes
-  useEffect(() => {
+  const isFetchingRef = useRef(false)
+
+  const checkRedirect = useCallback(async () => {
     const cookieAuid = Cookies.get("auid")
     if (!cookieAuid) {
       router.push("/auth/login")
       return
     }
 
-    if (isRedirecting || isFormSubmitting) return
+    if (isRedirecting || isFormSubmitting || isFetchingRef.current) return
+    isFetchingRef.current = true
 
-    let isMounted = true
-    let isFetching = false
+    try {
+      const res = await fetch(`/api/commission/wait-status?commissionId=${commissionId}&replicaId=${replicaId}`, {
+        cache: "no-store",
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (isRedirecting || isFormSubmitting) return
 
-    const checkRedirect = async () => {
-      if (!isMounted || isRedirecting || isFormSubmitting || isFetching) return
-      isFetching = true
-      try {
-        const data = await getWaitDataAction(commissionId, replicaId)
-        if (!isMounted || isRedirecting || isFormSubmitting) return
+      const destination = resolveEvaluationDestination({
+        viewingCandidateId: candidateId,
+        replicaStatus: data.replicaStatus,
+        isPanelFinished: data.isPanelFinished,
+        currentCandidateId: data.currentCandidateId,
+        hasCompletedCurrentCandidate: data.hasCompletedCurrentCandidate,
+        recentSubmission: readCachedWaitEvaluation(commissionId, replicaId),
+      })
 
-        // 1. Replica completed -> redirect every participant to the shared results
-        if (data.replicaStatus === "COMPLETED") {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/results`
+      if (destination.kind === "stay") return
+      if (destination.kind === "candidate" && destination.candidateId === candidateId) return
+
+      setIsRedirecting(true)
+      const base = `/commission/${commissionId}`
+      switch (destination.kind) {
+        case "results":
+          router.replace(`${base}/results`)
           return
-        }
-
-        // 2. Panel finished -> redirect to panel-summary
-        if (data.isPanelFinished) {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/replica/${replicaId}/panel-summary`
+        case "panelSummary":
+          router.replace(`${base}/replica/${replicaId}/panel-summary`)
           return
-        }
-
-        const cached = readCachedWaitEvaluation(commissionId, replicaId)
-        const hasFreshSubmitCache =
-          cached?.candidateId === data.currentCandidateId && cached?.isComplete !== false
-
-        // 3. Active candidate changed to a different candidate
-        if (data.currentCandidateId && data.currentCandidateId !== candidateId) {
-          setIsRedirecting(true)
-          if (!data.hasCompletedCurrentCandidate && !hasFreshSubmitCache) {
-            window.location.href = `/commission/${commissionId}/replica/${replicaId}/candidate/${data.currentCandidateId}`
-          } else {
-            window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-          }
+        case "candidate":
+          router.replace(`${base}/replica/${replicaId}/candidate/${destination.candidateId}`)
           return
-        }
-
-        // 4. Expert completed evaluation for current candidate (e.g. submitted in another tab)
-        if (
-          data.currentCandidateId === candidateId &&
-          (data.hasCompletedCurrentCandidate || hasFreshSubmitCache)
-        ) {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
+        case "wait":
+          router.replace(`${base}/replica/${replicaId}/wait`)
           return
-        }
-
-        // 5. No candidate currently active
-        if (!data.currentCandidateId) {
-          setIsRedirecting(true)
-          window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-          return
-        }
-      } catch (err) {
-        console.error("Polling redirect error:", err)
-      } finally {
-        isFetching = false
       }
-    }
-
-    const interval = setInterval(checkRedirect, 3000)
-    return () => {
-      isMounted = false
-      clearInterval(interval)
+    } catch (err) {
+      console.error("Evaluation redirect check error:", err)
+    } finally {
+      isFetchingRef.current = false
     }
   }, [commissionId, replicaId, candidateId, isRedirecting, isFormSubmitting, router])
 
-  return (
-    <div className="flex min-h-screen flex-col bg-slate-50/50">
-      <AppHeader activeTab="competitions" />
+  // Real-time evaluation updates via SSE with relaxed fallback polling
+  useEvaluationLiveUpdates({
+    commissionId,
+    replicaId,
+    onUpdate: checkRedirect,
+    enabled: !isRedirecting && !isFormSubmitting,
+  })
 
-        <main className="flex-1 overflow-auto pt-4 pb-8 px-4 flex justify-center">
-            <div className="w-full max-w-[95vw] bg-white rounded-[32px] pt-4 pb-2 px-6 md:pt-5 md:pb-8 md:px-8 shadow-xl shadow-slate-200/50">
-                <header className="border-b border-slate-100 pb-3 mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+  return (
+    <div className="flex min-h-app flex-col bg-slate-50/50">
+      <AppHeader activeTab="competitions" showMobileTabBar={false} />
+
+        <main className="app-main pt-1 pb-0 md:pt-4 md:pb-8 px-4 flex justify-center">
+            <div className="w-full max-w-[95vw] md:bg-white md:rounded-[32px] md:pt-5 md:pb-8 md:px-8 md:shadow-xl md:shadow-slate-200/50">
+                <header className="border-b border-slate-100 pb-3 mb-3 md:mb-2 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         <BackLink
                             href={`/commission/${commissionId}`}
@@ -156,8 +150,8 @@ export default function CandidateEvaluationClientView({
                         />
                         <div>
                             <div className="flex items-center gap-3 flex-wrap">
-                                <h1 className="text-xl font-extrabold text-slate-800">
-                                    {t("evaluation.candidate", { code: candidateCode })}
+                                <h1 ref={titleRef} className="text-2xl md:text-xl font-extrabold text-slate-800">
+                                    {candidateTitle}
                                 </h1>
                                 {beverageName && (
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
@@ -171,20 +165,20 @@ export default function CandidateEvaluationClientView({
                                     <span className="font-medium text-slate-700">{t("evaluation.commission")}:</span> {commissionName}
                                 </p>
                                 {panelName && (
-                                    <div className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                    <div className="flex items-center gap-1.5 sm:border-l-2 border-slate-100 sm:pl-4 sm:px-2 py-0.5">
                                         <LayoutList className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
                                         <span className="font-medium text-slate-800">Panel:</span>
                                         <span className="font-normal text-slate-600">{panelName}</span>
                                     </div>
                                 )}
                                 {originParts.length > 0 && (
-                                    <div className="flex items-center gap-1.5 text-slate-600 border-l-2 border-slate-100 pl-4">
+                                    <div className="flex items-center gap-1.5 text-slate-600 sm:border-l-2 border-slate-100 sm:pl-4">
                                         <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                                         <span>{originParts.join(", ")}</span>
                                     </div>
                                 )}
                                 {visibleAttributes.length > 0 && visibleAttributes.map((attr, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5 border-l-2 border-slate-100 pl-4 px-2 py-0.5">
+                                <div key={idx} className="flex items-center gap-1.5 sm:border-l-2 border-slate-100 sm:pl-4 sm:px-2 py-0.5">
                                     <Tag className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
                                     <span className="font-medium text-slate-800 capitalize">
                                         {attr.label}:
@@ -196,7 +190,7 @@ export default function CandidateEvaluationClientView({
                         </div>
                     </div>
                     {currentIndex !== -1 && (
-                        <div className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-500 flex items-center gap-3">
+                        <div className="self-start md:self-auto px-3 py-1.5 bg-white md:bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-500 flex items-center gap-3">
               <span>
                 {t("evaluation.candidateProgress", { current: currentIndex + 1, total: totalCandidates })}
               </span>
@@ -215,12 +209,25 @@ export default function CandidateEvaluationClientView({
           candidateId={candidateId}
           commissionId={commissionId}
           replicaId={replicaId}
+          candidateCode={candidateCode}
+          beverageName={beverageName}
+          visibleAttributes={visibleAttributes}
           propertyCommentsEnabled={propertyCommentsEnabled}
           voiceCommentsEnabled={voiceCommentsEnabled}
           onSubmittingChange={setIsFormSubmitting}
         />
         </div>
       </main>
+      {discussionsEnabled && (
+          <DiscussionDrawer
+              replicaCandidateId={candidateId}
+              candidateCode={candidateCode}
+              beverageName={beverageName}
+              commissionName={commissionName}
+              members={members}
+              discussionsEnabled={discussionsEnabled}
+          />
+      )}
     </div>
   )
 }

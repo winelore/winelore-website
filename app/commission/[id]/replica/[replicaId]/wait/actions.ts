@@ -1,8 +1,7 @@
 "use server"
 import { fetchGraphQLRaw } from "@/lib/apiClient";
 import { getCommissionTemplatesWithResultMarkers, getEvaluationsForCandidateAction } from "../../../../actions";
-import { buildPropertyMapFromCommissionTemplates } from "../../../../propertyMap";
-import { buildTemplateEditionById } from "@/lib/templateEditionMap";
+import { buildPropertyMapFromCommissionTemplates, buildTemplateEditionById } from '@winelore/core';
 const GET_COMMISSION_RESULTS_WITH_PANEL = `
   query GetCommissionResults($id: ID!) {
     commission(id: $id) {

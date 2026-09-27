@@ -3,7 +3,16 @@ import HomeClientView from './HomeClientView';
 import { getBeverageTypesAction, getEvaluationTemplatesAction } from '@/app/myTemplates/actions';
 import { cookies } from "next/headers";
 import { GET_MY_COMPETITIONS } from "@/app/myCompetitions/queries";
-import { GET_COMMISSIONS } from "@/app/queries";
+import { fetchGraphQLRaw } from '@/lib/apiClient';
+import {
+    DASHBOARD_PANEL_LIMIT,
+    GET_DASHBOARD_COMMISSIONS,
+    buildBeverageTypeCodeMap,
+    isTemplateOwnedBy,
+    selectActiveCommissions,
+    toDashboardCompetition,
+    withBeverageType,
+} from "@winelore/core/dashboard";
 import LandingClientView from '@/app/LandingClientView';
 
 export const dynamic = "force-dynamic"
@@ -17,119 +26,56 @@ export default async function HomePage() {
         return <LandingClientView />;
     }
 
-    let recentCompetitions: any[] = [];
-    let myCommissions: any[] = [];
-    let recentBeverages: any[] = [];
-    let myTemplates: any[] = [];
-    let beverageTypesDict: Record<string, string> = {};
+    const load = async <T,>(label: string, run: () => Promise<T>, fallback: T): Promise<T> => {
+        try {
+            return await run();
+        } catch (error) {
+            console.error(`Failed to load ${label}:`, error);
+            return fallback;
+        }
+    };
 
-    try {
-        const typesList = await getBeverageTypesAction();
-        beverageTypesDict = typesList.reduce((acc, t) => {
-            acc[t.id] = t.code;
-            return acc;
-        }, {} as Record<string, string>);
-    } catch (e) {
-        console.error("Failed to load beverage types map:", e);
-    }
-
-    // 1. Recent Competitions
-    try {
-        const response = await fetchGraphQL(GET_MY_COMPETITIONS, {
-            limit: 5,
-            filter: { holders: [[currentAuid]] }
-        });
-        const rawCompetitions = response.competitions?.items || [];
-        recentCompetitions = rawCompetitions.map((comp: any) => ({
-            id: comp.id,
-            name: comp.name,
-            status: comp.status,
-            holder: comp.holders ? comp.holders.flat() : [currentAuid],
-            plannedStartAt: comp.plannedDates?.start || null,
-            plannedEndAt: comp.plannedDates?.end || null,
-            startedAt: comp.startedAt || null,
-            endedAt: comp.endedAt || null,
-            series: {
-                id: comp.series?.id,
-                name: comp.series?.name,
-                status: comp.series?.status
-            }
-        }));
-    } catch (error) {
-        console.error("Failed to fetch recent competitions:", error);
-    }
-
-    // 2. Active Commissions
-    try {
-        let allCommissions: any[] = [];
-        let currentOffset = 0;
-        let hasMore = true;
-
-        while (hasMore) {
-            const commData: any = await fetchGraphQL(GET_COMMISSIONS, { limit: 100, offset: currentOffset });
-            const items = commData.commissions?.items || [];
-            allCommissions = allCommissions.concat(items);
-
-            if (items.length < 100) {
-                hasMore = false;
-            } else {
+    // The panels are independent; fetch them together instead of making
+    // navigation wait for the sum of five request chains.
+    const [beverageTypesDict, recentCompetitions, myCommissions, recentBeverages, myTemplates] = await Promise.all([
+        load("beverage types", async () => buildBeverageTypeCodeMap(await getBeverageTypesAction()), {} as Record<string, string>),
+        load("recent competitions", async () => {
+            const response = await fetchGraphQL(GET_MY_COMPETITIONS, {
+                limit: DASHBOARD_PANEL_LIMIT,
+                filter: { holders: [[currentAuid]] },
+            });
+            return (response.competitions?.items || []).map((comp: any) => toDashboardCompetition(comp, currentAuid));
+        }, []),
+        load("commissions", async () => {
+            let allCommissions: any[] = [];
+            let currentOffset = 0;
+            while (true) {
+                const commData: any = await fetchGraphQLRaw(GET_DASHBOARD_COMMISSIONS, {
+                    limit: 100,
+                    offset: currentOffset,
+                });
+                const items = commData.commissions?.items || [];
+                allCommissions = allCommissions.concat(items);
+                const active = selectActiveCommissions(allCommissions, String(currentAuid));
+                if (items.length < 100 || active.length >= DASHBOARD_PANEL_LIMIT) return active;
                 currentOffset += 100;
             }
-        }
-        myCommissions = allCommissions.filter((comm: any) => {
-            const isMember = comm.replicas?.some((r: any) =>
-                r.members?.some((m: any) => m.auid?.includes(currentAuid))
-            );
-            const isStatusValid = ["PLANNED", "APPROVED", "STARTED", "IN_PROGRESS"].includes(comm.status);
-            return isMember && isStatusValid;
-        }).slice(0, 8);
-    } catch (error) {
-        console.error("Failed to load commissions:", error);
-    }
-
-    // 3. Recent Beverages
-    try {
-        const bevData = await sdk.GetMyBeverages({
-            limit: 5,
-            filter: { producers: [[currentAuid]] },
-            producer: [currentAuid]
-        });
-        const rawBeverages = bevData.beverages?.items || [];
-        recentBeverages = rawBeverages.map((bev: any) => {
-            let beverageType = undefined;
-            if (bev.attributes) {
-                if (typeof bev.attributes === "object" && bev.attributes !== null) {
-                    beverageType = (bev.attributes as any).color || undefined;
-                } else if (typeof bev.attributes === "string") {
-                    try {
-                        const parsed = JSON.parse(bev.attributes);
-                        if (parsed && parsed.color) {
-                            beverageType = parsed.color;
-                        }
-                    } catch (e) {
-                        const match = bev.attributes.match(/color=([^,\}]+)/);
-                        if (match) {
-                            beverageType = match[1].trim().replace(/^["']|["']$/g, "");
-                        }
-                    }
-                }
-            }
-            return { ...bev, type: beverageType };
-        });
-    } catch (error) {
-        console.error("Failed to load beverages:", error);
-    }
-
-    // 4. My Templates
-    try {
-        const result = await getEvaluationTemplatesAction(currentAuid);
-        const templatesArray = result.templates || [];
-        myTemplates = templatesArray.filter((t: any) => {
-            return t.owners?.some((ownerArr: number[]) => ownerArr.includes(currentAuid));
-        }).slice(0, 5);
-    } catch (error) {
-        console.error("Failed to fetch templates:", error);
-    }
+        }, []),
+        load("beverages", async () => {
+            const data = await sdk.GetMyBeverages({
+                limit: DASHBOARD_PANEL_LIMIT,
+                filter: { producers: [[currentAuid]] },
+                producer: [currentAuid],
+            });
+            return (data.beverages?.items || []).map((beverage) => withBeverageType(beverage));
+        }, []),
+        load("templates", async () => {
+            const result = await getEvaluationTemplatesAction(currentAuid, DASHBOARD_PANEL_LIMIT, 0, true);
+            return (result.templates || [])
+                .filter((template: any) => isTemplateOwnedBy(template, currentAuid))
+                .slice(0, DASHBOARD_PANEL_LIMIT);
+        }, []),
+    ]);
 
     return (
         <HomeClientView

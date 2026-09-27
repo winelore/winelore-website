@@ -20,26 +20,27 @@ export function EntityCardLink({ href, padding = "comfortable", layout = "column
     // Only the roomier list cards get a height floor; on the dashboard the
     // bento is already tight, and a floor there just opens a gap under a card
     // that carries nothing but a title and one meta line.
-    const columnClass = padding === "dashboard" ? "flex flex-col" : "flex flex-col min-h-[140px]"
+    const columnClass = padding === "dashboard" ? "flex flex-col" : "flex flex-col sm:min-h-[140px]"
     const layoutClass = layout === "row" ? "flex items-center gap-4" : columnClass
 
     if (padding === "dashboard") {
         return (
             <Link
                 href={href}
-                className={`group bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 ${layoutClass} ${className}`}
+                className={`group pressable bg-white border border-slate-100 rounded-[22px] sm:rounded-[24px] p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-indigo-100 ${layoutClass} ${className}`}
             >
                 {children}
             </Link>
         )
     }
 
-    const paddingClass = padding === "compact" ? "p-6" : "p-7"
+    // Phones get a flatter, tighter card (iOS lists read as rows, not floating tiles).
+    const paddingClass = padding === "compact" ? "p-5 sm:p-6" : "p-5 sm:p-7"
 
     return (
         <Link
             href={href}
-            className={`group bg-white border border-slate-100 rounded-[32px] ${paddingClass} shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 ${layoutClass} ${className}`}
+            className={`group pressable bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] ${paddingClass} shadow-sm sm:shadow-xl shadow-slate-200/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-300/50 hover:border-indigo-100 ${layoutClass} ${className}`}
         >
             {children}
         </Link>

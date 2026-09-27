@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Plus, Terminal, Trash2, Database } from 'lucide-react';
-import { getCompetitionsListAction } from './actions';
+import { getCompetitionsListAction, switchDevActorAction } from './actions';
+import { normalizeAuids } from '@winelore/core';
 import type { SeederFormData, CommissionConfig, PanelConfig, ReplicaConfig } from '@/lib/seeder';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useRouter } from 'next/navigation';
@@ -37,6 +38,7 @@ export function DevToolsClientView() {
   const [formData, setFormData] = useState<SeederFormData>({
     competitionName: 'TEST 1',
     seriesName: 'Червоне вино 2026',
+    templateEditionId: '14fa1fe7-139d-4c12-903d-80f65331f9d2',
     commissions: [
       { 
         name: 'Комісія 1', type: 'NOT_STARTED', 
@@ -82,8 +84,6 @@ export function DevToolsClientView() {
   }, [logs]);
 
   useEffect(() => {
-    // Reset AUID to the default tester account (ID 2) when visiting dev-tools
-    document.cookie = 'auid=2; path=/';
     fetchCompetitions();
   }, []);
 
@@ -147,15 +147,24 @@ export function DevToolsClientView() {
     }
   };
 
-  const handleLoginAs = (auid: number, commissionId?: string, replicaId?: string) => {
-    document.cookie = `auid=${auid}; path=/`;
-    document.cookie = `actor=${auid}; path=/`;
-    
-    if (commissionId) {
-      // Append replicaId if available
-        router.push(`/commission/${commissionId}`);
-    } else {
-      toast.success(`Ви успішно увійшли як експерт з AUID ${auid}.`);
+  const handleLoginAs = async (rawAuid: any, commissionId?: string, replicaId?: string) => {
+    const auidStr = normalizeAuids(rawAuid)[0] || String(rawAuid);
+    try {
+      await switchDevActorAction(auidStr);
+      document.cookie = `auid=${auidStr}; path=/`;
+      document.cookie = `actor=${auidStr}; path=/`;
+      document.cookie = `username=; path=/; max-age=0`;
+      document.cookie = `displayName=; path=/; max-age=0`;
+      
+      if (commissionId) {
+        const url = replicaId ? `/commission/${commissionId}?replicaId=${replicaId}` : `/commission/${commissionId}`;
+        window.location.href = url;
+      } else {
+        toast.success(`Ви успішно увійшли як експерт з AUID ${auidStr}.`);
+        window.location.reload();
+      }
+    } catch (e: any) {
+      toast.error(`Помилка зміни актора: ${e.message}`);
     }
   };
 
@@ -220,7 +229,7 @@ export function DevToolsClientView() {
   return (
     <>
       <AppHeader activeTab="none" />
-      <div className="min-h-screen bg-slate-50/50 text-slate-800 p-8">
+      <div className="min-h-app bg-slate-50/50 text-slate-800 p-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left Column: Form & Results */}
@@ -252,7 +261,7 @@ export function DevToolsClientView() {
               </CardHeader>
               <CardContent className="p-6 space-y-8">
                 {/* Competition Meta */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Назва змагання</label>
                     <Input 
@@ -267,6 +276,14 @@ export function DevToolsClientView() {
                       value={formData.seriesName}
                       onChange={e => setFormData({...formData, seriesName: e.target.value})}
                       placeholder="напр. Червоне вино 2026"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Шаблон оцінювання (ID)</label>
+                    <Input 
+                      value={formData.templateEditionId || ''}
+                      onChange={e => setFormData({...formData, templateEditionId: e.target.value})}
+                      placeholder="14fa1fe7-139d-4c12-903d-80f65331f9d2"
                     />
                   </div>
                 </div>

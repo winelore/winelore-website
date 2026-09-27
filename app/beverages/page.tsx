@@ -2,6 +2,7 @@ import { fetchGraphQL } from '@/lib/apiClient';
 import BeveragesClientView from './BeveragesClientView';
 import { getBeverageTypesAction } from '@/app/myTemplates/actions';
 import { GET_BEVERAGES } from './queries';
+import { withBeverageType } from '@winelore/core/dashboard';
 
 
 export const dynamic = "force-dynamic"
@@ -15,6 +16,7 @@ export default async function DashboardPage({
     const parsedPage = parseInt(resolvedParams.page || "1", 10);
     const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
     const LIMIT = 16;
+    const beverageTypesPromise = getBeverageTypesAction();
 
     let allBeverages: any[] = [];
     let totalCount = 0;
@@ -25,27 +27,7 @@ export default async function DashboardPage({
         const rawBeverages = bevData?.beverages?.items || [];
         totalCount = bevData?.beverageCount || 0;
 
-        allBeverages = rawBeverages.map((bev: any) => {
-            let beverageType = undefined;
-            if (bev.attributes) {
-                if (typeof bev.attributes === "object" && bev.attributes !== null) {
-                    beverageType = (bev.attributes as any).color || undefined;
-                } else if (typeof bev.attributes === "string") {
-                    try {
-                        const parsed = JSON.parse(bev.attributes);
-                        if (parsed && parsed.color) {
-                            beverageType = parsed.color; // E.g.: "RED", "WHITE"
-                        }
-                    } catch (e) {
-                        const match = bev.attributes.match(/color=([^,\}]+)/);
-                        if (match) {
-                            beverageType = match[1].trim().replace(/^["']|["']$/g, "");
-                        }
-                    }
-                }
-            }
-            return { ...bev, type: beverageType };
-        });
+        allBeverages = rawBeverages.map((bev: any) => withBeverageType(bev));
     } catch (error) {
         console.error("Failed to load beverages:", error);
         hasError = true;
@@ -54,7 +36,7 @@ export default async function DashboardPage({
     const totalPages = Math.max(1, Math.ceil(totalCount / LIMIT));
     let beverageTypesDict: Record<string, string> = {};
     try {
-        const typesList = await getBeverageTypesAction();
+        const typesList = await beverageTypesPromise;
         beverageTypesDict = typesList.reduce((acc, t) => {
             acc[t.id] = t.code; // Use code (e.g. "WINE") so frontend can translate it
             return acc;

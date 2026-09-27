@@ -4,14 +4,31 @@ import React, {useState, useEffect, useRef, useMemo, useCallback} from "react"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import {
-    FileText, Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
-    Save, Search, ChevronRight, Sliders, Trash2, Loader2, UserPlus, Settings, ExternalLink, Send
+    Trophy, Wine, User, Layers, PlayCircle, Crown, GraduationCap, CheckCircle, AlertCircle, Users, Timer, Check, Calendar, Pencil, Plus, X,
+    Save, Sliders, Trash2, UserPlus, Settings, Send
 } from "lucide-react"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
+import {
+    commissionBeverageTypes,
+    commissionHolderNames,
+    commissionStepIndex,
+    currentCandidateCode,
+    defaultCommissionReplica,
+    formatCommissionTiming,
+    replicasForSelector,
+    resolveLobbyState,
+    sortMembersByRole,
+    type CommissionMember,
+    type CommissionPageData,
+    type CommissionReplica,
+} from '@winelore/core/commission';
+import { normalizeAuids } from '@winelore/core';
+import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useAvatars } from "@/hooks/useAvatars"
+import { MemberAvatar } from "@/components/MemberAvatar"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -40,14 +57,16 @@ import {
     setCommissionBeverageOriginDuringEvaluationEnabledAction,
     setCommissionReplicaPanelChaoticCurrentCandidateChangesEnabledAction,
     setCommissionReplicaChaoticCurrentPanelChangesEnabledAction,
-    setCommissionTemplateAction,
+    setCommissionDiscussionPolicyAction,
+    type DiscussionPolicy,
 } from "../actions"
-import { getEvaluationTemplatesAction } from "@/app/myTemplates/actions"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { isReplicaCandidateFinished } from "../replicaUtils"
 import { AddMemberModal } from "./components/AddMemberModal"
 import { PanelsSection, type CommissionPanel, type Candidate } from "./components/PanelsSection"
+import { EvaluationTemplatesBlock, type BeverageType, type TemplateEditionLink } from "./components/EvaluationTemplatesBlock"
 import { BackLink } from "@/components/BackLink"
-import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from "@/lib/dateFormat";
+import {fromLocalDatetimeInputToIso, toLocalDatetimeInput} from '@winelore/core';
 
 function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt: string | null): string {
     const start = new Date(plannedStartAt)
@@ -60,38 +79,6 @@ function getGoogleCalendarUrl(name: string, plannedStartAt: string, plannedEndAt
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(name)}&dates=${formatToGCal(start)}/${formatToGCal(end)}`
 }
 
-function getAvatarGradient(auid: number): string {
-    const gradients = [
-        "from-pink-500 via-rose-500 to-red-500",
-        "from-indigo-500 via-purple-500 to-pink-500",
-        "from-blue-500 via-teal-500 to-emerald-500",
-        "from-amber-400 via-orange-500 to-red-500",
-        "from-violet-600 via-purple-600 to-indigo-600",
-        "from-cyan-500 via-blue-500 to-indigo-500",
-        "from-emerald-400 via-teal-500 to-cyan-500",
-        "from-fuchsia-500 via-purple-600 to-pink-600",
-    ]
-    const idx = Math.abs(auid) % gradients.length
-    return gradients[idx]
-}
-
-function MemberAvatar({ auid, role, username, className }: { auid: number[]; role: string; username?: string; className?: string }) {
-    const primaryAuid = auid[0] || 0
-    const gradient = getAvatarGradient(primaryAuid)
-    const initials = username ? (username.startsWith("@") ? username.slice(1, 3) : username.slice(0, 2)).toUpperCase() : (primaryAuid ? `${primaryAuid}`.slice(-2) : "?")
-
-    return (
-        <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[11px] shadow-sm shrink-0 border border-white/10 ${className}`}>
-            <span>{initials}</span>
-            {role === "HEAD" && (
-                <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-0.5 border border-background shadow-xs">
-                    <Crown className="w-2.5 h-2.5 text-white" />
-                </div>
-            )}
-        </div>
-    )
-}
-
 function StatusSteps({ status }: { status: string }) {
     const { t } = useTranslation()
     const steps = [
@@ -100,15 +87,10 @@ function StatusSteps({ status }: { status: string }) {
         { id: "completed", label: t("commission.stepCompleted"), description: t("commission.stepCompletedDesc") }
     ]
 
-    let currentStepIdx = 0
-    if (status === "STARTED") {
-        currentStepIdx = 1
-    } else if (status === "COMPLETED") {
-        currentStepIdx = 2
-    }
+    const currentStepIdx = commissionStepIndex(status)
 
     return (
-        <div className="w-full bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 mb-4">
+        <div className="w-full bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 mb-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {steps.map((step, idx) => {
                     const isCompleted = idx < currentStepIdx
@@ -143,427 +125,14 @@ function StatusSteps({ status }: { status: string }) {
     )
 }
 
-interface BeverageType {
-    id: string;
-    code: string;
-    name: string;
-}
-
-interface TemplateEditionLink {
-    id: string;
-    beverageType: BeverageType;
-    templateEdition: any;
-}
-
-interface Member {
-    id: string;
-    auid: number[];
-    role: "HEAD" | "EXPERT" | "TRAINEE_EXPERT";
-    isReady: boolean;
-}
-
-interface Replica {
-    id: string;
-    name: string;
-    type: "STANDARD" | "TRAINEE";
-    status: string;
-    currentPanelId?: string | null;
-    chaoticCurrentPanelChangesEnabled?: boolean;
-    replicaPanels: {
-        id: string;
-        status: string;
-        currentCandidateId?: string | null;
-        chaoticCurrentCandidateChangesEnabled: boolean;
-        panel?: { id: string; name: string };
-    }[];
-    members: Member[];
-    candidateCount: number;
-    replicaCandidates: {
-        id: string;
-        status: string;
-        candidate?: {
-            id: string;
-            anonymizedCode: string | null;
-            beverageType?: BeverageType;
-        } | null;
-    }[];
-    currentCandidateId?: string | null;
-}
-
-interface InitialData {
-    id: string;
-    name: string;
-    status: string;
-    plannedStartAt: string | null;
-    plannedEndAt: string | null;
-    startedAt: string | null;
-    endedAt: string | null;
-    candidateCount: number;
-    partialCandidateEvaluationEnabled?: boolean;
-    wineJumperMiniGameEnabled?: boolean;
-    voiceCommentsEnabled?: boolean;
-    propertyCommentsEnabled?: boolean;
-    beverageOriginDuringEvaluationEnabled?: boolean;
-    competition: {
-        id: string;
-        name: string;
-        holders: number[];
-        evaluationTemplateEdition?: any;
-    };
+// The page's data is shaped by core's toCommissionPage, which the app's
+// commission screen renders too.
+type Member = CommissionMember
+type Replica = CommissionReplica
+type InitialData = Omit<CommissionPageData, "panels" | "templateEditions"> & {
     templateEditions?: TemplateEditionLink[];
-    replicas: Replica[];
-    members: Member[];
     panels?: CommissionPanel[];
     candidates?: Candidate[];
-}
-
-function EvaluationTemplatesBlock({
-                                      commissionId,
-                                      templateEditions,
-                                      beverageTypesInCommission,
-                                      isCompetitionHolder,
-                                      canEdit,
-                                      onRefresh
-                                  }: {
-    commissionId: string,
-    templateEditions: TemplateEditionLink[],
-    beverageTypesInCommission: BeverageType[],
-    isCompetitionHolder: boolean,
-    canEdit: boolean,
-    onRefresh: () => void
-}) {
-    const { t, tCount, formatStatus } = useTranslation()
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [selectedBeverageType, setSelectedBeverageType] = useState<BeverageType | null>(null)
-
-    const [catalogTemplates, setCatalogTemplates] = useState<any[]>([])
-    const [isCatalogLoading, setIsCatalogLoading] = useState(false)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [isAssigning, setIsAssigning] = useState(false)
-    const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
-
-    const ITEMS_PER_PAGE = 50;
-    const [currentPage, setCurrentPage] = useState(1);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, selectedBeverageType]);
-
-    const handleOpenCatalog = async (bevType?: BeverageType) => {
-        setSelectedBeverageType(bevType || null)
-        setSearchQuery("")
-        setCurrentPage(1)
-        setIsModalOpen(true)
-        setIsCatalogLoading(true)
-        try {
-            const data = await getEvaluationTemplatesAction()
-            const filtered = bevType
-                ? data.templates.filter((t: any) => t.beverageTypeId === bevType.id)
-                : data.templates;
-            setCatalogTemplates(filtered)
-        } catch (e) {
-            console.error("Failed to load templates catalog", e)
-        } finally {
-            setIsCatalogLoading(false)
-        }
-    }
-
-    const handleAssignTemplate = async (templateEditionId: string, templateBevTypeId: string) => {
-        setIsAssigning(true)
-        try {
-            const res = await setCommissionTemplateAction(commissionId, templateBevTypeId, templateEditionId)
-            if (res.success) {
-                setIsModalOpen(false)
-                onRefresh()
-            } else {
-                toast.error(t("commission.templateAssignError") || res.error)
-            }
-        } catch (e) {
-            toast.error(t("commission.templateAssignError"))
-        } finally {
-            setIsAssigning(false)
-        }
-    }
-
-    const filteredCatalog = catalogTemplates.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    const totalPages = Math.ceil(filteredCatalog.length / ITEMS_PER_PAGE);
-    const paginatedCatalog = filteredCatalog.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-    return (
-        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/50 shadow-xs">
-                        <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold tracking-tight text-slate-800">
-                            {t("commission.evaluationTemplates")}
-                        </h3>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                            {t("commission.evaluationTemplatesSubtitle")}
-                        </p>
-                    </div>
-                </div>
-
-                {isCompetitionHolder && canEdit && (
-                    <button
-                        onClick={() => handleOpenCatalog()}
-                        className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>{t("commission.assignTemplate")}</span>
-                    </button>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {beverageTypesInCommission.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-8 text-slate-400 text-sm bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl gap-3">
-                        <FileText className="w-8 h-8 opacity-50" />
-                        <p className="font-medium text-slate-500">Немає налаштованих шаблонів або доданих напоїв.</p>
-                        <p className="text-xs">Натисніть кнопку вище, щоб обрати перший шаблон з каталогу.</p>
-                    </div>
-                ) : (
-                    beverageTypesInCommission.map((bevType) => {
-                        const assignedLink = templateEditions.find(te => te.beverageType?.id === bevType.id);
-                        const isAssigned = !!assignedLink;
-                        const te = assignedLink?.templateEdition;
-
-                        return (
-                            <div key={bevType.id} className={`flex flex-col border rounded-2xl p-4 transition-all duration-300 ${isAssigned ? 'bg-slate-50/50 border-slate-200' : 'bg-rose-50/30 border-rose-200 border-dashed'}`}>
-                                <div className="flex justify-between items-start mb-3">
-                                    <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
-                                        {bevType.name || bevType.code}
-                                    </span>
-                                    {isCompetitionHolder && canEdit && (
-                                        <button
-                                            onClick={() => handleOpenCatalog(bevType)}
-                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                                        >
-                                            {isAssigned ? (t("commission.changeTemplate")) : (t("commission.assignTemplate"))}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isAssigned && te ? (
-                                    <div className="flex flex-col gap-2">
-                                        <Link
-                                            href={`/myTemplates?templateId=${te.template?.id}-${te.version}`}
-                                            target="_blank"
-                                            className="group/link flex items-center gap-1.5 w-fit outline-none"
-                                            title={t("commission.openTemplateInNewTab")}
-                                        >
-                                            <span className="text-sm font-extrabold text-slate-800 group-hover/link:text-indigo-600 transition-colors">
-                                                {te.template?.name || t("commission.standardTemplate")}
-                                            </span>
-                                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover/link:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all -translate-x-1 group-hover/link:translate-x-0" />
-                                        </Link>
-
-                                        <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-                                            <span className="bg-white border border-slate-200 shadow-sm px-1.5 py-0.5 rounded-md">v{te.version}</span>
-                                            <span className="text-slate-300">•</span>
-                                            <span className="uppercase text-emerald-600">{te.status ? formatStatus(te.status) : ""}</span>
-                                            <span className="text-slate-300">•</span>
-                                            <span>{tCount("commission.categoriesCount", te.categories?.length || 0)}</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-1 items-center justify-center py-2 text-rose-500">
-                                        <AlertCircle className="w-5 h-5 mb-1 opacity-75" />
-                                        <span className="text-xs font-bold">{t("commission.noTemplateForType")}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })
-                )}
-            </div>
-
-            {/* Modal Catalog */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-                    <div className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col">
-
-                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                            <div>
-                                <h2 className="text-lg font-extrabold text-slate-800">{t("commission.templateCatalog")}</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    {selectedBeverageType
-                                        ? t("commission.selectingTemplateFor", { type: selectedBeverageType.name })
-                                        : t("commission.selectFromCatalog")
-                                    }
-                                </p>
-                            </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors cursor-pointer">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl flex-1 border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white transition-colors">
-                                <Search className="w-4 h-4 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder={t("commission.searchTemplates")}
-                                    className="bg-transparent border-none outline-none text-sm w-full text-slate-700"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
-                            {isCatalogLoading ? (
-                                <div className="flex flex-col items-center justify-center h-40 gap-3 text-indigo-500">
-                                    <Loader2 className="w-8 h-8 animate-spin" />
-                                    <span className="text-sm font-bold">{t("commission.loadingCatalog")}</span>
-                                </div>
-                            ) : paginatedCatalog.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                                    <FileText className="w-10 h-10 mb-2 opacity-50" />
-                                    <span className="text-sm font-bold">{t("commission.noTemplatesFound")}</span>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-4">
-                                    {paginatedCatalog.map(template => {
-                                        const ed = template.latestEdition;
-                                        const isExpanded = expandedTemplateId === template.id;
-
-                                        return (
-                                            <div key={template.id} className="border border-slate-200 rounded-2xl bg-white shadow-sm hover:border-indigo-300 transition-all overflow-hidden">
-                                                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase tracking-widest border border-slate-200">
-                                                                {template.beverageType}
-                                                            </span>
-                                                        </div>
-                                                        <h4 className="text-sm font-bold text-slate-800">{template.name}</h4>
-                                                        <div className="flex items-center gap-2 mt-1.5 text-[10px] font-semibold text-slate-500">
-                                                            <span className="bg-slate-50 border px-1.5 py-0.5 rounded-md">v{ed.version}</span>
-                                                            <span>•</span>
-                                                            <span>{tCount("commission.categoriesCount", ed.categories?.length || 0)}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <button
-                                                            onClick={() => setExpandedTemplateId(isExpanded ? null : template.id)}
-                                                            className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
-                                                        >
-                                                            {t("common.preview")} <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleAssignTemplate(ed.id, template.beverageTypeId)}
-                                                            disabled={isAssigning}
-                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-                                                        >
-                                                            {isAssigning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (t("commission.applyTemplate"))}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {/* ДИЗАЙН ПРЕВ'Ю ЯК НА СТОРІНЦІ /TEMPLATES + ПАРАМЕТРИ */}
-                                                {isExpanded && ed.categories && (
-                                                    <div className="px-6 pb-6 pt-4 border-t border-slate-50 bg-slate-50/15 max-h-[350px] overflow-y-auto">
-                                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                                                            <Settings className="w-4 h-4 text-indigo-500" />
-                                                            {t("commission.templatePreview")}
-                                                        </h4>
-
-                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                            {ed.categories.map((cat: any) => (
-                                                                <div
-                                                                    key={cat.id}
-                                                                    className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs flex flex-col gap-3.5"
-                                                                >
-                                                                    <h5 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
-                                                                        {cat.name}
-                                                                    </h5>
-                                                                    <div className="flex flex-col gap-2">
-                                                                        {cat.properties?.map((prop: any) => (
-                                                                            <div
-                                                                                key={prop.id || prop.code}
-                                                                                className="flex flex-col bg-slate-50/30 hover:bg-slate-50/70 border border-slate-100/80 rounded-xl px-3 py-2 text-xs transition-colors"
-                                                                            >
-                                                                                <div className="flex justify-between items-start">
-                                                                                    <div className="flex flex-col min-w-0 flex-1 pr-3">
-                                                                                        <span className="font-bold text-slate-700 truncate flex items-center gap-1.5">
-                                                                                            {prop.name}
-                                                                                            {prop.isRequired && <span className="text-rose-500 font-bold" title={t("common.required")}>*</span>}
-                                                                                            {prop.isResult && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[8px] rounded uppercase font-bold tracking-wider">{t("commission.resultBadge")}</span>}
-                                                                                        </span>
-                                                                                        {prop.description && (
-                                                                                            <span className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{prop.description}</span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                                                        <span className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60 uppercase">
-                                                                                            {prop.__typename ? prop.__typename.replace("Property", "") : prop.type}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <div className="flex flex-wrap gap-2 mt-2 text-[9px] text-slate-500 font-medium">
-                                                                                    {(prop.minLimit !== undefined || prop.maxLimit !== undefined) && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                                                                            Range: {prop.minLimit ?? '-∞'} ... {prop.maxLimit ?? '∞'}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {prop.allowedValues && prop.allowedValues.length > 0 && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200 truncate max-w-[150px]" title={prop.allowedValues.join(', ')}>
-                                                                                            Options: {prop.allowedValues.join(', ')}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {prop.defaultValue !== undefined && prop.defaultValue !== null && (
-                                                                                        <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                                                                            Default: {String(prop.defaultValue)}
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {totalPages > 1 && (
-                            <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
-                                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                                    {t("common.pageOf", { current: currentPage, total: totalPages })} <span className="text-slate-300 mx-1">|</span> {t("common.itemsTotal", { count: filteredCatalog.length })}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                    >
-                                        {t("common.previous")}
-                                    </button>
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-                                    >
-                                        {t("common.next")}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    )
 }
 
 export default function CommissionClientView({
@@ -581,6 +150,7 @@ export default function CommissionClientView({
     const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
     const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
     const [isMutating, setIsMutating] = useState(false)
+    const isMutatingRef = useRef(false)
     const [timeDisplay, setTimeDisplay] = useState<string>("")
     const [currentAuid, setCurrentAuid] = useState<number | null>(serverAuid || null)
     const [hasRedirected, setHasRedirected] = useState(false)
@@ -601,26 +171,10 @@ export default function CommissionClientView({
     const [memberPendingRemoval, setMemberPendingRemoval] = useState<string | null>(null)
     const initialData = localData
 
-    const beverageTypesInCommission = useMemo(() => {
-        const typesMap = new Map<string, BeverageType>()
-
-        // 1. Беремо типи з уже призначених шаблонів (щоб вони відображалися навіть якщо немає напоїв)
-        if (initialData.templateEditions) {
-            initialData.templateEditions.forEach(te => {
-                if (te.beverageType) typesMap.set(te.beverageType.id, te.beverageType)
-            })
-        }
-
-        // 2. Беремо типи з доданих напоїв (якщо вони є)
-        localData.replicas.forEach(r => {
-            r.replicaCandidates.forEach(rc => {
-                if (rc.candidate?.beverageType) {
-                    typesMap.set(rc.candidate.beverageType.id, rc.candidate.beverageType)
-                }
-            })
-        })
-        return Array.from(typesMap.values())
-    }, [localData.replicas, initialData.templateEditions])
+    const beverageTypesInCommission = useMemo(
+        () => commissionBeverageTypes(localData as CommissionPageData) as BeverageType[],
+        [localData],
+    )
 
     const refreshCommissionData = async () => {
         try {
@@ -861,9 +415,33 @@ export default function CommissionClientView({
         }
     };
 
+    const handleChangeDiscussionPolicy = async (newPolicy: DiscussionPolicy) => {
+        if (isMutating || newPolicy === localData.discussionPolicy) return;
+        const previousPolicy = localData.discussionPolicy ?? "ALWAYS";
+        // Optimistic update first — UI responds instantly
+        setLocalData(prev => ({ ...prev, discussionPolicy: newPolicy }));
+        setIsMutating(true);
+        try {
+            const res = await setCommissionDiscussionPolicyAction(localData.id, newPolicy);
+            if (!res.success) {
+                // Rollback to previous policy
+                setLocalData(prev => ({ ...prev, discussionPolicy: previousPolicy }));
+                toast.error(res.error || t("commission.addMemberError"));
+            } else if (res.policy) {
+                setLocalData(prev => ({ ...prev, discussionPolicy: res.policy as DiscussionPolicy }));
+            }
+        } catch (err: any) {
+            // Rollback on exception
+            setLocalData(prev => ({ ...prev, discussionPolicy: previousPolicy }));
+            toast.error(err?.message || t("commission.addMemberError"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
     const handleToggleChaoticCandidateChanges = async () => {
         if (!selectedReplica || isMutating) return;
-        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId);
+        const activePanel = selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0];
         if (!activePanel) return;
         const nextState = !activePanel.chaoticCurrentCandidateChangesEnabled;
         setIsMutating(true);
@@ -890,16 +468,21 @@ export default function CommissionClientView({
         setIsMutating(true);
         try {
             const res = await setCommissionReplicaChaoticCurrentPanelChangesEnabledAction(selectedReplica.id, nextState);
-            if (res.success) setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: nextState } : r));
+            if (res.success) {
+                setLocalReplicas(prev => prev.map(r => r.id === selectedReplica.id ? { ...r, chaoticCurrentPanelChangesEnabled: nextState } : r));
+            } else {
+                toast.error(res.error || t("commission.addMemberError"));
+            }
+        } catch (err: any) {
+            toast.error(err?.message || t("commission.addMemberError"));
         } finally {
             setIsMutating(false);
         }
     };
 
     // Detect user's active replica
-    const activeReplica = localReplicas.find(r =>
-        r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
-    ) || localReplicas.find(r => r.type === "STANDARD") || localReplicas[0] || null
+    const auidKey = currentAuid === null ? null : String(currentAuid)
+    const activeReplica = defaultCommissionReplica(localReplicas, auidKey)
 
     const [selectedReplicaId, setSelectedReplicaId] = useState<string | null>(activeReplica?.id || null)
 
@@ -928,6 +511,7 @@ export default function CommissionClientView({
         return Array.from(new Set([...memberIds, ...holderIds, ...producerIds]));
     }, [localMembers, initialData.competition.holders, localData.panels])
     const { usernames } = useUsernames(allMemberAuids)
+    const { avatars } = useAvatars(allMemberAuids)
 
     const prevReplicaStatusRef = useRef(selectedReplica?.status)
 
@@ -935,14 +519,36 @@ export default function CommissionClientView({
         setLocalData(propInitialData)
         if (propInitialData.replicas) {
             setLocalReplicas(propInitialData.replicas)
-            const active = propInitialData.replicas.find(r =>
-                r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
-            ) || propInitialData.replicas.find(r => r.type === "STANDARD") || propInitialData.replicas[0] || null
+            const active = defaultCommissionReplica(propInitialData.replicas, currentAuid === null ? null : String(currentAuid))
             if (active && !selectedReplicaId) {
                 setSelectedReplicaId(active.id)
             }
         }
     }, [propInitialData, currentAuid, selectedReplicaId])
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const queryReplicaId = params.get("replicaId") || params.get("replica");
+            if (queryReplicaId && localReplicas.some(r => r.id === queryReplicaId)) {
+                setSelectedReplicaId(queryReplicaId);
+            }
+        }
+    }, [localReplicas])
+
+    useEffect(() => {
+        if (currentAuid === null) return;
+        const auidStr = String(currentAuid);
+        const memberReplica = localReplicas.find(r =>
+            r.members?.some(m => normalizeAuids(m.auid).includes(auidStr))
+        );
+        if (memberReplica) {
+            const currentHasUser = selectedReplica?.members?.some(m => normalizeAuids(m.auid).includes(auidStr));
+            if (!currentHasUser) {
+                setSelectedReplicaId(memberReplica.id);
+            }
+        }
+    }, [currentAuid, localReplicas, selectedReplica])
 
     useEffect(() => {
         const cookieAuid = Cookies.get("auid")
@@ -952,7 +558,7 @@ export default function CommissionClientView({
     }, [])
 
     useEffect(() => {
-        const me = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
+        const me = localMembers.find(m => currentAuid !== null && normalizeAuids(m.auid).includes(String(currentAuid)))
         if (me) {
             setCurrentUserRole(me.role)
             setCurrentMemberId(me.id)
@@ -962,11 +568,9 @@ export default function CommissionClientView({
         }
     }, [localMembers, currentAuid])
 
-    const creatorNames = initialData.competition.holders.length > 0
-        ? initialData.competition.holders.map(id => usernames[id] || String(id)).join(", ")
-        : t("common.unknownCreator")
+    const creatorNames = commissionHolderNames(initialData.competition.holders, usernames, t("common.unknownCreator"))
 
-    const isHolder = currentAuid !== null && initialData.competition.holders.includes(currentAuid)
+    const isHolder = currentAuid !== null && normalizeAuids(initialData.competition.holders).includes(String(currentAuid))
 
     useEffect(() => {
         const prevStatus = prevReplicaStatusRef.current
@@ -983,52 +587,7 @@ export default function CommissionClientView({
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
 
-        const updateTime = () => {
-            if (initialData.status === "STARTED" && initialData.startedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const now = new Date().getTime()
-                const diff = Math.max(0, now - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-                const formattedTime = hours > 0
-                    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-
-                setTimeDisplay(formattedTime)
-            } else if (initialData.status === "COMPLETED" && initialData.startedAt && initialData.endedAt) {
-                const start = new Date(initialData.startedAt).getTime()
-                const end = new Date(initialData.endedAt).getTime()
-                const diff = Math.max(0, end - start)
-
-                const hours = Math.floor(diff / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-                setTimeDisplay(hours > 0 ? t("time.durationHoursMinutes", { hours, minutes }) : t("time.durationMinutes", { minutes }))
-            } else if (initialData.status === "PLANNED" && initialData.plannedStartAt) {
-                const start = new Date(initialData.plannedStartAt).getTime()
-                const now = new Date().getTime()
-                const diff = start - now
-
-                if (diff <= 0) {
-                    setTimeDisplay(t("time.startingSoon"))
-                } else {
-                    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-                    if (days > 0) {
-                        setTimeDisplay(t("time.inDaysHours", { days, hours }))
-                    } else {
-                        setTimeDisplay(t("time.inHoursMinutes", { hours, minutes }))
-                    }
-                }
-            } else {
-                setTimeDisplay("")
-            }
-        }
+        const updateTime = () => setTimeDisplay(formatCommissionTiming(initialData, t))
 
         updateTime()
         if (initialData.status === "STARTED") {
@@ -1038,6 +597,10 @@ export default function CommissionClientView({
         return () => clearInterval(intervalId)
     }, [initialData.status, initialData.startedAt, initialData.plannedStartAt, initialData.endedAt])
 
+    // Keep the ref in sync so the polling closure can check mutation state without going stale
+    useEffect(() => {
+        isMutatingRef.current = isMutating
+    }, [isMutating])
     useEffect(() => {
         let isMounted = true
         let isFetching = false
@@ -1048,7 +611,11 @@ export default function CommissionClientView({
             try {
                 const updated = await getCommissionDataAction(localData.id)
                 if (isMounted && updated) {
-                    setLocalData(updated)
+                    setLocalData(prev => ({
+                        ...updated,
+                        // Don't overwrite optimistic discussionPolicy changes while a mutation is in flight
+                        discussionPolicy: isMutatingRef.current ? prev.discussionPolicy : updated.discussionPolicy,
+                    }))
                     if (updated.replicas) {
                         setLocalReplicas(updated.replicas)
                     }
@@ -1106,11 +673,17 @@ export default function CommissionClientView({
     const candidateCount = (localData.candidates?.length ?? localData.candidateCount ?? 0)
     const hasCandidates = candidateCount > 0
     const hasMembers = localMembers.length > 0
-    const isEveryoneReady = hasMembers && localMembers.every(m => m.isReady)
-    const myStatus = localMembers.find(m => currentAuid !== null && m.auid.includes(currentAuid))
-    const amIReady = myStatus?.isReady || false
-    const isPreStart = selectedReplica?.status !== "STARTED" && selectedReplica?.status !== "COMPLETED"
-    const nonReadyCount = localMembers.filter(m => !m.isReady).length
+    // Shared with the mobile lobby. Membership matches through normalizeAuids,
+    // which flattens the nested auid arrays a plain `includes` would miss.
+    const lobby = resolveLobbyState(
+        selectedReplica ? { ...selectedReplica, members: localMembers } : null,
+        currentAuid === null ? null : String(currentAuid),
+        candidateCount,
+    )
+    const isEveryoneReady = lobby.isEveryoneReady
+    const amIReady = lobby.amIReady
+    const isPreStart = lobby.isPreStart
+    const nonReadyCount = lobby.notReadyCount
 
     const handleStartCommission = async () => {
         if (!selectedReplica || isMutating) return
@@ -1154,10 +727,7 @@ export default function CommissionClientView({
         }
     }
 
-    const sortedMembers = [...localMembers].sort((a, b) => {
-        const roleOrder = { HEAD: 1, EXPERT: 2, TRAINEE_EXPERT: 3 }
-        return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)
-    })
+    const sortedMembers = sortMembersByRole(localMembers)
 
     const currentCommissionStatus = localData.status || initialData.status
     const competitionResultsHref = `/competition/${localData.competition.id}/results?commission=${localData.id}`
@@ -1167,20 +737,20 @@ export default function CommissionClientView({
     const isCommissionPreStart = currentCommissionStatus !== "STARTED" && currentCommissionStatus !== "COMPLETED"
     const selectedReplicaName = selectedReplica?.name || t("common.standard")
     const isCommissionCompleted = currentCommissionStatus === "COMPLETED"
-    const isCompetitionHolder = currentAuid !== null && (localData.competition?.holders || initialData.competition?.holders || []).includes(currentAuid)
+    const isCompetitionHolder = currentAuid !== null && normalizeAuids(localData.competition?.holders || initialData.competition?.holders).includes(String(currentAuid))
     const completedUserReplica = localReplicas.find(
         (replica) =>
             replica.status === "COMPLETED" &&
             replica.members.some(
-                (member) => currentAuid !== null && member.auid.includes(currentAuid),
+                (member) => currentAuid !== null && normalizeAuids(member.auid).includes(String(currentAuid)),
             ),
     ) ?? null
     const showResultsBanner = isCompetitionHolder || completedUserReplica !== null
     const isUserReplicaMember = selectedReplica?.members.some(
-        (m) => currentAuid !== null && m.auid.includes(currentAuid),
+        (m) => currentAuid !== null && normalizeAuids(m.auid).includes(String(currentAuid)),
     ) ?? false
     const myReplica = localReplicas.find((r) =>
-        r.members.some((m) => currentAuid !== null && m.auid.includes(currentAuid)),
+        r.members.some((m) => currentAuid !== null && normalizeAuids(m.auid).includes(String(currentAuid))),
     ) ?? null
     const selectedReplicaReadyForSummary =
         isUserReplicaMember &&
@@ -1194,19 +764,21 @@ export default function CommissionClientView({
             : null
     const showMyTastingSummary = summaryReplica != null
 
+    const navTitleRef = useMobileNavTitle<HTMLHeadingElement>(initialData.name)
+
     return (
-        <div className="flex h-screen flex-col bg-slate-50/50">
+        <div className="app-screen bg-slate-50/50">
             <AppHeader activeTab="competitions" />
 
-            <main className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
-                <div className="w-full max-w-7xl mb-4 flex justify-start">
+            <main className="app-main px-4 pt-1 pb-6 md:p-8 flex flex-col items-center">
+                <div className="w-full max-w-7xl mb-4 hidden md:flex justify-start">
                     <BackLink
                         href={initialData.competition?.id ? `/competition/${initialData.competition.id}` : "/myCommissions"}
                         label={initialData.competition?.id ? t("commission.backToCompetition") : t("commission.backToCompetitions")}
                     />
                 </div>
                 {showMyTastingSummary && (
-                    <div className="w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
+                    <div className="w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-4 sm:px-6 py-4 shadow-sm border bg-indigo-50 border-indigo-200">
                         <div className="flex items-center gap-3">
                             <Wine className="w-5 h-5 text-indigo-600 shrink-0" />
                             <div>
@@ -1228,7 +800,7 @@ export default function CommissionClientView({
                     </div>
                 )}
                 {showResultsBanner && (
-                    <div className={`w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-6 py-4 shadow-sm border ${
+                    <div className={`w-full max-w-7xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-4 sm:px-6 py-4 shadow-sm border ${
                         isCommissionCompleted
                             ? "bg-emerald-50 border-emerald-200"
                             : "bg-indigo-50 border-indigo-200"
@@ -1272,7 +844,7 @@ export default function CommissionClientView({
 
                         {/* Replica Selector Tabs */}
                         {(localReplicas.length > 0 || isCompetitionHolder) && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-xl shadow-slate-200/50 order-3 lg:order-none">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 shadow-sm sm:shadow-xl shadow-slate-200/50 order-3 lg:order-none">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                                         <Layers className="w-4 h-4 text-indigo-500" />
@@ -1370,7 +942,7 @@ export default function CommissionClientView({
                                 )}
 
                                 <div className="flex flex-col gap-2">
-                                    {[...localReplicas].sort((a, b) => (a.members?.length || 0) - (b.members?.length || 0)).map((r) => {
+                                    {replicasForSelector(localReplicas).map((r) => {
                                         const isSelected = r.id === selectedReplicaId
                                         const isUserReplica = r.members.some(m => currentAuid !== null && m.auid.includes(currentAuid))
                                         
@@ -1483,7 +1055,7 @@ export default function CommissionClientView({
                             <StatusSteps status={replicaStatus} />
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-5 lg:order-none">
+                        <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 order-5 lg:order-none">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
@@ -1523,7 +1095,7 @@ export default function CommissionClientView({
                                                 ? "border-indigo-200 bg-indigo-50/30 shadow-indigo-100/30 shadow-md"
                                                 : "border-slate-100 bg-slate-50/30 hover:border-slate-200/50 hover:bg-slate-50/50"
                                         }`}>
-                                            <MemberAvatar auid={p.auid} role={p.role} username={usernames[p.auid[0]]} className="h-10 w-10 shrink-0" />
+                                            <MemberAvatar auid={p.auid} role={p.role} username={usernames[p.auid[0]]} imageUrl={avatars[p.auid[0]]} className="h-10 w-10 shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
@@ -1604,6 +1176,7 @@ export default function CommissionClientView({
                                 isDraft={isCommissionDraft}
                                 isEnded={isCommissionCompleted}
                                 usernames={usernames}
+                                progressReplica={selectedReplica}
                                 onRefresh={refreshCommissionData}
                             />
                         </div>
@@ -1611,7 +1184,7 @@ export default function CommissionClientView({
 
                     {/* Right Column: Actions & Session Details */}
                     <div className="contents lg:flex lg:flex-col lg:w-[55%] lg:gap-6">
-                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[32px] p-8 shadow-xl shadow-slate-200/50 order-1 lg:order-none">
+                        <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 shadow-sm sm:shadow-xl shadow-slate-200/50 order-1 lg:order-none">
                             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50/20 blur-3xl pointer-events-none" />
 
                             <div className="flex items-start gap-4 mb-6">
@@ -1660,7 +1233,7 @@ export default function CommissionClientView({
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2 mt-0.5">
-                                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
+                                            <h2 ref={navTitleRef} className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight truncate">
                                                 {initialData.name}
                                             </h2>
                                             {isCompetitionHolder && isCommissionDraft && (
@@ -1739,7 +1312,7 @@ export default function CommissionClientView({
 
                         {/* Commission Settings Card */}
                         {isCompetitionHolder && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-8 lg:order-none">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-8 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Sliders className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.evaluationSettings")}</span>
@@ -1845,13 +1418,51 @@ export default function CommissionClientView({
                                             }`} />
                                         </button>
                                     </div>
+                                    {/* Discussions Policy Setting */}
+                                    <div className="flex flex-col justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl gap-3">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-slate-800">{t("commission.discussionsSetting")}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{t("commission.discussionsSettingDesc")}</span>
+                                        </div>
+                                        <div className="w-full">
+                                            <Select
+                                                value={localData.discussionPolicy || "ALWAYS"}
+                                                onValueChange={(val) => handleChangeDiscussionPolicy(val as DiscussionPolicy)}
+                                                disabled={isMutating}
+                                            >
+                                                <SelectTrigger size="sm" className="w-full h-9 rounded-xl bg-white border-slate-200 text-xs font-medium text-slate-700 shadow-2xs hover:border-slate-300 focus:ring-2 focus:ring-indigo-500/20 transition-all">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl shadow-xl border-slate-100 bg-white p-1">
+                                                    <SelectItem value="ALWAYS" className="text-xs font-medium cursor-pointer rounded-lg py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                                            <span>{t("commission.discussionPolicyAlways")}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="AFTER_EVALUATION" className="text-xs font-medium cursor-pointer rounded-lg py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                                                            <span>{t("commission.discussionPolicyAfterEvaluation")}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="DISABLED" className="text-xs font-medium cursor-pointer rounded-lg py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />
+                                                            <span>{t("commission.discussionPolicyDisabled")}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {/* Replica Settings Card */}
                         {isCompetitionHolder && selectedReplica && (
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-9 lg:order-none">
+                            <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 flex flex-col gap-4 order-9 lg:order-none">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Layers className="w-4 h-4 text-indigo-500" />
                                     <span>{t("commission.replicaSettings", { name: selectedReplica.name })}</span>
@@ -1865,13 +1476,13 @@ export default function CommissionClientView({
                                     <button
                                         type="button"
                                         onClick={handleToggleChaoticCandidateChanges}
-                                        disabled={isMutating || !selectedReplica.currentPanelId}
+                                        disabled={isMutating || (!selectedReplica.currentPanelId && selectedReplica.replicaPanels.length === 0)}
                                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                            (selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0])?.chaoticCurrentCandidateChangesEnabled ? 'bg-indigo-600' : 'bg-slate-300'
                                         }`}
                                     >
                                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                            selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId)?.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            (selectedReplica.replicaPanels.find(panel => panel.id === selectedReplica.currentPanelId) || selectedReplica.replicaPanels[0])?.chaoticCurrentCandidateChangesEnabled ? 'translate-x-5' : 'translate-x-0'
                                         }`} />
                                     </button>
                                 </div>
@@ -1901,7 +1512,7 @@ export default function CommissionClientView({
                         </div>
 
                         {/* Timeline and Dates */}
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 animate-fade-in-slide order-2 lg:order-none">
+                        <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 animate-fade-in-slide order-2 lg:order-none">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold tracking-tight text-slate-800 flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-indigo-500" />
@@ -2028,7 +1639,7 @@ export default function CommissionClientView({
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-200/50 order-10 lg:order-none">
+                        <div className="bg-white border border-slate-100 rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm sm:shadow-xl shadow-slate-200/50 order-10 lg:order-none">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
                                 {t("commission.actionsControls")}
                             </h3>
@@ -2174,7 +1785,7 @@ export default function CommissionClientView({
                                     </div>
                                 )}
 
-                                {replicaStatus === "STARTED" && currentUserRole && (
+                                {replicaStatus === "STARTED" && (currentUserRole || isUserReplicaMember) && (
                                     <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/50 flex flex-col gap-4">
                                         <div className="flex items-start gap-3">
                                             <div className="relative flex h-3 w-3 mt-1.5 shrink-0">
@@ -2191,10 +1802,7 @@ export default function CommissionClientView({
                                             </div>
                                         </div>
                                         {selectedReplica?.currentCandidateId && (() => {
-                                            const currentCandidateObj = selectedReplica.replicaCandidates.find(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const candIndex = selectedReplica.replicaCandidates.findIndex(rc => rc.id === selectedReplica.currentCandidateId);
-                                            const rawCode = currentCandidateObj?.candidate?.anonymizedCode;
-                                            const code = (rawCode && rawCode.trim()) ? rawCode.trim() : (candIndex >= 0 ? `#${candIndex + 1}` : t("common.na"));
+                                            const code = currentCandidateCode(selectedReplica, t("common.na"));
                                             return (
                                                 <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
                                                     <span>{t("commission.currentCandidate", { code })}</span>
@@ -2203,7 +1811,7 @@ export default function CommissionClientView({
                                             );
                                         })()}
                                         <button
-                                            onClick={() => router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
+                                            onClick={() => selectedReplica && router.push(`/commission/${localData.id}/replica/${selectedReplica.id}/evaluation`)}
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95"
                                         >
                                             {t("commission.enterTastingSession")} →

@@ -1,6 +1,6 @@
 import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
-import { getSdk } from '../src/gql/axus/sdk';
+import { getSdk } from '@winelore/core/gql/axus/sdk';
 import { getAxusEndpoint } from './graphqlEndpoint';
 
 const AXUS_GRAPHQL_ENDPOINT = getAxusEndpoint();

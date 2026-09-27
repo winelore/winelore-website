@@ -1,4 +1,4 @@
-import { gql } from '@/src/gql';
+import { gql } from '@winelore/core/gql';
 
 export const GET_COMPETITION_PAGE = gql(`
   query GetCompetitionPage($id: ID!) {

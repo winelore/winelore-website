@@ -1,4 +1,4 @@
-import { gql } from "@/src/gql"
+import { gql } from '@winelore/core/gql'
 
 // Same shape as myBeverages/queries.ts's GET_MY_BEVERAGES, but named for what
 // this page actually does: list every beverage, unfiltered by producer.

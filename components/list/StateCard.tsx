@@ -14,7 +14,7 @@ export function StateCard({ variant, icon: Icon = AlertCircle, title, descriptio
     const isError = variant === "error"
     return (
         <div
-            className={`col-span-full flex flex-col items-center justify-center py-20 px-4 text-center rounded-[32px] shadow-xl ${
+            className={`col-span-full flex flex-col items-center justify-center py-14 sm:py-20 px-4 text-center rounded-[24px] sm:rounded-[32px] shadow-sm sm:shadow-xl ${
                 isError
                     ? "bg-rose-50 border border-rose-100 shadow-rose-200/50"
                     : "bg-white border border-slate-100 shadow-slate-200/50"

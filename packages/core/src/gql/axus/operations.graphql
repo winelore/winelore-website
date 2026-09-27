@@ -1,0 +1,307 @@
+mutation LoginWithPassword($auid: ID!, $password: String!, $permissions: [String!]) {
+    loginWithPassword(auid: $auid, password: $password, permissions: $permissions) {
+        id
+    }
+}
+
+mutation WrapTokenInCredentials($auid: ID!, $tokenId: String) {
+    wrapTokenInCredentials(auid: $auid, tokenId: $tokenId) {
+        auid
+        accessToken
+        refreshToken
+        accessTokenExpiresAt
+    }
+}
+
+mutation RefreshCredentials($refreshToken: String!) {
+    refreshCredentials(refreshToken: $refreshToken) {
+        auid
+        accessToken
+        refreshToken
+        accessTokenExpiresAt
+    }
+}
+
+mutation RevokeCredentials($refreshToken: String!) {
+    revokeCredentials(refreshToken: $refreshToken)
+}
+
+mutation CreateUser(
+    $contextAuid: ID
+    $tokenId: String
+    $registrationKey: ID!
+) {
+    createUser(
+        contextAuid: $contextAuid
+        tokenId: $tokenId
+        registrationKey: $registrationKey
+    ) {
+        auid
+        token {
+            id
+        }
+    }
+}
+
+mutation SetPassword(
+    $auid: ID!
+    $tokenId: String
+    $password: String!
+) {
+    setPassword(auid: $auid, tokenId: $tokenId, password: $password)
+}
+
+query OwnerByUsername($username: String!) {
+    ownerByUsername(username: $username)
+}
+
+query User($auid: ID!) {
+    user(auid: $auid) {
+        identity {
+            auid
+            id
+        }
+        usernames {
+            auid
+            usernames
+            defaultUsername
+        }
+        defaultVariation {
+            auid
+            variationId
+        }
+    }
+}
+
+query Usernames($auid: ID!) {
+    usernames(auid: $auid) {
+        auid
+        usernames
+        defaultUsername
+    }
+}
+
+query Variations($auid: ID!) {
+    variations(auid: $auid) {
+        id
+        auid
+        locationId
+        icon
+        createdAt
+    }
+}
+
+query VariationName($variationId: ID!) {
+    name(variationId: $variationId) {
+        variationId
+        elements {
+            partType
+            value
+            separatorType
+        }
+        displayName
+    }
+}
+
+query VariationDescription($variationId: ID!) {
+    description(variationId: $variationId) {
+        variationId
+        text
+        updatedAt
+    }
+}
+
+query VariationStatus($variationId: ID!) {
+    status(variationId: $variationId) {
+        variationId
+        text
+        emoji
+        expiresAt
+        updatedAt
+        isExpired
+    }
+}
+
+query DefaultVariation($auid: ID!) {
+    defaultVariation(auid: $auid) {
+        auid
+        variationId
+    }
+}
+
+mutation AddUsername($auid: ID!, $username: String!) {
+    addUsername(auid: $auid, username: $username) {
+        auid
+        usernames
+        defaultUsername
+    }
+}
+
+mutation RemoveUsername($auid: ID!, $username: String!) {
+    removeUsername(auid: $auid, username: $username) {
+        auid
+        usernames
+        defaultUsername
+    }
+}
+
+mutation ChangeDefaultUsername($auid: ID!, $username: String!) {
+    changeDefaultUsername(auid: $auid, username: $username) {
+        auid
+        usernames
+        defaultUsername
+    }
+}
+
+mutation CreateVariation(
+    $auid: ID!
+    $tokenId: String
+    $description: String
+    $locationId: String
+    $icon: String
+) {
+    createVariation(
+        auid: $auid
+        tokenId: $tokenId
+        description: $description
+        locationId: $locationId
+        icon: $icon
+    ) {
+        id
+        auid
+        locationId
+        icon
+        createdAt
+    }
+}
+
+mutation ChangeName(
+    $auid: ID!
+    $tokenId: String
+    $variationId: ID!
+    $elements: [NameElementInput!]!
+) {
+    changeName(
+        auid: $auid
+        tokenId: $tokenId
+        variationId: $variationId
+        elements: $elements
+    ) {
+        variationId
+        displayName
+        elements {
+            partType
+            value
+            separatorType
+        }
+    }
+}
+
+mutation ChangeDescription(
+    $auid: ID!
+    $tokenId: String
+    $variationId: ID!
+    $text: String
+) {
+    changeDescription(
+        auid: $auid
+        tokenId: $tokenId
+        variationId: $variationId
+        text: $text
+    ) {
+        variationId
+        text
+        updatedAt
+    }
+}
+
+mutation ChangeStatus(
+    $auid: ID!
+    $tokenId: String
+    $variationId: ID!
+    $text: String
+    $emoji: String
+    $expiresAt: String
+    $durationMinutes: Int
+) {
+    changeStatus(
+        auid: $auid
+        tokenId: $tokenId
+        variationId: $variationId
+        text: $text
+        emoji: $emoji
+        expiresAt: $expiresAt
+        durationMinutes: $durationMinutes
+    ) {
+        variationId
+        text
+        emoji
+        expiresAt
+        updatedAt
+        isExpired
+    }
+}
+
+mutation ChangeVariationLocationId(
+    $auid: ID!
+    $tokenId: String
+    $variationId: ID!
+    $locationId: String
+) {
+    changeVariationLocationId(
+        auid: $auid
+        tokenId: $tokenId
+        variationId: $variationId
+        locationId: $locationId
+    ) {
+        id
+        locationId
+    }
+}
+
+mutation ChangeVariationIcon(
+    $auid: ID!
+    $tokenId: String
+    $variationId: ID!
+    $icon: String
+) {
+    changeVariationIcon(
+        auid: $auid
+        tokenId: $tokenId
+        variationId: $variationId
+        icon: $icon
+    ) {
+        id
+        icon
+    }
+}
+
+mutation SetDefaultVariation($auid: ID!, $tokenId: String, $variationId: ID!) {
+    setDefaultVariation(auid: $auid, tokenId: $tokenId, variationId: $variationId) {
+        auid
+        variationId
+    }
+}
+
+query UserDetails($auid: ID!) {
+    usernames(auid: $auid) {
+        defaultUsername
+    }
+    defaultVariation(auid: $auid) {
+        variationId
+    }
+    variations(auid: $auid) {
+        id
+        locationId
+        icon
+    }
+}
+query Avatar($variationId: ID!) {
+    avatar(variationId: $variationId) {
+        variationId
+        objectKey
+        contentType
+        sizeBytes
+        updatedAt
+    }
+}

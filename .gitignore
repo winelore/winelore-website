@@ -52,3 +52,8 @@ lerna-debug.log*
 # Temporary files
 *.swp
 *~
+# Expo
+apps/*/.expo/
+apps/*/ios/
+apps/*/android/
+apps/*/dist/

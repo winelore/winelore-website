@@ -1,4 +1,4 @@
-import { gql } from '@/src/gql';
+import { gql } from '@winelore/core/gql';
 
 export const DevApproveCompetitionMutation = gql(`
   mutation DevApproveCompetition($id: ID!) {
@@ -265,6 +265,15 @@ export const DevSetCommissionReplicaPanelCurrentCandidateMutation = gql(`
   mutation DevSetCommissionReplicaPanelCurrentCandidate($id: ID!, $panelId: ID!, $currentCandidateId: ID) {
     setCommissionReplicaPanelCurrentCandidate(id: $id, panelId: $panelId, currentCandidateId: $currentCandidateId) {
       id
+    }
+  }
+`);
+
+export const DevCompleteCommissionReplicaPanelMutation = gql(`
+  mutation DevCompleteCommissionReplicaPanel($id: ID!, $panelId: ID!) {
+    completeCommissionReplicaPanel(id: $id, panelId: $panelId) {
+      id
+      currentPanelId
     }
   }
 `);

@@ -1,29 +1,29 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, Loader2, Search } from "lucide-react";
 import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
 import { useUsernames } from "@/hooks/useUsernames";
-import { normalizeAuids } from "../../../../auidUtils";
+import { useAvatars } from "@/hooks/useAvatars";
+import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates";
+import { MemberAvatar } from "@/components/MemberAvatar";
+import { normalizeAuids, aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue, calculateDeltaOutliers, formatSignedDiff, buildOutcomePropertyMap } from '@winelore/core';
+import type { PropertyMeta, TemplateEdition } from '@winelore/core';
 import { MemberEvaluationSection } from "../../../../EvaluationCommentsDisplay";
-import { aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue } from "@/lib/formatPropertyScore";
-import { calculateDeltaOutliers, formatSignedDiff } from "@/lib/deltaOutliers";
 import {
     getReplicaBeverageOutcome,
     resolveReplicaBeverageOutcomes,
     type OverallOutcomeByProperty,
     aggregateOverallFromReplicas,
-} from "@/lib/outcomePolicy/resolveBeverageOutcomes";
-import { buildOutcomePropertyMap } from "@/lib/outcomePolicy/outcomePropertyMap";
+} from '@winelore/core';
 import { isReplicaCandidateFinished } from "../../../../replicaUtils";
 import {
     hasEvaluationTotalScore,
     parseEvaluationTotal,
-} from "@/lib/evaluationTotals";
-import type { PropertyMeta } from "../../../../propertyMap";
-import type { TemplateEdition } from "@/lib/evaluationScores";
+} from '@winelore/core';
 import { getPanelResultsAction } from "./actions";
+
 interface WaitPanelResultsProps {
     commissionId: string;
     replicaId: string;
@@ -109,21 +109,34 @@ export default function WaitPanelResults({
         const auidStr = Cookies.get("auid");
         if (auidStr) setMyAuid(auidStr);
     }, []);
-    useEffect(() => {
-        let mounted = true;
-        setLoading(true);
-        getPanelResultsAction(commissionId, replicaId, panelId)
-            .then((res) => {
-                if (mounted && res) {
-                    setData(res);
-                }
-            })
-            .catch(console.error)
-            .finally(() => {
-                if (mounted) setLoading(false);
-            });
-        return () => { mounted = false; };
+    const isFetchingRef = useRef(false);
+
+    const reloadResults = useCallback(async () => {
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
+        try {
+            const res = await getPanelResultsAction(commissionId, replicaId, panelId);
+            if (res) {
+                setData(res);
+            }
+        } catch (err) {
+            console.error("Failed to reload panel results:", err);
+        } finally {
+            isFetchingRef.current = false;
+            setLoading(false);
+        }
     }, [commissionId, replicaId, panelId]);
+
+    useEffect(() => {
+        setLoading(true);
+        reloadResults();
+    }, [reloadResults]);
+
+    useEvaluationLiveUpdates({
+        commissionId,
+        replicaId,
+        onUpdate: reloadResults,
+    });
     const allPersonAuids = useMemo(() => {
         if (!data?.commission) return [];
         const auids = new Set<string>();
@@ -141,6 +154,7 @@ export default function WaitPanelResults({
         return Array.from(auids);
     }, [data?.commission, myAuid]);
     const { usernames } = useUsernames(allPersonAuids);
+    const { avatars } = useAvatars(allPersonAuids);
     const resolveEvaluatorName = useCallback(
         (auids: string[]) => auids.map((id) => usernames[id] || id).join(", "),
         [usernames],
@@ -410,7 +424,7 @@ export default function WaitPanelResults({
         return <TranslatedText text={label} />;
     }
     return (
-        <section className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
+        <section className="bg-white border border-slate-100 rounded-2xl shadow-sm sm:shadow-xl shadow-slate-200/50 overflow-hidden mb-8 w-full text-left">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <h2 className="text-lg font-bold text-slate-800">
@@ -615,35 +629,44 @@ export default function WaitPanelResults({
                                                             }`}
                                                         >
                                                             <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
-                                                                <div className="flex flex-col gap-1">
-                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    <MemberAvatar
+                                                                        auid={expert.evaluatorAuids}
+                                                                        role={expert.replicaType === "HEAD" ? "HEAD" : undefined}
+                                                                        username={resolveEvaluatorName(expert.evaluatorAuids)}
+                                                                        imageUrl={avatars[expert.evaluatorAuids[0]]}
+                                                                        className="h-8 w-8 shrink-0"
+                                                                    />
+                                                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
                                                                             <span className="text-xs font-bold text-slate-500 uppercase">
                                                                                 {expert.replicaName}
                                                                             </span>
-                                                                        <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
+                                                                            <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
                                                                                 {formatReplicaType(expert.replicaType)}
                                                                             </span>
-                                                                        {expert.isOutlier && (
-                                                                            <span
-                                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
-                                                                                title={t("commission.results.outOfDeltaTooltip", {
-                                                                                    score: expert.totalScore,
-                                                                                    diff: formatSignedDiff(expert.signedDiff),
-                                                                                    avg: expert.preAvg != null ? expert.preAvg.toFixed(1) : "-",
-                                                                                    threshold: 5,
-                                                                                })}
-                                                                            >
-                                                                                <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                                                                                <span>{t("commission.results.outOfDelta")}</span>
-                                                                                {expert.signedDiff != null && (
-                                                                                    <span className="opacity-90 font-mono">({formatSignedDiff(expert.signedDiff)})</span>
-                                                                                )}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <span className="text-xs text-slate-600 font-semibold">
+                                                                            {expert.isOutlier && (
+                                                                                <span
+                                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                                                                                    title={t("commission.results.outOfDeltaTooltip", {
+                                                                                        score: expert.totalScore,
+                                                                                        diff: formatSignedDiff(expert.signedDiff),
+                                                                                        avg: expert.preAvg != null ? expert.preAvg.toFixed(1) : "-",
+                                                                                        threshold: 5,
+                                                                                    })}
+                                                                                >
+                                                                                    <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                                                                    <span>{t("commission.results.outOfDelta")}</span>
+                                                                                    {expert.signedDiff != null && (
+                                                                                        <span className="opacity-90 font-mono">({formatSignedDiff(expert.signedDiff)})</span>
+                                                                                    )}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-xs text-slate-600 font-semibold truncate">
                                                                             {resolveEvaluatorName(expert.evaluatorAuids)}
                                                                         </span>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex flex-col items-end gap-1 shrink overflow-hidden min-w-0 max-w-[60%]">
                                                                     {(() => {

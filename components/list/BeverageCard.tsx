@@ -2,6 +2,7 @@
 
 import { MapPin, User, Wine } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
+import { beverageProducerLabels, beverageTypeCode } from "@winelore/core/dashboard"
 import { EntityCard, type EntityCardDensity, type EntityCardMeta } from "./EntityCard"
 import { beverageStatusAppearance } from "./statusAppearance"
 
@@ -29,21 +30,11 @@ interface BeverageCardProps {
 export function BeverageCard({ beverage, typeMap, usernames, density = "comfortable" }: BeverageCardProps) {
     const { t, formatStatus, formatBeverageType } = useTranslation()
 
-    const typeCode = (typeMap && beverage.typeId && typeMap[beverage.typeId]) || beverage.type
+    const typeCode = beverageTypeCode(beverage, typeMap)
     const status = beverage.status ?? undefined
     const { colorScheme, icon } = beverageStatusAppearance(status ?? "")
 
-    const producerLabels: string[] = []
-    ;(beverage.producers ?? []).forEach((producer) => {
-        if (producer.auid && producer.auid.length > 0) {
-            producer.auid.forEach((auid) => {
-                producerLabels.push(usernames?.[auid] || `@${auid}`)
-            })
-        } else if (producer.producerId) {
-            producerLabels.push(`Producer ${String(producer.producerId).slice(0, 8)}`)
-        }
-    })
-    const uniqueProducerLabels = Array.from(new Set(producerLabels))
+    const uniqueProducerLabels = beverageProducerLabels(beverage.producers, usernames)
     const origin = beverage.originParts?.filter(Boolean).join(", ")
 
     const meta: EntityCardMeta[] = []

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import type { Locale } from "@/lib/i18n/types"
+import type { Locale } from '@winelore/core/i18n/types'
 
 const serverCache = new Map<string, string>()
 
@@ -9,6 +9,8 @@ async function fetchTranslation(text: string, targetLocale: Locale): Promise<str
     langpair = "en|uk"
   } else if (targetLocale === "hu") {
     langpair = "en|hu"
+  } else if (targetLocale === "sk") {
+    langpair = "en|sk"
   } else {
     langpair = "uk|en"
   }

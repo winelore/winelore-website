@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import type {
     WineRegionFeatureCollection,
     WineRegionLayer,
-} from '@/lib/wineRegionTypes';
+} from '@winelore/core';
 import { useTranslation } from '@/lib/i18n/context';
 
 // Кастомна іконка без тіні
@@ -110,7 +110,7 @@ export default function MapComponent({ beverages, onSelectBeverage, onBoundsChan
                     <GeoJSON
                         key={backgroundRegionKey}
                         data={backgroundRegionCollection}
-                        onEachFeature={(feature, layer) => {
+                        onEachFeature={(feature: any, layer: any) => {
                             layer.bindTooltip(t("map.wineRegionTooltip", { name: feature.properties?.name || t("map.wineRegionFallback") }), {
                                 sticky: true,
                                 direction: "top",
@@ -134,7 +134,7 @@ export default function MapComponent({ beverages, onSelectBeverage, onBoundsChan
                             .map((feature) => feature.properties.id)
                             .join('-')}
                         data={selectedRegionGeoJson}
-                        onEachFeature={(feature, layer) => {
+                        onEachFeature={(feature: any, layer: any) => {
                             layer.bindTooltip(t("map.wineRegionTooltip", { name: feature.properties?.name || t("map.wineRegionFallback") }), {
                                 sticky: true,
                                 direction: "top",

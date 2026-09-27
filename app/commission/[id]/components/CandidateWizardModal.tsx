@@ -22,6 +22,7 @@ import {
     addCommissionCandidateAction
 } from "../../actions"
 import { useTranslation } from "@/lib/i18n/context"
+import { usePresence } from "@/hooks/usePresence"
 
 interface BeverageItem {
     id: string
@@ -322,11 +323,13 @@ export function CandidateWizardModal({
         }
     }
 
-    if (!isOpen) return null
+    // Stays mounted briefly after closing so the sheet/dialog can animate out.
+    const { mounted, closing } = usePresence(isOpen)
+    if (!mounted) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-xl overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
+        <div data-closing={closing || undefined} className="sheet-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            <div className="sheet-panel relative w-full max-w-xl overflow-hidden bg-white rounded-[32px] border border-slate-100 shadow-2xl animate-scale-up flex flex-col max-h-[90vh]">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-3">
@@ -540,14 +543,24 @@ export function CandidateWizardModal({
                                                         if (parsed && parsed.vintage) {
                                                             vintageVal = String(parsed.vintage)
                                                         }
-                                                    } catch (e) {}
+                                                    } catch {
+                                                        // Malformed attributes JSON means no vintage to show.
+                                                    }
                                                 }
                                             }
 
                                             return (
                                                 <div
                                                     key={batch.id}
+                                                    role="button"
+                                                    tabIndex={0}
                                                     onClick={() => handleSelectBatch(batch)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter" || e.key === " ") {
+                                                            e.preventDefault();
+                                                            handleSelectBatch(batch);
+                                                        }
+                                                    }}
                                                     className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
                                                         isSelected
                                                             ? "bg-indigo-50 border-indigo-300 shadow-sm"
@@ -739,7 +752,7 @@ export function CandidateWizardModal({
                     {step > 1 ? (
                         <button
                             type="button"
-                            onClick={() => setStep((prev) => (prev - 1) as any)}
+                            onClick={() => setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4)}
                             disabled={isSubmitting}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
                         >
