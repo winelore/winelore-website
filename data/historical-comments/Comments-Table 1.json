@@ -1,0 +1,4072 @@
+[
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "1;Анталовський Василь;Граппа на вишні;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;занадто алкогольне",
+  "Column5": " сильно обпікає рецептори"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "1;Анталовський Василь;Граппа на вишні;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;занадто високий алкоголь",
+  "Column5": " немає характеру"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "1;Анталовський Василь;Граппа на вишні;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Високий спирт",
+  "Column5": "  спробуйте зробити менше алкоголь",
+  "Column6": " буде кращий баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "1;Анталовський Василь;Граппа на вишні;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;алкоголь домінує"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "1;Анталовський Василь;Граппа на вишні;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Грубый алкоголь и обдёрто."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "1;Анталовський Василь;Граппа на вишні;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;інтенсивний алкоголь"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "2;Анталовський Василь;Граппа на абрикосі;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Алкоголь всё перетянул на себя",
+  "Column5": " нет характера"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "2;Анталовський Василь;Граппа на абрикосі;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;міцно але не виражено"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "2;Анталовський Василь;Граппа на абрикосі;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;занадто високий алкоголь",
+  "Column5": " немає характеру"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "2;Анталовський Василь;Граппа на абрикосі;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Не має родових ознак",
+  "Column5": " дуже високий алкоголь)"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "2;Анталовський Василь;Граппа на абрикосі;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;відсутній баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "2;Анталовський Василь;Граппа на абрикосі;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;занадто алкогольний",
+  "Column5": " немає балансу між ароматом і смаком"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "3;MUSKA WINE;Троянда;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;не вистачає аромату",
+  "Column5": " і дизбаланс смаку і аромату"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "3;MUSKA WINE;Троянда;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;приємний смак",
+  "Column5": " легкий аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "3;MUSKA WINE;Троянда;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Невистачило кислотності"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "3;MUSKA WINE;Троянда;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Просто",
+  "Column5": " подправленно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "4;KIS  WINERI;Мускаріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 2;приємне",
+  "Column5": " післясмак ніжний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "4;KIS  WINERI;Мускаріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 4;гастрономічне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "4;KIS  WINERI;Мускаріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 3;Гармонія смаку та аромату"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "4;KIS  WINERI;Мускаріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 1;хороший баланс аромату і смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "4;KIS  WINERI;Мускаріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 5;Чить закрытый",
+  "Column5": " плодовый"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "5;CHARA & GARRA;Gewürztraminer Semi Dry;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 4;хороший баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "5;CHARA & GARRA;Gewürztraminer Semi Dry;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;квіткове",
+  "Column5": " чисте",
+  "Column6": " яскраве"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "5;CHARA & GARRA;Gewürztraminer Semi Dry;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Приємний післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "5;CHARA & GARRA;Gewürztraminer Semi Dry;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Баланс и чисто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "6;Шевчук Григорій Васильович;РОТОНДА;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Аутоліз",
+  "Column5": " відсутня свіжість"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "6;Шевчук Григорій Васильович;РОТОНДА;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 4;\"підварене "
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "автоліз\""
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "6;Шевчук Григорій Васильович;РОТОНДА;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;горіхові тона в смаку і не чистий аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "6;Шевчук Григорій Васильович;РОТОНДА;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Автолиз",
+  "Column5": " задушка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "6;Шевчук Григорій Васильович;РОТОНДА;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 6;автолиз"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "7;Ісаєв Віктор Павлович;Мускат білий;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 4;редукція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "7;Ісаєв Віктор Павлович;Мускат білий;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 6;штих"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "7;Ісаєв Віктор Павлович;Мускат білий;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 1;і в ароматі і у смаку оцетові ноти",
+  "Column5": " пити таке вино не можна"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "7;Ісаєв Віктор Павлович;Мускат білий;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 3;Оцтова  актерія"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "7;Ісаєв Віктор Павлович;Мускат білий;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 2;хворе",
+  "Column5": " оцет"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "7;Ісаєв Віктор Павлович;Мускат білий;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 5;Штих"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "8;KIS  WINERI;Йоханітер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 2;чистий",
+  "Column5": " баланс",
+  "Column6": " післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "8;KIS  WINERI;Йоханітер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 4;дуже дуже добре"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "8;KIS  WINERI;Йоханітер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 3;Чистий",
+  "Column5": " в балансі"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "8;KIS  WINERI;Йоханітер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 1;дуже свіже легке ароматне",
+  "Column5": " дякую за таке вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "8;KIS  WINERI;Йоханітер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 5;Чисто",
+  "Column5": " элегантоно и очень красиво!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "9;ТМ «SASS K. WINERY»;Vinum Passum;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 4;\"нема тіла "
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "штіх\""
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "9;ТМ «SASS K. WINERY»;Vinum Passum;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 3;Оцтова бактерія замаскована цукром"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "9;ТМ «SASS K. WINERY»;Vinum Passum;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 5;ДСкрытый штих",
+  "Column5": " водянистось"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "9;ТМ «SASS K. WINERY»;Vinum Passum;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 2;не баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "9;ТМ «SASS K. WINERY»;Vinum Passum;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 6;замаскований штих",
+  "Column5": " водянистий з гіркотою в післясмаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "10;Ференц Ернестович Баркасі;Leányka küvé;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 1;трохи закритий аромат піросульфітом"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "10;Ференц Ернестович Баркасі;Leányka küvé;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 3;Післясмак консервованого абрикоса"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "10;Ференц Ернестович Баркасі;Leányka küvé;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 4;не інтенсивна ароматика"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "10;Ференц Ернестович Баркасі;Leányka küvé;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 5;Просто",
+  "Column5": " чуть водянисто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "11;Кус Сергій Федорович;Мускат Жемчужний;2021;Ukraine",
+  "Column2": " Odesa Raion",
+  "Column3": " Odesa Oblast",
+  "Column4": " Odesa;Експерт 4;комплексно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "11;Кус Сергій Федорович;Мускат Жемчужний;2021;Ukraine",
+  "Column2": " Odesa Raion",
+  "Column3": " Odesa Oblast",
+  "Column4": " Odesa;Експерт 6;високий потенціал для дозрівання"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "11;Кус Сергій Федорович;Мускат Жемчужний;2021;Ukraine",
+  "Column2": " Odesa Raion",
+  "Column3": " Odesa Oblast",
+  "Column4": " Odesa;Експерт 3;Натяк на частковий ботритиз",
+  "Column5": " післясмак вяленої груші"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "11;Кус Сергій Федорович;Мускат Жемчужний;2021;Ukraine",
+  "Column2": " Odesa Raion",
+  "Column3": " Odesa Oblast",
+  "Column4": " Odesa;Експерт 2;складний смак",
+  "Column5": " багатошаровий аромат",
+  "Column6": " карамель",
+  "Column7": " мед",
+  "Column8": " соти"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "11;Кус Сергій Федорович;Мускат Жемчужний;2021;Ukraine",
+  "Column2": " Odesa Raion",
+  "Column3": " Odesa Oblast",
+  "Column4": " Odesa;Експерт 1;складний в ароматі у смаку",
+  "Column5": " хороший баланс та довгий післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "11;Кус Сергій Федорович;Мускат Жемчужний;2021;Ukraine",
+  "Column2": " Odesa Raion",
+  "Column3": " Odesa Oblast",
+  "Column4": " Odesa;Експерт 5;Лайт харвест",
+  "Column5": " круто!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "12;KRITSKI WINERY;СПОКУСНИЦЯ;2023;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 9;Фруктовий ",
+  "Column5": " довгий післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "12;KRITSKI WINERY;СПОКУСНИЦЯ;2023;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 7;Гарна інтеграція",
+  "Column5": " достатня складність",
+  "Column6": " витримка в +"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "12;KRITSKI WINERY;СПОКУСНИЦЯ;2023;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 10;Вражає довгий післясмак кавова нота з цитрусом",
+  "Column5": " абрикос",
+  "Column6": " складний смак та аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "12;KRITSKI WINERY;СПОКУСНИЦЯ;2023;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 8;збалансоване гармонійне абрикосово-манго-кавово-персикова"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "13;KRITSKI WINERY;СПОКУСНИЦЯ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 7;Треба трохи часу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "13;KRITSKI WINERY;СПОКУСНИЦЯ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 9;Молоде вино - потребуе витримки"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "13;KRITSKI WINERY;СПОКУСНИЦЯ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 8;має потенціал до витримки складне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "13;KRITSKI WINERY;СПОКУСНИЦЯ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 10;Приємне",
+  "Column5": " але треба час для розвитку та більшої збалансованості"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "14;ФГ Шато Паук;Гевюрцтрамінер;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 11;alkohol es cukor hozzaadasaval keszult"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "14;ФГ Шато Паук;Гевюрцтрамінер;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Трохи дисбаланс з алкоголем"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "14;ФГ Шато Паук;Гевюрцтрамінер;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Дуже гарниій аромат ",
+  "Column5": " ще потребує витримки"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "14;ФГ Шато Паук;Гевюрцтрамінер;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;збалансоване складне повне питке абрикос карамелізований"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "14;ФГ Шато Паук;Гевюрцтрамінер;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Айва гарна",
+  "Column5": " баланс",
+  "Column6": " золотаве",
+  "Column7": "абрикос з тонами цитрусових"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "15;ФГ Шато Паук;Троянда Закарпаття;2022;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Баланс +",
+  "Column5": " витримка",
+  "Column6": " кислотності трохи не вистачає"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "15;ФГ Шато Паук;Троянда Закарпаття;2022;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;збалансований гармонійний питкий приємний складний післясмак білих спілих фруктів"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "15;ФГ Шато Паук;Троянда Закарпаття;2022;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;збалансований смак",
+  "Column5": " легкий",
+  "Column6": " питкий ",
+  "Column7": " солодкість приємна",
+  "Column8": " кислотність в нормі"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "15;ФГ Шато Паук;Троянда Закарпаття;2022;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Коньячні ноти"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "16;ТМ «SASS K. WINERY»;Sauvignon blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 9;Дізбаланс смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "16;ТМ «SASS K. WINERY»;Sauvignon blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 7;Свіже",
+  "Column5": " легке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "16;ТМ «SASS K. WINERY»;Sauvignon blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 8;чисте питке солодкість в смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "16;ТМ «SASS K. WINERY»;Sauvignon blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 10;Окислений",
+  "Column5": " солодкійсть в смаці? дисбаланс смак-аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "17;CHARA & GARRA;Traminer;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 9;Трохи водянисте але дуже файно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "17;CHARA & GARRA;Traminer;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Душисте",
+  "Column5": " що трохи впало у смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "17;CHARA & GARRA;Traminer;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Яскравий Трамінер",
+  "Column5": " приємний",
+  "Column6": " легкий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "18;Ференц Ернестович Баркасі;Furmint;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Velyka Byihan;Експерт 7;Водянисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "18;Ференц Ернестович Баркасі;Furmint;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Velyka Byihan;Експерт 8;гірчинка в післясмаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "18;Ференц Ернестович Баркасі;Furmint;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Velyka Byihan;Експерт 10;Свіже",
+  "Column5": " чисте",
+  "Column6": " трошки підвищена кислотність",
+  "Column7": " яка дисбаласує"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "19;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Трамінер Рожевий;2022;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 9;Колір оранжа",
+  "Column6": " забагато спирти ."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "19;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Трамінер Рожевий;2022;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 7;Бронз",
+  "Column6": " аполісц",
+  "Column7": " сер.аром"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "19;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Трамінер Рожевий;2022;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 8;не відповіда по кольору типу заявленого вина висока спиртуозність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "19;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Трамінер Рожевий;2022;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 10;Категорія як оранж",
+  "Column6": " але заявлено як біле сухе",
+  "Column7": " тоді окисленість насичений невластивий для білого сухого вина колір",
+  "Column8": " смак і аромат важкуватий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "20;\"\"\"Виноградна гора\"\"\";Трамінер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 8;гірчинка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "20;\"\"\"Виноградна гора\"\"\";Трамінер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Чистий приємний",
+  "Column5": " легкий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "20;\"\"\"Виноградна гора\"\"\";Трамінер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Зрозуміле",
+  "Column5": " свіже"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "21;\"\"\"Виноградна гора\"\"\";Совіньйон Блан;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 8;гармонійне свіже хрустке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "21;\"\"\"Виноградна гора\"\"\";Совіньйон Блан;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Яскравий сортовий",
+  "Column5": " Совіньйон",
+  "Column6": " чистий",
+  "Column7": " свіжий",
+  "Column8": " питкий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "22;MUSKA WINE;Мускат;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;яскраві квіти",
+  "Column5": " баланс смаку",
+  "Column6": " приємна кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "22;MUSKA WINE;Мускат;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 6;тонкий квітковий аромат",
+  "Column5": " зі збалансованою кислинкою в післясмаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "22;MUSKA WINE;Мускат;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;хороший",
+  "Column5": " чистий зразок і гарний баланс аромату і смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "22;MUSKA WINE;Мускат;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Ароматно",
+  "Column5": " чисто и красиво"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "22;MUSKA WINE;Мускат;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Хороший баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "23;MUSKA WINE;Соляріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 8;гармонійне легку квіткове"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "23;MUSKA WINE;Соляріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 11;Magas H2SO4"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "23;MUSKA WINE;Соляріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Непогано",
+  "Column5": " не складне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "23;MUSKA WINE;Соляріс;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Чистенкий",
+  "Column5": " не інтенсивний",
+  "Column6": " але легкий",
+  "Column7": " свіжий",
+  "Column8": " збалансований"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "24;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";GEWURZTRAMINER;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Сіркадостатньо актив"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "24;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";GEWURZTRAMINER;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Задушка",
+  "Column5": " яка проходить",
+  "Column6": " але забиває аромат вина"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "24;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";GEWURZTRAMINER;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Задушка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "24;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";GEWURZTRAMINER;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 11;kaposzta illat"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "24;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";GEWURZTRAMINER;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;хоче провітрювання задушка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "25;Keyswine;Цитро Магарача;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 2;закрите",
+  "Column5": " перший ніс сульфіти"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "25;Keyswine;Цитро Магарача;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 3;Піросульфіт"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "25;Keyswine;Цитро Магарача;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 1;занадто багато піросульфіту",
+  "Column5": " зовсім немає аромату"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "25;Keyswine;Цитро Магарача;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 6;пиросульфит закрита ароматика"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "25;Keyswine;Цитро Магарача;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 5;Пиросульфит"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "26;BENEWINE;Olasz rizling (Ріслінг італійський);2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 7;Мильне",
+  "Column5": " вік"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "26;BENEWINE;Olasz rizling (Ріслінг італійський);2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 10;Тони окисленості",
+  "Column5": " повне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "27;Кус Сергій Федорович;Золодьондь;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Чисте",
+  "Column5": " стримане",
+  "Column6": " кисл.+"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "27;Кус Сергій Федорович;Золодьондь;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 9;Гаргий баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "27;Кус Сергій Федорович;Золодьондь;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;гармонійне свіже"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "27;Кус Сергій Федорович;Золодьондь;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;Чисте",
+  "Column5": " свіже",
+  "Column6": " збалансоване",
+  "Column7": " надлегке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "28;Анталовський Василь;Совіньйон Блан;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Гармонійно",
+  "Column5": " літо)))"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "28;Анталовський Василь;Совіньйон Блан;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;аромат складний але смак простий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "29;Derenus Wine УжНУ;Черсегі;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 11;Hibas illat"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "29;Derenus Wine УжНУ;Черсегі;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 8;задушка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "29;Derenus Wine УжНУ;Черсегі;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 10;Задушка сильна"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "29;Derenus Wine УжНУ;Черсегі;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 7;Знято",
+  "Column5": " біо"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "30;Derenus Wine УжНУ;Трамінер;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 10;Приємне чисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "31;Reshko Craft Wine;Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Немає свіжості",
+  "Column5": " післясмак не є приємним"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "31;Reshko Craft Wine;Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;окислене вино як в ароматі так у смаку",
+  "Column5": " відчуття битого яблука і горіха"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "31;Reshko Craft Wine;Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;оксидоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "31;Reshko Craft Wine;Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;не чистий аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "31;Reshko Craft Wine;Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;прісне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "31;Reshko Craft Wine;Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Гнилая клубника в аромате",
+  "Column5": " окисленность",
+  "Column6": " пресно."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "32;Reshko Craft Wine;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Штіх - оцкт"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "32;Reshko Craft Wine;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 11;magas illosav",
+  "Column5": " ecetes"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "32;Reshko Craft Wine;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Оцет"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "32;Reshko Craft Wine;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Оксидативні ноти в запаху та смакові"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "33;Reshko Craft Wine;Біанка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Повне",
+  "Column5": " льодяникова нота",
+  "Column6": " але трошки важкувате"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "33;Reshko Craft Wine;Біанка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;чисте гармонійне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "33;Reshko Craft Wine;Біанка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Бронз"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "34;Reshko Craft Wine;Шардоне \/ Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Редукція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "34;Reshko Craft Wine;Шардоне \/ Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;редукція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "34;Reshko Craft Wine;Шардоне \/ Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;редукція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "34;Reshko Craft Wine;Шардоне \/ Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;редукція",
+  "Column5": " сірководень"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "34;Reshko Craft Wine;Шардоне \/ Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Редукция"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "34;Reshko Craft Wine;Шардоне \/ Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;редукція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "35;KRITSKI WINERY;ЛЕАНКА;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 7;Чисте",
+  "Column5": " не складне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "35;KRITSKI WINERY;ЛЕАНКА;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 10;Чистий ",
+  "Column5": " легкий",
+  "Column6": " свіжий",
+  "Column7": " колір ненасичений"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "36;KRITSKI WINERY;ТРАМІНЕР;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 7;Гарномійне",
+  "Column5": " ",
+  "Column6": " душисте",
+  "Column7": " залишки.цукор+"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "36;KRITSKI WINERY;ТРАМІНЕР;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 10;\"Чисте яскраве",
+  "Column5": " свіже",
+  "Column6": " \"\"стильне\"\" вино\""
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "37;Поличко;Леанка;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Shalanky;Експерт 9;в ароматі оцет"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "37;Поличко;Леанка;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Shalanky;Експерт 7;Оцет",
+  "Column5": " задушка(часник)"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "37;Поличко;Леанка;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Shalanky;Експерт 11;Illosav magas",
+  "Column5": " ecetes"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "37;Поличко;Леанка;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Shalanky;Експерт 8;задушка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "38;Поличко;Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 1;ацетон та оцетові різкі тони"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "38;Поличко;Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 3;Штіх"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "38;Поличко;Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 4;штіх"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "38;Поличко;Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 6;штих"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "38;Поличко;Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 5;Штих"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "39;ФГ Шато Паук;Променисте;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Стримана складність",
+  "Column5": " сер.аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "39;ФГ Шато Паук;Променисте;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Яскраве чисте сортове"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "39;ФГ Шато Паук;Променисте;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;баланс гармонія хрусткість."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "40;ФГ Шато Паук;Духмяне Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;квіткові аромати",
+  "Column5": " приємна гірчинка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "40;ФГ Шато Паук;Духмяне Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Чисто и тельно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "40;ФГ Шато Паук;Духмяне Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;смак не дотягує до ароматики"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "41;ФГ Шато Паук;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Г"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "41;ФГ Шато Паук;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Гармонійне",
+  "Column5": " свіже"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "41;ФГ Шато Паук;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;гармонійне повне квіткове"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "42;ФГ Шато Паук;Шардоне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Не повна чистота"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "42;ФГ Шато Паук;Шардоне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Сторонній тон",
+  "Column5": " мікробіологічні проблеми починаються в смаці",
+  "Column6": " але аромат інтенсивний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "42;ФГ Шато Паук;Шардоне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;хрустке збалансоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "43;ФГ Шато Паук;Біле Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Задихнулося"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "43;ФГ Шато Паук;Біле Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;задушка",
+  "Column5": "  не чисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "43;ФГ Шато Паук;Біле Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Задушка",
+  "Column5": " нет чистоты"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "44;\"ФГ \"\"Нота Бене\"\"\";Рислінг Італійський;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 7;Трохи заглушки",
+  "Column5": " пройшло - чисто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "44;\"ФГ \"\"Нота Бене\"\"\";Рислінг Італійський;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 10;Свіже",
+  "Column5": " тонке",
+  "Column6": " баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "45;KIS  WINERI;Цітроний Магарач;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 2;оксидація"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "45;KIS  WINERI;Цітроний Магарач;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 3;Неприємний післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "45;KIS  WINERI;Цітроний Магарач;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 1;не чисте в кольорі",
+  "Column5": " смак окислений",
+  "Column6": " прогорклий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "45;KIS  WINERI;Цітроний Магарач;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kontsovo;Експерт 5;Гребень",
+  "Column5": " окисленность"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "46;Павлишинець Федір;Шардоне;2023;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Марципан",
+  "Column5": " сер.кисл",
+  "Column6": " не складне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "46;Павлишинець Федір;Шардоне;2023;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Гарно складено",
+  "Column5": " чисто",
+  "Column6": " повний смак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "47;Erika Winery;RIESLING;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 8;чисте збалансоване хрустук"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "47;Erika Winery;RIESLING;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 10;Збалансоване",
+  "Column5": " яскраве",
+  "Column6": " чисте",
+  "Column7": " з льодяниковою нотою"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "47;Erika Winery;RIESLING;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 7;Цікаве",
+  "Column5": " чисте",
+  "Column6": " стримане",
+  "Column7": " гармонія +"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "47;Erika Winery;RIESLING;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 9;Гарионія та баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "48;OIVOS Черепаня М.;Golden Breeze;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;низька кисл",
+  "Column5": " слабкий аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "48;OIVOS Черепаня М.;Golden Breeze;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;освіжаюче"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "48;OIVOS Черепаня М.;Golden Breeze;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Чисто и красиво"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "49;\"Винна мануфактура \"\"Штифко\"\"\";Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Освіжаюче"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "49;\"Винна мануфактура \"\"Штифко\"\"\";Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;чисте",
+  "Column5": " ароматне але провалився смак",
+  "Column6": " водянисте і гірчинка зелених абрикос"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "49;\"Винна мануфактура \"\"Штифко\"\"\";Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;кісточкові фрукти",
+  "Column5": " висока кислотність - трішки випирає"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "49;\"Винна мануфактура \"\"Штифко\"\"\";Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;гіркота",
+  "Column5": " водянисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "49;\"Винна мануфактура \"\"Штифко\"\"\";Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;короткий післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "49;\"Винна мануфактура \"\"Штифко\"\"\";Мускат Голодриги;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Зеленый гребень",
+  "Column5": " горечь"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "50;\"Винна мануфактура \"\"Штифко\"\"\";Біанка;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Золотий ",
+  "Column5": " стрим.арома",
+  "Column6": " але дост.гарм"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "50;\"Винна мануфактура \"\"Штифко\"\"\";Біанка;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Забагатр спирта."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "50;\"Винна мануфактура \"\"Штифко\"\"\";Біанка;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 11;eloregedett",
+  "Column5": " tul sok alkohol"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "50;\"Винна мануфактура \"\"Штифко\"\"\";Біанка;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;тяжке окисленість повне високоспиртуозне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "50;\"Винна мануфактура \"\"Штифко\"\"\";Біанка;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Окисленість",
+  "Column5": " високий алкоголь",
+  "Column6": " дисбаланс аромат та смак",
+  "Column7": " важкувате"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "51;Erika Winery;Souvignon Blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 7;Душисте",
+  "Column5": " мін.залишкового цукру",
+  "Column6": " гармонія"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "51;Erika Winery;Souvignon Blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 10;Свіжий",
+  "Column5": " яскравий сортовий",
+  "Column6": " красиво зроблено"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "51;Erika Winery;Souvignon Blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 9;Аромат ",
+  "Column5": " смвк",
+  "Column6": " колір в гарионії"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "51;Erika Winery;Souvignon Blanc;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 8;квіткове свіже гармонійне ярке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "52;\"ФГ \"\"Нота Бене\"\"\";Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 4;дуже добре"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "52;\"ФГ \"\"Нота Бене\"\"\";Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 2;яскравий аромат",
+  "Column5": " баланс смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "52;\"ФГ \"\"Нота Бене\"\"\";Мускат Оттонель;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 5;С притензией",
+  "Column5": " сливочность"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "53;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";Бренді Закарпатський 5*;2020;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Выдержанная слива? Округло",
+  "Column5": " слаженно",
+  "Column6": " но не сложно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "53;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";Бренді Закарпатський 5*;2020;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;приємний аромат",
+  "Column5": " баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "54;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Мукачево;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;приємний чистий аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "54;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Мукачево;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Чисто",
+  "Column5": " маслянистость",
+  "Column6": " легко!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "54;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Мукачево;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Хороший  баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "55;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Солодова;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;чистий аромат",
+  "Column5": " солодкі ноти і післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "55;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Солодова;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Яркий солодовый вкус"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "55;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Солодова;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Відчувається солоджений ячмінь",
+  "Column5": " гарно!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "56;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Ужгород;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;приємний післясмак",
+  "Column5": " тепло в роті"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "56;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Ужгород;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Відчувається пряність в ароматі та перець і післясмаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "56;\"ТОВ \"\"Перша Солодовня Закарпаття\"\"\";Ужгород;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Пряный характер и сладость кукурузы"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "57;Кус Сергій Федорович;Абрикос;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Алкоголь не гарний",
+  "Column5": " більше цукру"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "57;Кус Сергій Федорович;Абрикос;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;відчувється абрикос",
+  "Column5": " напій з приємною теплотою в післясмакові"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "57;Кус Сергій Федорович;Абрикос;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;абрикос в смаці чистий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "58;Кус Сергій Федорович;Фруктов;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Непогана інтеграція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "58;Кус Сергій Федорович;Фруктов;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;спиртуозне",
+  "Column5": " ще немає балансу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "59;\"Дистилерія \"\"Файна фляшка\"\"\";Полуничний дистилят;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Не виражений аромат",
+  "Column5": " відчувається",
+  "Column6": " що ягода",
+  "Column7": " однак неможливо зрозуміти яка саме. Пофарбуйте у колір ягоди))"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "59;\"Дистилерія \"\"Файна фляшка\"\"\";Полуничний дистилят;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;не виражений ягідний аромат і смак було б добре зробити мацерацію на ягодах"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "59;\"Дистилерія \"\"Файна фляшка\"\"\";Полуничний дистилят;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Нужна мацерация для более выраженного характера"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "59;\"Дистилерія \"\"Файна фляшка\"\"\";Полуничний дистилят;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;приємний тонкий аромат",
+  "Column5": " м'який смак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "59;\"Дистилерія \"\"Файна фляшка\"\"\";Полуничний дистилят;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;не виражений смак ботанікалів"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "60;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Мускат Оттонель;2025;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 10;Сірководень і немає гри",
+  "Column6": " як тихе вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "60;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Мускат Оттонель;2025;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 8;квіткове слабенька гра задушка сірководень"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "60;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Мускат Оттонель;2025;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 9;Сірководи"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "60;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Мускат Оттонель;2025;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 7;Сірка",
+  "Column6": " не чисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "61;OIVOS Черепаня М.;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;швидк проходить виділення газу просте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "61;OIVOS Черепаня М.;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Добррий баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "61;OIVOS Черепаня М.;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Приємний аромат",
+  "Column5": " чистий свіжий",
+  "Column6": " з цитроними тонами"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "61;OIVOS Черепаня М.;Совіньйон Блан;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;стримана арома",
+  "Column5": " кисл.сер. посмак сер"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "62;OIVOS Черепаня М.;Мускат;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Гарна кіслотність ",
+  "Column5": " хрустке віно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "62;OIVOS Черепаня М.;Мускат;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Стримана",
+  "Column5": " кисл.ближче до Макс",
+  "Column6": " тіло сер"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "62;OIVOS Черепаня М.;Мускат;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Чистий",
+  "Column5": " тонкий",
+  "Column6": " свіжий",
+  "Column7": " з квітковими тонами",
+  "Column8": "кільце піни тримаєтся"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "62;OIVOS Черепаня М.;Мускат;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;довша гра. баланс поний смак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "63;ТМ «SASS K. WINERY»;Amphora;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 2;нетипові смаки і аромати для оранжа"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "63;ТМ «SASS K. WINERY»;Amphora;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 3;Не має балансу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "63;ТМ «SASS K. WINERY»;Amphora;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 6;окислене"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "63;ТМ «SASS K. WINERY»;Amphora;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 4;оксидація"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "63;ТМ «SASS K. WINERY»;Amphora;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 1;не вистачає ароматики",
+  "Column5": " смак прогорклий",
+  "Column6": " не збалансований горіхова нота вказує на окисленість вина"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "63;ТМ «SASS K. WINERY»;Amphora;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 5;Водянисто и окисленно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "64;ТМ «SASS K. WINERY»;Rhyolite Orange;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 4;легке але збалансоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "64;ТМ «SASS K. WINERY»;Rhyolite Orange;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 3;Приємний післясмак вялених фруктів"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "64;ТМ «SASS K. WINERY»;Rhyolite Orange;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 1;не вистачає  складності",
+  "Column5": " чисте і збалансоване але замолоде і трохи водянисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "64;ТМ «SASS K. WINERY»;Rhyolite Orange;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 2;сушена груша",
+  "Column5": " гречаний мед"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "64;ТМ «SASS K. WINERY»;Rhyolite Orange;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 5;Типично",
+  "Column5": " чуто водянисто и красиво"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "64;ТМ «SASS K. WINERY»;Rhyolite Orange;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 6;прииємна терпкість в післясмаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "65;BENEWINE;Traminer;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 1;хороший чистий зразок але не вистачає глибини аромату і смак простий",
+  "Column5": " хоча і характерний бурштиновим"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "65;BENEWINE;Traminer;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 4;натуралка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "65;BENEWINE;Traminer;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 3;Приближене до класисного смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "65;BENEWINE;Traminer;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 5;Чуть водянисто",
+  "Column5": " но хорошо"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "66;Reshko Craft Wine;Гевюрц Трамінер;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;не збалансоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "66;Reshko Craft Wine;Гевюрц Трамінер;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Приємна ароматика",
+  "Column5": " однак водянисте в смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "66;Reshko Craft Wine;Гевюрц Трамінер;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;не складний аромат і дуже водянистий смак",
+  "Column5": " не вистачає тіла і балансу в ароматі і смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "66;Reshko Craft Wine;Гевюрц Трамінер;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Просто и водянисто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "67;\"Винна мануфактура \"\"Штифко\"\"\";Оранж;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;аромат злегка оцетовий",
+  "Column5": " смак з явним брет не чисте вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "67;\"Винна мануфактура \"\"Штифко\"\"\";Оранж;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Дуже водянисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "67;\"Винна мануфактура \"\"Штифко\"\"\";Оранж;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;виражений тон оцтових бактерій (штих)"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "67;\"Винна мануфактура \"\"Штифко\"\"\";Оранж;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;оцтови ноти",
+  "Column5": " кислотність зависока"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "67;\"Винна мануфактура \"\"Штифко\"\"\";Оранж;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;штіх"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "67;\"Винна мануфактура \"\"Штифко\"\"\";Оранж;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Штих",
+  "Column5": " водянисто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "68;CHARA & GARRA;Zweigelt Rose;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Знадобилась додаткова аерація для розкриття аромату",
+  "Column5": " післясмак короткий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "68;CHARA & GARRA;Zweigelt Rose;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;аромат закритий піросульфітом",
+  "Column5": " смак легкий ягідний але гірчинка кісточкова зайва"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "68;CHARA & GARRA;Zweigelt Rose;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Гребневое",
+  "Column5": " нет баланса"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "68;CHARA & GARRA;Zweigelt Rose;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 6;тонкий аромат льодяників і натяк на ягідність",
+  "Column5": " в смаку зелений"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "69;MUSKA WINE;Розе;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Verkhni Remety;Експерт 5;Простое вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "69;MUSKA WINE;Розе;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Verkhni Remety;Експерт 1;смак занадто кислотний не збалансований різкий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "69;MUSKA WINE;Розе;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Verkhni Remety;Експерт 6;водянисте",
+  "Column5": " натяк на фруктовість"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "69;MUSKA WINE;Розе;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Verkhni Remety;Експерт 3;Водянисте у смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "70;Косюк О.Ю.;Розе сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;окислене рожеве вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "70;Косюк О.Ю.;Розе сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Оксидоване розе"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "70;Косюк О.Ю.;Розе сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;інтенсивний аромат",
+  "Column5": " випирає гірчинка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "70;Косюк О.Ю.;Розе сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 6;мильний смак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "70;Косюк О.Ю.;Розе сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Водянистая клубника"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "70;Косюк О.Ю.;Розе сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 4;полуниця короткий післясмак водянисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "71;ФГ Шато Паук;Розе Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;аромат закритий піросульфітом",
+  "Column5": " а смак різкий кислотний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "71;ФГ Шато Паук;Розе Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;інтенсивна кислотність в смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "71;ФГ Шато Паук;Розе Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Кислотність не в балансі"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "71;ФГ Шато Паук;Розе Мукачівське;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Кислотность не сбалансированная"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "72;Erika Winery;Rosé\/ Cabernet Sauvignon;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 1;ягідне",
+  "Column5": " легке",
+  "Column6": " свіже. Смак дуже ожиновий і хороший післясмак. Дякую за таке рове"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "72;Erika Winery;Rosé\/ Cabernet Sauvignon;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 4;хороший баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "72;Erika Winery;Rosé\/ Cabernet Sauvignon;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 6;чистий смак",
+  "Column5": " легка фруктовість",
+  "Column6": " класичний аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "72;Erika Winery;Rosé\/ Cabernet Sauvignon;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 5;Ягодно и чисто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "72;Erika Winery;Rosé\/ Cabernet Sauvignon;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 3;Розе гарно зроблене"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "73;\"Винна мануфактура \"\"Штифко\"\"\";Маджента;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Хороший баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "73;\"Винна мануфактура \"\"Штифко\"\"\";Маджента;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;компот з полуниці",
+  "Column5": " порічки",
+  "Column6": " біла малина",
+  "Column7": " смак приємний",
+  "Column8": " кислотніть збалансована"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "73;\"Винна мануфактура \"\"Штифко\"\"\";Маджента;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Просто но чисто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "74;\"Винна мануфактура \"\"Штифко\"\"\";Розе;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;не чистий аромат і смак моченого яблука і прокисших ягід"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "74;\"Винна мануфактура \"\"Штифко\"\"\";Розе;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;в смаку мочені яблука"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "74;\"Винна мануфактура \"\"Штифко\"\"\";Розе;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;полуниця. колючий післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "74;\"Винна мануфактура \"\"Штифко\"\"\";Розе;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Кислотність окремо від вина"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "74;\"Винна мануфактура \"\"Штифко\"\"\";Розе;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Зеленый гребень",
+  "Column5": " кислота"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "75;Павлишинець Федір;Піно-Нуар;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;пласке",
+  "Column5": " недотримання температурного режиму"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "75;Павлишинець Федір;Піно-Нуар;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 6;варений тон",
+  "Column5": " гіркий в післясмаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "75;Павлишинець Федір;Піно-Нуар;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 4;варені тони слабке тіло"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "75;Павлишинець Федір;Піно-Нуар;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;окислені і уварені ноти не характерні для розе"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "75;Павлишинець Федір;Піно-Нуар;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Вареное и пресное вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "75;Павлишинець Федір;Піно-Нуар;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Варене вино",
+  "Column5": " немає структури"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "76;\"Дистилерія \"\"Файна фляшка\"\"\";Терновий джин;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Збалансоване",
+  "Column5": " терновий джин"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "76;\"Дистилерія \"\"Файна фляшка\"\"\";Терновий джин;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;смак злагоджений післясмак довгий складний все гармонійно і досконало"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "76;\"Дистилерія \"\"Файна фляшка\"\"\";Терновий джин;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Приємний аромат та смак",
+  "Column5": " баланс",
+  "Column6": " гарне поєднання",
+  "Column7": " питке!!!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "77;Keyswine;Бича кров;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 7;Н\/сух на максималці",
+  "Column5": " непогане",
+  "Column6": " пізній збір"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "77;Keyswine;Бича кров;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 9;не вистачило балансу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "77;Keyswine;Бича кров;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 8;недостатньо збалансоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "77;Keyswine;Бича кров;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 10;дизгармонійне",
+  "Column5": " неприємна цукристість"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "78;Косюк О.Ю.;Червоне сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Ніби трохи(до10%} Ізабелла",
+  "Column5": " результат гарний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "78;Косюк О.Ю.;Червоне сіпаж;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;збалансований зразок - кислотність-цукристість"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "79;Павлишинець Федір;Сапераві;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Достатньо складне",
+  "Column5": " потенціал"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "79;Павлишинець Федір;Сапераві;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 9;гарниий післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "79;Павлишинець Федір;Сапераві;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Гармонійний зразок",
+  "Column5": " баланс смаку та аромату"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "79;Павлишинець Федір;Сапераві;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 8;питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "80;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Klyachanovo (Клячаново);2021;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kidosh;Експерт 10;Спиртуозне",
+  "Column6": " цукор зависокий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "80;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Klyachanovo (Клячаново);2021;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kidosh;Експерт 7;Нагрів",
+  "Column6": " баланс непоганий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "80;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Klyachanovo (Клячаново);2021;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kidosh;Експерт 8;відчувається витримка питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "81;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Royal Port Wine;2018;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Berehove;Експерт 9;Велика летучка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "81;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Royal Port Wine;2018;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Berehove;Експерт 10;Висока летка кислотність",
+  "Column6": " не гармонійне",
+  "Column7": " цкристість не в балансі!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "81;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Royal Port Wine;2018;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Berehove;Експерт 7;Нижче піку",
+  "Column6": " летучка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "81;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Royal Port Wine;2018;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Berehove;Експерт 8;висока летка кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "82;Кус Сергій Федорович;Сапераві 2025  (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Дійсно цікаво",
+  "Column5": " розвиток"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "82;Кус Сергій Федорович;Сапераві 2025  (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "82;Кус Сергій Федорович;Сапераві 2025  (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;спиртуозне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "83;Кус Сергій Федорович;Блаобургер 2025  (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Трохи летучки",
+  "Column5": " майже повнотіле"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "83;Кус Сергій Федорович;Блаобургер 2025  (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;кагорно-шоколадні ноти",
+  "Column5": " в ароматиці вишня"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "83;Кус Сергій Федорович;Блаобургер 2025  (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;насичене питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "84;Кус Сергій Федорович;Аліберне 2025 (солодке)",
+  "Column2": ";2025;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Berehove;Експерт 7;Непоганий баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "84;Кус Сергій Федорович;Аліберне 2025 (солодке)",
+  "Column2": ";2025;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Berehove;Експерт 8;питке перцеві ноти"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "84;Кус Сергій Федорович;Аліберне 2025 (солодке)",
+  "Column2": ";2025;Ukraine",
+  "Column3": " Berehove Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Berehove;Експерт 10;Спиртуозне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "85;Кус Сергій Федорович;Піно Нуар (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 9;вино не кондиція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "85;Кус Сергій Федорович;Піно Нуар (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Негармонія"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "85;Кус Сергій Федорович;Піно Нуар (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 11;abszolut hibas illat"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "85;Кус Сергій Федорович;Піно Нуар (солодке);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;Дисбаланс в смаці",
+  "Column5": " гіркота",
+  "Column6": " калина"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "86;Кус Сергій Федорович;Кабарне  (солодке);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Швидко старіє"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "86;Кус Сергій Федорович;Кабарне  (солодке);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;збалансоване увялені фрукти в післясмаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "86;Кус Сергій Федорович;Кабарне  (солодке);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;приємне збалансоване",
+  "Column5": " але спиртуозне",
+  "Column6": " не 13 % об.!!!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "86;Кус Сергій Федорович;Кабарне  (солодке);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 11;oreg",
+  "Column5": " szetesett bor"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "87;Кус Сергій Федорович;Піно Нуар.;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;Звертайте увагу на кондиції вина",
+  "Column5": " бо тип вина десертне або лікерне",
+  "Column6": " чи був використаний спирт при виробництві? Якщо оцінювати як десертне вино",
+  "Column7": " то воно гарне ",
+  "Column8": " збалансоване",
+  "Column9": " повне",
+  "Column10": " цікаве."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "87;Кус Сергій Федорович;Піно Нуар.;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 9;це вино треба до категорії кріплені вина"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "87;Кус Сергій Федорович;Піно Нуар.;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Технологія? Точно спирт для зупинки."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "87;Кус Сергій Федорович;Піно Нуар.;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;кондиції вищі як для категорії солодкі смак складний цікавий маслянистий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "88;Анталовський Василь;Кагор;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Тіла не вистачає"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "88;Анталовський Василь;Кагор;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Гарно сбалансоване ",
+  "Column5": " класичний Кагор"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "88;Анталовський Василь;Кагор;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;збалансований гармонійний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "88;Анталовський Василь;Кагор;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Збалансова терпкість солодкість та кислотність",
+  "Column5": " гарно зроблено"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "89;KRITSKI WINERY;СПОКУСНИК;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 7;Щє час потрібен"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "89;KRITSKI WINERY;СПОКУСНИК;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 10;Спиртуозність та терпкість ще в смаці",
+  "Column5": " треба ще час на витримку",
+  "Column6": " приємне!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "89;KRITSKI WINERY;СПОКУСНИК;2024;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 8;присутні тони витримки"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "90;Matis;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Хороший баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "90;Matis;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Столовое вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "91;Matis;Кабарне;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 6;дисбаланс кислотності"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "91;Matis;Кабарне;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Немає балансу",
+  "Column5": " вибивається яблучна кислота"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "91;Matis;Кабарне;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;вино не чисте",
+  "Column5": " має сторонні аромати і післясмак неприємний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "91;Matis;Кабарне;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 4;колючий післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "91;Matis;Кабарне;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Доделанное вино по кислоте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "92;Matis;Аліберне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Пустувате та не повна чистота"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "92;Matis;Аліберне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;в смаку і в ароматі нетипові складові"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "92;Matis;Аліберне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;солоность"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "92;Matis;Аліберне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Сторонній тон в ароматі",
+  "Column5": " в смаці пустовате"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "93;ТМ «SASS K. WINERY»;Pinot noir;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 3;Більше сприймається як насичене рожеве"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "93;ТМ «SASS K. WINERY»;Pinot noir;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 4;трішки оцту тіло слабке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "93;ТМ «SASS K. WINERY»;Pinot noir;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 6;водянисте",
+  "Column5": " землистий присмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "93;ТМ «SASS K. WINERY»;Pinot noir;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 1;аромат підкисших ягід",
+  "Column5": " водянисте",
+  "Column6": " не виразне",
+  "Column7": " не збалансоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "93;ТМ «SASS K. WINERY»;Pinot noir;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 5;Водянистое и пресное"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "93;ТМ «SASS K. WINERY»;Pinot noir;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 2;немає складності",
+  "Column5": " бракує тіла"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "94;Y.Krasnai;Merlo;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 3;Відчуваються оцтова бактерія"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "94;Y.Krasnai;Merlo;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 5;Просто и кислотно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "94;Y.Krasnai;Merlo;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 6;виражена кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "95;Y.Krasnai;Zweigelt;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 3;Немає балансу",
+  "Column5": " випирає яблучна кислота"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "95;Y.Krasnai;Zweigelt;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 1;аромат мінімальний",
+  "Column5": " смак різкий кислотний не збалансований"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "95;Y.Krasnai;Zweigelt;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 2;просте",
+  "Column5": " випирає кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "95;Y.Krasnai;Zweigelt;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 6;пусте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "95;Y.Krasnai;Zweigelt;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 5;Пустое",
+  "Column5": " водянистое"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "96;Y.Krasnai;Alibernet;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 9;є порок"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "96;Y.Krasnai;Alibernet;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 8;не дуже гармонійне тетипове"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "96;Y.Krasnai;Alibernet;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 7;Контроль температури бродіння!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "96;Y.Krasnai;Alibernet;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 10;Сторонній тон в смаці",
+  "Column5": " фруктовий напрямок"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "96;Y.Krasnai;Alibernet;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 11;rossz",
+  "Column5": " hibas illat"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "97;Любка Віталій Михайлович;Аліберне;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Не чисте",
+  "Column5": " брет трохи"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "98;Любка Віталій Михайлович;Кабарне;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 3;Дуже легке  тіло"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "98;Любка Віталій Михайлович;Кабарне;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 4;не вистачило тіла"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "98;Любка Віталій Михайлович;Кабарне;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 2;свіжі ягоди",
+  "Column5": " просте молоде"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "98;Любка Віталій Михайлович;Кабарне;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 1;чисте вино",
+  "Column5": " потрібна витримка",
+  "Column6": " замолоде"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "98;Любка Віталій Михайлович;Кабарне;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 5;Не сбалансированная кислотность"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "99;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Одеський Чорний;2024;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 7;Трохи з претензією",
+  "Column6": " але є над чим працювати",
+  "Column7": " копченості"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "99;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Одеський Чорний;2024;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 8;забагато копченості"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "99;\"Мукачівський район",
+  "Column2": " с.Клячаново СФГ\"\"ВІК+ТАН\"\"\";Одеський Чорний;2024;Ukraine",
+  "Column3": " Mukachevo Raion",
+  "Column4": " Zakarpattia Oblast",
+  "Column5": " Kliachanovo;Експерт 10;Забагато копченостей в смаці та ароматиці"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "100;Ференц Ернестович Баркасі;Cabernet Franc;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 2;гарно зроблене",
+  "Column5": " є потенціал",
+  "Column6": " свіжі фрукти",
+  "Column7": " слива",
+  "Column8": " черешня сушена",
+  "Column9": " шоколад"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "100;Ференц Ернестович Баркасі;Cabernet Franc;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 3;Ще не готове до вживання",
+  "Column5": " однак потенціал є"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "100;Ференц Ернестович Баркасі;Cabernet Franc;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 5;Ягодно и спритензией"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "101;Ференц Ернестович Баркасі;Kékfrankos;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Задушка",
+  "Column5": " відносно пласке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "101;Ференц Ернестович Баркасі;Kékfrankos;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;гармонійне питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "102;MUSKA WINE;Цвайгельт;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;зелені таніни"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "102;MUSKA WINE;Цвайгельт;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;приємний аромат",
+  "Column5": " висока кислотність",
+  "Column6": " бракує тіла"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "102;MUSKA WINE;Цвайгельт;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Простое",
+  "Column5": " среднетелое"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "103;MUSKA WINE;Каберне Совіньйон;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 1;різке у смаку",
+  "Column5": " терпкість занадто потужна і незбалансована"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "103;MUSKA WINE;Каберне Совіньйон;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 2;зелені таніни",
+  "Column5": " пірозини"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "103;MUSKA WINE;Каберне Совіньйон;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 3;Ще зелені таніни"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "103;MUSKA WINE;Каберне Совіньйон;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 5;Тощее вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "104;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";CABERNET SAUVIGNON;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;трошки не вистачило кислотності але хороший баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "104;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";CABERNET SAUVIGNON;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;ніжні аромати ванілі",
+  "Column5": " випічки",
+  "Column6": " занизька кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "104;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";CABERNET SAUVIGNON;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Залишковий цукор",
+  "Column5": " не вистачає кислотності"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "104;\"ФГ \"\"Садвинкрафт\"\" тм\"\"Kogutych_Winery\"\"\";CABERNET SAUVIGNON;2023;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Уходящее вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "105;Шевчук Григорій Васильович;ГОРЯНСЬКЕ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;не завершений процес бродіння"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "105;Шевчук Григорій Васильович;ГОРЯНСЬКЕ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 4;ямб"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "105;Шевчук Григорій Васильович;ГОРЯНСЬКЕ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Ще бродить"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "105;Шевчук Григорій Васильович;ГОРЯНСЬКЕ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 6;вино ще бродить"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "105;Шевчук Григорій Васильович;ГОРЯНСЬКЕ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 1;проходить ЯМБ"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "105;Шевчук Григорій Васильович;ГОРЯНСЬКЕ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Еще ЯМБ..."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "106;Гудивок іван іванович;Кабарне совінйон;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 6;зразок відсутній"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "106;Гудивок іван іванович;Кабарне совінйон;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 4;не дегустували"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "106;Гудивок іван іванович;Кабарне совінйон;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 5;Образец осуцтвует"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "106;Гудивок іван іванович;Кабарне совінйон;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 3;Вина не було"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "107;Гудивок іван іванович;Сапераві;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 7;Гарно",
+  "Column5": " чисто",
+  "Column6": " з претензією"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "107;Гудивок іван іванович;Сапераві;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 9;Гарні танини"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "107;Гудивок іван іванович;Сапераві;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 10;Чисте ",
+  "Column5": " з тонами кондитерської ноти та фруктовим віддтінком",
+  "Column6": " смак пряно-вершковий",
+  "Column7": " приємний."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "107;Гудивок іван іванович;Сапераві;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 8;ягідне гармонійне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "108;Гудивок іван іванович;Trio noir;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 7;Офф-драй",
+  "Column5": " під примітиво ді мандурія",
+  "Column6": " чисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "108;Гудивок іван іванович;Trio noir;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 9;європейський стиль",
+  "Column5": " гарний баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "108;Гудивок іван іванович;Trio noir;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 10;Гармонійне",
+  "Column5": " баланс кислотність цукристість"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "108;Гудивок іван іванович;Trio noir;2026;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Lavky;Експерт 8;відчувається в смакі цукристість більше 3 питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "109;Y.Krasnai;Kékfrankos;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 8;питке гармонійне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "109;Y.Krasnai;Kékfrankos;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 7;Легке",
+  "Column5": " непогана кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "110;Keyswine;Caberne Frank;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 2;вино не готове",
+  "Column5": " потребує часу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "110;Keyswine;Caberne Frank;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 4;недоброд залишковий цукор"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "110;Keyswine;Caberne Frank;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 3;Багато залишкового цукру",
+  "Column5": " щн продовжується бродіння"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "110;Keyswine;Caberne Frank;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 6;в процесі еволюції"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "110;Keyswine;Caberne Frank;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Kidosh;Експерт 5;Еще в процессе... полусухое."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "111;BENEWINE;Merlot;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 2;складність аромату",
+  "Column5": " червоні дикі ягоди",
+  "Column6": " шовковиця",
+  "Column7": " підлісок"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "111;BENEWINE;Merlot;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 1;хороше вино з гарним потенціалом до витримки"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "111;BENEWINE;Merlot;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 6;лаковий тон в ароматі",
+  "Column5": " третичні аромати",
+  "Column6": " інтенсивний післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "111;BENEWINE;Merlot;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 5;Тритичные тона! Великолепно!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "111;BENEWINE;Merlot;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 4;вау"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "111;BENEWINE;Merlot;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 3;Дуже гарно!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "112;BENEWINE;Cabernet Sauvignon;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 2;сторонні аромати (лак",
+  "Column5": " фарба)",
+  "Column6": " неприємна гіркота"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "112;BENEWINE;Cabernet Sauvignon;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 3;Гарний баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "112;BENEWINE;Cabernet Sauvignon;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 5;Уходящее вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "113;BENEWINE;Одеський чорний;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 10;Легке червоне вино",
+  "Column5": " але трохи пряннощів в смаці",
+  "Column6": " витримка відчутна"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "113;BENEWINE;Одеський чорний;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 7;Трохи фарби"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "113;BENEWINE;Одеський чорний;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Bene;Експерт 8;відчувається витримка гармонійне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "114;Кус Сергій Федорович;Блаобургер (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 9;нема свфжості",
+  "Column5": " не типичне для сухого вина"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "114;Кус Сергій Федорович;Блаобургер (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;ягоди чорнослив можлива витримка? відчувається округлість"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "114;Кус Сергій Федорович;Блаобургер (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Не складне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "114;Кус Сергій Федорович;Блаобургер (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;Без стронніх тонів",
+  "Column5": " приємне",
+  "Column6": " питке",
+  "Column7": " відчувається витримка або контакт з дубом",
+  "Column8": " післясмак приємний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "115;Кус Сергій Федорович;Піно Нуар 2021;2021;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 2;аромат сирого підвалу",
+  "Column5": " бракує тіла"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "115;Кус Сергій Федорович;Піно Нуар 2021;2021;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 4;пасленові  тони"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "115;Кус Сергій Федорович;Піно Нуар 2021;2021;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 3;Більше схоже на насичене рожеве"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "115;Кус Сергій Федорович;Піно Нуар 2021;2021;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 5;Пасленовое"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "115;Кус Сергій Федорович;Піно Нуар 2021;2021;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 6;сирі овочі",
+  "Column5": " землистість"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "116;Кус Сергій Федорович;Блауфранкіш;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Легке",
+  "Column5": " зрозуміле",
+  "Column6": " чисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "116;Кус Сергій Федорович;Блауфранкіш;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;Надзвичайно легке",
+  "Column5": " смак простуватий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "116;Кус Сергій Федорович;Блауфранкіш;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 9;Ароматне легке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "117;Кус Сергій Федорович;Аліберне (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Недоброд"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "117;Кус Сергій Федорович;Аліберне (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;недоброд з кислотністю та розлаженістю в смаці"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "117;Кус Сергій Федорович;Аліберне (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;в смаку негармонійне легка мікробіальна складова"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "117;Кус Сергій Федорович;Аліберне (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 9;посторонні тона"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "118;Кус Сергій Федорович;Сапераві (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;Аромат не інтенсивний",
+  "Column5": " смак приємний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "118;Кус Сергій Федорович;Сапераві (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Достатньо легке та чисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "118;Кус Сергій Федорович;Сапераві (сухе);2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;питке гармонійне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "119;Кус Сергій Федорович;Кабарне 2024 (сухе);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 3;В смаку цікавіше ніж в ароматі"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "119;Кус Сергій Федорович;Кабарне 2024 (сухе);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 1;замолоде і кислотне вино",
+  "Column5": " потрібна витримка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "119;Кус Сергій Федорович;Кабарне 2024 (сухе);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 4;приємний баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "119;Кус Сергій Федорович;Кабарне 2024 (сухе);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 2;чисте",
+  "Column5": " приємне",
+  "Column6": " фруктова ароматика",
+  "Column7": " легкий смак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "119;Кус Сергій Федорович;Кабарне 2024 (сухе);2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 5;С притензией на тритичку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "120;Анталовський Василь;Каберне;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Ще зелені таніни"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "120;Анталовський Василь;Каберне;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;комплексний аромат",
+  "Column5": " джем",
+  "Column6": " ваніль",
+  "Column7": " випічка",
+  "Column8": " смак простуватий",
+  "Column9": " післясмак короткий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "120;Анталовський Василь;Каберне;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;треба ще витримувати"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "120;Анталовський Василь;Каберне;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Пирозиновый тон"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "121;Derenus Wine УжНУ;Дунай;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 1;незбалансоване",
+  "Column5": " кислотне",
+  "Column6": " потрібна витримка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "121;Derenus Wine УжНУ;Дунай;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 4;легке тіло трохи зелених танінів"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "121;Derenus Wine УжНУ;Дунай;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 2;приємна ароматика",
+  "Column5": " пласке в смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "121;Derenus Wine УжНУ;Дунай;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Nyzhnie Solotvyno;Експерт 5;Ягодно и потенциально"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "122;Reshko Craft Wine;Каберне Совіньйон 2025;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;в ароматі легкий тон мочених яблук",
+  "Column5": " смак не збалансований",
+  "Column6": " кислотний",
+  "Column7": " різкий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "122;Reshko Craft Wine;Каберне Совіньйон 2025;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;ЯМБ",
+  "Column5": " просто"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "122;Reshko Craft Wine;Каберне Совіньйон 2025;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Землянисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "122;Reshko Craft Wine;Каберне Совіньйон 2025;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;молоде",
+  "Column5": " просте",
+  "Column6": " бракує тіла"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "123;Reshko Craft Wine;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Неприємний післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "123;Reshko Craft Wine;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;багато сторонніх запахів"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "123;Reshko Craft Wine;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;аромат прокисший",
+  "Column5": " смак брудної тряпки",
+  "Column6": " летюча кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "123;Reshko Craft Wine;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;дисбаланс смаку",
+  "Column5": " різка кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "123;Reshko Craft Wine;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;нечисте",
+  "Column5": " хворе вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "123;Reshko Craft Wine;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Кислотность в разрез"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "124;Reshko Craft Wine;Каберне Совіньйон (самотік);2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;дуже брудне вино",
+  "Column5": " як в ароматі так і  у смаку брудна тряпка і початковий брет"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "124;Reshko Craft Wine;Каберне Совіньйон (самотік);2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;не чистий ніс",
+  "Column5": " післясмак пліснями"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "124;Reshko Craft Wine;Каберне Совіньйон (самотік);2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;сторонні запахи не приємний післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "124;Reshko Craft Wine;Каберне Совіньйон (самотік);2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 6;землистість",
+  "Column5": " сирі овочі"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "124;Reshko Craft Wine;Каберне Совіньйон (самотік);2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Не чистое вино"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "124;Reshko Craft Wine;Каберне Совіньйон (самотік);2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Запах погребу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "125;Reshko Craft Wine;Каберне Совіньйон \/ Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Гарні танини та баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "125;Reshko Craft Wine;Каберне Совіньйон \/ Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Трохи дисбаланс і гармонія"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "126;Chepkyi Wine;Студентське;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 8;не дуже гармонійне в смаці ізабельна нота домінуюча"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "126;Chepkyi Wine;Студентське;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Чисте",
+  "Column5": " але не гармонійне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "126;Chepkyi Wine;Студентське;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 9;Краще робити чисту Изабелу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "126;Chepkyi Wine;Студентське;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Ізабелла не має бути",
+  "Column5": " слабке на тіло"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "127;KRITSKI WINERY;САПЕРАВІ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 7;Не чисте",
+  "Column5": " брет"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "127;KRITSKI WINERY;САПЕРАВІ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 9;бродить"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "127;KRITSKI WINERY;САПЕРАВІ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 10;Задушка",
+  "Column5": " в смаці сторонній тон "
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "127;KRITSKI WINERY;САПЕРАВІ;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Serednie;Експерт 8;в смаці негармонійне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "128;Поличко;Чорний Доктор;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 7;Слабка інтенс.аромату",
+  "Column5": " офф-драй",
+  "Column6": " середнє + тіло"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "128;Поличко;Чорний Доктор;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 9;Остатний цукор"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "128;Поличко;Чорний Доктор;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 11;illosav",
+  "Column5": " ocet"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "128;Поличко;Чорний Доктор;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 10;Недоброд відчутний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "128;Поличко;Чорний Доктор;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Berehove;Експерт 8;залишковий цукор"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "129;ФГ Шато Паук;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;аромат червоної стиглої черешні",
+  "Column5": " пиріг з лісовими ягодами",
+  "Column6": " баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "129;ФГ Шато Паук;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Чисте",
+  "Column5": " хороший  баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "129;ФГ Шато Паук;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;збалансоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "129;ФГ Шато Паук;Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Щедро и ягодно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "130;ФГ Шато Паук;Каберне Совіньйон;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;аромат фруктів червоних",
+  "Column5": " сливи",
+  "Column6": " черешні",
+  "Column7": " джемові нотки",
+  "Column8": " замолоді таніни"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "130;ФГ Шато Паук;Каберне Совіньйон;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Післясмак вялених фруктів"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "130;ФГ Шато Паук;Каберне Совіньйон;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;шершава терпкість",
+  "Column5": " потрібна витримка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "130;ФГ Шато Паук;Каберне Совіньйон;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Щедро и ягодно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "131;ФГ Шато Паук;Ювілейне Мукачівське;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Температура бродіння!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "131;ФГ Шато Паук;Ювілейне Мукачівське;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Гарний аромат та післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "131;ФГ Шато Паук;Ювілейне Мукачівське;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;відчувається трохи витримка",
+  "Column5": " балансоване",
+  "Column6": " питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "131;ФГ Шато Паук;Ювілейне Мукачівське;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;питке"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "132;\"ФГ \"\"Нота Бене\"\"\";Блаубургер;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 7;Гарне",
+  "Column5": " зрозуміле",
+  "Column6": " з невеликим потенціалом розвитку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "132;\"ФГ \"\"Нота Бене\"\"\";Блаубургер;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 10;Гіркота в смаці"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "133;\"ФГ \"\"Нота Бене\"\"\";Мерло;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 2;бракує складності",
+  "Column5": " тіла"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "133;\"ФГ \"\"Нота Бене\"\"\";Мерло;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 3;Зелені гребені"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "133;\"ФГ \"\"Нота Бене\"\"\";Мерло;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 1;не вистачає витримки"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "133;\"ФГ \"\"Нота Бене\"\"\";Мерло;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Muzhiievo;Експерт 5;Черноплодка",
+  "Column5": " густо"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "134;Павлишинець Федір;Мерло;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 2;яскрава ароматика",
+  "Column5": " вишневий джем",
+  "Column6": " кислотність на стінках язика залишається"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "134;Павлишинець Федір;Мерло;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 5;Ярко и щедро!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "134;Павлишинець Федір;Мерло;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 4;дуже добре"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "134;Павлишинець Федір;Мерло;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 3;Дуже гарно зроблено!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "135;Павлишинець Федір;Одеський Чорний;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 9;вино з потенціалом"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "135;Павлишинець Федір;Одеський Чорний;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 7;Трохи гребні та температура бродіння"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "135;Павлишинець Федір;Одеський Чорний;2025;Ukraine",
+  "Column2": " Uzhhorod Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Uzhhorod;Експерт 10;Молочні вершки та фруктовий тон. є трохи зайва гіркота в смаці та післясмакові."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "136;OIVOS Черепаня М.;Cabriot;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;вино не чисте",
+  "Column5": " має сторонні запахи",
+  "Column6": " смак не типовий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "136;OIVOS Черепаня М.;Cabriot;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;не чисте в ароматі",
+  "Column5": " занадто кислотне",
+  "Column6": " вино ще не готове до вживання"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "136;OIVOS Черепаня М.;Cabriot;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 4;смак провів від ароматики не дуже приємний післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "136;OIVOS Черепаня М.;Cabriot;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;Водянисте"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "136;OIVOS Черепаня М.;Cabriot;2024;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Черноплодка",
+  "Column5": " высокая кислотность"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "137;OIVOS Черепаня М.;Багрян;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 1;вину треба провести ЯМБ"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "137;OIVOS Черепаня М.;Багрян;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Очень плотно!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "138;\"Винна мануфактура \"\"Штифко\"\"\";Каберне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 3;В ароматі дуже просто",
+  "Column5": " в смаку цікаве"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "138;\"Винна мануфактура \"\"Штифко\"\"\";Каберне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;приємна ароматика порічки",
+  "Column5": " червоних ягід",
+  "Column6": " бракує тіла"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "138;\"Винна мануфактура \"\"Штифко\"\"\";Каберне;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Потенциально! нужно на выдержку!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "139;\"Винна мануфактура \"\"Штифко\"\"\";Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 2;бракує тіла",
+  "Column5": " швидко зник аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "139;\"Винна мануфактура \"\"Штифко\"\"\";Мерло;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 5;Питейно и чесно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "140;\"Винна мануфактура \"\"Штифко\"\"\";Фамільний код;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Немає складності",
+  "Column5": " кислотність",
+  "Column6": " гребінь"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "140;\"Винна мануфактура \"\"Штифко\"\"\";Фамільний код;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 8;гармонійне питке свіже"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "140;\"Винна мануфактура \"\"Штифко\"\"\";Фамільний код;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;\"Ще буде розвиток вина",
+  "Column5": " фруктове",
+  "Column6": " цікавий \"\"дзвінкий\"\" смак\""
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "141;Степан Жупан;Каберне Совіньйон;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 2;не чисте виконання",
+  "Column5": " залишковий цукор"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "141;Степан Жупан;Каберне Совіньйон;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 1;не чисте в ароматі і у смаку"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "141;Степан Жупан;Каберне Совіньйон;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 4;витримане алкоголь вибивається"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "141;Степан Жупан;Каберне Совіньйон;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 3;Спирт окремо від вина"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "141;Степан Жупан;Каберне Совіньйон;2023;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 5;Старая бочка"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "142;Степан Жупан;Аліберне;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 7;Чисте",
+  "Column5": " в міру насичене",
+  "Column6": " але не складне"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "142;Степан Жупан;Аліберне;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 9;Гарний баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "142;Степан Жупан;Аліберне;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 8;чистий питкий гармонійний"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "142;Степан Жупан;Аліберне;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 10;Гарний баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "143;Степан Жупан;Голубок;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 10;приємне",
+  "Column5": " ванільно кондитерська нота",
+  "Column6": " прослідковується стилистика"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "143;Степан Жупан;Голубок;2024;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 7;Легке",
+  "Column5": " зрозуміле"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "144;Степан Жупан;Піно нуар;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 3;Смак і аромат неконгруентні",
+  "Column5": " немає балансу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "144;Степан Жупан;Піно нуар;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 2;бракує тіла",
+  "Column5": " аромат червоних сушених ягід"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "144;Степан Жупан;Піно нуар;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 1;зелені гребені",
+  "Column5": " різка алкогольність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "144;Степан Жупан;Піно нуар;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 4;зелені тони"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "144;Степан Жупан;Піно нуар;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 5;Гребневый тон"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "145;Степан Жупан;Цвайгельт;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 4;не звичайна ароматика трохи не вистачило балансу"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "145;Степан Жупан;Цвайгельт;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 2;приємна ароматика свіжих фруктів"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "145;Степан Жупан;Цвайгельт;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 3;Цікаве",
+  "Column5": " аднак дуже відчувається алкоголь"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "145;Степан Жупан;Цвайгельт;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 1;ще замолоде",
+  "Column5": " але має потенціал до витримки"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "145;Степан Жупан;Цвайгельт;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 5;Интересная работа с дубом"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "146;Степан Жупан;Блаубургер;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 7;Гармонійне",
+  "Column5": " з розвитком"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "146;Степан Жупан;Блаубургер;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 10;Баланс смаку та аромату",
+  "Column5": " повнота смаку",
+  "Column6": " питкий",
+  "Column7": " гастрономічний зразок"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "147;Степан Жупан;Блауфранкіш;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 9;залишковий цукор"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "147;Степан Жупан;Блауфранкіш;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 10;Остаточний цукор або гліцеринове",
+  "Column5": " збалансоване"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "147;Степан Жупан;Блауфранкіш;2025;Ukraine",
+  "Column2": " Berehove Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Vynohradiv;Експерт 7;Цукор",
+  "Column5": " кислотність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "148;Birok;Дичківка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 5;Через чур высокая кондиция",
+  "Column5": " чуть обдертая"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "148;Birok;Дичківка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 4;добре але заміцно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "148;Birok;Дичківка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 3;В смаку дуже гарно",
+  "Column5": " як рекомендація",
+  "Column6": " спробуйте зробити меншу міцність"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "148;Birok;Дичківка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 1;хороший аромат але занадто багато алкоголю"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "148;Birok;Дичківка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 6;знизити кондицію"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "148;Birok;Дичківка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 2;випирає алкогось"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "149;Birok;Грушівка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 2;тонкий інтенсивний аромат",
+  "Column5": " м'який смак",
+  "Column6": " приємне тепло"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "149;Birok;Грушівка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 4;хороший яскравий продукт"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "149;Birok;Грушівка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 5;Яркая груша",
+  "Column5": " баланс!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "149;Birok;Грушівка;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 3;Дуже гарно виражена ароматика"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "150;Birok;Слива;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 5;Красивая концентрация. Чуть высокая кондиция"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "150;Birok;Слива;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 2;гарний тонкий аромат",
+  "Column5": " зависокий алкоголь"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "150;Birok;Слива;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 3;Гарно",
+  "Column5": " однак 60% дуже міцно",
+  "Column6": " ньобо заніміло))"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "150;Birok;Слива;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 4;гарний баланс делікатно але дуже міцно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "150;Birok;Слива;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 1;чисте",
+  "Column5": " яскраве але хочеться трохи менше алкоголю"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "151;Birok;Закарпатське бренді;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 2;тонкий інтенсивний аромат",
+  "Column5": " м'який смак",
+  "Column6": " приємне тепло"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "151;Birok;Закарпатське бренді;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 5;Яблоко и ваниль",
+  "Column5": " запеченое"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "151;Birok;Закарпатське бренді;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 4;запечене яблуко  хороший баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "151;Birok;Закарпатське бренді;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 3;Наче десерт",
+  "Column5": " дякую!"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "151;Birok;Закарпатське бренді;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 1;бісквітні ноти та печене яблуко в ароматі",
+  "Column5": " смак гармонійний добре збалансований"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "152;Birok;Айва;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 5;Чуть обдертая Айва. Взять больше хвостов."
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "152;Birok;Айва;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 4;трохи різкувато і смажений післясмак"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "152;Birok;Айва;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 6;аромат вишуканий",
+  "Column5": " але занадто різкий"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "152;Birok;Айва;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 3;Не вистачає маслянистості",
+  "Column5": " а так гарно"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "152;Birok;Айва;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 1;смак розбалансований",
+  "Column5": " трішки різкувате"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "152;Birok;Айва;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 2;випирає алкоголь",
+  "Column5": " дисбаланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "153;Birok;Вишніка настояна на бренді з дубовою витримкою та медом;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 8;вишня в ароматі чистий інтенсивний аромат"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "153;Birok;Вишніка настояна на бренді з дубовою витримкою та медом;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 7;Алкоголь не інтегрований"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "153;Birok;Вишніка настояна на бренді з дубовою витримкою та медом;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Dertsen;Експерт 10;спирт не асимільований"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "154;Порядний Газда;Аніс;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Впізнаваність +"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "154;Порядний Газда;Аніс;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 9;Дуже гарний баланс"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "154;Порядний Газда;Аніс;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;Яскравий аромат сировини"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "155;Порядний Газда;Терен;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Цукор пішов в +"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "156;Порядний Газда;Калган;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Трохи тіла не вистачає"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "157;Порядний Газда;Тмин;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 7;Гарна інтеграція"
+ },
+ {
+  "Код;Виробник;Напій;Вінтаж;Походження;Експерт;Коментар": "157;Порядний Газда;Тмин;2025;Ukraine",
+  "Column2": " Mukachevo Raion",
+  "Column3": " Zakarpattia Oblast",
+  "Column4": " Mukachevo;Експерт 10;спиртуозне",
+  "Column5": " але тепле",
+  "Column6": " сировина відчувається",
+  "Column7": " гарно зроблено"
+ }
+]

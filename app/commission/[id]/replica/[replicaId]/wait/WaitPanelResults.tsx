@@ -5,7 +5,9 @@ import Cookies from "js-cookie";
 import { useTranslation } from "@/lib/i18n/context";
 import { TranslatedText } from "@/lib/i18n/TranslatedText";
 import { useUsernames } from "@/hooks/useUsernames";
+import { useAvatars } from "@/hooks/useAvatars";
 import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates";
+import { MemberAvatar } from "@/components/MemberAvatar";
 import { normalizeAuids, aggregatePropertyScores, formatPropertyScoreValue, hasStoredScoreValue, calculateDeltaOutliers, formatSignedDiff, buildOutcomePropertyMap } from '@winelore/core';
 import type { PropertyMeta, TemplateEdition } from '@winelore/core';
 import { MemberEvaluationSection } from "../../../../EvaluationCommentsDisplay";
@@ -152,6 +154,7 @@ export default function WaitPanelResults({
         return Array.from(auids);
     }, [data?.commission, myAuid]);
     const { usernames } = useUsernames(allPersonAuids);
+    const { avatars } = useAvatars(allPersonAuids);
     const resolveEvaluatorName = useCallback(
         (auids: string[]) => auids.map((id) => usernames[id] || id).join(", "),
         [usernames],
@@ -626,35 +629,44 @@ export default function WaitPanelResults({
                                                             }`}
                                                         >
                                                             <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
-                                                                <div className="flex flex-col gap-1">
-                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    <MemberAvatar
+                                                                        auid={expert.evaluatorAuids}
+                                                                        role={expert.replicaType === "HEAD" ? "HEAD" : undefined}
+                                                                        username={resolveEvaluatorName(expert.evaluatorAuids)}
+                                                                        imageUrl={avatars[expert.evaluatorAuids[0]]}
+                                                                        className="h-8 w-8 shrink-0"
+                                                                    />
+                                                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
                                                                             <span className="text-xs font-bold text-slate-500 uppercase">
                                                                                 {expert.replicaName}
                                                                             </span>
-                                                                        <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
+                                                                            <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
                                                                                 {formatReplicaType(expert.replicaType)}
                                                                             </span>
-                                                                        {expert.isOutlier && (
-                                                                            <span
-                                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
-                                                                                title={t("commission.results.outOfDeltaTooltip", {
-                                                                                    score: expert.totalScore,
-                                                                                    diff: formatSignedDiff(expert.signedDiff),
-                                                                                    avg: expert.preAvg != null ? expert.preAvg.toFixed(1) : "-",
-                                                                                    threshold: 5,
-                                                                                })}
-                                                                            >
-                                                                                <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                                                                                <span>{t("commission.results.outOfDelta")}</span>
-                                                                                {expert.signedDiff != null && (
-                                                                                    <span className="opacity-90 font-mono">({formatSignedDiff(expert.signedDiff)})</span>
-                                                                                )}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <span className="text-xs text-slate-600 font-semibold">
+                                                                            {expert.isOutlier && (
+                                                                                <span
+                                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                                                                                    title={t("commission.results.outOfDeltaTooltip", {
+                                                                                        score: expert.totalScore,
+                                                                                        diff: formatSignedDiff(expert.signedDiff),
+                                                                                        avg: expert.preAvg != null ? expert.preAvg.toFixed(1) : "-",
+                                                                                        threshold: 5,
+                                                                                    })}
+                                                                                >
+                                                                                    <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                                                                    <span>{t("commission.results.outOfDelta")}</span>
+                                                                                    {expert.signedDiff != null && (
+                                                                                        <span className="opacity-90 font-mono">({formatSignedDiff(expert.signedDiff)})</span>
+                                                                                    )}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-xs text-slate-600 font-semibold truncate">
                                                                             {resolveEvaluatorName(expert.evaluatorAuids)}
                                                                         </span>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex flex-col items-end gap-1 shrink overflow-hidden min-w-0 max-w-[60%]">
                                                                     {(() => {
