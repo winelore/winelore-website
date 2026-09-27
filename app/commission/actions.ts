@@ -65,6 +65,7 @@ import {
 } from '@winelore/core/commission';
 
 export type { MyTastingSummaryData } from '@winelore/core/commission';
+export type DiscussionPolicy = "ALWAYS" | "AFTER_EVALUATION" | "DISABLED";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isValidUuid(id: string | null | undefined): boolean {
@@ -497,6 +498,9 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
     const emptyResult = {
         ...empty,
         ...empty.flags,
+        commissionName: "",
+        discussionsEnabled: true,
+        discussionPolicy: "ALWAYS" as DiscussionPolicy,
         myTastingSummary: null as MyTastingSummaryData | null,
         nextPanelId: null as string | null,
         nextPanelFirstCandidateId: null as string | null,
@@ -547,10 +551,15 @@ export async function getWaitDataAction(commissionId: string, replicaId: string)
             }
         }
 
+        const policy = ((commission as any).discussionPolicy ?? "ALWAYS") as DiscussionPolicy;
+
         return {
             ...room,
             // The wait page and the panel summary read these flat.
             ...room.flags,
+            commissionName: commission.name || "",
+            discussionsEnabled: policy !== "DISABLED",
+            discussionPolicy: policy,
             propertyMap: myTastingSummary?.propertyMap ?? room.propertyMap,
             myTastingSummary,
             nextPanelId: nextPanel?.panel?.id || null,
@@ -702,6 +711,25 @@ export async function setCommissionBeverageOriginDuringEvaluationEnabledAction(c
     } catch (err: any) {
         console.error("Server Action Error (setCommissionBeverageOriginDuringEvaluationEnabledAction):", err);
         return { success: false, error: err?.message || "Failed to update beverage origin setting" };
+    }
+}
+
+export async function setCommissionDiscussionPolicyAction(commissionId: string, policy: DiscussionPolicy) {
+    if (!isValidUuid(commissionId)) return { success: false, error: "Invalid commissionId parameter" };
+    try {
+        const headers = await getActorHeaders();
+        const data = await rawGraphQL(`
+            mutation SetCommissionDiscussionPolicy($id: ID!, $policy: DiscussionPolicy!) {
+                setCommissionDiscussionPolicy(id: $id, policy: $policy) {
+                    id
+                    discussionPolicy
+                }
+            }
+        `, { id: commissionId, policy }, headers);
+        return { success: true, policy: data?.setCommissionDiscussionPolicy?.discussionPolicy };
+    } catch (err: any) {
+        console.error("Server Action Error (setCommissionDiscussionPolicyAction):", err);
+        return { success: false, error: err?.message || "Failed to update discussion policy setting" };
     }
 }
 

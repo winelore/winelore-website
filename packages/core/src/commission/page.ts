@@ -83,6 +83,7 @@ export interface CommissionPageData {
     voiceCommentsEnabled: boolean
     propertyCommentsEnabled: boolean
     beverageOriginDuringEvaluationEnabled: boolean
+    discussionPolicy: "ALWAYS" | "AFTER_EVALUATION" | "DISABLED"
     evaluationVisibleAttributes: { beverage: string[]; batch: string[]; sample: string[] }
     competition: {
         id: string
@@ -196,6 +197,7 @@ export function toCommissionPage(commission: any, templateLinks: any[] | null | 
         voiceCommentsEnabled: commission.voiceCommentsEnabled ?? false,
         propertyCommentsEnabled: commission.propertyCommentsEnabled ?? false,
         beverageOriginDuringEvaluationEnabled: commission.beverageOriginDuringEvaluationEnabled ?? false,
+        discussionPolicy: (commission.discussionPolicy ?? "ALWAYS") as "ALWAYS" | "AFTER_EVALUATION" | "DISABLED",
         evaluationVisibleAttributes: commission.evaluationVisibleAttributes || { beverage: [], batch: [], sample: [] },
         competition: {
             id: commission.competition.id,
