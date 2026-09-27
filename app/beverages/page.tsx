@@ -16,6 +16,7 @@ export default async function DashboardPage({
     const parsedPage = parseInt(resolvedParams.page || "1", 10);
     const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
     const LIMIT = 16;
+    const beverageTypesPromise = getBeverageTypesAction();
 
     let allBeverages: any[] = [];
     let totalCount = 0;
@@ -35,7 +36,7 @@ export default async function DashboardPage({
     const totalPages = Math.max(1, Math.ceil(totalCount / LIMIT));
     let beverageTypesDict: Record<string, string> = {};
     try {
-        const typesList = await getBeverageTypesAction();
+        const typesList = await beverageTypesPromise;
         beverageTypesDict = typesList.reduce((acc, t) => {
             acc[t.id] = t.code; // Use code (e.g. "WINE") so frontend can translate it
             return acc;

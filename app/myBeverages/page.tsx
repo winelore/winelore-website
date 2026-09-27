@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { fetchGraphQL } from "@/lib/apiClient"
-import { getGeographicInfo } from "@/lib/geocoding"
+import { getGeographicInfo } from "@/lib/geocoding.server"
 import { beverageOriginParts } from "@winelore/core"
 import { withBeverageType } from "@winelore/core/dashboard"
 import { GET_MY_BEVERAGES } from "./queries"
@@ -23,6 +23,7 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
         redirect("/auth/login")
     }
     const currentAuid = parseInt(currentAuidStr, 10);
+    const beverageTypesPromise = getBeverageTypesAction();
 
     let myBeverages: any[] = [];
     let totalCount = 0;
@@ -60,7 +61,7 @@ export default async function MyBeveragesPage({ searchParams, }: { searchParams:
     // reads the beverage type rather than the raw colour attribute.
     let beverageTypesDict: Record<string, string> = {};
     try {
-        const typesList = await getBeverageTypesAction();
+        const typesList = await beverageTypesPromise;
         beverageTypesDict = typesList.reduce((acc, type) => {
             acc[type.id] = type.code;
             return acc;

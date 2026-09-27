@@ -9,7 +9,11 @@ export async function GET(request: NextRequest) {
 
   // Best-effort: a failed revoke must never block clearing local credentials.
   if (refreshToken) {
-    await revokeRefreshToken(getAxusConfig(), refreshToken);
+    try {
+      await revokeRefreshToken(getAxusConfig(), refreshToken);
+    } catch (error) {
+      console.error("OAuth logout revoke failed, clearing local cookies anyway:", error);
+    }
   }
 
   cookieStore.delete("auid");

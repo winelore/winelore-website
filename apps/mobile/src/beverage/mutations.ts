@@ -1,11 +1,14 @@
 import { print } from "graphql"
 import type { AddableProducerRole, BeverageOrigin, BeverageProducer } from "@winelore/core/beverage"
 import {
+    ChangeBatchLotNumberDocument,
+    ChangeBatchVolumeDocument,
     ChangeBeverageNameDocument,
     ChangeBeverageOriginDocument,
     RegisterBeverageProducerDocument,
     SubmitBeverageForReviewDocument,
     UnregisterBeverageProducerDocument,
+    UpdateBatchAttributesDocument,
 } from "@winelore/core/gql/sdk"
 import { mutateGraphQLRaw } from "../api/client"
 
@@ -51,3 +54,30 @@ export const registerBeverageProducer = (id: string, producerAuid: number, role:
 
 export const unregisterBeverageProducer = (id: string, producerDetailsId: string, auid: string) =>
     mutate(UnregisterBeverageProducerDocument, "unregisterBeverageProducer", { id, producerDetailsId }, auid)
+
+interface UpdatedBatch {
+    id: string
+    volumeMl: number | null
+    lotNumber: string | null
+    attributes: unknown
+}
+
+async function mutateBatch<K extends string>(
+    document: Parameters<typeof print>[0],
+    field: K,
+    variables: Record<string, unknown>,
+    auid: string,
+): Promise<UpdatedBatch> {
+    const data = await mutateGraphQLRaw<Record<K, UpdatedBatch>>(print(document), variables, actor(auid))
+    return data[field]
+}
+
+/** What a producer can change on a batch from its card — the web's batch actions. */
+export const changeBatchVolume = (id: string, volumeMl: number | null, auid: string) =>
+    mutateBatch(ChangeBatchVolumeDocument, "changeBatchVolume", { id, volumeMl }, auid)
+
+export const changeBatchLotNumber = (id: string, lotNumber: string | null, auid: string) =>
+    mutateBatch(ChangeBatchLotNumberDocument, "changeBatchLotNumber", { id, lotNumber }, auid)
+
+export const updateBatchAttributes = (id: string, attributes: Record<string, unknown>, auid: string) =>
+    mutateBatch(UpdateBatchAttributesDocument, "updateBatchAttributes", { id, attributes }, auid)

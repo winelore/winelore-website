@@ -76,7 +76,7 @@ export default function LocationPickerMapInner({
         try {
             const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
-                { headers: { 'Accept-Language': 'uk,en,hu' } }
+                { headers: { 'Accept-Language': 'uk,en,hu,sk' } }
             );
             if (res.ok) {
                 const data = await res.json();
@@ -98,7 +98,7 @@ export default function LocationPickerMapInner({
         try {
             const res = await fetch(
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-                { headers: { 'Accept-Language': 'uk,en,hu' } }
+                { headers: { 'Accept-Language': 'uk,en,hu,sk' } }
             );
             if (res.ok) {
                 const data = await res.json();

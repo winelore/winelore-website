@@ -62,7 +62,9 @@ export default function OutcomePolicyCreatorModal({
                 // Pull existing names so we can catch a duplicate before hitting
                 // the backend at all — the backend currently returns a generic
                 // INTERNAL_ERROR for this case, which is useless to show as-is.
-                getOutcomePolicyNamesAction(currentAuid).then(setExistingNames)
+                getOutcomePolicyNamesAction(currentAuid).then(setExistingNames).catch(() => {
+                    setExistingNames([])
+                })
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps

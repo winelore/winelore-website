@@ -23,7 +23,8 @@ export async function sessionFromTokenResponse(
     tokens: AxusTokenResponse,
     previousRefreshToken?: string,
 ): Promise<AxusSession> {
-    const payload = parseJwt(tokens.id_token || tokens.access_token)
+    const accessPayload = parseJwt(tokens.access_token)
+    const payload = parseJwt(tokens.id_token || "") || accessPayload
     if (!payload?.sub) {
         throw new AxusIdentityError("AXUS ID returned a token with no `sub` claim")
     }
@@ -31,11 +32,11 @@ export async function sessionFromTokenResponse(
     const auid = String(payload.sub)
     const username = payload.preferred_username || payload.username || "axus_user"
 
-    // Prefer the token's own `exp` over `expires_in`: it is what the API will
-    // actually enforce, and it survives clock drift between issue and receipt.
+    // The ID token identifies the user, but its lifetime may differ from the
+    // access token. The access cookie and refresh timing follow the latter.
     let expiresIn = tokens.expires_in ?? 43200
-    if (payload.exp) {
-        const fromClaim = Math.floor(payload.exp - Date.now() / 1000)
+    if (accessPayload?.exp) {
+        const fromClaim = Math.floor(accessPayload.exp - Date.now() / 1000)
         if (fromClaim > 0) expiresIn = fromClaim
     }
 

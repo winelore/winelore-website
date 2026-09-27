@@ -8,10 +8,25 @@ import {
     sessionFromTokenResponse,
     shouldRefreshAccessToken,
     validateCallbackParams,
+    AxusTokenError,
     type AxusSession,
 } from "@winelore/core/auth"
 import { getAxusConfig, getRedirectUri, nativeCrypto } from "./config"
 import { clearSession, loadSession, saveSession } from "./storage"
+
+type StoredSession = Awaited<ReturnType<typeof loadSession>>
+const sessionListeners = new Set<(session: StoredSession) => void>()
+let sessionGeneration = 0
+let signingOut = false
+
+export function subscribeSession(listener: (session: StoredSession) => void): () => void {
+    sessionListeners.add(listener)
+    return () => { sessionListeners.delete(listener) }
+}
+
+function notifySession(session: StoredSession) {
+    sessionListeners.forEach((listener) => listener(session))
+}
 
 export class SignInCancelledError extends Error {
     constructor() {
@@ -36,6 +51,7 @@ export class SignInFailedError extends Error {
  * also why iOS shows a consent prompt before the sheet appears.
  */
 export async function signIn(): Promise<AxusSession> {
+    const generation = ++sessionGeneration
     const config = getAxusConfig()
     const redirectUri = getRedirectUri()
 
@@ -68,17 +84,26 @@ export async function signIn(): Promise<AxusSession> {
         codeVerifier: validation.codeVerifier,
     })
     const session = await sessionFromTokenResponse(config, tokens)
+    if (generation !== sessionGeneration) throw new SignInCancelledError()
     await saveSession(session)
+    if (generation !== sessionGeneration) throw new SignInCancelledError()
+    notifySession(session)
     return session
 }
 
 export async function signOut(): Promise<void> {
-    const stored = await loadSession()
-    if (stored?.refreshToken) {
-        // Best-effort, exactly as on web: never block local sign-out on it.
-        await revokeRefreshToken(getAxusConfig(), stored.refreshToken)
+    ++sessionGeneration
+    signingOut = true
+    let refreshToken: string | undefined
+    try {
+        refreshToken = (await loadSession())?.refreshToken
+        await clearSession()
+        notifySession(null)
+    } finally {
+        signingOut = false
     }
-    await clearSession()
+    // Remote revocation is best-effort and must not delay local sign-out.
+    if (refreshToken) await revokeRefreshToken(getAxusConfig(), refreshToken)
 }
 
 /**
@@ -94,29 +119,42 @@ let inFlightRefresh: Promise<string | null> | null = null
 /**
  * An access token good for the next few minutes, refreshing if needed.
  *
- * Returns null when there is no usable session — the caller should route to
- * sign-in. On refresh failure the stored session is cleared, since a rejected
- * refresh token cannot be recovered from on device.
+ * Returns null when there is no usable session. A rejected refresh token clears
+ * the session; a temporary network failure leaves it available for retry.
  */
 export async function getValidAccessToken(): Promise<string | null> {
+    if (signingOut) return null
     const stored = await loadSession()
-    if (!stored?.refreshToken) return null
+    if (!stored?.refreshToken || signingOut) return null
 
     if (stored.accessToken && !shouldRefreshAccessToken(stored.accessToken)) {
         return stored.accessToken
     }
 
     if (!inFlightRefresh) {
+        const generation = sessionGeneration
         inFlightRefresh = (async () => {
             try {
                 const config = getAxusConfig()
                 const tokens = await refreshAccessToken(config, stored.refreshToken)
                 const session = await sessionFromTokenResponse(config, tokens, stored.refreshToken)
+                if (generation !== sessionGeneration || signingOut) return null
                 await saveSession(session)
+                if (generation !== sessionGeneration || signingOut) return null
+                notifySession(session)
                 return session.accessToken
-            } catch {
-                await clearSession()
-                return null
+            } catch (error) {
+                if (generation !== sessionGeneration || signingOut) return null
+                if (error instanceof AxusTokenError && (error.status === 400 || error.status === 401)) {
+                    await clearSession()
+                    notifySession(null)
+                    return null
+                }
+                // A refresh can fail before the old access token expires.
+                if (stored.accessToken && !shouldRefreshAccessToken(stored.accessToken, { skewSeconds: 0 })) {
+                    return stored.accessToken
+                }
+                throw error
             } finally {
                 inFlightRefresh = null
             }

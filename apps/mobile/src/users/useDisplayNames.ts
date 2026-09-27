@@ -12,7 +12,11 @@ function lookUp(auid: string): Promise<string> {
     let pending = cache.get(auid)
     if (!pending) {
         // resolveDisplayName never rejects; it degrades to `@auid`.
-        pending = resolveDisplayName(getAxusConfig(), auid, auid)
+        pending = resolveDisplayName(getAxusConfig(), auid, auid).then((name) => {
+            // A failed AXUS lookup falls back to @AUID; retry next time.
+            if (name === `@${auid}`) cache.delete(auid)
+            return name
+        })
         cache.set(auid, pending)
     }
     return pending

@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { MessageSquare, X, Wine, ChevronDown } from "lucide-react"
 import { useDiscussion } from "@/hooks/useDiscussion"
 import { DiscussionThread } from "./DiscussionThread"
 import { MessageInput } from "./MessageInput"
+import { useUsernames } from "@/hooks/useUsernames"
 import { useTranslation } from "@/lib/i18n/context"
 import Cookies from "js-cookie"
 
@@ -72,11 +73,17 @@ export function DiscussionDrawer({
         return null
     }
 
+    const replyAuthorAuids = useMemo(() => {
+        return replyToMessage?.authorAuid ? replyToMessage.authorAuid : []
+    }, [replyToMessage])
+    const { usernames: replyUsernames } = useUsernames(replyAuthorAuids)
+
     // Find author name for quoted reply banner
     const replyAuthorName = replyToMessage
         ? (() => {
             const id = replyToMessage.authorAuid[0]
-            return id ? `@expert_${id}` : t("discussion.user") || "User"
+            if (!id) return t("discussion.user") || "User"
+            return replyUsernames[id] || replyUsernames[String(id)] || `@expert_${id}`
         })()
         : null
 

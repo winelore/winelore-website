@@ -322,7 +322,7 @@ export function downloadCsv(content: string, filename: string): void {
     link.href = url
     link.download = filename
     link.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 export async function downloadResultsXlsx(

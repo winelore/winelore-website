@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { beverageColor, beverageCreatorAuid, loadBeveragePage, producerAuid } from "@winelore/core/beverage"
 import { beverageOriginParts } from "@winelore/core"
 import { fetchGraphQLRaw } from "@/lib/apiClient"
-import { getGeographicInfo } from "@/lib/geocoding"
+import { getGeographicInfo } from "@/lib/geocoding.server"
 import { getUsernamesAction } from "@/app/userActions"
 import BeverageClientView from "./BeverageClientView"
 

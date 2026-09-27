@@ -9,6 +9,7 @@ import { useTranslation } from "../src/i18n/LocaleProvider"
 import { destinations, openWebPage, useOpenDestination, type Destination } from "../src/navigation/destinations"
 import { continuous, palette, radius } from "../src/theme"
 import { Avatar } from "../src/ui/Avatar"
+import { useAvatarUrls } from "../src/users/useAvatarUrls"
 import { Icon, type IconName } from "../src/ui/Icon"
 import { LanguagePicker } from "../src/ui/LanguagePicker"
 import { PressableSurface } from "../src/ui/Pressable"
@@ -32,6 +33,7 @@ const axusAccountUrl = () => `${getAxusConfig().issuer}/account`
  */
 export default function ProfileSheet() {
     const { session, signOut } = useAuth()
+    const avatarUrls = useAvatarUrls(session ? [session.auid] : [])
     const { t, locale, setLocale } = useTranslation()
     const router = useRouter()
     const open = useOpenDestination()
@@ -52,7 +54,11 @@ export default function ProfileSheet() {
                 accessibilityLabel={`${session?.displayName ?? ""}, ${t("common.axusIdProfile")}`}
                 style={styles.identity}
             >
-                <Avatar size={56} />
+                <Avatar
+                    size={56}
+                    imageUrl={session ? avatarUrls[session.auid] : null}
+                    accessibilityLabel={session?.displayName}
+                />
                 <View style={styles.identityText}>
                     <View style={styles.nameLine}>
                         <Text style={styles.name} numberOfLines={1}>

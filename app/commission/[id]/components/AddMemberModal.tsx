@@ -5,6 +5,9 @@ import { X, Search, Crown, Users, Check, AlertCircle, Loader2, UserPlus } from "
 import { searchUserByUsernameAction, addCommissionReplicaMemberAction } from "../../actions"
 import { useTranslation } from "@/lib/i18n/context"
 import { usePresence } from "@/hooks/usePresence"
+import { useAvatars } from "@/hooks/useAvatars"
+import { AxusAvatar } from "@/components/AxusAvatar"
+import { holderInitials } from "@winelore/core/competition"
 
 function getAvatarGradient(auid: number): string {
     const gradients = [
@@ -46,6 +49,7 @@ export function AddMemberModal({
         displayName: string
     } | null>(null)
     const [selectedRole, setSelectedRole] = useState<"HEAD" | "EXPERT">("EXPERT")
+    const { avatars } = useAvatars(foundUser ? [foundUser.auid] : [])
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -178,13 +182,20 @@ export function AddMemberModal({
                     {foundUser && (
                         <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 flex flex-col gap-4 animate-fade-in">
                             <div className="flex items-center gap-3.5">
-                                <div
-                                    className={`relative flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br ${getAvatarGradient(
-                                        foundUser.auid
-                                    )} text-white font-bold text-sm shadow-md shrink-0 border-2 border-white`}
-                                >
-                                    {foundUser.displayName.slice(0, 2).toUpperCase()}
-                                </div>
+                                <AxusAvatar
+                                    imageUrl={avatars[foundUser.auid]}
+                                    alt={foundUser.displayName}
+                                    className="h-12 w-12 rounded-full object-cover shadow-md shrink-0 border-2 border-white"
+                                    fallback={
+                                        <div
+                                            className={`relative flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br ${getAvatarGradient(
+                                                foundUser.auid
+                                            )} text-white font-bold text-sm shadow-md shrink-0 border-2 border-white`}
+                                        >
+                                            {holderInitials(foundUser.displayName || foundUser.username, foundUser.auid)}
+                                        </div>
+                                    }
+                                />
                                 <div className="min-w-0 flex-1">
                                     <h4 className="text-sm font-bold text-slate-800 truncate">
                                         {foundUser.displayName}

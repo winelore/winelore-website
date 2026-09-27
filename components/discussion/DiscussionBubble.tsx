@@ -4,18 +4,44 @@ import React, { useState, useRef, useEffect } from "react"
 import { Crown, Reply, CornerDownRight, Quote } from "lucide-react"
 import { type DiscussionMessage } from "@/app/commission/discussionActions"
 import { useTranslation } from "@/lib/i18n/context"
+import { AxusAvatar } from "@/components/AxusAvatar"
 
 interface DiscussionBubbleProps {
     message: DiscussionMessage
     isMe: boolean
     authorName: string
     authorRole?: string | null
+    authorAvatarUrl?: string | null
     replyToMessage?: DiscussionMessage | null
     replyToAuthorName?: string | null
     onReply: (
         message: DiscussionMessage,
         quote?: { text?: string; startIndex?: number | null; endIndex?: number | null } | null,
     ) => void
+}
+
+function getAvatarGradient(auid: number): string {
+    const gradients = [
+        "from-rose-500 to-pink-600",
+        "from-indigo-500 to-purple-600",
+        "from-blue-500 to-cyan-600",
+        "from-emerald-500 to-teal-600",
+        "from-amber-500 to-orange-600",
+        "from-violet-500 to-fuchsia-600",
+    ]
+    const idx = Math.abs(auid) % gradients.length
+    return gradients[idx]
+}
+
+function memberInitials(name?: string, auid?: number): string {
+    if (name && !name.startsWith("@")) {
+        const parts = name.trim().split(/\s+/)
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase()
+        }
+        return name.slice(0, 2).toUpperCase()
+    }
+    return String(auid || 0).slice(-2)
 }
 
 function formatTime(isoString: string): string {
@@ -32,6 +58,7 @@ export function DiscussionBubble({
                                      isMe,
                                      authorName,
                                      authorRole,
+                                     authorAvatarUrl,
                                      replyToMessage,
                                      replyToAuthorName,
                                      onReply,
@@ -41,6 +68,9 @@ export function DiscussionBubble({
     const formattedTime = formatTime(message.createdAt)
     const bubbleRef = useRef<HTMLDivElement>(null)
     const textRef = useRef<HTMLParagraphElement>(null)
+    const primaryAuid = message.authorAuid[0] || 0
+    const gradient = getAvatarGradient(primaryAuid)
+    const initials = memberInitials(authorName, primaryAuid)
 
     // State for floating Telegram-style partial quote popup
     const [selectedQuote, setSelectedQuote] = useState<{
@@ -184,6 +214,18 @@ export function DiscussionBubble({
                     isMe ? "flex-row-reverse" : "flex-row"
                 }`}
             >
+                <div className="relative shrink-0 w-4 h-4">
+                    <AxusAvatar
+                        imageUrl={authorAvatarUrl}
+                        alt={authorName}
+                        className="w-4 h-4 rounded-full object-cover shadow-2xs border border-white/10"
+                        fallback={
+                            <div className={`flex w-4 h-4 items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-white font-bold text-[8px] shadow-2xs`}>
+                                <span>{initials}</span>
+                            </div>
+                        }
+                    />
+                </div>
                 <span className="font-semibold text-slate-700 dark:text-slate-300">
                     {isMe ? t("discussion.you") || "You" : authorName}
                 </span>

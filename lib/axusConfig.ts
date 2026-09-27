@@ -6,9 +6,13 @@ export const DEFAULT_AXUS_ISSUER = "https://axusid-website.vercel.app"
 /** AXUS ID settings for the web app, from the environment. */
 export function getAxusConfig(): AxusConfig {
     const override = Number(process.env.AXUS_REFRESH_TOKEN_TTL)
+    const clientId = process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID;
+    if (!clientId) {
+        throw new Error("Missing NEXT_PUBLIC_AXUS_ID_CLIENT_ID environment variable");
+    }
     return {
         issuer: process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || DEFAULT_AXUS_ISSUER,
-        clientId: process.env.NEXT_PUBLIC_AXUS_ID_CLIENT_ID!,
+        clientId,
         graphqlEndpoint: getAxusEndpoint(),
         refreshTokenTtlFallback:
             Number.isFinite(override) && override > 0 ? Math.floor(override) : undefined,

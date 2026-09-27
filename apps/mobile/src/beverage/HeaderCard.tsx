@@ -1,20 +1,27 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
     ActivityIndicator,
+    Alert,
     Animated,
+    Platform,
     Pressable,
     StyleSheet,
     Text,
+    TextInput,
     View,
+    type KeyboardTypeOptions,
     type LayoutChangeEvent,
 } from "react-native"
+import * as Haptics from "expo-haptics"
 import {
+    ADDABLE_PRODUCER_ROLES,
     beverageColor,
     beverageCreatorAuid,
     beverageStatusTone,
     producerAuid,
     producerName,
     producerRoleKey,
+    type AddableProducerRole,
     type BeveragePageData,
     type BeverageProducer,
     type BeverageStatusTone,
@@ -24,30 +31,52 @@ import { useTranslation } from "../i18n/LocaleProvider"
 import { continuous, palette, radius } from "../theme"
 import { Icon, type IconName } from "../ui/Icon"
 import { PressableSurface } from "../ui/Pressable"
+import { Segmented } from "../ui/Segmented"
 import { panelSurface } from "../ui/Surface"
+import { HolderAvatar } from "../competition/parts"
+import { useAvatarUrls } from "../users/useAvatarUrls"
+import { useUserSearch } from "../users/useUserSearch"
+import { patchBeverage } from "./useBeveragePage"
+import { registerBeverageProducer, unregisterBeverageProducer } from "./mutations"
 
 interface HeaderCardProps {
     page: BeveragePageData
     usernames: Record<string, string>
+    auid: string | null
     isProducer: boolean
     submitting: boolean
-    onEdit: () => void
+    nameBusy: boolean
+    originBusy: boolean
+    onRename: (name: string) => Promise<boolean>
+    onSaveOrigin: (origin: { latitude: number; longitude: number } | null) => Promise<boolean>
     onSubmitForReview: () => void
     /** Where the name ends within the card, so the screen can title itself once it scrolls away. */
     onNameLayout: (event: LayoutChangeEvent) => void
 }
 
+// A coordinate can be negative, and iOS's decimal pad has no minus key.
+const COORDINATE_KEYBOARD: KeyboardTypeOptions = Platform.select({
+    ios: "numbers-and-punctuation",
+    default: "numeric",
+})
+
 /**
  * The beverage's own card, as the web stacks it on a phone: the wine tile,
- * its type, colour and id, the name, the status (and a producer's "Submit
- * for Review"), then where it is from, who makes it and when it was entered.
+ * its type, colour and id, the name (editable in place by a producer, as a
+ * competition's name is), the status (and a producer's "Submit for Review"),
+ * then where it is from (edited in place too), who makes it (changed in
+ * place as well) and when it was entered.
  */
 export function HeaderCard({
     page,
     usernames,
+    auid,
     isProducer,
     submitting,
-    onEdit,
+    nameBusy,
+    originBusy,
+    onRename,
+    onSaveOrigin,
     onSubmitForReview,
     onNameLayout,
 }: HeaderCardProps) {
@@ -55,6 +84,40 @@ export function HeaderCard({
     const { beverage } = page
     const color = beverageColor(beverage.attributes)
     const creator = beverageCreatorAuid(beverage)
+
+    const [editingName, setEditingName] = useState(false)
+    const [nameDraft, setNameDraft] = useState("")
+
+    const [originDraft, setOriginDraft] = useState<{ latitude: string; longitude: string } | null>(null)
+    const editingOrigin = originDraft !== null
+
+    const saveName = async () => {
+        if (await onRename(nameDraft)) setEditingName(false)
+    }
+
+    const startEditingOrigin = () =>
+        setOriginDraft({
+            latitude: beverage.origin?.latitude != null ? String(beverage.origin.latitude) : "",
+            longitude: beverage.origin?.longitude != null ? String(beverage.origin.longitude) : "",
+        })
+
+    const saveOrigin = async () => {
+        if (!originDraft) return
+        const latRaw = originDraft.latitude.trim()
+        const lngRaw = originDraft.longitude.trim()
+        if ((latRaw && !lngRaw) || (!latRaw && lngRaw)) {
+            Alert.alert(t("beverage.edit.originLabel"), t("beverage.edit.saveError"))
+            return
+        }
+        const lat = latRaw ? Number(latRaw) : null
+        const lng = lngRaw ? Number(lngRaw) : null
+        if ((latRaw && !Number.isFinite(lat)) || (lngRaw && !Number.isFinite(lng))) {
+            Alert.alert(t("beverage.edit.originLabel"), t("beverage.createErrorCoords"))
+            return
+        }
+        const saved = await onSaveOrigin(lat !== null && lng !== null ? { latitude: lat, longitude: lng } : null)
+        if (saved) setOriginDraft(null)
+    }
 
     return (
         <View style={[panelSurface, styles.card]}>
@@ -78,20 +141,63 @@ export function HeaderCard({
             </View>
 
             <View style={styles.nameRow} onLayout={onNameLayout}>
-                <Text style={styles.name} accessibilityRole="header">
-                    {beverage.name}
-                </Text>
-                {isProducer ? (
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t("beverage.edit.button")}
-                        hitSlop={8}
-                        onPress={onEdit}
-                        style={({ pressed }) => [styles.pencil, pressed && styles.pencilPressed]}
-                    >
-                        <Icon name="edit" size={16} color={palette.textFaint} />
-                    </Pressable>
-                ) : null}
+                {editingName ? (
+                    <View style={styles.editRow}>
+                        <TextInput
+                            value={nameDraft}
+                            onChangeText={setNameDraft}
+                            autoFocus
+                            returnKeyType="done"
+                            onSubmitEditing={saveName}
+                            editable={!nameBusy}
+                            style={styles.nameInput}
+                            accessibilityLabel={t("beverage.edit.button")}
+                        />
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={t("common.save")}
+                            onPress={saveName}
+                            disabled={nameBusy}
+                            style={({ pressed }) => [styles.saveButton, (pressed || nameBusy) && styles.dimmed]}
+                        >
+                            {nameBusy ? (
+                                <ActivityIndicator size="small" color={palette.onAccent} />
+                            ) : (
+                                <Icon name="done" size={16} color={palette.onAccent} weight="bold" />
+                            )}
+                        </Pressable>
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={t("competition.cancel")}
+                            onPress={() => setEditingName(false)}
+                            disabled={nameBusy}
+                            style={({ pressed }) => [styles.cancelButton, pressed && styles.dimmed]}
+                        >
+                            <Icon name="close" size={16} color={palette.textMuted} weight="bold" />
+                        </Pressable>
+                    </View>
+                ) : (
+                    <View style={styles.nameDisplayRow}>
+                        <Text style={styles.name} accessibilityRole="header">
+                            {beverage.name}
+                        </Text>
+                        {isProducer ? (
+                            <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={t("beverage.edit.button")}
+                                hitSlop={8}
+                                onPress={() => {
+                                    Haptics.selectionAsync()
+                                    setNameDraft(beverage.name)
+                                    setEditingName(true)
+                                }}
+                                style={({ pressed }) => [styles.pencil, pressed && styles.pencilPressed]}
+                            >
+                                <Icon name="edit" size={16} color={palette.textFaint} />
+                            </Pressable>
+                        ) : null}
+                    </View>
+                )}
             </View>
 
             <View style={styles.statusRow}>
@@ -115,20 +221,85 @@ export function HeaderCard({
             <View style={styles.divider} />
 
             <View style={styles.meta}>
-                <MetaBlock icon="location" label={t("beverage.origin")}>
-                    <Origin page={page} />
-                </MetaBlock>
-                <MetaBlock icon="people" label={t("beverage.producers")}>
-                    {beverage.producers && beverage.producers.length > 0 ? (
-                        <View style={styles.badges}>
-                            {beverage.producers.map((producer) => (
-                                <ProducerBadge key={producer.id} producer={producer} usernames={usernames} />
-                            ))}
+                <View style={styles.metaBlock}>
+                    <View style={styles.metaLabelRow}>
+                        <View style={styles.metaLabelWithIcon}>
+                            <Icon name="location" size={14} color={palette.accentBright} />
+                            <Text style={styles.metaLabel}>{t("beverage.origin")}</Text>
+                        </View>
+                        {isProducer ? (
+                            editingOrigin ? (
+                                <View style={styles.editActions}>
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel={t("common.saveDates")}
+                                        onPress={saveOrigin}
+                                        disabled={originBusy}
+                                        style={({ pressed }) => [styles.saveLabelButton, (pressed || originBusy) && styles.dimmed]}
+                                    >
+                                        {originBusy ? (
+                                            <ActivityIndicator size="small" color={palette.onAccent} />
+                                        ) : (
+                                            <Icon name="done" size={14} color={palette.onAccent} weight="bold" />
+                                        )}
+                                        <Text style={styles.saveLabelText}>{t("common.save")}</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel={t("competition.cancel")}
+                                        onPress={() => setOriginDraft(null)}
+                                        disabled={originBusy}
+                                        style={({ pressed }) => [styles.cancelSmallButton, pressed && styles.dimmed]}
+                                    >
+                                        <Icon name="close" size={14} color={palette.textMuted} weight="bold" />
+                                    </Pressable>
+                                </View>
+                            ) : (
+                                <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t("common.editPlannedDates")}
+                                    hitSlop={8}
+                                    onPress={() => {
+                                        Haptics.selectionAsync()
+                                        startEditingOrigin()
+                                    }}
+                                    style={({ pressed }) => [styles.pencil, pressed && styles.dimmed]}
+                                >
+                                    <Icon name="edit" size={16} color={palette.textFaint} />
+                                </Pressable>
+                            )
+                        ) : null}
+                    </View>
+                    {editingOrigin && originDraft ? (
+                        <View style={styles.coordinates}>
+                            <View style={styles.coordinate}>
+                                <Text style={styles.smallLabel}>{t("beverage.edit.latitudeLabel")}</Text>
+                                <TextInput
+                                    value={originDraft.latitude}
+                                    onChangeText={(value) => setOriginDraft({ ...originDraft, latitude: value })}
+                                    keyboardType={COORDINATE_KEYBOARD}
+                                    editable={!originBusy}
+                                    style={[styles.input, styles.coordinateInput]}
+                                    accessibilityLabel={t("beverage.edit.latitudeLabel")}
+                                />
+                            </View>
+                            <View style={styles.coordinate}>
+                                <Text style={styles.smallLabel}>{t("beverage.edit.longitudeLabel")}</Text>
+                                <TextInput
+                                    value={originDraft.longitude}
+                                    onChangeText={(value) => setOriginDraft({ ...originDraft, longitude: value })}
+                                    keyboardType={COORDINATE_KEYBOARD}
+                                    editable={!originBusy}
+                                    style={[styles.input, styles.coordinateInput]}
+                                    accessibilityLabel={t("beverage.edit.longitudeLabel")}
+                                />
+                            </View>
                         </View>
                     ) : (
-                        <Text style={styles.metaMissing}>{t("common.na")}</Text>
+                        <Origin page={page} />
                     )}
-                </MetaBlock>
+                </View>
+                <Producers beverageId={beverage.id} producers={beverage.producers ?? []} usernames={usernames} auid={auid} isProducer={isProducer} />
                 <MetaBlock icon="calendar" label={t("beverage.created")}>
                     <Text style={styles.metaValue}>{formatDateTime(beverage.createdAt)}</Text>
                     {creator !== null ? (
@@ -180,6 +351,249 @@ function MetaBlock({ icon, label, children }: { icon: IconName; label: string; c
     )
 }
 
+function Producers({
+    beverageId,
+    producers,
+    usernames,
+    auid,
+    isProducer,
+}: {
+    beverageId: string
+    producers: BeverageProducer[]
+    usernames: Record<string, string>
+    auid: string | null
+    isProducer: boolean
+}) {
+    const { t } = useTranslation()
+    const [removing, setRemoving] = useState<string | null>(null)
+    const [adding, setAdding] = useState(false)
+    const avatarUrls = useAvatarUrls(
+        producers.flatMap((producer) => {
+            const id = producerAuid(producer)
+            return id === null ? [] : [String(id)]
+        }),
+    )
+
+    const label = (producer: BeverageProducer) => {
+        const producerId = producerAuid(producer)
+        return producerName(
+            { ...producer, displayName: producerId !== null ? usernames[producerId] : null },
+            t("common.unknownUser"),
+        )
+    }
+
+    /**
+     * Removing a producer is asked about first — the web does not — since
+     * removing yourself takes away your own right to edit the beverage.
+     */
+    const remove = (producer: BeverageProducer) =>
+        Alert.alert(t("beverage.edit.removeProducer"), label(producer), [
+            { text: t("competition.cancel"), style: "cancel" },
+            {
+                text: t("beverage.edit.removeProducer"),
+                style: "destructive",
+                onPress: async () => {
+                    setRemoving(producer.id)
+                    try {
+                        const updated = await unregisterBeverageProducer(beverageId, producer.id, auid ?? "")
+                        patchBeverage(beverageId, { producers: updated.producers })
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                    } catch (error) {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+                        Alert.alert(
+                            t("beverage.edit.removeProducerError"),
+                            error instanceof Error ? error.message : String(error),
+                        )
+                    } finally {
+                        setRemoving(null)
+                    }
+                },
+            },
+        ])
+
+    return (
+        <View style={styles.metaBlock}>
+            <View style={styles.metaLabelRow}>
+                <View style={styles.metaLabelWithIcon}>
+                    <Icon name="people" size={14} color={palette.accentBright} />
+                    <Text style={styles.metaLabel}>{t("beverage.producers")}</Text>
+                </View>
+                {isProducer && !adding ? (
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={t("beverage.edit.addProducer")}
+                        hitSlop={8}
+                        onPress={() => {
+                            Haptics.selectionAsync()
+                            setAdding(true)
+                        }}
+                        style={({ pressed }) => [styles.addButton, pressed && styles.dimmed]}
+                    >
+                        <Icon name="personAdd" size={14} color={palette.onAccent} weight="bold" />
+                        <Text style={styles.addButtonLabel}>{t("beverage.edit.addProducer")}</Text>
+                    </Pressable>
+                ) : null}
+            </View>
+
+            {producers.length > 0 ? (
+                <View style={styles.producerList}>
+                    {producers.map((producer) => {
+                        const producerId = producerAuid(producer)
+                        const roleKey = producerRoleKey(producer.role)
+                        return (
+                            <View key={producer.id} style={styles.producer}>
+                                <HolderAvatar
+                                    auid={producerId ?? 0}
+                                    username={label(producer)}
+                                    size={32}
+                                    imageUrl={producerId === null ? null : avatarUrls[String(producerId)]}
+                                />
+                                <View style={styles.producerText}>
+                                    <Text style={styles.producerName} numberOfLines={1}>
+                                        {label(producer)}
+                                    </Text>
+                                    <Text style={styles.producerRole}>{roleKey ? t(roleKey) : producer.role}</Text>
+                                </View>
+                                {isProducer ? (
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel={`${t("beverage.edit.removeProducer")}, ${label(producer)}`}
+                                        hitSlop={8}
+                                        disabled={removing === producer.id}
+                                        onPress={() => remove(producer)}
+                                        style={({ pressed }) => [styles.remove, pressed && styles.removePressed]}
+                                    >
+                                        {removing === producer.id ? (
+                                            <ActivityIndicator size="small" color={palette.textFaint} />
+                                        ) : (
+                                            <Icon name="trash" size={16} color={palette.textFaint} />
+                                        )}
+                                    </Pressable>
+                                ) : null}
+                            </View>
+                        )
+                    })}
+                </View>
+            ) : adding ? null : (
+                <Text style={styles.metaMissing}>{t("common.na")}</Text>
+            )}
+
+            {isProducer && adding ? (
+                <AddProducer beverageId={beverageId} auid={auid} onDone={() => setAdding(false)} />
+            ) : null}
+        </View>
+    )
+}
+
+function AddProducer({ beverageId, auid, onDone }: { beverageId: string; auid: string | null; onDone: () => void }) {
+    const { t } = useTranslation()
+    const [username, setUsername] = useState("")
+    const { searching, error: searchError, found } = useUserSearch(username, {
+        notFound: t("beverage.edit.userNotFound"),
+        failed: t("beverage.edit.searchError"),
+    })
+    const avatarUrls = useAvatarUrls(found ? [String(found.auid)] : [])
+    const [role, setRole] = useState<AddableProducerRole>("MAKER")
+    const [addingProducer, setAddingProducer] = useState(false)
+
+    const add = async () => {
+        if (!found) return
+        setAddingProducer(true)
+        try {
+            const updated = await registerBeverageProducer(beverageId, found.auid, role, auid ?? "")
+            patchBeverage(beverageId, { producers: updated.producers })
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            onDone()
+        } catch (error) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+            Alert.alert(t("beverage.edit.addProducerError"), error instanceof Error ? error.message : String(error))
+        } finally {
+            setAddingProducer(false)
+        }
+    }
+
+    return (
+        <View style={styles.addBox}>
+            <View style={styles.usernameField}>
+                <Text style={styles.at}>@</Text>
+                <TextInput
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder={t("beverage.edit.usernameLabel")}
+                    placeholderTextColor={palette.textFaint}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    textContentType="username"
+                    style={styles.usernameInput}
+                    accessibilityLabel={t("beverage.edit.usernameLabel")}
+                />
+                {searching ? <ActivityIndicator size="small" color={palette.accent} /> : null}
+            </View>
+
+            {searchError ? (
+                <View style={styles.error}>
+                    <Icon name="alert" size={14} color={palette.danger} />
+                    <Text style={styles.errorText}>{searchError}</Text>
+                </View>
+            ) : null}
+
+            {found ? (
+                <View style={styles.found}>
+                    <View style={styles.foundUser}>
+                        <HolderAvatar
+                            auid={found.auid}
+                            username={found.displayName}
+                            size={36}
+                            imageUrl={avatarUrls[String(found.auid)]}
+                        />
+                        <View style={styles.producerText}>
+                            <Text style={styles.producerName} numberOfLines={1}>
+                                {found.displayName}
+                            </Text>
+                            <Text style={styles.foundUsername}>@{found.username}</Text>
+                        </View>
+                    </View>
+                    <Segmented
+                        options={ADDABLE_PRODUCER_ROLES.map((value) => ({
+                            value,
+                            label: t(value === "MAKER" ? "roles.maker" : "roles.bottler"),
+                        }))}
+                        value={role}
+                        onChange={setRole}
+                        accessibilityLabel={t("beverage.edit.roleLabel")}
+                    />
+                </View>
+            ) : null}
+
+            <View style={styles.addFooter}>
+                <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("competition.cancel")}
+                    onPress={onDone}
+                    disabled={addingProducer}
+                    style={({ pressed }) => [styles.footerCancel, pressed && styles.dimmed]}
+                >
+                    <Text style={styles.footerCancelLabel}>{t("competition.cancel")}</Text>
+                </Pressable>
+                <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("beverage.edit.addProducer")}
+                    onPress={add}
+                    disabled={!found || addingProducer}
+                    style={({ pressed }) => [styles.footerAdd, (!found || addingProducer || pressed) && styles.dimmed]}
+                >
+                    {addingProducer ? (
+                        <ActivityIndicator size="small" color={palette.onAccent} />
+                    ) : (
+                        <Icon name="personAdd" size={14} color={palette.onAccent} weight="bold" />
+                    )}
+                    <Text style={styles.footerAddLabel}>{t("beverage.edit.addProducer")}</Text>
+                </Pressable>
+            </View>
+        </View>
+    )
+}
+
 // --- Colour dot -------------------------------------------------------------
 
 // The web's getColorDotClass: bg-*-* with a border one step darker.
@@ -227,35 +641,6 @@ function StatusBadge({ status }: { status: string }) {
     )
 }
 
-// --- Producers --------------------------------------------------------------
-
-// The web's getRoleColors: bg-*-50, text-*-700, border-*-100.
-const ROLES: Record<string, { background: string; color: string; border: string }> = {
-    MAKER: { background: "#eff6ff", color: "#1447e6", border: "#dbeafe" }, // blue
-    OWNER: { background: "#faf5ff", color: "#8200db", border: "#f3e8ff" }, // purple
-    DISTRIBUTOR: { background: "#ecfdf5", color: "#007a55", border: "#d0fae5" }, // emerald
-    BOTTLER: { background: "#fffbeb", color: "#bb4d00", border: "#fef3c6" }, // amber
-}
-const DEFAULT_ROLE = { background: palette.background, color: palette.textStrong, border: palette.border }
-
-function ProducerBadge({ producer, usernames }: { producer: BeverageProducer; usernames: Record<string, string> }) {
-    const { t } = useTranslation()
-    const look = ROLES[producer.role.toUpperCase()] ?? DEFAULT_ROLE
-    const auid = producerAuid(producer)
-    const roleKey = producerRoleKey(producer.role)
-    const name = producerName(
-        { ...producer, displayName: auid !== null ? usernames[auid] : null },
-        t("common.unknownUser"),
-    )
-    return (
-        <View style={[styles.badge, { backgroundColor: look.background, borderColor: look.border }]}>
-            <Text style={styles.badgeName}>{name}</Text>
-            <Text style={[styles.badgeSeparator, { color: look.color }]}>•</Text>
-            <Text style={[styles.badgeRole, { color: look.color }]}>{roleKey ? t(roleKey) : producer.role}</Text>
-        </View>
-    )
-}
-
 const styles = StyleSheet.create({
     card: {
         alignItems: "center",
@@ -296,12 +681,15 @@ const styles = StyleSheet.create({
     idChipLabel: { color: palette.textFaint, letterSpacing: 0.5 },
     dot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1 },
     nameRow: {
+        alignSelf: "stretch",
+        marginTop: 12,
+        marginBottom: 8,
+    },
+    nameDisplayRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         gap: 8,
-        marginTop: 12,
-        marginBottom: 8,
     },
     name: {
         flexShrink: 1,
@@ -312,6 +700,37 @@ const styles = StyleSheet.create({
         color: palette.heading,
         textAlign: "center",
     },
+    editRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    nameInput: {
+        flex: 1,
+        minWidth: 0,
+        fontSize: 20,
+        fontWeight: "800",
+        color: palette.text,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: "#7c86ff", // indigo-400
+        backgroundColor: palette.surface,
+    },
+    saveButton: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.md,
+        backgroundColor: palette.accent,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    cancelButton: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.md,
+        backgroundColor: palette.borderSoft,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    dimmed: { opacity: 0.6 },
     pencil: {
         padding: 6,
         borderRadius: radius.md,
@@ -349,24 +768,123 @@ const styles = StyleSheet.create({
     divider: { alignSelf: "stretch", height: 1, marginVertical: 24, backgroundColor: palette.borderSoft },
     meta: { alignSelf: "stretch", gap: 24 },
     metaBlock: { gap: 6 },
-    metaLabelRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    metaLabelRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+    metaLabelWithIcon: { flexDirection: "row", alignItems: "center", gap: 8 },
     metaLabel: { fontSize: 10, lineHeight: 14, fontWeight: "800", letterSpacing: 0.5, textTransform: "uppercase", color: palette.textFaint },
     metaValue: { fontSize: 14, lineHeight: 20, fontWeight: "700", color: palette.textStrong },
     tabular: { fontVariant: ["tabular-nums"] },
     metaMissing: { fontSize: 14, lineHeight: 20, fontWeight: "500", color: palette.textFaint },
     enteredBy: { fontSize: 11, lineHeight: 16, fontWeight: "600", color: palette.textMuted },
     enteredByName: { fontWeight: "700", color: palette.textStrong },
-    badges: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-    badge: {
+    editActions: { flexDirection: "row", alignItems: "center", gap: 6 },
+    saveLabelButton: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 4,
         paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: radius.pill,
-        borderWidth: 1,
+        paddingVertical: 6,
+        borderRadius: radius.sm,
+        backgroundColor: palette.accent,
     },
-    badgeName: { fontSize: 11, lineHeight: 16, fontWeight: "700", color: palette.text },
-    badgeSeparator: { fontSize: 11, opacity: 0.3 },
-    badgeRole: { fontSize: 8, fontWeight: "800", letterSpacing: 0.5, textTransform: "uppercase" },
+    saveLabelText: { fontSize: 12, fontWeight: "700", color: palette.onAccent },
+    cancelSmallButton: {
+        width: 30,
+        height: 30,
+        borderRadius: radius.sm,
+        backgroundColor: palette.borderSoft,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    input: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        fontSize: 14,
+        fontWeight: "600",
+        color: palette.heading,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: palette.border,
+        backgroundColor: palette.background,
+        ...continuous,
+    },
+    coordinates: { flexDirection: "row", gap: 12 },
+    coordinate: { flex: 1, gap: 4 },
+    smallLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: palette.textFaint },
+    coordinateInput: { paddingHorizontal: 12, paddingVertical: 8, fontVariant: ["tabular-nums"] },
+    producerList: { gap: 8 },
+    producer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: palette.borderSoft,
+        backgroundColor: palette.background,
+        ...continuous,
+    },
+    producerText: { flex: 1, minWidth: 0 },
+    producerName: { fontSize: 12, fontWeight: "700", color: palette.heading },
+    producerRole: { fontSize: 10, fontWeight: "600", letterSpacing: 0.3, textTransform: "uppercase", color: palette.accent },
+    remove: { padding: 6, borderRadius: 8 },
+    removePressed: { backgroundColor: palette.dangerSoft },
+    addButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: radius.md,
+        backgroundColor: palette.accent,
+    },
+    addButtonLabel: { fontSize: 12, fontWeight: "700", color: palette.onAccent },
+    addBox: {
+        marginTop: 4,
+        padding: 12,
+        gap: 12,
+        borderRadius: radius.tile,
+        borderWidth: 1,
+        borderColor: palette.accentBorder,
+        backgroundColor: "rgba(238, 242, 255, 0.4)",
+        ...continuous,
+    },
+    usernameField: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 14,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: palette.border,
+        backgroundColor: palette.surface,
+        ...continuous,
+    },
+    at: { fontSize: 14, fontWeight: "600", color: palette.textFaint },
+    usernameInput: { flex: 1, paddingVertical: 10, fontSize: 14, fontWeight: "500", color: palette.heading },
+    error: { flexDirection: "row", alignItems: "center", gap: 6 },
+    errorText: { flexShrink: 1, fontSize: 12, fontWeight: "600", color: palette.danger },
+    found: { gap: 12 },
+    foundUser: { flexDirection: "row", alignItems: "center", gap: 12 },
+    foundUsername: { fontSize: 10, fontWeight: "600", color: palette.accent },
+    addFooter: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8 },
+    footerCancel: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: palette.border,
+        backgroundColor: palette.surface,
+    },
+    footerCancelLabel: { fontSize: 12, fontWeight: "700", color: palette.textMuted },
+    footerAdd: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: radius.sm,
+        backgroundColor: palette.accent,
+    },
+    footerAddLabel: { fontSize: 12, fontWeight: "700", color: palette.onAccent },
 })

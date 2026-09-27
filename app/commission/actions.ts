@@ -43,8 +43,11 @@ import {
     type CommissionSetting,
 } from '@winelore/core/commission';
 
-const settingMutation = (key: CommissionSetting) =>
-    COMMISSION_SETTINGS.find((setting) => setting.key === key)!.mutation;
+const settingMutation = (key: CommissionSetting) => {
+    const setting = COMMISSION_SETTINGS.find((setting) => setting.key === key);
+    if (!setting) throw new Error(`Unknown commission setting: ${key}`);
+    return setting.mutation;
+};
 import { buildPropertyMapFromCommissionTemplates } from '@winelore/core';
 import type { PropertyMeta } from '@winelore/core';
 import {

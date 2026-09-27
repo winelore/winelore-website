@@ -157,7 +157,7 @@ export default function CompetitionResultsClientView({
             const context = await getCompetitionExportDataAction(
                 targetCommissions,
                 initialData.name,
-                locale as "en" | "uk" | "hu"
+                locale
             )
 
             setAllResultsContext(context)

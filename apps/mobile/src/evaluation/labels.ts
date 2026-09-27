@@ -4,7 +4,7 @@ import type { useTranslation } from "../i18n/LocaleProvider"
 type Translation = ReturnType<typeof useTranslation>
 
 /**
- * The scorecard's copy, from the shared en/uk/hu tables the web app uses.
+ * The scorecard's copy, from the shared en/uk/hu/sk tables the web app uses.
  *
  * Built here rather than inside EvaluationScreen so the screen stays a pure
  * presentational component that takes its strings as data — the same reason

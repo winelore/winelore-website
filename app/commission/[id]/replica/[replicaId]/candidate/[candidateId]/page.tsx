@@ -1,7 +1,7 @@
 import { getCommissionDataAction, getMyEvaluationForCandidateAction, getReplicaCandidateAction, getReplicaCandidatesAction } from "../../../../../actions"
 import { isReplicaCandidateFinished } from "../../../../../replicaUtils"
 import { notFound, redirect } from "next/navigation"
-import { getGeographicInfo } from "../../../../../../../lib/geocoding"
+import { getGeographicInfo } from "../../../../../../../lib/geocoding.server"
 import CandidateEvaluationClientView from "./CandidateEvaluationClientView"
 import { cookies } from "next/headers"
 import { selectVisibleAttributes } from "@winelore/core/evaluation"

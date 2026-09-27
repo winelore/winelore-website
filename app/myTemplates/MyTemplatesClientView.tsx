@@ -73,21 +73,25 @@ export default function MyTemplatesClientView({ initialTemplates, totalCount, to
     }, [])
 
     // `?create=1` opens the editor on a new template — how the app hands its create button over.
+    // Read primitive param values instead of depending on the searchParams
+    // object identity, which changes on every render.
+    const createParam = searchParams.get("create")
+    const templateIdParam = searchParams.get("templateId")
+
     useEffect(() => {
-        if (searchParams.get("create") === "1") {
+        if (createParam === "1") {
             setEditingTemplateId(null)
             setIsModalOpen(true)
         }
-    }, [searchParams])
+    }, [createParam])
 
     useEffect(() => {
-        const templateIdParam = searchParams.get("templateId")
         if (templateIdParam) {
             setExpandedTemplateId(templateIdParam)
         } else {
             setExpandedTemplateId(null)
         }
-    }, [searchParams])
+    }, [templateIdParam])
 
     // Refresh template list when initialTemplates prop changes
     useEffect(() => {

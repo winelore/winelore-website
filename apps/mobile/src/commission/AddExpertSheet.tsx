@@ -8,6 +8,7 @@ import { Icon } from "../ui/Icon"
 import { PressableSurface } from "../ui/Pressable"
 import { Segmented } from "../ui/Segmented"
 import { useUserSearch } from "../users/useUserSearch"
+import { useAvatarUrls } from "../users/useAvatarUrls"
 
 interface AddExpertSheetProps {
     visible: boolean
@@ -31,6 +32,7 @@ export function AddExpertSheet({ visible, replicaName, onClose, onAdd }: AddExpe
         notFound: t("commission.userNotFound"),
         failed: t("commission.searchError"),
     })
+    const avatarUrls = useAvatarUrls(found ? [String(found.auid)] : [])
 
     // A fresh form each time it opens, as the web's.
     useEffect(() => {
@@ -106,7 +108,12 @@ export function AddExpertSheet({ visible, replicaName, onClose, onAdd }: AddExpe
                     {found ? (
                         <View style={styles.found}>
                             <View style={styles.foundUser}>
-                                <HolderAvatar auid={found.auid} username={found.displayName} size={48} />
+                                <HolderAvatar
+                                    auid={found.auid}
+                                    username={found.displayName}
+                                    size={48}
+                                    imageUrl={avatarUrls[String(found.auid)]}
+                                />
                                 <View style={styles.foundText}>
                                     <Text style={styles.foundName} numberOfLines={1}>
                                         {found.displayName}

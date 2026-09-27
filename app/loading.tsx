@@ -1,6 +1,5 @@
 "use client"
 
-import { useLayoutEffect } from "react"
 import { usePathname } from "next/navigation"
 import { AppHeader, type AppTabId } from "@/components/AppHeader"
 import { useMobileNavPending } from "@/lib/mobileNav"
@@ -18,8 +17,6 @@ function tabForPath(pathname: string): AppTabId {
 function hidesTabBar(pathname: string): boolean {
     return /\/create$/.test(pathname) || /\/candidate\//.test(pathname) || pathname === "/outcome-policy/new"
 }
-
-let revealTimer: number | undefined
 
 function Bone({ className = "" }: { className?: string }) {
     return <div className={`skeleton rounded-xl ${className}`} />
@@ -53,21 +50,6 @@ function CardBone() {
 export default function Loading() {
     const pathname = usePathname() ?? "/"
     useMobileNavPending()
-
-    // When the real page replaces this skeleton, let its content ease in
-    // (see [data-route-reveal] in globals.css) instead of popping in. Layout
-    // effect cleanup, so the flag is set before the page's first paint.
-    useLayoutEffect(() => {
-        const root = document.documentElement
-        // Also undoes Strict Mode's simulated unmount in dev.
-        window.clearTimeout(revealTimer)
-        root.removeAttribute("data-route-reveal")
-        return () => {
-            root.setAttribute("data-route-reveal", "")
-            window.clearTimeout(revealTimer)
-            revealTimer = window.setTimeout(() => root.removeAttribute("data-route-reveal"), 400)
-        }
-    }, [])
 
     return (
         <div className="app-screen bg-slate-50/50" aria-busy="true">

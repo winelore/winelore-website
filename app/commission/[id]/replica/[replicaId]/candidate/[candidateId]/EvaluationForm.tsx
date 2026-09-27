@@ -509,7 +509,7 @@ export default function EvaluationForm({
                 categories,
                 values,
                 smartValues: computedSmartValues,
-                locale: (locale as "en" | "uk" | "hu") || "en",
+                locale,
                 beverageType: beverageName || "Wine",
                 candidateCode: candidateCode || undefined,
                 visibleAttributes,
@@ -584,9 +584,7 @@ export default function EvaluationForm({
                         comments: [],
                     })
                     setSuccess(true)
-                    setTimeout(() => {
-                        window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-                    }, 500)
+                    router.replace(`/commission/${commissionId}/replica/${replicaId}/wait`)
                     return
                 }
 
@@ -616,9 +614,7 @@ export default function EvaluationForm({
 
             setSuccess(true)
 
-            setTimeout(() => {
-                window.location.href = `/commission/${commissionId}/replica/${replicaId}/wait`
-            }, 1000)
+            router.replace(`/commission/${commissionId}/replica/${replicaId}/wait`)
         } catch (err: any) {
             console.error("Evaluation submit error:", err)
             setError(err?.message || t("evaluation.submitError"))
@@ -936,6 +932,7 @@ export default function EvaluationForm({
                                         </div>
                                             <div className="flex items-end gap-2">
                                         <textarea
+                                            id="general-comment-input"
                                             rows={2}
                                             value={generalComment}
                                             onChange={(e) => setGeneralComment(e.target.value)}

@@ -129,6 +129,19 @@ export type DefaultVariationQueryVariables = Exact<{
 
 export type DefaultVariationQuery = { defaultVariation: { auid: string, variationId: string } | null };
 
+/**
+ * Manually synced with the AXUS ID engine (avatar module). Regenerate via
+ * `npm run codegen` once the engine contract used here includes it; the
+ * hand-written block below follows the generator output verbatim and will be
+ * replaced wholesale by the next successful generation.
+ */
+export type AvatarQueryVariables = Exact<{
+  variationId: string | number;
+}>;
+
+
+export type AvatarQuery = { avatar: { variationId: string, objectKey: string | null, contentType: string | null, sizeBytes: number | null, updatedAt: string } | null };
+
 export type AddUsernameMutationVariables = Exact<{
   auid: string | number;
   username: string;
@@ -371,6 +384,18 @@ export const DefaultVariationDocument = gql`
   }
 }
     `;
+/** Manually synced; see AvatarQuery above. */
+export const AvatarDocument = gql`
+    query Avatar($variationId: ID!) {
+  avatar(variationId: $variationId) {
+    variationId
+    objectKey
+    contentType
+    sizeBytes
+    updatedAt
+  }
+}
+    `;
 export const AddUsernameDocument = gql`
     mutation AddUsername($auid: ID!, $username: String!) {
   addUsername(auid: $auid, username: $username) {
@@ -560,6 +585,10 @@ export function getSdk<C>(requester: Requester<C>) {
     },
     DefaultVariation(variables: DefaultVariationQueryVariables, options?: C): Promise<DefaultVariationQuery> {
       return requester<DefaultVariationQuery, DefaultVariationQueryVariables>(DefaultVariationDocument, variables, options) as Promise<DefaultVariationQuery>;
+    },
+    /** Manually synced; see AvatarQuery above. */
+    Avatar(variables: AvatarQueryVariables, options?: C): Promise<AvatarQuery> {
+      return requester<AvatarQuery, AvatarQueryVariables>(AvatarDocument, variables, options) as Promise<AvatarQuery>;
     },
     AddUsername(variables: AddUsernameMutationVariables, options?: C): Promise<AddUsernameMutation> {
       return requester<AddUsernameMutation, AddUsernameMutationVariables>(AddUsernameDocument, variables, options) as Promise<AddUsernameMutation>;

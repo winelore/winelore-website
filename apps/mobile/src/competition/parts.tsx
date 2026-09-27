@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react"
-import { Animated, Easing, StyleSheet, Text, View } from "react-native"
+import { useEffect, useRef, useState } from "react"
+import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native"
 import { competitionStepIndex, holderAvatarIndex, holderInitials } from "@winelore/core/competition"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { continuous, palette, radius, type } from "../theme"
@@ -78,8 +78,20 @@ const AVATAR_GRADIENTS = [
     ["#e12afb", "#9810fa", "#e60076"], // fuchsia-500 → purple-600 → pink-600
 ] as const
 
-export function HolderAvatar({ auid, username, size = 20 }: { auid: number; username?: string; size?: number }) {
+export function HolderAvatar({
+    auid,
+    username,
+    size = 20,
+    imageUrl,
+}: {
+    auid: number
+    username?: string
+    size?: number
+    /** Absolute AXUS ID avatar download URL; gradient initials while missing. */
+    imageUrl?: string | null
+}) {
     const [from, via, to] = AVATAR_GRADIENTS[holderAvatarIndex(auid)]
+    const [failed, setFailed] = useState(false)
     return (
         <View
             style={[
@@ -92,7 +104,16 @@ export function HolderAvatar({ auid, username, size = 20 }: { auid: number; user
                 },
             ]}
         >
-            <Text style={styles.avatarText}>{holderInitials(username, auid)}</Text>
+            {imageUrl && !failed ? (
+                <Image
+                    source={{ uri: imageUrl }}
+                    style={{ width: size, height: size, borderRadius: size / 2 }}
+                    accessibilityLabel={username}
+                    onError={() => setFailed(true)}
+                />
+            ) : (
+                <Text style={styles.avatarText}>{holderInitials(username, auid)}</Text>
+            )}
         </View>
     )
 }

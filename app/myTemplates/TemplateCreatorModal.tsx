@@ -87,7 +87,7 @@ export default function TemplateCreatorModal({
                             // With its formulas, which the template page's queries leave out.
                             setCategories(data.categories)
                         }
-                    }).catch(err => {
+                    }).catch(() => {
                         setErrorMsg(t("templateCreator.loadEditError"))
                     })
                 } else {
@@ -96,6 +96,8 @@ export default function TemplateCreatorModal({
                     
                     setCategories([blankCategory(true)])
                 }
+            }).catch(() => {
+                setErrorMsg(t("templateCreator.loadEditError"))
             })
         }
     }, [isOpen, initialTemplateId])

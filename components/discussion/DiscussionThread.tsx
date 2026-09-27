@@ -5,6 +5,7 @@ import { MessageSquareDashed, Loader2 } from "lucide-react"
 import { type DiscussionMessage } from "@/app/commission/discussionActions"
 import { DiscussionBubble } from "./DiscussionBubble"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useAvatars } from "@/hooks/useAvatars"
 import { useTranslation } from "@/lib/i18n/context"
 
 interface MemberInfo {
@@ -51,6 +52,7 @@ export function DiscussionThread({
     }, [messages])
 
     const { usernames } = useUsernames(allAuids)
+    const { avatars } = useAvatars(allAuids)
 
     // Quick message lookup by ID for reply quotes
     const messagesById = useMemo(() => {
@@ -174,6 +176,9 @@ export function DiscussionThread({
                     }
                 }
 
+                const authorPrimaryAuid = message.authorAuid[0]
+                const authorAvatarUrl = authorPrimaryAuid ? (avatars[authorPrimaryAuid] ?? avatars[String(authorPrimaryAuid)] ?? null) : null
+
                 return (
                     <DiscussionBubble
                         key={message.id}
@@ -181,6 +186,7 @@ export function DiscussionThread({
                         isMe={isMe}
                         authorName={authorName}
                         authorRole={authorRole}
+                        authorAvatarUrl={authorAvatarUrl}
                         replyToMessage={replyToMsg}
                         replyToAuthorName={replyToAuthorName}
                         onReply={onReply}

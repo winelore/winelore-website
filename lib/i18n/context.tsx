@@ -13,7 +13,7 @@ import {
   formatShortDateTime,
   type MessageKey,
 } from '@winelore/core/i18n'
-import { DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from '@winelore/core/i18n/types'
+import { DEFAULT_LOCALE, LOCALES, LOCALE_COOKIE, type Locale } from '@winelore/core/i18n/types'
 
 interface LocaleContextValue {
   locale: Locale
@@ -34,12 +34,11 @@ function readInitialLocale(): Locale {
   if (typeof window === "undefined") return DEFAULT_LOCALE
   const cookie = Cookies.get(LOCALE_COOKIE)
 
-  // 💡 ДОДАНО: підтримка 'hu' при зчитуванні кукі
-  if (cookie === "en" || cookie === "uk" || cookie === "hu") return cookie as Locale
+  if (cookie && (LOCALES as string[]).includes(cookie)) return cookie as Locale
 
   const browserLang = navigator.language.toLowerCase()
-  if (browserLang.startsWith("uk")) return "uk"
-  if (browserLang.startsWith("hu")) return "hu" // 💡 ДОДАНО: автовизначення угорської мови браузера
+  const language = browserLang.split("-")[0]
+  if ((LOCALES as string[]).includes(language)) return language as Locale
 
   return DEFAULT_LOCALE
 }

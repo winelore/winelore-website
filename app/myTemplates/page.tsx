@@ -1,6 +1,7 @@
 import { getEvaluationTemplatesAction } from "./actions";
 import MyTemplatesClientView from "./MyTemplatesClientView";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,10 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
 
     const cookieStore = await cookies();
     const auidStr = cookieStore.get("auid")?.value;
-    const auid = auidStr ? parseInt(auidStr, 10) : undefined;
+    if (!auidStr) {
+        redirect("/auth/login");
+    }
+    const auid = parseInt(auidStr, 10);
 
     try {
         const offset = (currentPage - 1) * LIMIT;

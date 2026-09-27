@@ -12,6 +12,8 @@ import {
     PERSONAL_LINKS,
     isMenuLinkActive,
 } from "@/components/wine-lore-main"
+import { AxusAvatar } from "@/components/AxusAvatar"
+import { useCurrentUserAvatar } from "@/hooks/useAvatars"
 import { useTranslation } from "@/lib/i18n/context"
 import { LOCALE_LABELS, LOCALES } from '@winelore/core/i18n/types'
 
@@ -91,6 +93,7 @@ function IconTile({ children, tone = "indigo" }: { children: ReactNode; tone?: "
 export function MobileProfileSheet({ open, onOpenChange, username }: MobileProfileSheetProps) {
     const { t, locale, setLocale } = useTranslation()
     const pathname = usePathname()
+    const currentUserAvatar = useCurrentUserAvatar()
 
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
@@ -104,7 +107,12 @@ export function MobileProfileSheet({ open, onOpenChange, username }: MobileProfi
                             href={AXUS_ACCOUNT_URL}
                             className="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-xs ring-1 ring-slate-100 transition-colors active:bg-slate-100"
                         >
-                            <AvatarPlaceholder className="h-14 w-14" />
+                            <AxusAvatar
+                                imageUrl={currentUserAvatar}
+                                alt={username}
+                                className="h-14 w-14 rounded-full object-cover"
+                                fallback={<AvatarPlaceholder className="h-14 w-14" />}
+                            />
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
                                     <span className="truncate text-lg font-bold text-slate-900">{username}</span>
