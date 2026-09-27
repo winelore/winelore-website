@@ -1,10 +1,5 @@
 import { z } from "zod"
 
-export interface TastingPropertyScore {
-    name: string
-    score: number
-    maxScore: number
-}
 import type {
     TastingCategoryScore,
     TastingPayload,

@@ -27,12 +27,19 @@ export interface FormatBComment {
     [key: string]: any
 }
 
-export type RawHistoricalComment =
-    | FormatAComment
-    | FormatBComment
-    | { comment: string }
-    | { Comment: string }
-    | Record<string, any>
+export interface RawHistoricalComment {
+    comment?: string
+    Comment?: string
+    wineProducerName?: string
+    wineName?: string
+    code?: string
+    producer?: string
+    beverage?: string
+    vintage?: number | string | null
+    origin?: string
+    expert?: string
+    [key: string]: any
+}
 
 /**
  * Curated high-quality fallbacks used if files are missing or empty during initialization.
