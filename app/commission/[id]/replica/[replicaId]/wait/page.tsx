@@ -9,7 +9,9 @@ import WineJumperGame from "@/components/WineJumperGame"
 import { AppHeader } from "@/components/AppHeader"
 import { useTranslation } from "@/lib/i18n/context"
 import { useUsernames } from "@/hooks/useUsernames"
+import { useAvatars } from "@/hooks/useAvatars"
 import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
+import { MemberAvatar } from "@/components/MemberAvatar"
 
 import {
     getWaitDataAction,
@@ -50,6 +52,7 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
         [room.members],
     );
     const { usernames } = useUsernames(allMemberAuids);
+    const { avatars } = useAvatars(allMemberAuids);
 
     // 1. Read AUID from cookie and restore cached evaluation from submit
     useEffect(() => {
@@ -288,13 +291,22 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                     return (
                                         <div key={`${currentCandidateId}-head-${headKeyAuid}`} className="flex flex-col p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 space-y-3">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-indigo-950">
-                                                        {headAuidsStr}
-                                                    </span>
-                                                    <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                                        {t("commission.headOfCommission")}
-                                                    </span>
+                                                <div className="flex items-center gap-3">
+                                                    <MemberAvatar
+                                                        auid={row.member.auids}
+                                                        role="HEAD"
+                                                        username={headAuidsStr}
+                                                        imageUrl={avatars[String(row.member.auids[0])]}
+                                                        className="h-9 w-9 shrink-0"
+                                                    />
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-bold text-indigo-950">
+                                                            {headAuidsStr}
+                                                        </span>
+                                                        <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                                            {t("commission.headOfCommission")}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 {isCompleted ? (
                                                     <span className="text-emerald-600 font-bold bg-emerald-100 px-3 py-1 rounded-full text-xs animate-fade-in">
@@ -338,27 +350,36 @@ export default function WaitPage({ params }: { params: Promise<{ id: string; rep
                                             }`}
                                         >
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="font-semibold text-slate-700">
-                                                        {expertAuidsStr} {row.member.isTrainee ? `(${t("commission.roleTrainee")})` : ""}
-                                                    </span>
-                                                    {isOutlier && (
-                                                        <span
-                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
-                                                            title={t("commission.results.outOfDeltaTooltip", {
-                                                                score: evaluation?.scores?.find((s) => propertyMap[s.code]?.isResult)?.value ?? "-",
-                                                                diff: formatSignedDiff(outlierInfo?.signedDiff),
-                                                                avg: outlierInfo?.preAvg != null ? outlierInfo.preAvg.toFixed(1) : "-",
-                                                                threshold: 5,
-                                                            })}
-                                                        >
-                                                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                                                            <span>{t("commission.results.outOfDelta")}</span>
-                                                            {outlierInfo?.signedDiff != null && (
-                                                                <span className="opacity-90 font-mono">({formatSignedDiff(outlierInfo.signedDiff)})</span>
-                                                            )}
+                                                <div className="flex items-center gap-3">
+                                                    <MemberAvatar
+                                                        auid={row.member.auids}
+                                                        role={row.member.role}
+                                                        username={expertAuidsStr}
+                                                        imageUrl={avatars[String(row.member.auids[0])]}
+                                                        className="h-9 w-9 shrink-0"
+                                                    />
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-semibold text-slate-700">
+                                                            {expertAuidsStr} {row.member.isTrainee ? `(${t("commission.roleTrainee")})` : ""}
                                                         </span>
-                                                    )}
+                                                        {isOutlier && (
+                                                            <span
+                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                                                                title={t("commission.results.outOfDeltaTooltip", {
+                                                                    score: evaluation?.scores?.find((s) => propertyMap[s.code]?.isResult)?.value ?? "-",
+                                                                    diff: formatSignedDiff(outlierInfo?.signedDiff),
+                                                                    avg: outlierInfo?.preAvg != null ? outlierInfo.preAvg.toFixed(1) : "-",
+                                                                    threshold: 5,
+                                                                })}
+                                                            >
+                                                                <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                                                <span>{t("commission.results.outOfDelta")}</span>
+                                                                {outlierInfo?.signedDiff != null && (
+                                                                    <span className="opacity-90 font-mono">({formatSignedDiff(outlierInfo.signedDiff)})</span>
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 {isCompleted ? (
                                                     <span className="text-emerald-600 font-bold bg-emerald-100 px-3 py-1 rounded-full text-xs animate-fade-in">
