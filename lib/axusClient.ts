@@ -2,6 +2,8 @@ import { print } from 'graphql';
 import { DocumentNode } from 'graphql';
 import { getSdk } from '@winelore/core/gql/axus/sdk';
 import { getAxusEndpoint } from './graphqlEndpoint';
+import { getAxusRateLimitToken } from './axusConfig';
+import { axusGraphqlHeaders } from '@winelore/core/auth';
 
 const AXUS_GRAPHQL_ENDPOINT = getAxusEndpoint();
 
@@ -16,10 +18,7 @@ const requester = async <R, V>(
 ): Promise<R> => {
     const response = await fetch(AXUS_GRAPHQL_ENDPOINT, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            ...options?.headers
-        },
+        headers: axusGraphqlHeaders(getAxusRateLimitToken(), options?.headers),
         body: JSON.stringify({
             query: print(doc),
             variables: vars,
@@ -48,7 +47,6 @@ const requester = async <R, V>(
 export const axusSdk = getSdk<AxusRequesterOptions>(requester);
 
 export function getAxusSdkWithToken(token: string) {
-    const headers = { Authorization: `Bearer ${token}` };
     const wrappedRequester = async <R, V>(
         doc: DocumentNode,
         vars?: V,
@@ -56,10 +54,7 @@ export function getAxusSdkWithToken(token: string) {
     ): Promise<R> => {
         return requester(doc, vars, {
             ...options,
-            headers: {
-                ...headers,
-                ...options?.headers
-            }
+            headers: Object.fromEntries(axusGraphqlHeaders(token, options?.headers))
         });
     };
     return getSdk<AxusRequesterOptions>(wrappedRequester);
