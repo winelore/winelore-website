@@ -11,13 +11,16 @@ import {
   formatEnumLabel,
   formatDateTime,
   formatShortDateTime,
+  getOrderedLocales,
+  isProbablyInSlovakia,
   type MessageKey,
 } from '@winelore/core/i18n'
-import { DEFAULT_LOCALE, LOCALES, LOCALE_COOKIE, type Locale } from '@winelore/core/i18n/types'
+import { DEFAULT_LOCALE, LOCALES, LOCALE_COOKIE, COUNTRY_COOKIE, type Locale } from '@winelore/core/i18n/types'
 
 interface LocaleContextValue {
   locale: Locale
   setLocale: (locale: Locale) => void
+  locales: Locale[]
   t: (key: MessageKey, params?: Record<string, string | number>) => string
   tCount: (key: MessageKey, count: number, params?: Record<string, string | number>) => string
   formatStatus: (status: string) => string
@@ -45,10 +48,15 @@ function readInitialLocale(): Locale {
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
+  const [locales, setLocales] = useState<Locale[]>(LOCALES)
   const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
     setLocaleState(readInitialLocale())
+    const countryHint = Cookies.get(COUNTRY_COOKIE)
+    if (isProbablyInSlovakia(countryHint)) {
+      setLocales(getOrderedLocales(true))
+    }
     setIsHydrated(true)
   }, [])
 
@@ -65,6 +73,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<LocaleContextValue>(() => ({
     locale,
     setLocale,
+    locales,
     t: (key, params) => translate(locale, key, params),
     tCount: (key, count, params) => translateWithCount(locale, key, count, params),
     formatStatus: (status) => formatStatus(status, locale),
@@ -73,7 +82,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     formatEnumLabel: (label) => formatEnumLabel(label, locale),
     formatDateTime: (dateStr) => formatDateTime(dateStr, locale),
     formatShortDateTime: (dateStr) => formatShortDateTime(dateStr, locale),
-  }), [locale, setLocale])
+  }), [locale, setLocale, locales])
 
   return (
       <LocaleContext.Provider value={value}>
