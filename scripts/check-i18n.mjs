@@ -7,6 +7,7 @@
 // to en.ts, or if any used key isn't defined.
 
 import fs from 'fs';
+import path from 'path';
 import { execSync } from 'child_process';
 
 const LOCALES = ['en', 'uk', 'hu', 'sk'];
@@ -49,11 +50,22 @@ for (const l of LOCALES.slice(1)) {
     }
 }
 
+function walk(dir) {
+    let results = [];
+    if (!fs.existsSync(dir)) return results;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            results = results.concat(walk(full));
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
+            results.push(full);
+        }
+    }
+    return results;
+}
+const roots = ['app', 'components', 'lib', 'hooks', 'packages/core/src', 'apps/mobile/src', 'apps/mobile/app'];
+const files = roots.flatMap(walk);
 const used = new Set();
-// apps/mobile is included so a mistyped key in the iOS app fails here too —
-// it consumes the same tables from @winelore/core/i18n.
-const files = execSync(`grep -rl "" --include=*.tsx --include=*.ts app components lib hooks packages/core/src apps/mobile/src apps/mobile/app`)
-    .toString().trim().split('\n').filter(Boolean);
 for (const f of files) {
     if (f.includes('packages/core/src/i18n/locales')) continue;
     const src = fs.readFileSync(f, 'utf8');

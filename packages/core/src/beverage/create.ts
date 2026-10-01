@@ -133,24 +133,66 @@ export function beverageTypeOptions(items: Array<BeverageTypeOption & { status?:
 
 export type ProducerRoleChoice = "MAKER" | "BOTTLER"
 
+export interface ProducerOption {
+    id: string
+    name: string
+    claimStatus?: string
+    claimAuid?: number | null
+}
+
+export const CREATE_PRODUCER = `
+    mutation CreateProducer($input: CreateProducerInput!) {
+        createProducer(input: $input) { id name claimStatus }
+    }
+`
+
+export async function createProducer(send: BeverageSend, name: string): Promise<ProducerOption> {
+    const trimmed = name.trim()
+    if (!trimmed) throw new Error("Producer name is required")
+    const result = await send(CREATE_PRODUCER, { input: { name: trimmed } })
+    const producer = result?.createProducer
+    if (!producer?.id) throw new Error("Failed to create producer")
+    return { id: producer.id, name: producer.name, claimStatus: producer.claimStatus }
+}
+
+export const GET_PRODUCERS = `
+    query GetProducers($limit: Int) {
+        producers(limit: $limit) { items { id name claimStatus claimAuid } }
+    }
+`
+
+export async function loadProducers(send: BeverageSend, limit = 100): Promise<ProducerOption[]> {
+    const data = await send(GET_PRODUCERS, { limit })
+    return (data?.producers?.items || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        claimStatus: p.claimStatus,
+        claimAuid: p.claimAuid,
+    }))
+}
+
 export interface NewBeverage {
     name: string
     typeId: string
     role: ProducerRoleChoice
+    producerId?: string
     attributes?: Record<string, string>
     origin?: { latitude: number; longitude: number } | null
 }
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
 
-/** The backend's input: the signed-in user as its producer in the chosen role. */
+/** The backend's input: the producer stub or the signed-in user as its producer in the chosen role. */
 export function beverageCreateInput(beverage: NewBeverage, actor: string): Record<string, any> {
     const role: ProducerRoleChoice = beverage.role === "BOTTLER" ? "BOTTLER" : "MAKER"
     const auid = Number.parseInt(actor, 10)
+    const producerId = beverage.producerId || (isUuid(actor) ? actor : undefined)
     const input: Record<string, any> = {
         name: beverage.name.trim(),
         typeId: beverage.typeId,
-        producers: [isUuid(actor) ? { producerId: actor, role } : { auid: Number.isNaN(auid) ? undefined : [auid], role }],
+        producers: producerId
+            ? [{ producerId, role }]
+            : [{ auid: Number.isNaN(auid) ? undefined : [auid], role }],
     }
     const attributes = { ...(beverage.attributes || {}) }
     if (Object.keys(attributes).length > 0) input.attributes = attributes
@@ -313,6 +355,7 @@ export class SampleExceedsBatchError extends Error {
 export interface NewSample {
     batchId: string
     volumeMl?: string | number | null
+    code?: string | null
     attributes?: Record<string, unknown>
 }
 
@@ -336,7 +379,12 @@ export async function createSample(send: BeverageSend, sample: NewSample): Promi
     }
     const attributes = formatCreateAttributes(sample.attributes, "sample")
     const result = await send(print(DevCreateSampleDocument), {
-        input: { batchId: sample.batchId, volumeMl, attributes: Object.keys(attributes).length > 0 ? attributes : undefined },
+        input: {
+            batchId: sample.batchId,
+            volumeMl,
+            code: sample.code?.trim() || undefined,
+            attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+        },
     })
     const id: string | undefined = result?.createSample?.id
     if (!id) throw new Error("Failed to create sample")

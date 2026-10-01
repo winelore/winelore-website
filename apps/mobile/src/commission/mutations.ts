@@ -31,6 +31,23 @@ import {
     type CommissionSetting,
 } from "@winelore/core/commission"
 import {
+    beverageTypeOptions,
+    createBatch,
+    createBeverage,
+    createProducer,
+    createSample,
+    loadCharacteristics,
+    loadProducers,
+    type BeverageCharacteristic,
+    type BeverageTypeOption,
+    type CharacteristicScope,
+    type NewBatch,
+    type NewBeverage,
+    type NewSample,
+    type ProducerOption,
+} from "@winelore/core/beverage"
+import { GET_BEVERAGE_TYPES } from "@winelore/core/dashboard"
+import {
     DevSubmitCommissionForReviewDocument,
     MarkReplicaMemberNotReadyDocument,
     MarkReplicaMemberReadyDocument,
@@ -209,3 +226,61 @@ export async function loadTemplateCatalog(): Promise<CatalogTemplate[]> {
     const data = await fetchGraphQLRaw<any>(GET_TEMPLATE_CATALOG, { limit: 100 })
     return toTemplateCatalog(data?.evaluationTemplateEditions?.items)
 }
+
+// --- Beverage, Batch, Sample & Producer creation for panels -----------------
+
+export async function loadBeverageTypesList(): Promise<BeverageTypeOption[]> {
+    const data = await fetchGraphQLRaw<any>(GET_BEVERAGE_TYPES, {})
+    return beverageTypeOptions(data?.beverageTypes?.items)
+}
+
+export async function loadProducersList(auid: string): Promise<ProducerOption[]> {
+    return loadProducers(sendAs(auid))
+}
+
+export async function createProducerStub(name: string, auid: string): Promise<ProducerOption> {
+    return createProducer(sendAs(auid), name)
+}
+
+export async function loadCharacteristicsList(
+    typeId: string,
+    scope: CharacteristicScope,
+    auid: string,
+): Promise<BeverageCharacteristic[]> {
+    return loadCharacteristics(sendAs(auid), typeId, scope)
+}
+
+export async function getBeverageTypeId(beverageId: string, auid: string): Promise<string | null> {
+    try {
+        const data = await fetchGraphQLRaw<any>(
+            `query GetBeverageType($id: ID!) { beverage(id: $id) { id typeId } }`,
+            { id: beverageId },
+            actor(auid),
+        )
+        return data?.beverage?.typeId || null
+    } catch {
+        return null
+    }
+}
+
+export async function createBeverageForPanel(
+    beverage: NewBeverage,
+    auid: string,
+): Promise<string> {
+    return createBeverage(sendAs(auid), beverage, auid)
+}
+
+export async function createBatchForPanel(
+    batch: NewBatch,
+    auid: string,
+): Promise<string> {
+    return createBatch(sendAs(auid), batch)
+}
+
+export async function createSampleForPanel(
+    sample: NewSample,
+    auid: string,
+): Promise<string> {
+    return createSample(sendAs(auid), sample)
+}
+
