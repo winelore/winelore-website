@@ -19,6 +19,7 @@ import {
     Info,
     Calendar,
     Percent,
+    User,
 } from "lucide-react"
 import {
     searchBeveragesAction,
@@ -33,7 +34,9 @@ import {
     createBeverageForPanelAction,
     createBatchForPanelAction,
     createSampleForPanelAction,
+    searchUserByUsernameAction,
 } from "../../actions"
+import type { FoundUser } from "@winelore/core/auth"
 import {
     ABV_PRESETS,
     BATCH_VOLUME_PRESETS,
@@ -266,11 +269,19 @@ export function CandidateWizardModal({
     const [selectedBeverage, setSelectedBeverage] = useState<BeverageItem | null>(null)
 
     // Step 1 State: Beverage (Create mode)
+    type SelectedProducer =
+        | { type: "account"; auid: number; username: string; displayName: string }
+        | { type: "catalog"; id: string; name: string; claimStatus?: string }
+        | { type: "new"; name: string }
+
     const [bevCreateName, setBevCreateName] = useState("")
     const [bevCreateTypeId, setBevCreateTypeId] = useState("")
-    const [bevProducerTab, setBevProducerTab] = useState<"new" | "existing">("new")
-    const [bevSelectedProducerId, setBevSelectedProducerId] = useState("")
-    const [bevNewProducerName, setBevNewProducerName] = useState("")
+    const [selectedProducer, setSelectedProducer] = useState<SelectedProducer | null>(null)
+    const [producerQuery, setProducerQuery] = useState("")
+    const [isProducerOpen, setIsProducerOpen] = useState(false)
+    const [isSearchingUser, setIsSearchingUser] = useState(false)
+    const [foundUser, setFoundUser] = useState<FoundUser | null>(null)
+    const producerContainerRef = useRef<HTMLDivElement>(null)
     const [bevRole, setBevRole] = useState<"MAKER" | "BOTTLER">("MAKER")
     const [bevAttributes, setBevAttributes] = useState<Record<string, string>>({})
     const [beverageTypes, setBeverageTypes] = useState<BeverageTypeOption[]>([])
@@ -346,9 +357,10 @@ export function CandidateWizardModal({
             // Reset create form states
             setBevCreateName("")
             setBevCreateTypeId("")
-            setBevProducerTab("new")
-            setBevSelectedProducerId("")
-            setBevNewProducerName("")
+            setSelectedProducer(null)
+            setProducerQuery("")
+            setIsProducerOpen(false)
+            setFoundUser(null)
             setBevRole("MAKER")
             setBevAttributes({})
             setBevCreateError(null)
@@ -400,6 +412,50 @@ export function CandidateWizardModal({
             setBevCharacteristics([])
         }
     }, [bevCreateTypeId])
+
+    // Filter catalog producers by query
+    const matchingCatalogProducers = useMemo(() => {
+        if (!producerQuery.trim()) return producers.slice(0, 8)
+        const q = producerQuery.trim().toLowerCase()
+        return producers.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8)
+    }, [producers, producerQuery])
+
+    // Debounced search for registered winemaker
+    useEffect(() => {
+        const trimmed = producerQuery.trim().replace(/^@/, "")
+        if (!trimmed || trimmed.length < 2) {
+            setFoundUser(null)
+            setIsSearchingUser(false)
+            return
+        }
+        setIsSearchingUser(true)
+        const timer = setTimeout(async () => {
+            try {
+                const res = await searchUserByUsernameAction(trimmed)
+                if (res.success && res.user) {
+                    setFoundUser(res.user)
+                } else {
+                    setFoundUser(null)
+                }
+            } catch {
+                setFoundUser(null)
+            } finally {
+                setIsSearchingUser(false)
+            }
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [producerQuery])
+
+    // Close producer dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (producerContainerRef.current && !producerContainerRef.current.contains(e.target as Node)) {
+                setIsProducerOpen(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
 
     // Load batch characteristics when switching to batch create mode
     useEffect(() => {
@@ -602,10 +658,38 @@ export function CandidateWizardModal({
 
         setIsCreatingBeverage(true)
         try {
-            let producerId = bevSelectedProducerId
-            if (bevProducerTab === "new") {
-                const stubName = bevNewProducerName.trim() || trimmedName
-                const prodRes = await createProducerAction(stubName)
+            let producerAuid: number | undefined
+            let producerId: string | undefined
+
+            if (selectedProducer?.type === "account") {
+                producerAuid = selectedProducer.auid
+            } else if (selectedProducer?.type === "catalog") {
+                producerId = selectedProducer.id
+            } else if (selectedProducer?.type === "new") {
+                const prodRes = await createProducerAction(selectedProducer.name)
+                if (!prodRes.success || !prodRes.producer?.id) {
+                    throw new Error(prodRes.error || t("panels.wizard.createProducerError"))
+                }
+                producerId = prodRes.producer.id
+            } else if (producerQuery.trim()) {
+                const query = producerQuery.trim()
+                const cleanUser = query.replace(/^@/, "")
+                if (foundUser && foundUser.username.toLowerCase() === cleanUser.toLowerCase()) {
+                    producerAuid = foundUser.auid
+                } else {
+                    const catalogMatch = producers.find((p) => p.name.toLowerCase() === query.toLowerCase())
+                    if (catalogMatch) {
+                        producerId = catalogMatch.id
+                    } else {
+                        const prodRes = await createProducerAction(query)
+                        if (!prodRes.success || !prodRes.producer?.id) {
+                            throw new Error(prodRes.error || t("panels.wizard.createProducerError"))
+                        }
+                        producerId = prodRes.producer.id
+                    }
+                }
+            } else {
+                const prodRes = await createProducerAction(trimmedName)
                 if (!prodRes.success || !prodRes.producer?.id) {
                     throw new Error(prodRes.error || t("panels.wizard.createProducerError"))
                 }
@@ -615,7 +699,8 @@ export function CandidateWizardModal({
             const res = await createBeverageForPanelAction({
                 name: trimmedName,
                 typeId: bevCreateTypeId,
-                producerId: producerId || undefined,
+                producerId,
+                producerAuid,
                 role: bevRole,
                 attributes: bevAttributes,
             })
@@ -1273,71 +1358,273 @@ export function CandidateWizardModal({
                                         />
                                     </div>
 
-                                    {/* Producer Selection / Stub Creation */}
-                                    <div className="flex flex-col gap-2">
+                                    {/* Producer / Winery Selection */}
+                                    <div className="flex flex-col gap-2" ref={producerContainerRef}>
                                         <div className="flex items-center justify-between">
                                             <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
                                                 {t("panels.wizard.producerLabel")}
                                             </label>
-                                            <div className="flex p-0.5 bg-slate-100 rounded-lg text-[11px] font-bold">
+                                            {selectedProducer && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => setBevProducerTab("new")}
-                                                    className={`px-2.5 py-0.5 rounded-md transition-all cursor-pointer ${
-                                                        bevProducerTab === "new"
-                                                            ? "bg-white text-indigo-600 shadow-xs"
-                                                            : "text-slate-500 hover:text-slate-800"
-                                                    }`}
+                                                    onClick={() => {
+                                                        setSelectedProducer(null)
+                                                        setProducerQuery("")
+                                                        setIsProducerOpen(true)
+                                                    }}
+                                                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors cursor-pointer"
                                                 >
-                                                    {t("panels.wizard.producerNewTab")}
+                                                    {t("panels.wizard.producerChange")}
                                                 </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setBevProducerTab("existing")}
-                                                    className={`px-2.5 py-0.5 rounded-md transition-all cursor-pointer ${
-                                                        bevProducerTab === "existing"
-                                                            ? "bg-white text-indigo-600 shadow-xs"
-                                                            : "text-slate-500 hover:text-slate-800"
-                                                    }`}
-                                                >
-                                                    {t("panels.wizard.producerExistingTab")}
-                                                </button>
-                                            </div>
+                                            )}
                                         </div>
 
-                                        {bevProducerTab === "new" ? (
-                                            <div className="flex flex-col gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={bevNewProducerName}
-                                                    onChange={(e) => setBevNewProducerName(e.target.value)}
-                                                    placeholder={t("panels.wizard.producerNewPlaceholder")}
-                                                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                                />
-                                                <div className="p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl flex items-start gap-2 text-xs text-amber-800">
-                                                    <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                                    <span className="leading-relaxed">
-                                                        {t("panels.wizard.producerStubNotice")}
-                                                    </span>
+                                        {selectedProducer ? (
+                                            selectedProducer.type === "account" ? (
+                                                <div className="flex items-center justify-between gap-3 p-3 bg-indigo-50/60 border border-indigo-200/80 rounded-2xl shadow-xs">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                                            <User className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                                <span className="text-xs font-bold text-slate-800 truncate">
+                                                                    {selectedProducer.displayName}
+                                                                </span>
+                                                                <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-600 text-white tracking-wide uppercase">
+                                                                    {t("panels.wizard.producerAccountBadge")}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[11px] font-semibold text-indigo-600 truncate">
+                                                                @{selectedProducer.username}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedProducer(null)
+                                                            setProducerQuery("")
+                                                            setIsProducerOpen(true)
+                                                        }}
+                                                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/80 transition-all cursor-pointer shrink-0"
+                                                        title={t("panels.wizard.producerChange")}
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                            </div>
+                                            ) : selectedProducer.type === "catalog" ? (
+                                                <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl shadow-xs">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center shrink-0">
+                                                            <Building2 className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                                <span className="text-xs font-bold text-slate-800 truncate">
+                                                                    {selectedProducer.name}
+                                                                </span>
+                                                                <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-200 text-slate-700 tracking-wide">
+                                                                    {t("panels.wizard.producerCatalogBadge")}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedProducer(null)
+                                                            setProducerQuery("")
+                                                            setIsProducerOpen(true)
+                                                        }}
+                                                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white transition-all cursor-pointer shrink-0"
+                                                        title={t("panels.wizard.producerChange")}
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center justify-between gap-3 p-3 bg-amber-50/50 border border-amber-200/70 rounded-2xl shadow-xs">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                                                                <Building2 className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <span className="text-xs font-bold text-slate-800 truncate">
+                                                                        {selectedProducer.name}
+                                                                    </span>
+                                                                    <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-500 text-white tracking-wide uppercase">
+                                                                        {t("panels.wizard.producerNewBadge")}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedProducer(null)
+                                                                setProducerQuery("")
+                                                                setIsProducerOpen(true)
+                                                            }}
+                                                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white transition-all cursor-pointer shrink-0"
+                                                            title={t("panels.wizard.producerChange")}
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="p-2.5 bg-amber-50/70 border border-amber-200/60 rounded-xl flex items-start gap-2 text-xs text-amber-800">
+                                                        <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                                        <span className="leading-relaxed text-[11px]">
+                                                            {t("panels.wizard.producerStubNotice")}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )
                                         ) : (
-                                            <WizardSelect
-                                                value={bevSelectedProducerId}
-                                                options={producers.map((prod) => ({
-                                                    value: prod.id,
-                                                    label: prod.name,
-                                                    hint: prod.claimStatus === "UNCLAIMED" ? t("panels.wizard.producerCatalogBadge") : undefined,
-                                                    icon: <Building2 className="w-3.5 h-3.5" />,
-                                                }))}
-                                                onChange={(val) => setBevSelectedProducerId(val)}
-                                                placeholder={t("panels.wizard.producerSelectPlaceholder")}
-                                                emptyMessage={t("beverage.edit.noProducers")}
-                                                searchable={true}
-                                                searchPlaceholder={t("panels.wizard.searchProducerPlaceholder")}
-                                                loadingText={t("common.loading")}
-                                                icon={<Building2 className="w-4 h-4 text-indigo-500" />}
-                                            />
+                                            <div className="relative w-full">
+                                                <div className="relative flex items-center">
+                                                    <Search className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
+                                                    <input
+                                                        type="text"
+                                                        value={producerQuery}
+                                                        onChange={(e) => {
+                                                            setProducerQuery(e.target.value)
+                                                            setIsProducerOpen(true)
+                                                        }}
+                                                        onFocus={() => setIsProducerOpen(true)}
+                                                        placeholder={t("panels.wizard.producerUnifiedPlaceholder")}
+                                                        className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                                    />
+                                                    <div className="absolute right-3 flex items-center">
+                                                        {isSearchingUser ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                                                        ) : producerQuery ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setProducerQuery("")}
+                                                                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        ) : (
+                                                            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isProducerOpen ? "rotate-180 text-indigo-600" : ""}`} />
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {isProducerOpen && (
+                                                    <div className="absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl shadow-slate-200/90 backdrop-blur-md transition-all duration-200 origin-top animate-scale-up z-50">
+                                                        {/* Section: Winemaker user if found */}
+                                                        {foundUser && (
+                                                            <div className="mb-1">
+                                                                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+                                                                    {t("panels.wizard.producerSectionAccount")}
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedProducer({
+                                                                            type: "account",
+                                                                            auid: foundUser.auid,
+                                                                            username: foundUser.username,
+                                                                            displayName: foundUser.displayName,
+                                                                        })
+                                                                        setProducerQuery("")
+                                                                        setIsProducerOpen(false)
+                                                                    }}
+                                                                    className="flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all cursor-pointer"
+                                                                >
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                                                                            <User className="w-3.5 h-3.5" />
+                                                                        </div>
+                                                                        <div className="flex flex-col items-start min-w-0">
+                                                                            <span className="font-bold text-slate-800 truncate">
+                                                                                {foundUser.displayName}
+                                                                            </span>
+                                                                            <span className="text-[10px] font-semibold text-indigo-600 truncate">
+                                                                                @{foundUser.username}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide">
+                                                                        {t("panels.wizard.producerAccountBadge")}
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Section: Catalog Producers */}
+                                                        {matchingCatalogProducers.length > 0 && (
+                                                            <div className="mb-1">
+                                                                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                                    {t("panels.wizard.producerSectionCatalog")}
+                                                                </div>
+                                                                {matchingCatalogProducers.map((prod) => (
+                                                                    <button
+                                                                        key={prod.id}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setSelectedProducer({
+                                                                                type: "catalog",
+                                                                                id: prod.id,
+                                                                                name: prod.name,
+                                                                                claimStatus: prod.claimStatus,
+                                                                            })
+                                                                            setProducerQuery("")
+                                                                            setIsProducerOpen(false)
+                                                                        }}
+                                                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-all cursor-pointer"
+                                                                    >
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                                                                            <span className="truncate">{prod.name}</span>
+                                                                        </div>
+                                                                        {prod.claimStatus === "UNCLAIMED" && (
+                                                                            <span className="shrink-0 text-[10px] text-slate-400 font-medium">
+                                                                                {t("panels.wizard.producerCatalogBadge")}
+                                                                            </span>
+                                                                        )}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Section: Create New Stub */}
+                                                        {producerQuery.trim() && !matchingCatalogProducers.some((p) => p.name.toLowerCase() === producerQuery.trim().toLowerCase()) && (
+                                                            <div className="border-t border-slate-100 pt-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedProducer({
+                                                                            type: "new",
+                                                                            name: producerQuery.trim(),
+                                                                        })
+                                                                        setProducerQuery("")
+                                                                        setIsProducerOpen(false)
+                                                                    }}
+                                                                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all cursor-pointer"
+                                                                >
+                                                                    <div className="w-5 h-5 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                                                                        <Plus className="w-3.5 h-3.5" />
+                                                                    </div>
+                                                                    <span className="truncate">
+                                                                        {t("panels.wizard.producerCreateNew", { name: producerQuery.trim() })}
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        {!foundUser && matchingCatalogProducers.length === 0 && !producerQuery.trim() && (
+                                                            <div className="py-3 px-3 text-center text-xs font-medium text-slate-400">
+                                                                {t("panels.wizard.producerUnifiedPlaceholder")}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
 

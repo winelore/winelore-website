@@ -1167,6 +1167,7 @@ export async function createBeverageForPanelAction(params: {
     name: string;
     typeId: string;
     producerId?: string;
+    producerAuid?: number;
     role?: 'MAKER' | 'BOTTLER';
     attributes?: Record<string, any>;
     origin?: { latitude: number; longitude: number } | null;
@@ -1181,6 +1182,7 @@ export async function createBeverageForPanelAction(params: {
                 name: params.name,
                 typeId: params.typeId,
                 producerId: params.producerId,
+                producerAuid: params.producerAuid,
                 role: params.role === "BOTTLER" ? "BOTTLER" : "MAKER",
                 attributes: params.attributes,
                 origin: params.origin,

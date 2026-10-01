@@ -158,6 +158,9 @@ test("a new beverage has the signed-in user as its producer", () => {
     assert.deepEqual(beverageCreateInput({ name: "X", typeId: "t", role: "MAKER", producerId: "prod-123" }, "42").producers, [
         { producerId: "prod-123", role: "MAKER" },
     ])
+    assert.deepEqual(beverageCreateInput({ name: "X", typeId: "t", role: "MAKER", producerAuid: 99 }, "42").producers, [
+        { auid: [99], role: "MAKER" },
+    ])
 })
 
 test("creating and loading producers", async () => {

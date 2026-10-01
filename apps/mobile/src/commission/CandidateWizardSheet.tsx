@@ -21,6 +21,8 @@ import {
     type BeverageTypeOption,
     type ProducerOption,
 } from "@winelore/core/beverage"
+import { findUserByUsername, type FoundUser } from "@winelore/core/auth"
+import { getAxusConfig } from "../auth/config"
 import { useTranslation } from "../i18n/LocaleProvider"
 import { MONOSPACE, continuous, palette, radius } from "../theme"
 import { Icon, type IconName } from "../ui/Icon"
@@ -114,11 +116,17 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
     const [sampleMode, setSampleMode] = useState<Mode>("select")
 
     // Create Beverage State
+    type SelectedProducer =
+        | { type: "account"; auid: number; username: string; displayName: string }
+        | { type: "catalog"; id: string; name: string; claimStatus?: string }
+        | { type: "new"; name: string }
+
     const [bevName, setBevName] = useState("")
     const [bevTypeId, setBevTypeId] = useState("")
-    const [bevProducerTab, setBevProducerTab] = useState<"new" | "existing">("new")
-    const [bevProducerId, setBevProducerId] = useState("")
-    const [bevNewProducerName, setBevNewProducerName] = useState("")
+    const [selectedProducer, setSelectedProducer] = useState<SelectedProducer | null>(null)
+    const [producerQuery, setProducerQuery] = useState("")
+    const [isSearchingUser, setIsSearchingUser] = useState(false)
+    const [foundUser, setFoundUser] = useState<FoundUser | null>(null)
     const [bevRole, setBevRole] = useState<"MAKER" | "BOTTLER">("MAKER")
     const [bevAttributes, setBevAttributes] = useState<Record<string, string>>({})
     const [beverageTypes, setBeverageTypes] = useState<BeverageTypeOption[]>([])
@@ -164,9 +172,9 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
         // Reset create states
         setBevName("")
         setBevTypeId("")
-        setBevProducerTab("new")
-        setBevProducerId("")
-        setBevNewProducerName("")
+        setSelectedProducer(null)
+        setProducerQuery("")
+        setFoundAxusUser(null)
         setBevRole("MAKER")
         setBevAttributes({})
         setBevError(null)
@@ -236,6 +244,35 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
             setBevCharacteristics([])
         }
     }, [bevTypeId, auid])
+
+    // Filter catalog producers by query
+    const matchingCatalogProducers = useMemo(() => {
+        if (!producerQuery.trim()) return producers.slice(0, 6)
+        const q = producerQuery.trim().toLowerCase()
+        return producers.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 6)
+    }, [producers, producerQuery])
+
+    // Debounced search for Winemaker user
+    useEffect(() => {
+        const trimmed = producerQuery.trim().replace(/^@/, "")
+        if (!trimmed || trimmed.length < 2) {
+            setFoundUser(null)
+            setIsSearchingUser(false)
+            return
+        }
+        setIsSearchingUser(true)
+        const timer = setTimeout(async () => {
+            try {
+                const user = await findUserByUsername(getAxusConfig(), trimmed)
+                setFoundUser(user)
+            } catch {
+                setFoundUser(null)
+            } finally {
+                setIsSearchingUser(false)
+            }
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [producerQuery])
 
     // Load batch characteristics when switching to batch create mode
     useEffect(() => {
@@ -352,10 +389,32 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
 
         setIsCreatingBev(true)
         try {
-            let producerId = bevProducerId
-            if (bevProducerTab === "new") {
-                const stubName = bevNewProducerName.trim() || trimmedName
-                const prod = await createProducerStub(stubName, auid)
+            let producerAuid: number | undefined
+            let producerId: string | undefined
+
+            if (selectedProducer?.type === "account") {
+                producerAuid = selectedProducer.auid
+            } else if (selectedProducer?.type === "catalog") {
+                producerId = selectedProducer.id
+            } else if (selectedProducer?.type === "new") {
+                const prod = await createProducerStub(selectedProducer.name, auid)
+                producerId = prod.id
+            } else if (producerQuery.trim()) {
+                const query = producerQuery.trim()
+                const cleanUser = query.replace(/^@/, "")
+                if (foundUser && foundUser.username.toLowerCase() === cleanUser.toLowerCase()) {
+                    producerAuid = foundUser.auid
+                } else {
+                    const catalogMatch = producers.find((p) => p.name.toLowerCase() === query.toLowerCase())
+                    if (catalogMatch) {
+                        producerId = catalogMatch.id
+                    } else {
+                        const prod = await createProducerStub(query, auid)
+                        producerId = prod.id
+                    }
+                }
+            } else {
+                const prod = await createProducerStub(trimmedName, auid)
                 producerId = prod.id
             }
 
@@ -363,7 +422,8 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                 {
                     name: trimmedName,
                     typeId: bevTypeId,
-                    producerId: producerId || undefined,
+                    producerId,
+                    producerAuid,
                     role: bevRole,
                     attributes: bevAttributes,
                 },
@@ -612,71 +672,252 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                                     )}
                                 </View>
 
-                                {/* Producer */}
+                                {/* Producer / Winery */}
                                 <View style={styles.field}>
                                     <View style={styles.labelRow}>
                                         <Text style={styles.fieldLabel}>{t("panels.wizard.producerLabel")}</Text>
-                                        <View style={styles.tabsWrap}>
+                                        {selectedProducer && (
                                             <Pressable
                                                 accessibilityRole="button"
-                                                onPress={() => setBevProducerTab("new")}
-                                                style={[styles.tab, bevProducerTab === "new" && styles.tabActive]}
+                                                onPress={() => {
+                                                    Haptics.selectionAsync()
+                                                    setSelectedProducer(null)
+                                                    setProducerQuery("")
+                                                }}
                                             >
-                                                <Text style={[styles.tabLabel, bevProducerTab === "new" && styles.tabLabelActive]}>
-                                                    {t("panels.wizard.producerNewTab")}
-                                                </Text>
+                                                <Text style={styles.linkText}>{t("panels.wizard.producerChange")}</Text>
                                             </Pressable>
-                                            <Pressable
-                                                accessibilityRole="button"
-                                                onPress={() => setBevProducerTab("existing")}
-                                                style={[styles.tab, bevProducerTab === "existing" && styles.tabActive]}
-                                            >
-                                                <Text style={[styles.tabLabel, bevProducerTab === "existing" && styles.tabLabelActive]}>
-                                                    {t("panels.wizard.producerExistingTab")}
-                                                </Text>
-                                            </Pressable>
-                                        </View>
+                                        )}
                                     </View>
 
-                                    {bevProducerTab === "new" ? (
+                                    {selectedProducer ? (
+                                        selectedProducer.type === "account" ? (
+                                            <View style={styles.selectedCard}>
+                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                                                    <Icon name="person" size={18} color={palette.accent} />
+                                                    <View style={{ flex: 1 }}>
+                                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                                            <Text style={styles.choiceTitle} numberOfLines={1}>
+                                                                {selectedProducer.displayName}
+                                                            </Text>
+                                                            <View style={styles.badge}>
+                                                                <Text style={styles.badgeText}>
+                                                                    {t("panels.wizard.producerAccountBadge")}
+                                                                </Text>
+                                                            </View>
+                                                        </View>
+                                                        <Text style={styles.suggestionSubtitle}>
+                                                            @{selectedProducer.username}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                                <Pressable
+                                                    accessibilityRole="button"
+                                                    onPress={() => {
+                                                        Haptics.selectionAsync()
+                                                        setSelectedProducer(null)
+                                                        setProducerQuery("")
+                                                    }}
+                                                    style={{ padding: 4 }}
+                                                >
+                                                    <Icon name="close" size={16} color={palette.textMuted} />
+                                                </Pressable>
+                                            </View>
+                                        ) : selectedProducer.type === "catalog" ? (
+                                            <View style={[styles.selectedCard, styles.selectedCardCatalog]}>
+                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                                                    <Icon name="beverage" size={18} color={palette.textMuted} />
+                                                    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                                        <Text style={styles.choiceTitle} numberOfLines={1}>
+                                                            {selectedProducer.name}
+                                                        </Text>
+                                                        <View style={[styles.badge, styles.badgeCatalog]}>
+                                                            <Text style={[styles.badgeText, styles.badgeTextCatalog]}>
+                                                                {t("panels.wizard.producerCatalogBadge")}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
+                                                <Pressable
+                                                    accessibilityRole="button"
+                                                    onPress={() => {
+                                                        Haptics.selectionAsync()
+                                                        setSelectedProducer(null)
+                                                        setProducerQuery("")
+                                                    }}
+                                                    style={{ padding: 4 }}
+                                                >
+                                                    <Icon name="close" size={16} color={palette.textMuted} />
+                                                </Pressable>
+                                            </View>
+                                        ) : (
+                                            <View style={{ gap: 8 }}>
+                                                <View style={[styles.selectedCard, styles.selectedCardNew]}>
+                                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                                                        <Icon name="plus" size={18} color="#d97706" />
+                                                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                                            <Text style={styles.choiceTitle} numberOfLines={1}>
+                                                                {selectedProducer.name}
+                                                            </Text>
+                                                            <View style={[styles.badge, styles.badgeNew]}>
+                                                                <Text style={[styles.badgeText, styles.badgeTextNew]}>
+                                                                    {t("panels.wizard.producerNewBadge")}
+                                                                </Text>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+                                                    <Pressable
+                                                        accessibilityRole="button"
+                                                        onPress={() => {
+                                                            Haptics.selectionAsync()
+                                                            setSelectedProducer(null)
+                                                            setProducerQuery("")
+                                                        }}
+                                                        style={{ padding: 4 }}
+                                                    >
+                                                        <Icon name="close" size={16} color={palette.textMuted} />
+                                                    </Pressable>
+                                                </View>
+                                                <View style={styles.noticeBox}>
+                                                    <Icon name="specs" size={14} color="#b45309" />
+                                                    <Text style={styles.noticeText}>
+                                                        {t("panels.wizard.producerStubNotice")}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        )
+                                    ) : (
                                         <View style={{ gap: 8 }}>
                                             <FormInput
-                                                value={bevNewProducerName}
-                                                onChangeText={setBevNewProducerName}
-                                                placeholder={t("panels.wizard.producerNewPlaceholder")}
+                                                value={producerQuery}
+                                                onChangeText={setProducerQuery}
+                                                placeholder={t("panels.wizard.producerUnifiedPlaceholder")}
                                             />
-                                            <View style={styles.noticeBox}>
-                                                <Icon name="specs" size={14} color="#b45309" />
-                                                <Text style={styles.noticeText}>
-                                                    {t("panels.wizard.producerStubNotice")}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    ) : (
-                                        <View style={styles.chipsWrap}>
-                                            {producers.length === 0 ? (
-                                                <Text style={styles.emptyNotice}>{t("beverage.edit.noProducers")}</Text>
-                                            ) : (
-                                                producers.map((prod) => {
-                                                    const selected = bevProducerId === prod.id
-                                                    return (
+
+                                            <View style={styles.suggestionsBox}>
+                                                {isSearchingUser && (
+                                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, paddingHorizontal: 8 }}>
+                                                        <ActivityIndicator size="small" color={palette.accent} />
+                                                        <Text style={{ fontSize: 11, color: palette.textFaint }}>
+                                                            {t("panels.wizard.producerSearching")}
+                                                        </Text>
+                                                    </View>
+                                                )}
+
+                                                {/* Winemaker User Match */}
+                                                {foundUser && (
+                                                    <View style={{ gap: 4 }}>
+                                                        <Text style={styles.sectionHeader}>
+                                                            {t("panels.wizard.producerSectionAccount")}
+                                                        </Text>
                                                         <Pressable
-                                                            key={prod.id}
                                                             accessibilityRole="button"
                                                             onPress={() => {
                                                                 Haptics.selectionAsync()
-                                                                setBevProducerId(selected ? "" : prod.id)
+                                                                setSelectedProducer({
+                                                                    type: "account",
+                                                                    auid: foundUser.auid,
+                                                                    username: foundUser.username,
+                                                                    displayName: foundUser.displayName,
+                                                                })
+                                                                setProducerQuery("")
                                                             }}
-                                                            style={[styles.chip, selected && styles.chipChosen]}
+                                                            style={({ pressed }) => [styles.suggestionItem, pressed && styles.suggestionItemPressed]}
                                                         >
-                                                            <Text style={[styles.chipLabel, selected && styles.chipLabelChosen]}>
-                                                                {prod.name}
-                                                                {prod.claimStatus === "UNCLAIMED" ? ` (${t("panels.wizard.producerCatalogBadge")})` : ""}
-                                                            </Text>
+                                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                                                                <Icon name="person" size={16} color={palette.accent} />
+                                                                <View style={{ flex: 1 }}>
+                                                                    <Text style={styles.suggestionTitle} numberOfLines={1}>
+                                                                        {foundUser.displayName}
+                                                                    </Text>
+                                                                    <Text style={styles.suggestionSubtitle}>
+                                                                        @{foundUser.username}
+                                                                    </Text>
+                                                                </View>
+                                                            </View>
+                                                            <View style={styles.badge}>
+                                                                <Text style={styles.badgeText}>
+                                                                    {t("panels.wizard.producerAccountBadge")}
+                                                                </Text>
+                                                            </View>
                                                         </Pressable>
-                                                    )
-                                                })
-                                            )}
+                                                    </View>
+                                                )}
+
+                                                {/* Catalog Matches */}
+                                                {matchingCatalogProducers.length > 0 && (
+                                                    <View style={{ gap: 4 }}>
+                                                        <Text style={styles.sectionHeader}>
+                                                            {t("panels.wizard.producerSectionCatalog")}
+                                                        </Text>
+                                                        {matchingCatalogProducers.map((prod) => (
+                                                            <Pressable
+                                                                key={prod.id}
+                                                                accessibilityRole="button"
+                                                                onPress={() => {
+                                                                    Haptics.selectionAsync()
+                                                                    setSelectedProducer({
+                                                                        type: "catalog",
+                                                                        id: prod.id,
+                                                                        name: prod.name,
+                                                                        claimStatus: prod.claimStatus,
+                                                                    })
+                                                                    setProducerQuery("")
+                                                                }}
+                                                                style={({ pressed }) => [styles.suggestionItem, pressed && styles.suggestionItemPressed]}
+                                                            >
+                                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                                                                    <Icon name="beverage" size={16} color={palette.textMuted} />
+                                                                    <Text style={styles.suggestionTitle} numberOfLines={1}>
+                                                                        {prod.name}
+                                                                    </Text>
+                                                                </View>
+                                                                {prod.claimStatus === "UNCLAIMED" && (
+                                                                    <View style={[styles.badge, styles.badgeCatalog]}>
+                                                                        <Text style={[styles.badgeText, styles.badgeTextCatalog]}>
+                                                                            {t("panels.wizard.producerCatalogBadge")}
+                                                                        </Text>
+                                                                    </View>
+                                                                )}
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
+                                                )}
+
+                                                {/* Option to create new */}
+                                                {producerQuery.trim() && !matchingCatalogProducers.some((p) => p.name.toLowerCase() === producerQuery.trim().toLowerCase()) && (
+                                                    <Pressable
+                                                        accessibilityRole="button"
+                                                        onPress={() => {
+                                                            Haptics.selectionAsync()
+                                                            setSelectedProducer({
+                                                                type: "new",
+                                                                name: producerQuery.trim(),
+                                                            })
+                                                            setProducerQuery("")
+                                                        }}
+                                                        style={({ pressed }) => [styles.suggestionItem, pressed && styles.suggestionItemPressed, { borderTopWidth: 1, borderTopColor: palette.borderSoft, paddingTop: 8 }]}
+                                                    >
+                                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                                                            <Icon name="plus" size={16} color={palette.accent} />
+                                                            <Text style={[styles.suggestionTitle, { color: palette.accent }]} numberOfLines={1}>
+                                                                {t("panels.wizard.producerCreateNew", { name: producerQuery.trim() })}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={[styles.badge, styles.badgeNew]}>
+                                                            <Text style={[styles.badgeText, styles.badgeTextNew]}>
+                                                                {t("panels.wizard.producerNewBadge")}
+                                                            </Text>
+                                                        </View>
+                                                    </Pressable>
+                                                )}
+
+                                                {!foundUser && matchingCatalogProducers.length === 0 && !producerQuery.trim() && (
+                                                    <Text style={styles.emptyNotice}>
+                                                        {t("panels.wizard.producerUnifiedPlaceholder")}
+                                                    </Text>
+                                                )}
+                                            </View>
                                         </View>
                                     )}
                                 </View>
@@ -1478,4 +1719,77 @@ const styles = StyleSheet.create({
     sectionHeader: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase", color: palette.textFaint },
     loadingBox: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16 },
     loadingText: { fontSize: 12, color: palette.textFaint },
+    selectedCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+        padding: 12,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: palette.accentBorder,
+        backgroundColor: "rgba(238, 242, 255, 0.5)",
+    },
+    selectedCardCatalog: {
+        borderColor: palette.border,
+        backgroundColor: palette.background,
+    },
+    selectedCardNew: {
+        borderColor: "#fde68a",
+        backgroundColor: "#fffbeb",
+    },
+    badge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: radius.pill,
+        backgroundColor: palette.accent,
+    },
+    badgeText: {
+        fontSize: 9,
+        fontWeight: "700",
+        color: palette.onAccent,
+        textTransform: "uppercase",
+    },
+    badgeCatalog: {
+        backgroundColor: palette.border,
+    },
+    badgeTextCatalog: {
+        color: palette.textMuted,
+    },
+    badgeNew: {
+        backgroundColor: "#f59e0b",
+    },
+    badgeTextNew: {
+        color: "#fff",
+    },
+    suggestionsBox: {
+        gap: 6,
+        padding: 8,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: palette.borderSoft,
+        backgroundColor: palette.surface,
+    },
+    suggestionItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        borderRadius: radius.sm,
+    },
+    suggestionItemPressed: {
+        backgroundColor: palette.background,
+    },
+    suggestionTitle: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: palette.heading,
+    },
+    suggestionSubtitle: {
+        fontSize: 11,
+        color: palette.accent,
+        fontWeight: "600",
+    },
 })

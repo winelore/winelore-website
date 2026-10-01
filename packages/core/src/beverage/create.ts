@@ -176,6 +176,7 @@ export interface NewBeverage {
     typeId: string
     role: ProducerRoleChoice
     producerId?: string
+    producerAuid?: number
     attributes?: Record<string, string>
     origin?: { latitude: number; longitude: number } | null
 }
@@ -190,9 +191,11 @@ export function beverageCreateInput(beverage: NewBeverage, actor: string): Recor
     const input: Record<string, any> = {
         name: beverage.name.trim(),
         typeId: beverage.typeId,
-        producers: producerId
-            ? [{ producerId, role }]
-            : [{ auid: Number.isNaN(auid) ? undefined : [auid], role }],
+        producers: beverage.producerAuid
+            ? [{ auid: [beverage.producerAuid], role }]
+            : producerId
+                ? [{ producerId, role }]
+                : [{ auid: Number.isNaN(auid) ? undefined : [auid], role }],
     }
     const attributes = { ...(beverage.attributes || {}) }
     if (Object.keys(attributes).length > 0) input.attributes = attributes
