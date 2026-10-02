@@ -263,6 +263,34 @@ export async function getBeverageTypeId(beverageId: string, auid: string): Promi
     }
 }
 
+export async function loadBeveragesByProducer(
+    input: { producerAuid?: number; producerId?: string },
+    auid: string,
+): Promise<Array<{ id: string; name: string; typeId: string }>> {
+    try {
+        let filter: any = {}
+        if (input.producerAuid) {
+            filter.producers = [[input.producerAuid]]
+        } else if (input.producerId) {
+            filter.producerIds = [input.producerId]
+        } else {
+            return []
+        }
+        const data = await fetchGraphQLRaw<any>(
+            `query GetBeveragesByProducer($filter: BeverageFilterInput, $limit: Int) {
+                beverages(filter: $filter, limit: $limit) {
+                    items { id name typeId status }
+                }
+            }`,
+            { filter, limit: 20 },
+            actor(auid),
+        )
+        return data?.beverages?.items || []
+    } catch {
+        return []
+    }
+}
+
 export async function createBeverageForPanel(
     beverage: NewBeverage,
     auid: string,

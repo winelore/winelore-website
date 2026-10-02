@@ -718,6 +718,13 @@ const sk: TranslationKey = {
             producerSearching: "Vyhľadávanie vinárov...",
             producerNotFound: "Nenašli sa žiadni vinári ani vinárstva",
             producerChange: "Zmeniť",
+            createBeverageNamed: "Vytvoriť nápoj „{{name}}“",
+            createBeveragePrompt: "Nenašli ste nápoj? Vytvorte nový",
+            existingBeveragesForProducer: "Existujúce nápoje tohto vinára",
+            useExistingBeverage: "Vybrať tento nápoj",
+            existingBatchesPrompt: "Existujúce šarže tohto nápoja",
+            createBatchPrompt: "Vytvoriť novú šaržu",
+            createSamplePrompt: "Vytvoriť novú vzorku",
         },
     },
     evaluation: {

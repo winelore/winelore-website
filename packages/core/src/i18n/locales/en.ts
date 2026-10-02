@@ -716,6 +716,13 @@ const en = {
       producerSearching: "Searching winemakers...",
       producerNotFound: "No winemakers or wineries found",
       producerChange: "Change",
+      createBeverageNamed: "Create beverage \"{{name}}\"",
+      createBeveragePrompt: "Didn't find the beverage? Create new",
+      existingBeveragesForProducer: "Existing beverages for this winemaker",
+      useExistingBeverage: "Select this beverage",
+      existingBatchesPrompt: "Existing batches for this beverage",
+      createBatchPrompt: "Create a new batch",
+      createSamplePrompt: "Create a new sample",
     },
   },
   evaluation: {

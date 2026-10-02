@@ -29,6 +29,8 @@ import { Icon, type IconName } from "../ui/Icon"
 import { PressableSurface } from "../ui/Pressable"
 import { FormInput } from "../ui/Form"
 import { CharacteristicFields } from "../beverage/CharacteristicFields"
+import { HolderAvatar } from "../competition/parts"
+import { useAvatarUrls } from "../users/useAvatarUrls"
 import {
     batchesPage,
     beveragesPage,
@@ -41,6 +43,7 @@ import {
     createBeverageForPanel,
     createBatchForPanel,
     createSampleForPanel,
+    loadBeveragesByProducer,
 } from "./mutations"
 
 interface CandidateWizardSheetProps {
@@ -136,6 +139,16 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
     const [isLoadingBevChars, setIsLoadingBevChars] = useState(false)
     const [isCreatingBev, setIsCreatingBev] = useState(false)
     const [bevError, setBevError] = useState<string | null>(null)
+    const [producerBeverages, setProducerBeverages] = useState<Array<{ id: string; name: string; typeId?: string }>>([])
+    const [isLoadingProducerBeverages, setIsLoadingProducerBeverages] = useState(false)
+
+    const relevantAuids = useMemo(() => {
+        const ids: string[] = []
+        if (foundUser?.auid) ids.push(String(foundUser.auid))
+        if (selectedProducer?.type === "account") ids.push(String(selectedProducer.auid))
+        return ids
+    }, [foundUser?.auid, selectedProducer])
+    const avatarUrls = useAvatarUrls(relevantAuids)
 
     // Create Batch State
     const [batchLotNumber, setBatchLotNumber] = useState("")
@@ -174,7 +187,8 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
         setBevTypeId("")
         setSelectedProducer(null)
         setProducerQuery("")
-        setFoundAxusUser(null)
+        setFoundUser(null)
+        setProducerBeverages([])
         setBevRole("MAKER")
         setBevAttributes({})
         setBevError(null)
@@ -273,6 +287,46 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
         }, 300)
         return () => clearTimeout(timer)
     }, [producerQuery])
+
+    // Proactively fetch existing beverages for chosen producer
+    useEffect(() => {
+        if (!selectedProducer) {
+            setProducerBeverages([])
+            return
+        }
+        let active = true
+        setIsLoadingProducerBeverages(true)
+        const input =
+            selectedProducer.type === "account"
+                ? { producerAuid: selectedProducer.auid }
+                : selectedProducer.type === "catalog"
+                ? { producerId: selectedProducer.id }
+                : {}
+        if (!input.producerAuid && !input.producerId) {
+            setProducerBeverages([])
+            setIsLoadingProducerBeverages(false)
+            return
+        }
+        loadBeveragesByProducer(input, auid)
+            .then((items) => {
+                if (active) setProducerBeverages(items || [])
+            })
+            .catch(() => {
+                if (active) setProducerBeverages([])
+            })
+            .finally(() => {
+                if (active) setIsLoadingProducerBeverages(false)
+            })
+        return () => {
+            active = false
+        }
+    }, [selectedProducer, auid])
+
+    const matchingProducerBeverages = useMemo(() => {
+        if (!bevName.trim() || producerBeverages.length === 0) return []
+        const q = bevName.trim().toLowerCase()
+        return producerBeverages.filter((b) => b.name.toLowerCase().includes(q))
+    }, [bevName, producerBeverages])
 
     // Load batch characteristics when switching to batch create mode
     useEffect(() => {
@@ -601,11 +655,37 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                                         <Text style={styles.actionButtonLabel}>{t("panels.wizard.createBeverageBtn")}</Text>
                                     </Pressable>
                                 </View>
+                                {debounced.trim() && beverages.items.length > 0 && (
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        onPress={() => {
+                                            setBevName(debounced.trim())
+                                            setBeverageMode("create")
+                                        }}
+                                        style={styles.inlineCreatePrompt}
+                                    >
+                                        <Icon name="plus" size={12} color={palette.accent} weight="bold" />
+                                        <Text style={styles.inlineCreatePromptText}>
+                                            {t("panels.wizard.createBeverageNamed", { name: debounced.trim() })}
+                                        </Text>
+                                    </Pressable>
+                                )}
                                 <ChoiceList
                                     items={beverages.items}
                                     loading={beverages.loading}
                                     loadingLabel={t("panels.wizard.loadingBeverages")}
                                     emptyTitle={debounced.trim() ? t("panels.wizard.noBeveragesFound") : t("panels.wizard.noBeveragesAvailable")}
+                                    emptyAction={
+                                        debounced.trim()
+                                            ? {
+                                                  label: t("panels.wizard.createBeverageNamed", { name: debounced.trim() }),
+                                                  onPress: () => {
+                                                      setBevName(debounced.trim())
+                                                      setBeverageMode("create")
+                                                  },
+                                              }
+                                            : undefined
+                                    }
                                     onEndReached={beverages.loadMore}
                                     render={(item) => ({ key: item.id, icon: "beverage", title: item.name, selected: beverage?.id === item.id })}
                                     onChoose={chooseBeverage}
@@ -628,54 +708,12 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                                     </Pressable>
                                 </View>
 
-                                {/* Beverage Name */}
-                                <View style={styles.field}>
-                                    <Text style={styles.fieldLabel}>
-                                        {t("panels.wizard.beverageNameLabel")} <Text style={styles.required}>*</Text>
-                                    </Text>
-                                    <FormInput
-                                        value={bevName}
-                                        onChangeText={setBevName}
-                                        placeholder={t("panels.wizard.beverageNamePlaceholder")}
-                                        autoFocus
-                                    />
-                                </View>
-
-                                {/* Beverage Type */}
-                                <View style={styles.field}>
-                                    <Text style={styles.fieldLabel}>
-                                        {t("panels.wizard.beverageTypeLabel")} <Text style={styles.required}>*</Text>
-                                    </Text>
-                                    {isLoadingMeta ? (
-                                        <ActivityIndicator color={palette.accent} />
-                                    ) : (
-                                        <View style={styles.chipsWrap}>
-                                            {beverageTypes.map((type) => {
-                                                const selected = bevTypeId === type.id
-                                                return (
-                                                    <Pressable
-                                                        key={type.id}
-                                                        accessibilityRole="button"
-                                                        onPress={() => {
-                                                            Haptics.selectionAsync()
-                                                            setBevTypeId(type.id)
-                                                        }}
-                                                        style={[styles.chip, selected && styles.chipChosen]}
-                                                    >
-                                                        <Text style={[styles.chipLabel, selected && styles.chipLabelChosen]}>
-                                                            {formatBeverageType(type.code) || type.name}
-                                                        </Text>
-                                                    </Pressable>
-                                                )
-                                            })}
-                                        </View>
-                                    )}
-                                </View>
-
                                 {/* Producer / Winery */}
                                 <View style={styles.field}>
                                     <View style={styles.labelRow}>
-                                        <Text style={styles.fieldLabel}>{t("panels.wizard.producerLabel")}</Text>
+                                        <Text style={styles.fieldLabel}>
+                                            {t("panels.wizard.producerLabel")} <Text style={styles.required}>*</Text>
+                                        </Text>
                                         {selectedProducer && (
                                             <Pressable
                                                 accessibilityRole="button"
@@ -694,7 +732,12 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                                         selectedProducer.type === "account" ? (
                                             <View style={styles.selectedCard}>
                                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-                                                    <Icon name="person" size={18} color={palette.accent} />
+                                                    <HolderAvatar
+                                                        auid={selectedProducer.auid}
+                                                        username={selectedProducer.displayName || selectedProducer.username}
+                                                        size={32}
+                                                        imageUrl={avatarUrls[String(selectedProducer.auid)]}
+                                                    />
                                                     <View style={{ flex: 1 }}>
                                                         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                                                             <Text style={styles.choiceTitle} numberOfLines={1}>
@@ -792,6 +835,11 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                                                 value={producerQuery}
                                                 onChangeText={setProducerQuery}
                                                 placeholder={t("panels.wizard.producerUnifiedPlaceholder")}
+                                                autoComplete="off"
+                                                textContentType="none"
+                                                importantForAutofill="no"
+                                                autoCapitalize="none"
+                                                autoCorrect={false}
                                             />
 
                                             <View style={styles.suggestionsBox}>
@@ -825,7 +873,12 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                                                             style={({ pressed }) => [styles.suggestionItem, pressed && styles.suggestionItemPressed]}
                                                         >
                                                             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-                                                                <Icon name="person" size={16} color={palette.accent} />
+                                                                <HolderAvatar
+                                                                    auid={foundUser.auid}
+                                                                    username={foundUser.displayName || foundUser.username}
+                                                                    size={28}
+                                                                    imageUrl={avatarUrls[String(foundUser.auid)]}
+                                                                />
                                                                 <View style={{ flex: 1 }}>
                                                                     <Text style={styles.suggestionTitle} numberOfLines={1}>
                                                                         {foundUser.displayName}
@@ -918,6 +971,101 @@ export function CandidateWizardSheet({ visible, panelName, auid, onClose, onAdd 
                                                     </Text>
                                                 )}
                                             </View>
+                                        </View>
+                                    )}
+
+                                    {/* Proactive Producer Beverages if a producer is selected */}
+                                    {selectedProducer && (
+                                        isLoadingProducerBeverages ? (
+                                            <View style={styles.loadingBox}>
+                                                <ActivityIndicator size="small" color={palette.accent} />
+                                                <Text style={styles.loadingText}>{t("common.loading")}</Text>
+                                            </View>
+                                        ) : producerBeverages.length > 0 ? (
+                                            <View style={styles.proactiveCard}>
+                                                <View style={styles.proactiveHeader}>
+                                                    <Text style={styles.proactiveTitle}>
+                                                        {t("panels.wizard.existingBeveragesForProducer")} ({producerBeverages.length})
+                                                    </Text>
+                                                    <Text style={styles.proactiveHint}>
+                                                        {t("panels.wizard.useExistingBeverage")}
+                                                    </Text>
+                                                </View>
+                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                                                    {producerBeverages.map((bev) => (
+                                                        <Pressable
+                                                            key={bev.id}
+                                                            accessibilityRole="button"
+                                                            onPress={() => chooseBeverage(bev)}
+                                                            style={styles.proactiveChip}
+                                                        >
+                                                            <Icon name="beverage" size={12} color={palette.accent} />
+                                                            <Text style={styles.proactiveChipText} numberOfLines={1}>{bev.name}</Text>
+                                                        </Pressable>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        ) : null
+                                    )}
+                                </View>
+
+                                {/* Beverage Name */}
+                                <View style={styles.field}>
+                                    <Text style={styles.fieldLabel}>
+                                        {t("panels.wizard.beverageNameLabel")} <Text style={styles.required}>*</Text>
+                                    </Text>
+                                    <FormInput
+                                        value={bevName}
+                                        onChangeText={setBevName}
+                                        placeholder={t("panels.wizard.beverageNamePlaceholder")}
+                                    />
+                                    {matchingProducerBeverages.length > 0 && (
+                                        <View style={styles.inlineSuggestion}>
+                                            <Text style={styles.inlineSuggestionLabel}>
+                                                {t("panels.wizard.existingBeveragesForProducer")}:
+                                            </Text>
+                                            {matchingProducerBeverages.map((bev) => (
+                                                <Pressable
+                                                    key={bev.id}
+                                                    accessibilityRole="button"
+                                                    onPress={() => chooseBeverage(bev)}
+                                                    style={styles.inlineChip}
+                                                >
+                                                    <Text style={styles.inlineChipText}>{bev.name}</Text>
+                                                    <Icon name="chevron" size={10} color="#b45309" weight="bold" />
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Beverage Type */}
+                                <View style={styles.field}>
+                                    <Text style={styles.fieldLabel}>
+                                        {t("panels.wizard.beverageTypeLabel")} <Text style={styles.required}>*</Text>
+                                    </Text>
+                                    {isLoadingMeta ? (
+                                        <ActivityIndicator color={palette.accent} />
+                                    ) : (
+                                        <View style={styles.chipsWrap}>
+                                            {beverageTypes.map((type) => {
+                                                const selected = bevTypeId === type.id
+                                                return (
+                                                    <Pressable
+                                                        key={type.id}
+                                                        accessibilityRole="button"
+                                                        onPress={() => {
+                                                            Haptics.selectionAsync()
+                                                            setBevTypeId(type.id)
+                                                        }}
+                                                        style={[styles.chip, selected && styles.chipChosen]}
+                                                    >
+                                                        <Text style={[styles.chipLabel, selected && styles.chipLabelChosen]}>
+                                                            {formatBeverageType(type.code) || type.name}
+                                                        </Text>
+                                                    </Pressable>
+                                                )
+                                            })}
                                         </View>
                                     )}
                                 </View>
@@ -1430,6 +1578,7 @@ function ChoiceList<T>({
     loadingLabel,
     emptyTitle,
     emptyBody,
+    emptyAction,
     onEndReached,
     render,
     onChoose,
@@ -1439,6 +1588,7 @@ function ChoiceList<T>({
     loadingLabel: string
     emptyTitle: string
     emptyBody?: string
+    emptyAction?: { label: string; onPress: () => void }
     onEndReached: () => void
     render: (item: T) => { key: string; icon: IconName; title: string; detail?: string; mono?: boolean; selected: boolean }
     onChoose: (item: T) => void
@@ -1458,6 +1608,16 @@ function ChoiceList<T>({
                     <View style={styles.empty}>
                         <Text style={styles.emptyTitle}>{emptyTitle}</Text>
                         {emptyBody ? <Text style={styles.emptyBody}>{emptyBody}</Text> : null}
+                        {emptyAction ? (
+                            <Pressable
+                                accessibilityRole="button"
+                                onPress={emptyAction.onPress}
+                                style={styles.createPromptBtn}
+                            >
+                                <Icon name="plus" size={14} color={palette.accent} weight="bold" />
+                                <Text style={styles.createPromptText}>{emptyAction.label}</Text>
+                            </Pressable>
+                        ) : null}
                     </View>
                 )
             }
@@ -1791,5 +1951,105 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: palette.accent,
         fontWeight: "600",
+    },
+    proactiveCard: {
+        padding: 10,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: "rgba(99, 102, 241, 0.2)",
+        backgroundColor: "rgba(238, 242, 255, 0.5)",
+        gap: 8,
+    },
+    proactiveHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    proactiveTitle: {
+        fontSize: 11,
+        fontWeight: "700",
+        color: palette.heading,
+    },
+    proactiveHint: {
+        fontSize: 10,
+        color: palette.accent,
+        fontWeight: "600",
+    },
+    proactiveChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: radius.pill,
+        borderWidth: 1,
+        borderColor: palette.border,
+        backgroundColor: palette.surface,
+    },
+    proactiveChipText: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: palette.heading,
+        maxWidth: 160,
+    },
+    inlineSuggestion: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 6,
+        marginTop: 4,
+    },
+    inlineSuggestionLabel: {
+        fontSize: 11,
+        fontWeight: "600",
+        color: "#b45309",
+    },
+    inlineChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: radius.sm,
+        backgroundColor: "#fef3c7",
+        borderWidth: 1,
+        borderColor: "#fde68a",
+    },
+    inlineChipText: {
+        fontSize: 11,
+        fontWeight: "600",
+        color: "#92400e",
+    },
+    createPromptBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        padding: 12,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: palette.accentBorder,
+        backgroundColor: palette.accentSoft,
+        marginTop: 8,
+    },
+    createPromptText: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: palette.accent,
+    },
+    inlineCreatePrompt: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: radius.md,
+        backgroundColor: palette.accentSoft,
+        borderWidth: 1,
+        borderColor: palette.accentBorder,
+    },
+    inlineCreatePromptText: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: palette.accent,
     },
 })
