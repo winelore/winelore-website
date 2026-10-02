@@ -29,6 +29,9 @@ import { PropertyInput } from "./PropertyInput"
 import { SubmitBar } from "./SubmitBar"
 import { useVoiceRecorder, type VoiceRecording } from "./useVoiceRecorder"
 import { palette, radius, spacing, type } from "../theme"
+import { useAITastingSuggestions } from "./useAITastingSuggestions"
+import { AISuggestionsSkeleton } from "./AISuggestionsSkeleton"
+import { AISuggestionChips } from "./AISuggestionChips"
 
 export interface EvaluationScreenLabels {
     yes: string
@@ -80,84 +83,27 @@ export function EvaluationScreen({
     const form = useEvaluationForm(categories, candidateId)
     const voice = useVoiceRecorder()
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [isGeneratingAI, setIsGeneratingAI] = useState(false)
     const [aiError, setAiError] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    const handleGenerateAIComment = useCallback(async () => {
-        if (isGeneratingAI || !form.scoringComplete) return
-        setIsGeneratingAI(true)
-        setAiError(null)
-        try {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            const payload = buildTastingPayload({
-                categories,
-                values: form.values,
-                smartValues: form.smartValues,
-                locale,
-                beverageType: beverageName || "Wine",
-                candidateCode: candidateCode || undefined,
-                visibleAttributes,
-            })
-
-            const endpoint = `${getWebOrigin()}/api/generate-comment`
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            })
-
-            if (!response.ok) {
-                const errJson = await response.json().catch(() => ({}))
-                throw new Error(errJson.error || labels.aiDraftFailed)
-            }
-
-            // The web form streams the draft token-by-token; React Native's
-            // fetch may not expose a reader, so stream when available and
-            // fall back to reading the whole body as text.
-            const bodyWithReader = response.body as unknown as {
-                getReader?: () => { read(): Promise<{ done: boolean; value?: Uint8Array }> }
-            } | null
-            const reader = bodyWithReader?.getReader?.()
-            if (reader) {
-                const decoder = new TextDecoder()
-                let accumulated = ""
-                form.setComment(GENERAL_COMMENT_KEY, "")
-                while (true) {
-                    const { done, value } = await reader.read()
-                    if (done) break
-                    if (value) {
-                        accumulated += decoder.decode(value, { stream: true })
-                        form.setComment(GENERAL_COMMENT_KEY, accumulated)
-                    }
-                }
-                if (accumulated) {
-                    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-                }
-            } else {
-                const text = await response.text()
-                if (text) {
-                    form.setComment(GENERAL_COMMENT_KEY, text)
-                    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-                }
-            }
-        } catch (err) {
-            const message = err instanceof Error ? err.message : labels.aiDraftFailed
-            setAiError(message)
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-        } finally {
-            setIsGeneratingAI(false)
-        }
-    }, [
+    const {
+        aiSuggestions,
+        selectedSuggestionIndex,
         isGeneratingAI,
-        form,
+        handleSelectSuggestion,
+    } = useAITastingSuggestions({
         categories,
+        values: form.values,
+        smartValues: form.smartValues,
         locale,
-        beverageName,
         candidateCode,
+        beverageName,
         visibleAttributes,
-        labels.aiDraftFailed,
-    ])
+        isAllRequiredScoresFilled: form.scoringComplete,
+        currentComment: form.comments[GENERAL_COMMENT_KEY] ?? "",
+        onSelectSuggestion: (text) => form.setComment(GENERAL_COMMENT_KEY, text),
+        fallbackErrorMessage: labels.aiDraftFailed,
+    })
 
     /**
      * The drafts as core reads them: text and recording under one key per
@@ -274,44 +220,23 @@ export function EvaluationScreen({
                 ))}
 
                 <View style={styles.category}>
-                    <View style={styles.commentHeaderRow}>
+                    <View style={styles.category}>
                         <Text style={styles.categoryName}>{t("evaluation.generalCommentLabel")}</Text>
-                        <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={
-                                form.scoringComplete ? labels.aiGenerateDraft : labels.aiScoreAllRequired
-                            }
-                            accessibilityHint={
-                                form.scoringComplete ? undefined : labels.aiScoreAllRequired
-                            }
-                            disabled={isGeneratingAI || !form.scoringComplete}
-                            onPress={handleGenerateAIComment}
-                            style={({ pressed }) => [
-                                styles.aiButton,
-                                (!form.scoringComplete || isGeneratingAI) && styles.aiButtonDisabled,
-                                pressed && styles.pressed,
-                            ]}
-                        >
-                            {isGeneratingAI ? (
-                                <ActivityIndicator size="small" color={palette.accent} />
-                            ) : (
-                                <Icon
-                                    name="wand"
-                                    size={14}
-                                    color={form.scoringComplete ? palette.accent : palette.textFaint}
-                                />
-                            )}
-                            <Text
-                                style={[
-                                    styles.aiButtonText,
-                                    (!form.scoringComplete || isGeneratingAI) && styles.aiButtonTextDisabled,
-                                ]}
-                            >
-                                {isGeneratingAI ? labels.aiGenerating : labels.aiGenerateDraft}
-                            </Text>
-                        </Pressable>
+
+                        {/* AI Loading Skeleton */}
+                        {isGeneratingAI ? <AISuggestionsSkeleton /> : null}
+
+                        {/* AI Suggestion Chips */}
+                        {!isGeneratingAI && aiSuggestions.length > 0 ? (
+                            <AISuggestionChips
+                                suggestions={aiSuggestions}
+                                selectedIndex={selectedSuggestionIndex}
+                                onSelect={handleSelectSuggestion}
+                            />
+                        ) : null}
+
+                        {commentFieldFor(GENERAL_COMMENT_KEY, t("evaluation.generalCommentPlaceholder"))}
                     </View>
-                    {commentFieldFor(GENERAL_COMMENT_KEY, t("evaluation.generalCommentPlaceholder"))}
                     {aiError ? <Text style={styles.aiErrorText}>{aiError}</Text> : null}
                 </View>
 
