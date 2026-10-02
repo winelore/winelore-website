@@ -91,6 +91,11 @@ export type CoordinatesInput = {
   longitude: number;
 };
 
+export type CountriesType =
+  | 'GLOBAL'
+  | 'NOT_SPECIFIED'
+  | 'SPECIFIC';
+
 export type CreateBatchInput = {
   attributes?: unknown;
   beverageId: string | number;
@@ -851,6 +856,15 @@ export type GetMyBeveragesQueryVariables = Exact<{
 
 
 export type GetMyBeveragesQuery = { beverageCount: number, beverages: { items: Array<{ id: string, name: string, status: BeverageStatus, typeId: string, attributes: unknown, producers: Array<{ id: string, auid: Array<number> | null, producerId: string | null, role: ProducerRole }>, origin: { latitude: number, longitude: number } | null }> } };
+
+export type GetMyCompetitionSeriesQueryVariables = Exact<{
+  limit?: number | null | undefined;
+  offset?: number | null | undefined;
+  cursor?: string | number | null | undefined;
+}>;
+
+export type GetMyCompetitionSeriesQuery = { competitionSeriesList: { items: Array<{ id: string, name: string, status: CompetitionSeriesStatus, countriesType: CountriesType, countriesCodes: Array<string> | null, owners: Array<Array<number>>, createdAt: string }> } };
+
 
 export type GetMyCompetitionsQueryVariables = Exact<{
   limit?: number | null | undefined;

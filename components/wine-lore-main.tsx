@@ -1,7 +1,7 @@
 "use client"
 
 import type { LucideIcon } from "lucide-react"
-import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Activity, ScrollText } from "lucide-react"
+import { User, CircleUser, LogOut, Wine, Trophy, ListTodo, ExternalLink, Activity, ScrollText, Layers } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -11,12 +11,13 @@ import { BadgeCheck } from "lucide-react"
 import { AxusAvatar } from "@/components/AxusAvatar"
 import { useCurrentUserAvatar } from "@/hooks/useAvatars"
 
-// These five are the only routes in the menu with no dedicated tab in
+// These routes in the menu with no dedicated tab in
 // AppHeader, so this menu (and its mobile counterpart, the profile sheet) is
 // the one place that can show which of them is current.
 export const PERSONAL_LINKS: { href: string; labelKey: MessageKey; icon: LucideIcon }[] = [
   { href: "/myCommissions", labelKey: "common.myCommissions", icon: Activity },
   { href: "/myCompetitions", labelKey: "common.myCompetitions", icon: Trophy },
+  { href: "/myCompetitionSeries", labelKey: "common.myCompetitionSeries", icon: Layers },
   { href: "/myBeverages", labelKey: "common.myBeverages", icon: Wine },
   { href: "/myTemplates", labelKey: "common.myTemplates", icon: ListTodo },
   { href: "/myOutcomePolicies", labelKey: "common.myOutcomePolicies", icon: ScrollText },

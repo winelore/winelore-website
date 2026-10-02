@@ -30,6 +30,7 @@ const config: CodegenConfig = {
     generates: {
         './src/gql/schema.graphql': {
             schema: schemaUrl,
+            plugins: ['schema-ast'],
         },
         './packages/core/src/gql/': {
             schema: schemaUrl,
