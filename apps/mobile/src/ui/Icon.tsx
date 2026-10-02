@@ -82,6 +82,9 @@ const GLYPHS = {
     alert: { ios: "exclamationmark.circle", android: "error" }, // AlertCircle
     calendar: { ios: "calendar", android: "calendar_today" }, // Calendar
     tag: { ios: "tag", android: "sell" }, // Tag
+    chat: { ios: "message.fill", android: "chat" }, // MessageSquare / Telegram Bubble
+    discussion: { ios: "bubble.left.and.bubble.right.fill", android: "forum" }, // Dual Bubbles
+    reply: { ios: "arrowshape.turn.up.left.fill", android: "reply" }, // Reply arrow
 } as const satisfies Record<string, Extract<SymbolViewProps["name"], object>> &
     Record<StatusGlyph, Extract<SymbolViewProps["name"], object>>
 
