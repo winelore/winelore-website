@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useCallback } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { usePathname, useRouter } from "next/navigation"
@@ -33,6 +33,7 @@ import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
 import { useUsernames } from "@/hooks/useUsernames"
 import { useEvaluationLiveUpdates } from "@/hooks/useEvaluationLiveUpdates"
+import { useCompetitionResultsData } from "@/hooks/useCompetitionResultsData"
 import { MemberEvaluationSection } from "@/app/commission/EvaluationCommentsDisplay"
 import { formatPropertyScoreValue, formatSignedDiff } from '@winelore/core';
 import type { CompetitionPageData } from '@winelore/core/competition'
@@ -53,7 +54,6 @@ import { getCompetitionExportDataAction } from "../export/actions"
 import {
     downloadCompetitionResultsXlsx,
     buildCompetitionResultsCsv,
-    type CompetitionExportContext,
 } from "../export/exportCompetitionResults"
 import { downloadCsv } from "@/app/commission/[id]/results/exportResults"
 import {
@@ -87,17 +87,19 @@ export default function CompetitionResultsClientView({
     const [searchQuery, setSearchQuery] = useState("")
 
     // Data fetching and progress states
-    const [isLoadingData, setIsLoadingData] = useState(true)
-    const [loadingProgress, setLoadingProgress] = useState("")
     const [exportProgress, setExportProgress] = useState("")
     const [isExporting, setIsExporting] = useState(false)
-    const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null)
 
     // Expanded rows state for candidate details
     const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
 
-    // Aggregated export/results context state
-    const [allResultsContext, setAllResultsContext] = useState<CompetitionExportContext | null>(null)
+    const { allResultsContext, isLoadingData, lastRefreshedAt, refresh } = useCompetitionResultsData(
+        initialData,
+        locale,
+        getCompetitionExportDataAction,
+        (error) => toast.error(error instanceof Error ? error.message : "Failed to load competition results data"),
+    )
+    const loadingProgress = isLoadingData ? t("competition.preparingExport") : ""
 
     // Active Tab View
     const [activeTab, setActiveTab] = useState<ResultsTab>("overview")
@@ -137,64 +139,9 @@ export default function CompetitionResultsClientView({
     const resolvePersonName = (auidStr: string) =>
         resultPersonName(auidStr, usernames, t("commission.results.unknownProducer"))
 
-    // Load results data on server action call
-    const loadResultsData = useCallback(async (isBackgroundRefresh = false) => {
-        // Like the mobile results screen's focus gate: a hidden tab skips
-        // background refreshes; the next visible poll or SSE event catches up.
-        if (isBackgroundRefresh && typeof document !== "undefined" && document.hidden) return
-        if (!isBackgroundRefresh) {
-            setIsLoadingData(true)
-            setLoadingProgress(t("competition.preparingExport"))
-        }
-
-        try {
-            const targetCommissions = initialData.commissions.map((c) => ({
-                id: c.id,
-                name: c.name,
-                status: c.status,
-            }))
-
-            const context = await getCompetitionExportDataAction(
-                targetCommissions,
-                initialData.name,
-                locale
-            )
-
-            setAllResultsContext(context)
-            setLastRefreshedAt(new Date())
-        } catch (err: any) {
-            console.error("[results] Failed to load competition results:", err)
-            if (!isBackgroundRefresh) {
-                toast.error(err.message || "Failed to load competition results data")
-            }
-        } finally {
-            if (!isBackgroundRefresh) {
-                setIsLoadingData(false)
-                setLoadingProgress("")
-            }
-        }
-    }, [initialData.commissions, initialData.name, locale, t])
-
-    useEffect(() => {
-        void loadResultsData()
-    }, [loadResultsData])
-
-    // Live updates via SSE with a 3s fallback poll while the
-    // competition is still running — the same mechanism as the mobile results
-    // screen. No commissionId/replicaId scope: results aggregate every visible
-    // commission, so any evaluation, outcome, replica, or commission event
-    // refetches.
-    const refreshInFlightRef = React.useRef(false)
-    const handleLiveUpdate = useCallback(() => {
-        if (refreshInFlightRef.current) return
-        refreshInFlightRef.current = true
-        void loadResultsData(true).finally(() => {
-            refreshInFlightRef.current = false
-        })
-    }, [loadResultsData])
-
+    // Refresh live results in place, with a 3s fallback while tasting runs.
     useEvaluationLiveUpdates({
-        onUpdate: handleLiveUpdate,
+        onUpdate: refresh,
         enabled: initialData.status !== "COMPLETED",
     })
 

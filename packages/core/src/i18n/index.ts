@@ -3,7 +3,7 @@ import uk from "./locales/uk"
 import hu from "./locales/hu"
 import sk from "./locales/sk"
 import type { TranslationKey } from "./locales/en"
-import type { Locale } from "./types"
+import { LOCALES, SLOVAKIA_LOCALES, type Locale } from "./types"
 
 // Locale, LOCALES, LOCALE_LABELS, DEFAULT_LOCALE and LOCALE_COOKIE are part of
 // this module's public surface; consumers should not reach into ./types.
@@ -179,3 +179,86 @@ export function lookupBackendText(text: string, locale: Locale): string | null {
   const key = Object.keys(dictionary).find((candidate) => candidate.toLowerCase() === lower)
   return key ? dictionary[key] : null
 }
+
+/**
+ * Detects whether the user is probably in Hungary.
+ * Checked via country hint, Budapest timezone, or HU locale signals.
+ */
+export function isProbablyInHungary(countryHint?: string | null): boolean {
+  if (countryHint) {
+    const hint = countryHint.toUpperCase()
+    if (hint === "HU") return true
+    if (hint === "SK") return false
+  }
+
+  if (typeof window === "undefined") return false
+
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone?.toLowerCase()
+    if (tz === "europe/budapest") return true
+
+    if (typeof navigator !== "undefined") {
+      const languages = (navigator.languages && navigator.languages.length > 0)
+        ? navigator.languages
+        : [navigator.language].filter(Boolean)
+
+      const hasHuRegion = languages.some((l) => /[-_]HU\b/i.test(l))
+      const hasSkSignal = languages.some((l) => /^sk\b/i.test(l) || /[-_]SK\b/i.test(l))
+
+      if (hasHuRegion && !hasSkSignal && tz !== "europe/bratislava") {
+        return true
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  return false
+}
+
+/**
+ * Detects whether the user is probably in Slovakia (and NOT in Hungary).
+ * When true, Slovenčina and Magyar should be swapped so Slovenčina is higher.
+ */
+export function isProbablyInSlovakia(countryHint?: string | null): boolean {
+  if (countryHint) {
+    const hint = countryHint.toUpperCase()
+    if (hint === "SK") return true
+    if (hint === "HU") return false
+  }
+
+  if (isProbablyInHungary(countryHint)) return false
+
+  if (typeof window === "undefined") return false
+
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone?.toLowerCase()
+    if (tz === "europe/bratislava") return true
+
+    if (typeof navigator !== "undefined") {
+      const languages = (navigator.languages && navigator.languages.length > 0)
+        ? navigator.languages
+        : [navigator.language].filter(Boolean)
+
+      const hasSlovakiaSignal = languages.some((l) => {
+        const lower = l.toLowerCase()
+        return lower === "sk" || lower.startsWith("sk-") || lower.startsWith("sk_") || lower.endsWith("-sk") || lower.endsWith("_sk") || /[-_]sk\b/i.test(lower)
+      })
+
+      if (hasSlovakiaSignal) return true
+    }
+  } catch {
+    // fallback
+  }
+
+  return false
+}
+
+/**
+ * Returns the ordered list of locales.
+ * If in Slovakia (and not in Hungary), Slovenčina and Magyar are swapped so that Slovenčina is higher.
+ */
+export function getOrderedLocales(inSlovakia: boolean = false): Locale[] {
+  return inSlovakia ? SLOVAKIA_LOCALES : LOCALES
+}
+

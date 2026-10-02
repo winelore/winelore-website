@@ -15,7 +15,7 @@ import {
 import { AxusAvatar } from "@/components/AxusAvatar"
 import { useCurrentUserAvatar } from "@/hooks/useAvatars"
 import { useTranslation } from "@/lib/i18n/context"
-import { LOCALE_LABELS, LOCALES } from '@winelore/core/i18n/types'
+import { LOCALE_LABELS } from '@winelore/core/i18n/types'
 
 interface MobileProfileSheetProps {
     open: boolean
@@ -91,7 +91,7 @@ function IconTile({ children, tone = "indigo" }: { children: ReactNode; tone?: "
  * Also hosts the language switcher, which has no room in the mobile nav bar.
  */
 export function MobileProfileSheet({ open, onOpenChange, username }: MobileProfileSheetProps) {
-    const { t, locale, setLocale } = useTranslation()
+    const { t, locale, setLocale, locales } = useTranslation()
     const pathname = usePathname()
     const currentUserAvatar = useCurrentUserAvatar()
 
@@ -164,8 +164,8 @@ export function MobileProfileSheet({ open, onOpenChange, username }: MobileProfi
                             {t("common.language")}
                         </span>
                         {/* iOS segmented control */}
-                        <div role="radiogroup" aria-label={t("common.changeLanguage")} className="grid grid-cols-3 gap-1 rounded-xl bg-slate-200/70 p-1">
-                            {LOCALES.map((item) => {
+                        <div role="radiogroup" aria-label={t("common.changeLanguage")} className="grid grid-cols-4 gap-1 rounded-xl bg-slate-200/70 p-1">
+                            {locales.map((item) => {
                                 const selected = item === locale
                                 return (
                                     <button

@@ -2,7 +2,7 @@
 
 import { Globe } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
-import { LOCALE_LABELS, LOCALES, type Locale } from '@winelore/core/i18n/types'
+import { LOCALE_LABELS, type Locale } from '@winelore/core/i18n/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function LanguageSwitcher() {
-  const { t, locale, setLocale } = useTranslation()
+  const { t, locale, setLocale, locales } = useTranslation()
 
   return (
     <DropdownMenu>
@@ -26,7 +26,7 @@ export function LanguageSwitcher() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[160px]">
-        {LOCALES.map((item: Locale) => (
+        {locales.map((item: Locale) => (
           <DropdownMenuItem
             key={item}
             onClick={() => setLocale(item)}

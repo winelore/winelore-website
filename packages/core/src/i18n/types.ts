@@ -9,6 +9,10 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   sk: "Slovenčina",
 }
 
-export const DEFAULT_LOCALE: Locale = "uk"
+export const DEFAULT_LOCALE: Locale = "en"
 
 export const LOCALE_COOKIE = "winelore-locale"
+export const COUNTRY_COOKIE = "winelore-country"
+
+/** Locales ordered with Slovenčina before Magyar for users in Slovakia. */
+export const SLOVAKIA_LOCALES: Locale[] = ["en", "uk", "sk", "hu"]
