@@ -29,6 +29,8 @@ import { PropertyInput } from "./PropertyInput"
 import { SubmitBar } from "./SubmitBar"
 import { useVoiceRecorder, type VoiceRecording } from "./useVoiceRecorder"
 import { palette, radius, spacing, type } from "../theme"
+import { DiscussionFAB } from "../discussion/DiscussionFAB"
+import { DiscussionBottomSheet } from "../discussion/DiscussionBottomSheet"
 
 export interface EvaluationScreenLabels {
     yes: string
@@ -83,6 +85,7 @@ export function EvaluationScreen({
     const [isGeneratingAI, setIsGeneratingAI] = useState(false)
     const [aiError, setAiError] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [isDiscussionOpen, setIsDiscussionOpen] = useState(false)
 
     const handleGenerateAIComment = useCallback(async () => {
         if (isGeneratingAI || !form.scoringComplete) return
@@ -332,6 +335,18 @@ export function EvaluationScreen({
                 submitLabel={labels.submit}
                 blockedLabel={labels.fillRequired}
                 onSubmit={handleSubmit}
+            />
+            {/* Floating Discussion Trigger */}
+            <DiscussionFAB
+                onPress={() => setIsDiscussionOpen(true)}
+            />
+            {/* Messenger-Style Bottom Sheet */}
+            <DiscussionBottomSheet
+                visible={isDiscussionOpen}
+                replicaCandidateId={candidateId}
+                candidateCode={candidateCode}
+                beverageName={beverageName}
+                onClose={() => setIsDiscussionOpen(false)}
             />
         </KeyboardAvoidingView>
     )
