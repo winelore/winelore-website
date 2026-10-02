@@ -716,6 +716,13 @@ const hu = {
             producerSearching: "Borászok keresése...",
             producerNotFound: "Nem található borász vagy borászat",
             producerChange: "Módosítás",
+            createBeverageNamed: "\"{{name}}\" ital létrehozása",
+            createBeveragePrompt: "Nem találja az italt? Hozzon létre újat",
+            existingBeveragesForProducer: "A borász meglévő italai",
+            useExistingBeverage: "Ezen ital kiválasztása",
+            existingBatchesPrompt: "Az ital meglévő tételei",
+            createBatchPrompt: "Új tétel létrehozása",
+            createSamplePrompt: "Új minta létrehozása",
         },
     },
     evaluation: {

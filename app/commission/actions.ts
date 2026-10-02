@@ -1025,6 +1025,36 @@ export async function searchBeveragesAction(search?: string, page: number = 1, l
     }
 }
 
+export async function getBeveragesByProducerAction(input: { producerAuid?: number; producerId?: string }) {
+    try {
+        const headers = await getActorHeaders().catch(() => ({}));
+        let filter: any = {};
+        if (input.producerAuid) {
+            filter.producers = [[input.producerAuid]];
+        } else if (input.producerId && isValidUuid(input.producerId)) {
+            filter.producerIds = [input.producerId];
+        } else {
+            return { success: true, items: [] };
+        }
+        const data = await rawGraphQL(`
+            query GetBeveragesByProducer($filter: BeverageFilterInput, $limit: Int) {
+                beverages(filter: $filter, limit: $limit) {
+                    items {
+                        id
+                        name
+                        typeId
+                        status
+                    }
+                }
+            }
+        `, { filter, limit: 20 }, headers);
+        return { success: true, items: data?.beverages?.items || [] };
+    } catch (err: any) {
+        console.error("getBeveragesByProducerAction error:", err);
+        return { success: false, items: [], error: err.message || "" };
+    }
+}
+
 export async function getBatchesForBeverageAction(beverageId: string, page: number = 1, limit: number = 8) {
     if (!isValidUuid(beverageId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
     try {

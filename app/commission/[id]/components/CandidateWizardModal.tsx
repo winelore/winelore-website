@@ -35,8 +35,11 @@ import {
     createBatchForPanelAction,
     createSampleForPanelAction,
     searchUserByUsernameAction,
+    getBeveragesByProducerAction,
 } from "../../actions"
 import type { FoundUser } from "@winelore/core/auth"
+import { MemberAvatar } from "@/components/MemberAvatar"
+import { useAvatars } from "@/hooks/useAvatars"
 import {
     ABV_PRESETS,
     BATCH_VOLUME_PRESETS,
@@ -291,6 +294,16 @@ export function CandidateWizardModal({
     const [isLoadingBevChars, setIsLoadingBevChars] = useState(false)
     const [isCreatingBeverage, setIsCreatingBeverage] = useState(false)
     const [bevCreateError, setBevCreateError] = useState<string | null>(null)
+    const [producerBeverages, setProducerBeverages] = useState<Array<{ id: string; name: string; typeId?: string }>>([])
+    const [isLoadingProducerBeverages, setIsLoadingProducerBeverages] = useState(false)
+
+    const relevantAuids = useMemo(() => {
+        const ids: number[] = []
+        if (foundUser?.auid) ids.push(foundUser.auid)
+        if (selectedProducer?.type === "account") ids.push(selectedProducer.auid)
+        return ids
+    }, [foundUser?.auid, selectedProducer])
+    const { avatars } = useAvatars(relevantAuids)
 
     // Step 2 State: Batches (Select mode)
     const [batches, setBatches] = useState<BatchItem[]>([])
@@ -456,6 +469,48 @@ export function CandidateWizardModal({
         document.addEventListener("mousedown", handleClickOutside)
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
+
+    // Proactively fetch existing beverages for the chosen producer
+    useEffect(() => {
+        if (!selectedProducer) {
+            setProducerBeverages([])
+            return
+        }
+        let active = true
+        setIsLoadingProducerBeverages(true)
+        const input =
+            selectedProducer.type === "account"
+                ? { producerAuid: selectedProducer.auid }
+                : selectedProducer.type === "catalog"
+                ? { producerId: selectedProducer.id }
+                : {}
+        if (!input.producerAuid && !input.producerId) {
+            setProducerBeverages([])
+            setIsLoadingProducerBeverages(false)
+            return
+        }
+        getBeveragesByProducerAction(input)
+            .then((res) => {
+                if (active && res.success) {
+                    setProducerBeverages(res.items || [])
+                }
+            })
+            .catch(() => {
+                if (active) setProducerBeverages([])
+            })
+            .finally(() => {
+                if (active) setIsLoadingProducerBeverages(false)
+            })
+        return () => {
+            active = false
+        }
+    }, [selectedProducer])
+
+    const matchingProducerBeverages = useMemo(() => {
+        if (!bevCreateName.trim() || producerBeverages.length === 0) return []
+        const q = bevCreateName.trim().toLowerCase()
+        return producerBeverages.filter((b) => b.name.toLowerCase().includes(q))
+    }, [bevCreateName, producerBeverages])
 
     // Load batch characteristics when switching to batch create mode
     useEffect(() => {
@@ -1255,15 +1310,34 @@ export function CandidateWizardModal({
                                             </p>
                                             <button
                                                 type="button"
-                                                onClick={() => setBeverageMode("create")}
+                                                onClick={() => {
+                                                    if (beverageSearch.trim()) setBevCreateName(beverageSearch.trim())
+                                                    setBeverageMode("create")
+                                                }}
                                                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
                                             >
                                                 <Plus className="w-4 h-4" />
-                                                <span>{t("panels.wizard.createBeverageBtn")}</span>
+                                                <span>{beverageSearch.trim() ? t("panels.wizard.createBeverageNamed", { name: beverageSearch.trim() }) : t("panels.wizard.createBeverageBtn")}</span>
                                             </button>
                                         </div>
                                     ) : (
                                         <div className="flex flex-col gap-3">
+                                            {beverageSearch.trim() && (
+                                                <div className="flex items-center justify-between px-3 py-2 bg-indigo-50/60 rounded-xl border border-indigo-100 text-xs animate-fade-in">
+                                                    <span className="text-slate-600 font-medium">{t("panels.wizard.createBeveragePrompt")}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setBevCreateName(beverageSearch.trim())
+                                                            setBeverageMode("create")
+                                                        }}
+                                                        className="font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer transition-colors"
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <span>{t("panels.wizard.createBeverageNamed", { name: beverageSearch.trim() })}</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                             <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1">
                                                 {beverages.map((bev) => {
                                                     const isSelected = selectedBeverage?.id === bev.id
@@ -1322,42 +1396,6 @@ export function CandidateWizardModal({
                                         </button>
                                     </div>
 
-                                    {/* Beverage Name */}
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                                            {t("panels.wizard.beverageNameLabel")} <span className="text-rose-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={bevCreateName}
-                                            onChange={(e) => setBevCreateName(e.target.value)}
-                                            placeholder={t("panels.wizard.beverageNamePlaceholder")}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                                            autoFocus
-                                        />
-                                    </div>
-
-                                    {/* Beverage Type Selection */}
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                                            {t("panels.wizard.beverageTypeLabel")} <span className="text-rose-500">*</span>
-                                        </label>
-                                        <WizardSelect
-                                            value={bevCreateTypeId}
-                                            options={beverageTypes.map((type) => ({
-                                                value: type.id,
-                                                label: formatBeverageType(type.code) || type.name,
-                                                icon: <Wine className="w-3.5 h-3.5" />,
-                                            }))}
-                                            onChange={(val) => setBevCreateTypeId(val)}
-                                            placeholder={t("panels.wizard.beverageTypeSelectPlaceholder")}
-                                            loading={isLoadingBevMeta}
-                                            loadingText={t("common.loading")}
-                                            emptyMessage={t("panels.wizard.noOptions")}
-                                            icon={<Wine className="w-4 h-4 text-indigo-500" />}
-                                        />
-                                    </div>
-
                                     {/* Producer / Winery Selection */}
                                     <div className="flex flex-col gap-2" ref={producerContainerRef}>
                                         <div className="flex items-center justify-between">
@@ -1383,9 +1421,13 @@ export function CandidateWizardModal({
                                             selectedProducer.type === "account" ? (
                                                 <div className="flex items-center justify-between gap-3 p-3 bg-indigo-50/60 border border-indigo-200/80 rounded-2xl shadow-xs">
                                                     <div className="flex items-center gap-2.5 min-w-0">
-                                                        <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                                            <User className="w-4 h-4" />
-                                                        </div>
+                                                        <MemberAvatar
+                                                            auid={selectedProducer.auid}
+                                                            username={selectedProducer.displayName || selectedProducer.username}
+                                                            imageUrl={avatars[String(selectedProducer.auid)]}
+                                                            className="w-8 h-8 rounded-full shadow-xs shrink-0"
+                                                            showCrown={false}
+                                                        />
                                                         <div className="flex flex-col min-w-0">
                                                             <div className="flex items-center gap-1.5 min-w-0">
                                                                 <span className="text-xs font-bold text-slate-800 truncate">
@@ -1487,7 +1529,16 @@ export function CandidateWizardModal({
                                                 <div className="relative flex items-center">
                                                     <Search className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
                                                     <input
+                                                        id="winery_producer_search"
+                                                        name="winery_producer_search"
                                                         type="text"
+                                                        autoComplete="off"
+                                                        autoCorrect="off"
+                                                        autoCapitalize="none"
+                                                        spellCheck={false}
+                                                        data-lpignore="true"
+                                                        data-1p-ignore="true"
+                                                        data-form-type="other"
                                                         value={producerQuery}
                                                         onChange={(e) => {
                                                             setProducerQuery(e.target.value)
@@ -1537,9 +1588,13 @@ export function CandidateWizardModal({
                                                                     className="flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all cursor-pointer"
                                                                 >
                                                                     <div className="flex items-center gap-2 min-w-0">
-                                                                        <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0">
-                                                                            <User className="w-3.5 h-3.5" />
-                                                                        </div>
+                                                                        <MemberAvatar
+                                                                            auid={foundUser.auid}
+                                                                            username={foundUser.displayName || foundUser.username}
+                                                                            imageUrl={avatars[String(foundUser.auid)]}
+                                                                            className="w-7 h-7 rounded-full shadow-xs shrink-0"
+                                                                            showCrown={false}
+                                                                        />
                                                                         <div className="flex flex-col items-start min-w-0">
                                                                             <span className="font-bold text-slate-800 truncate">
                                                                                 {foundUser.displayName}
@@ -1626,6 +1681,93 @@ export function CandidateWizardModal({
                                                 )}
                                             </div>
                                         )}
+
+                                        {/* Proactive Producer Beverages if a producer is selected */}
+                                        {selectedProducer && (
+                                            isLoadingProducerBeverages ? (
+                                                <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-500 animate-fade-in">
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                                                    <span className="text-[11px] font-medium">{t("common.loading")}</span>
+                                                </div>
+                                            ) : producerBeverages.length > 0 ? (
+                                                <div className="p-3 bg-gradient-to-br from-indigo-50/60 to-purple-50/30 border border-indigo-100/80 rounded-2xl flex flex-col gap-2 animate-fade-in">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[11px] font-bold text-indigo-900 flex items-center gap-1.5">
+                                                            <Wine className="w-3.5 h-3.5 text-indigo-600" />
+                                                            {t("panels.wizard.existingBeveragesForProducer")} ({producerBeverages.length})
+                                                        </span>
+                                                        <span className="text-[10px] text-indigo-500 font-medium">
+                                                            {t("panels.wizard.useExistingBeverage")}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+                                                        {producerBeverages.map((bev) => (
+                                                            <button
+                                                                key={bev.id}
+                                                                type="button"
+                                                                onClick={() => handleSelectBeverage(bev)}
+                                                                className="px-2.5 py-1.5 rounded-xl bg-white border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50/50 shadow-2xs text-xs font-semibold text-slate-700 hover:text-indigo-700 flex items-center gap-1.5 transition-all text-left group cursor-pointer"
+                                                                title={bev.name}
+                                                            >
+                                                                <Wine className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 shrink-0" />
+                                                                <span className="truncate max-w-[180px]">{bev.name}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : null
+                                        )}
+                                    </div>
+
+                                    {/* Beverage Name */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                                            {t("panels.wizard.beverageNameLabel")} <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={bevCreateName}
+                                            onChange={(e) => setBevCreateName(e.target.value)}
+                                            placeholder={t("panels.wizard.beverageNamePlaceholder")}
+                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                                        />
+                                        {matchingProducerBeverages.length > 0 && (
+                                            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-slate-500 animate-fade-in">
+                                                <span className="font-semibold text-amber-700">{t("panels.wizard.existingBeveragesForProducer")}:</span>
+                                                {matchingProducerBeverages.map((bev) => (
+                                                    <button
+                                                        key={bev.id}
+                                                        type="button"
+                                                        onClick={() => handleSelectBeverage(bev)}
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 font-semibold hover:bg-amber-100 cursor-pointer transition-colors"
+                                                    >
+                                                        <span>{bev.name}</span>
+                                                        <ChevronRight className="w-3 h-3 text-amber-600" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Beverage Type Selection */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                                            {t("panels.wizard.beverageTypeLabel")} <span className="text-rose-500">*</span>
+                                        </label>
+                                        <WizardSelect
+                                            value={bevCreateTypeId}
+                                            options={beverageTypes.map((type) => ({
+                                                value: type.id,
+                                                label: formatBeverageType(type.code) || type.name,
+                                                icon: <Wine className="w-3.5 h-3.5" />,
+                                            }))}
+                                            onChange={(val) => setBevCreateTypeId(val)}
+                                            placeholder={t("panels.wizard.beverageTypeSelectPlaceholder")}
+                                            loading={isLoadingBevMeta}
+                                            loadingText={t("common.loading")}
+                                            emptyMessage={t("panels.wizard.noOptions")}
+                                            icon={<Wine className="w-4 h-4 text-indigo-500" />}
+                                        />
                                     </div>
 
                                     {/* Role Selection */}

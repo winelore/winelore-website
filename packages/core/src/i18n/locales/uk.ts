@@ -718,6 +718,13 @@ const uk: TranslationKey = {
       producerSearching: "Пошук виноробів...",
       producerNotFound: "Виноробів або виноробень не знайдено",
       producerChange: "Змінити",
+      createBeverageNamed: "Створити напій «{{name}}»",
+      createBeveragePrompt: "Не знайшли напій? Створіть новий",
+      existingBeveragesForProducer: "Існуючі напої цього винороба",
+      useExistingBeverage: "Обрати цей напій",
+      existingBatchesPrompt: "Існуючі партії цього напою",
+      createBatchPrompt: "Створити нову партію",
+      createSamplePrompt: "Створити новий зразок",
     },
   },
   evaluation: {
