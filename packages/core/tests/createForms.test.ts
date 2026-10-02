@@ -15,9 +15,11 @@ import {
     characteristicInputKind,
     characteristicsOf,
     createBeverage,
+    createProducer,
     createSample,
     formatCreateAttributes,
     isInvalidVolume,
+    loadProducers,
     parsePropertySchemas,
     parseVolumeMl,
     volumePresetLabel,
@@ -153,6 +155,28 @@ test("a new beverage has the signed-in user as its producer", () => {
     assert.deepEqual(beverageCreateInput({ name: "X", typeId: "t", role: "MAKER" }, "0b4b6f1e-6a3c-4c1f-9e27-8a1d2c3b4f5a").producers, [
         { producerId: "0b4b6f1e-6a3c-4c1f-9e27-8a1d2c3b4f5a", role: "MAKER" },
     ])
+    assert.deepEqual(beverageCreateInput({ name: "X", typeId: "t", role: "MAKER", producerId: "prod-123" }, "42").producers, [
+        { producerId: "prod-123", role: "MAKER" },
+    ])
+    assert.deepEqual(beverageCreateInput({ name: "X", typeId: "t", role: "MAKER", producerAuid: 99 }, "42").producers, [
+        { auid: [99], role: "MAKER" },
+    ])
+})
+
+test("creating and loading producers", async () => {
+    const send = async (query: string, variables: any) => {
+        if (query.includes("createProducer")) {
+            return { createProducer: { id: "p-new", name: variables.input.name, claimStatus: "UNCLAIMED" } }
+        }
+        if (query.includes("producers(")) {
+            return { producers: { items: [{ id: "p-1", name: "Winery A", claimStatus: "UNCLAIMED" }] } }
+        }
+        return {}
+    }
+    const created = await createProducer(send, "Winery B")
+    assert.deepEqual(created, { id: "p-new", name: "Winery B", claimStatus: "UNCLAIMED" })
+    const list = await loadProducers(send)
+    assert.deepEqual(list, [{ id: "p-1", name: "Winery A", claimStatus: "UNCLAIMED", claimAuid: undefined }])
 })
 
 test("an attribute the backend refuses as unknown is dropped for one more try", async () => {

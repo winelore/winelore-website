@@ -42,6 +42,19 @@ import {
     startCommissionReplica,
     type CommissionSetting,
 } from '@winelore/core/commission';
+import {
+    createBeverage,
+    createBatch,
+    createSample,
+    createProducer,
+    loadProducers,
+    beverageTypeOptions,
+    loadCharacteristics,
+    type CharacteristicScope,
+    type BeverageCharacteristic,
+    type ProducerOption,
+} from '@winelore/core/beverage';
+import { GET_BEVERAGE_TYPES } from '@winelore/core/dashboard';
 
 const settingMutation = (key: CommissionSetting) => {
     const setting = COMMISSION_SETTINGS.find((setting) => setting.key === key);
@@ -1012,6 +1025,36 @@ export async function searchBeveragesAction(search?: string, page: number = 1, l
     }
 }
 
+export async function getBeveragesByProducerAction(input: { producerAuid?: number; producerId?: string }) {
+    try {
+        const headers = await getActorHeaders().catch(() => ({}));
+        let filter: any = {};
+        if (input.producerAuid) {
+            filter.producers = [[input.producerAuid]];
+        } else if (input.producerId && isValidUuid(input.producerId)) {
+            filter.producerIds = [input.producerId];
+        } else {
+            return { success: true, items: [] };
+        }
+        const data = await rawGraphQL(`
+            query GetBeveragesByProducer($filter: BeverageFilterInput, $limit: Int) {
+                beverages(filter: $filter, limit: $limit) {
+                    items {
+                        id
+                        name
+                        typeId
+                        status
+                    }
+                }
+            }
+        `, { filter, limit: 20 }, headers);
+        return { success: true, items: data?.beverages?.items || [] };
+    } catch (err: any) {
+        console.error("getBeveragesByProducerAction error:", err);
+        return { success: false, items: [], error: err.message || "" };
+    }
+}
+
 export async function getBatchesForBeverageAction(beverageId: string, page: number = 1, limit: number = 8) {
     if (!isValidUuid(beverageId)) return { success: false, items: [], page, limit, totalPages: 1, hasMore: false };
     try {
@@ -1096,3 +1139,140 @@ export async function reorderCommissionCandidatesAction(commissionId: string, pa
         return { success: false, error: err.message || "" };
     }
 }
+
+export async function getProducersAction(): Promise<ProducerOption[]> {
+    try {
+        const headers = await getActorHeaders();
+        return await loadProducers((query, variables) => rawGraphQL(query, variables ?? {}, headers));
+    } catch (err: any) {
+        console.error("Server Action Error (getProducersAction):", err);
+        return [];
+    }
+}
+
+export async function createProducerAction(name: string): Promise<{ success: boolean; producer?: ProducerOption; error?: string }> {
+    try {
+        const headers = await getActorHeaders();
+        const producer = await createProducer((query, variables) => rawGraphQL(query, variables ?? {}, headers), name);
+        return { success: true, producer };
+    } catch (err: any) {
+        console.error("Server Action Error (createProducerAction):", err);
+        return { success: false, error: err.message || "Failed to create producer" };
+    }
+}
+
+export async function getBeverageTypesForPanelAction() {
+    try {
+        const data = await rawGraphQL(GET_BEVERAGE_TYPES, {});
+        return beverageTypeOptions(data?.beverageTypes?.items);
+    } catch (err) {
+        console.error("Server Action Error (getBeverageTypesForPanelAction):", err);
+        return [];
+    }
+}
+
+export async function getBeverageTypeIdAction(beverageId: string): Promise<string | null> {
+    if (!isValidUuid(beverageId)) return null;
+    try {
+        const data = await rawGraphQL(`query GetBeverageType($id: ID!) { beverage(id: $id) { id typeId } }`, { id: beverageId });
+        return data?.beverage?.typeId || null;
+    } catch (err) {
+        console.error("Server Action Error (getBeverageTypeIdAction):", err);
+        return null;
+    }
+}
+
+export async function getBeverageCharacteristicsForPanelAction(typeId: string, scope: CharacteristicScope = 'BEVERAGE'): Promise<BeverageCharacteristic[]> {
+    if (!typeId) return [];
+    try {
+        const headers = await getActorHeaders();
+        return await loadCharacteristics((query, variables) => rawGraphQL(query, variables ?? {}, headers), typeId, scope);
+    } catch (err) {
+        console.error(`Server Action Error (getBeverageCharacteristicsForPanelAction ${scope}):`, err);
+        return [];
+    }
+}
+
+export async function createBeverageForPanelAction(params: {
+    name: string;
+    typeId: string;
+    producerId?: string;
+    producerAuid?: number;
+    role?: 'MAKER' | 'BOTTLER';
+    attributes?: Record<string, any>;
+    origin?: { latitude: number; longitude: number } | null;
+}): Promise<{ success: boolean; beverageId?: string; error?: string }> {
+    if (!params.name.trim()) return { success: false, error: "Beverage name is required" };
+    if (!params.typeId) return { success: false, error: "Beverage type is required" };
+    try {
+        const headers = await getActorHeaders();
+        const beverageId = await createBeverage(
+            (query, variables) => rawGraphQL(query, variables ?? {}, headers),
+            {
+                name: params.name,
+                typeId: params.typeId,
+                producerId: params.producerId,
+                producerAuid: params.producerAuid,
+                role: params.role === "BOTTLER" ? "BOTTLER" : "MAKER",
+                attributes: params.attributes,
+                origin: params.origin,
+            },
+            headers['X-ACTOR'] || '1',
+        );
+        return { success: true, beverageId };
+    } catch (err: any) {
+        console.error("Server Action Error (createBeverageForPanelAction):", err);
+        return { success: false, error: err.message || "Failed to create beverage" };
+    }
+}
+
+export async function createBatchForPanelAction(params: {
+    beverageId: string;
+    lotNumber?: string;
+    volumeMl?: number | string;
+    attributes?: Record<string, any>;
+}): Promise<{ success: boolean; batchId?: string; error?: string }> {
+    if (!isValidUuid(params.beverageId)) return { success: false, error: "Invalid beverageId" };
+    try {
+        const headers = await getActorHeaders();
+        const batchId = await createBatch(
+            (query, variables) => rawGraphQL(query, variables ?? {}, headers),
+            {
+                beverageId: params.beverageId,
+                lotNumber: params.lotNumber,
+                volumeMl: params.volumeMl,
+                attributes: params.attributes,
+            }
+        );
+        return { success: true, batchId };
+    } catch (err: any) {
+        console.error("Server Action Error (createBatchForPanelAction):", err);
+        return { success: false, error: err.message || "Failed to create batch" };
+    }
+}
+
+export async function createSampleForPanelAction(params: {
+    batchId: string;
+    volumeMl?: number | string;
+    code?: string;
+    attributes?: Record<string, any>;
+}): Promise<{ success: boolean; sampleId?: string; error?: string }> {
+    if (!isValidUuid(params.batchId)) return { success: false, error: "Invalid batchId" };
+    try {
+        const headers = await getActorHeaders();
+        const sampleId = await createSample(
+            (query, variables) => rawGraphQL(query, variables ?? {}, headers),
+            {
+                batchId: params.batchId,
+                volumeMl: params.volumeMl,
+                code: params.code,
+                attributes: params.attributes,
+            }
+        );
+        return { success: true, sampleId };
+    } catch (err: any) {
+        console.error("Server Action Error (createSampleForPanelAction):", err);
+        return { success: false, error: err.message || "Failed to create sample" };
+    }
+}
+

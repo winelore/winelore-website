@@ -22,6 +22,18 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+Set the optional server environment variable `AXUS_RATE_LIMIT_TOKEN` to an AXUS ID
+bearer token granted `identity.<auid>.ratelimit.drain`. Winelore's server-side AXUS
+GraphQL requests, including display-name, avatar metadata, and username lookups,
+then consume that account's rate-limit budget. AXUS ID selects the account when
+the token can drain multiple accounts. An explicitly supplied request bearer
+takes precedence; without the setting, requests retain their existing behavior.
+The setting applies to GraphQL, not the OAuth token/revocation endpoints or public
+avatar downloads. Keep it server-side: do not use a `NEXT_PUBLIC_` or `EXPO_PUBLIC_`
+variable or bundle it into the mobile app. A revoked token or one without drain
+permission falls back to AXUS ID's IP rate limit; AXUS ID still decides access to
+each operation using the supplied bearer.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 ## Learn More

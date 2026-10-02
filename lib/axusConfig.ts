@@ -3,6 +3,12 @@ import { getAxusEndpoint } from "./graphqlEndpoint"
 
 export const DEFAULT_AXUS_ISSUER = "https://axusid-website.vercel.app"
 
+/** Deployment secret: never expose it through public web or Expo configuration. */
+export function getAxusRateLimitToken(): string | undefined {
+    if (typeof window !== "undefined") return undefined
+    return process.env.AXUS_RATE_LIMIT_TOKEN?.trim() || undefined
+}
+
 /** AXUS ID settings for the web app, from the environment. */
 export function getAxusConfig(): AxusConfig {
     const override = Number(process.env.AXUS_REFRESH_TOKEN_TTL)
@@ -14,6 +20,7 @@ export function getAxusConfig(): AxusConfig {
         issuer: process.env.NEXT_PUBLIC_AXUS_ID_ISSUER || DEFAULT_AXUS_ISSUER,
         clientId,
         graphqlEndpoint: getAxusEndpoint(),
+        graphqlToken: getAxusRateLimitToken(),
         refreshTokenTtlFallback:
             Number.isFinite(override) && override > 0 ? Math.floor(override) : undefined,
     }

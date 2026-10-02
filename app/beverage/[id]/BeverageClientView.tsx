@@ -1,13 +1,13 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
     Trophy, Wine, Tag, AlertCircle, CheckCircle, MapPin, Calendar, Award, ArrowLeft, Clock,
     Users, Percent, Droplet, Layers, HelpCircle, Barcode, Send, Pencil, FlaskConical, Plus, ExternalLink,
-    Check, X, Loader2, Trash2, UserPlus
+    Check, X, Loader2, Trash2, UserPlus, ChevronDown
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n/context"
 import { useMobileNavTitle } from "@/lib/mobileNav"
@@ -209,6 +209,8 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
     const [producerSearchError, setProducerSearchError] = useState<string | null>(null)
     const [foundProducer, setFoundProducer] = useState<{ auid: number; username: string; displayName: string } | null>(null)
     const [selectedProducerRole, setSelectedProducerRole] = useState<"MAKER" | "BOTTLER">("MAKER")
+    const [isProducerRoleOpen, setIsProducerRoleOpen] = useState(false)
+    const producerRoleDropdownRef = useRef<HTMLDivElement>(null)
     const [isAddingProducerMutating, setIsAddingProducerMutating] = useState(false)
     const [removingProducerId, setRemovingProducerId] = useState<string | null>(null)
     const [selectedBatchForSamples, setSelectedBatchForSamples] = useState<ModalBatchData | null>(null)
@@ -380,16 +382,40 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
         return () => clearTimeout(timer)
     }, [producerUsernameInput, isAddingProducer, t])
 
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (producerRoleDropdownRef.current && !producerRoleDropdownRef.current.contains(e.target as Node)) {
+                setIsProducerRoleOpen(false)
+            }
+        }
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setIsProducerRoleOpen(false)
+            }
+        }
+        if (isProducerRoleOpen) {
+            document.addEventListener("mousedown", handleClickOutside)
+            document.addEventListener("keydown", handleKeyDown)
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside)
+            document.removeEventListener("keydown", handleKeyDown)
+        }
+    }, [isProducerRoleOpen])
+
     const openAddProducer = () => {
         setProducerUsernameInput("")
         setFoundProducer(null)
         setProducerSearchError(null)
+        setSelectedProducerRole("MAKER")
+        setIsProducerRoleOpen(false)
         setIsAddingProducer(true)
     }
 
     const handleAddProducer = async () => {
         if (!foundProducer || isAddingProducerMutating) return
         setIsAddingProducerMutating(true)
+        setIsProducerRoleOpen(false)
         try {
             const updated = await registerBeverageProducerAction(beverage.id, foundProducer.auid, selectedProducerRole)
             const enrichedProducers = (updated.producers as unknown as ProducerDetails[]).map((p) =>
@@ -774,7 +800,10 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                 <span className="text-xs font-bold text-slate-800">{t("beverage.edit.producersTitle")}</span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setIsAddingProducer(false)}
+                                                    onClick={() => {
+                                                        setIsAddingProducer(false)
+                                                        setIsProducerRoleOpen(false)
+                                                    }}
                                                     className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
                                                 >
                                                     <X className="w-4 h-4" />
@@ -794,7 +823,10 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                     }}
                                                     onKeyDown={e => {
                                                         if (e.key === "Enter" && foundProducer) handleAddProducer()
-                                                        if (e.key === "Escape") setIsAddingProducer(false)
+                                                        if (e.key === "Escape") {
+                                                            setIsAddingProducer(false)
+                                                            setIsProducerRoleOpen(false)
+                                                        }
                                                     }}
                                                     className="w-full pl-8 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
                                                 />
@@ -828,20 +860,82 @@ export default function BeverageClientView({ initialData, currentAuid, isNotFoun
                                                         <p className="text-xs font-bold text-slate-800 truncate">{foundProducer.displayName}</p>
                                                         <p className="text-[10px] text-indigo-600 font-semibold">@{foundProducer.username}</p>
                                                     </div>
-                                                    <select
-                                                        value={selectedProducerRole}
-                                                        onChange={(e) => setSelectedProducerRole(e.target.value as "MAKER" | "BOTTLER")}
-                                                        className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 outline-none cursor-pointer shrink-0"
-                                                    >
-                                                        <option value="MAKER">{t("roles.maker")}</option>
-                                                        <option value="BOTTLER">{t("roles.bottler")}</option>
-                                                    </select>
+                                                    <div className="relative shrink-0" ref={producerRoleDropdownRef}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsProducerRoleOpen((prev) => !prev)}
+                                                            aria-expanded={isProducerRoleOpen}
+                                                            className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                                                isProducerRoleOpen
+                                                                    ? "border-indigo-600 ring-2 ring-indigo-500/20 text-indigo-700 shadow-sm"
+                                                                    : "border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 shadow-2xs"
+                                                            }`}
+                                                        >
+                                                            <span className="flex items-center gap-1.5">
+                                                                {selectedProducerRole === "MAKER" ? (
+                                                                    <Wine className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                                                ) : (
+                                                                    <Droplet className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                                                )}
+                                                                <span>{selectedProducerRole === "MAKER" ? t("roles.maker") : t("roles.bottler")}</span>
+                                                            </span>
+                                                            <ChevronDown
+                                                                className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                                                                    isProducerRoleOpen ? "rotate-180 text-indigo-600" : ""
+                                                                }`}
+                                                            />
+                                                        </button>
+
+                                                        {isProducerRoleOpen && (
+                                                            <div className="absolute right-0 top-full mt-1.5 w-36 rounded-2xl border border-slate-100 bg-white/95 backdrop-blur-md p-1 shadow-xl shadow-slate-200/90 z-50 animate-scale-up origin-top-right">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedProducerRole("MAKER")
+                                                                        setIsProducerRoleOpen(false)
+                                                                    }}
+                                                                    className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                                                                        selectedProducerRole === "MAKER"
+                                                                            ? "bg-indigo-50 text-indigo-700"
+                                                                            : "text-slate-700 hover:bg-slate-50 hover:text-indigo-600"
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <Wine className={`w-3.5 h-3.5 shrink-0 ${selectedProducerRole === "MAKER" ? "text-indigo-600" : "text-slate-400"}`} />
+                                                                        <span className="truncate">{t("roles.maker")}</span>
+                                                                    </div>
+                                                                    {selectedProducerRole === "MAKER" && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedProducerRole("BOTTLER")
+                                                                        setIsProducerRoleOpen(false)
+                                                                    }}
+                                                                    className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                                                                        selectedProducerRole === "BOTTLER"
+                                                                            ? "bg-indigo-50 text-indigo-700"
+                                                                            : "text-slate-700 hover:bg-slate-50 hover:text-indigo-600"
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <Droplet className={`w-3.5 h-3.5 shrink-0 ${selectedProducerRole === "BOTTLER" ? "text-indigo-600" : "text-slate-400"}`} />
+                                                                        <span className="truncate">{t("roles.bottler")}</span>
+                                                                    </div>
+                                                                    {selectedProducerRole === "BOTTLER" && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                             <div className="flex justify-end gap-2 mt-1">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setIsAddingProducer(false)}
+                                                    onClick={() => {
+                                                        setIsAddingProducer(false)
+                                                        setIsProducerRoleOpen(false)
+                                                    }}
                                                     disabled={isAddingProducerMutating}
                                                     className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
                                                 >

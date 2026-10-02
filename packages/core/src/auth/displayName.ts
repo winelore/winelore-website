@@ -1,4 +1,5 @@
 import type { AxusConfig } from "./types"
+import { axusGraphqlHeaders } from "./graphqlHeaders"
 
 /**
  * AXUS ID models a user's name as a "variation" — a named persona. The display
@@ -33,14 +34,14 @@ const VARIATION_AVATAR_QUERY = `
 const PLACEHOLDER_VARIATION_NAME = "Default Variation"
 
 async function axusQuery<T>(
-    endpoint: string,
+    config: AxusConfig,
     query: string,
     variables: Record<string, unknown>,
 ): Promise<T | null> {
     try {
-        const response = await fetch(endpoint, {
+        const response = await fetch(config.graphqlEndpoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: axusGraphqlHeaders(config.graphqlToken),
             body: JSON.stringify({ query, variables }),
         })
         if (!response.ok) return null
@@ -67,14 +68,14 @@ export async function resolveDisplayName(
         usernames?: { defaultUsername?: string | null } | null
         defaultVariation?: { variationId?: string | null } | null
         variations?: Array<{ id: string }> | null
-    }>(config.graphqlEndpoint, USER_DETAILS_QUERY, { auid: String(auid) })
+    }>(config, USER_DETAILS_QUERY, { auid: String(auid) })
 
     const defaultUsername = details?.usernames?.defaultUsername || fallbackUsername
     const variationId = details?.defaultVariation?.variationId || details?.variations?.[0]?.id
     if (!variationId) return `@${defaultUsername}`
 
     const nameResult = await axusQuery<{ name?: { displayName?: string | null } | null }>(
-        config.graphqlEndpoint,
+        config,
         VARIATION_NAME_QUERY,
         { variationId },
     )
@@ -96,13 +97,13 @@ export async function resolveAvatarUrl(config: AxusConfig, auid: string): Promis
     const details = await axusQuery<{
         defaultVariation?: { variationId?: string | null } | null
         variations?: Array<{ id: string }> | null
-    }>(config.graphqlEndpoint, USER_DETAILS_QUERY, { auid: String(auid) })
+    }>(config, USER_DETAILS_QUERY, { auid: String(auid) })
 
     const variationId = details?.defaultVariation?.variationId || details?.variations?.[0]?.id
     if (!variationId) return null
 
     const avatarResult = await axusQuery<{ avatar?: { objectKey?: string | null } | null }>(
-        config.graphqlEndpoint,
+        config,
         VARIATION_AVATAR_QUERY,
         { variationId },
     )
@@ -137,7 +138,7 @@ export async function findUserByUsername(config: AxusConfig, username: string): 
 
     const response = await fetch(config.graphqlEndpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: axusGraphqlHeaders(config.graphqlToken),
         body: JSON.stringify({ query: OWNER_BY_USERNAME_QUERY, variables: { username: trimmed } }),
     })
     if (!response.ok) throw new Error(`AXUS ID search failed (${response.status})`)

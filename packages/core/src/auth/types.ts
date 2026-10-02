@@ -13,6 +13,8 @@ export interface AxusConfig {
     clientId: string
     /** AXUS ID GraphQL endpoint, used to resolve a human display name. */
     graphqlEndpoint: string
+    /** Optional bearer for GraphQL requests, including account rate-limit drain permission. */
+    graphqlToken?: string
     /**
      * Refresh-token lifetime in seconds to assume when AXUS ID advertises none.
      * See `deriveRefreshTokenTtl` for why this is nearly always what gets used.
